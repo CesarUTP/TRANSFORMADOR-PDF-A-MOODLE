@@ -1,0 +1,260 @@
+Formato Moodle XML:
+Moodle XML format
+Jump to:navigation, search
+Main page ► Managing a Moodle course ► Questions ► Managing questions ► Export questions ► Moodle XML format
+Export questions
+Aiken format
+GIFT format
+Moodle XML format
+XHTML format
+The XML Format is a Moodle-specific format for importing and exporting questions to be used with the Quiz module. The format has been developed within the Moodle Community but other software may support it to a greater or lesser degree.
+
+
+Contents
+1 A word about validity (and CDATA)
+2 Overall structure of XML file
+3 Tags common to all question types
+4 Multiple choice
+5 True/false
+6 Short answer
+7 Numerical response
+8 Matching
+9 Essay
+10 Other question types
+10.1 Cloze
+10.2 Description response type
+10.3 Random matching
+11 Text formats
+12 Useful utilities
+13 See also
+A word about validity (and CDATA)
+The XML parser assumes that the XML file is well formed and does not detect or report errors. If it is not you are very likely to get unexpected errors. If you are hand-coding the XML file it is strongly recommended that you pass it through some sort of XML verifier before importing into Moodle. A simple way to do this is to open the XML file using Firefox or Internet Explorer.
+
+Note particularly that embedded HTML fragments should be within CDATA sections. CDATA example:
+
+
+<questiontext format="html">
+      <text><![CDATA[
+             Now I can include any HTML that I
+
+             wish. Without the CDATA, the HTML tags would break
+             the XML!!
+             ]]>
+       </text>
+</questiontext>
+
+Overall structure of XML file
+The file is enclosed by tags as follows. It is important to make sure the xml tag only is really the first line of the file. A blank first line, or additional tags on the first line will confuse the Moodle XML parser.
+
+<?xml version="1.0" ?> <quiz>
+
+.
+.
+.
+</quiz>
+
+Within the <quiz> tags are any number of <question> tags. One of these <question> tags can be a dummy question with a category type to specify a category for the import/export.
+
+<question type="category">
+
+   <category>
+       <text>$course$/XXXX</text>
+   </category>
+</question>
+
+Where XXXX is the new category name. If the category exists, the question(s) will be added to the existing course; otherwise a new category will be created. This only works if you have "Get category from file" checked.
+
+Multiple categories can be specified in the same file. Just add another dummy 'category' question each time you would like to establish a new category and the questions that follow it will be placed there.
+
+The file must be encoded in UTF8
+
+Moodle XML import and export are balanced in functionality, so if you need to understand the format you can simply create some questions and export them to see what it looks like.
+
+Tags common to all question types
+A question is written as follows.
+
+<question type="multichoice|truefalse|shortanswer|matching|cloze|essay|numerical|description">
+
+    <name>
+        <text>Name of question</text>
+    </name>
+    <questiontext format="html">
+        <text>What is the answer to this question?</text>
+    </questiontext>
+    .
+    .
+    .
+</question>
+
+Each question requires a <name> tag and <question-text> tag for the XML file to import into Moodle properly.
+
+"Format" selects the Formatting options for the question text. The options are html (the default), moodle_auto_format, plain_text and markdown. The choice effects the way in which the text will be displayed.
+
+Further tags, which usually include at least one <answer> tag, follow in the space marked with dots as child nodes to the <question> tag. The response-related tags are listed further down on this page. Various (optional?) tags are possible.
+
+tags (non-hierarchical keywords)
+penalty
+generalfeedback
+defaultgrade
+hidden
+Even though question tags (non-hierarchical keywords) are not fully supported in the question engine, they can be imported and exported via XML.
+
+<question ...>
+
+ ...
+ <tags>
+   <tag>
+     <text>keyword1</text>
+   </tag>
+   <tag>
+     <text>keyword2</text>
+   </tag>
+   ...
+ </tags>
+ ...
+</question>
+
+The <image> tag contains the url of any included image. Nested within the <image> tag may be an <image_base64> tag which contains the actual image data encoded in base64 [1].
+
+Note: If you export questions from a Moodle 1.9 server, the exported file might contain only the relative URL to the image hosted in the 1.9 server, while exported questions from Moodle 2.x and 3.x servers might contain the actual image encoded in base 64. This explains why some question bank import-export operations include all the images and some others don't.
+In the following question type examples the common parts of the question are not shown to improve clarity. It's a good idea to export some examples yourself to see a full example.
+
+Multiple choice
+MC questions have one <answer> tag for each choice. Each choice can carry feedback and score weighting (by using the fraction attribute). In addition, an MC question has the following tags:
+
+single (values: true/false)
+shuffleanswers (values: 1/0)
+correctfeedback
+partiallycorrectfeedback
+incorrectfeedback
+answernumbering (allowed values: 'none', 'abc', 'ABCD' or '123')
+The <single> tag is used to distinguish single response (radio button) and multiple response (checkbox) variants.
+
+<question type="multichoice">
+
+<answer fraction="100">
+    <text>The correct answer</text>
+   <feedback><text>Correct!</text></feedback>
+</answer>
+<answer fraction="0">
+    <text>A distractor</text>
+   <feedback><text>Ooops!</text></feedback>
+</answer>
+<answer fraction="0">
+    <text>Another distractor</text>
+   <feedback><text>Ooops!</text></feedback>
+</answer>
+<shuffleanswers>1</shuffleanswers>
+<single>true</single>
+<answernumbering>abc</answernumbering>
+</question>
+
+True/false
+Two answer tags are given, one which is true, and one which is false. The fraction attribute of the answer tag identifies which option is correct (100) and which is false (0). Feedback is supported. The following example shows the format when true is the correct answer and false is wrong.
+
+
+<question type="truefalse">
+<answer fraction="100">
+   <text>true</text>
+   <feedback><text>Correct!</text></feedback>
+</answer>
+<answer fraction="0">
+   <text>false</text>
+   <feedback><text>Ooops!</text></feedback>
+</answer>
+</question>
+
+Short answer
+The short answer question type supports alternative correct responses, each with its own weighting and feedback. The Moodle XML format uses one <answer> tag for each of the alternative correct answers.
+
+The <usecase> tag toggles case-sensitivity with the values 1/0.
+
+
+<question type="shortanswer">
+<answer fraction="100">
+    <text>The correct answer</text>
+    <feedback><text>Correct!</text></feedback>
+</answer>
+<question type="shortanswer">
+<answer fraction="100">
+    <text>The correct answer</text>
+    <feedback><text>Correct!</text></feedback>
+</answer>
+<answer fraction="100">
+    <text>An alternative answer</text>
+    <feedback><text>Correct!</text></feedback>
+</answer>
+</question>
+
+Numerical response
+The following is a simplified version of the Moodle XML format for numerical responses.
+
+
+<question type="numerical">
+<answer fraction="100">
+    <text>23</text>
+    <feedback><text>Feedback</text></feedback>
+</answer>
+</question>
+
+Moodle also supports a <tolerance> tag (how accurate must the number be?) and one or more <unit> tags. Unit tags have names and multipliers. E.g. if the main answer is in kilometres, an additional answer could be the equivalent in metres with a multiplier of 1000.
+
+Note: prior to 1.7.2 the fraction was expressed as a value between 0 and 1 in a <fraction> element and the answer value was not enclosed in <text> tags. This format of the numerical question type is deprecated but will still be correctly imported if found (for now).
+
+Matching
+Pair matching responses use the <shuffleanswers> tag to determine whether the order of the items should be randomized. Each pair is contained inside a <subquestion> tag. The first item of each pair is contained with a <text> tag, while the second has an <answer> tag around it as well. Feedback and score weighting is not supported by Moodle for this response type.
+
+
+<question type="matching">
+<subquestion>
+    <text>This is the 1st item in the 1st pair.</text>
+    <answer>
+        <text>This is the 2nd item in the 1st pair.</text>
+    </answer>
+</subquestion>
+<subquestion>
+    <text>This is the 1st item in the 2nd pair.</text>
+    <answer>
+        <text>This is the 2nd item in the 2nd pair.</text>
+    </answer>
+</subquestion>
+<shuffleanswers>true</shuffleanswers>
+</question>
+
+Essay
+An example of the essay type question...
+
+
+ <question type="essay">
+   <answer fraction="0">
+       <text></text>
+   </answer>
+ </question>
+
+There isn't an answer and there isn't a grade in this case.
+
+Note: prior to 1.7.2 the fraction was expressed as a value between 0 and 1 in a <fraction> element and the answer value was not enclosed in <text> tags. This format of the essay question type is deprecated but will still be correctly imported if found (for now).
+
+Other question types
+Cloze
+It is supported, and depends on a special format for the <questiontext> tag.
+
+Description response type
+This response type has no further tags other than those contained in the question header (such as <questiontext>).
+
+Random matching
+Moodle has a question type which consists of taking short answer questions in the same quiz and displaying them as a pair matching exercise. However Moodle is neither able to export nor import this question type.
+
+Text formats
+Moodle XML files should explicitly specify the text format (html, moodle_auto_format, plain_text and markdown - these correspond to the constants, FORMAT_HTML, FORMAT_MOODLE, etc. used in the Moodle code) for each piece of content. Note that, by default, the format should be specified on the parent of the <text> element. This is slightly odd, but a remnant of history.
+
+If the format is not specified for the questiontext, then html is the default. If the format is not specified on any other part of the question, then the format of the questiontext is the default.
+
+(This default changed around November 2011. Before that, the default was moodle_auto_format whenever the format was not specified.)
+
+Useful utilities
+Cross XML format This input format plugin is a handy utility that converts question from one question type to another.
+Online Moodle XML converter Convert from existing text files glossaries and quizzes to Moodle XML format. Also can convert from Moodle XMl to text.
+R script for converting spreadsheet quiz questions into Moodle XML - This is an R script to turn a spreadsheet with quiz questions into a Moodle XML file. I included an example spreadsheet. I wrote up a quick start guide, but I can only upload two files. Feel free to modify for personal use. If you make useful modifications, please share them with me. I have only written support for multichoice (single correct answer), shortanswer, or truefalse question types. I have only tested this with Moodle 3.7
+R/exams is a one-for-all exams generator that can export Moodle XML (among various other output formats) from potentially dynamic exercises written in R/Markdown or R/LaTeX. A brief tutorial for Moodle is available at: E-Learning Quizzes with R/exams for Moodle and OpenOLAT.
+getmarked is a quiz export tool that can be used to move quizzes from Google Forms to Moodle. According to this post "To move your Google Form quiz into Moodle, give getmarked permission to access your forms through OAuth, then you export it as a Moodle XML. If you want to move your Moodle question bank to Google Form, simply do the reverse by exporting your Moodle questions as Moodle XML, upload to getmarked and they can generate a Google Form from it.In addition, they can also import and export to QTI, Zoom, kahoot , quizizz and many other platforms too, it's really amazing!"

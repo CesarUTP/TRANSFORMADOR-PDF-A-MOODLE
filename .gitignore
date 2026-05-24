@@ -1,0 +1,26 @@
+# Entorno virtual
+backend/venv/
+
+# Caché de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build / distribución
+build/
+dist/
+*.spec
+*.egg-info/
+
+# Archivos temporales y de prueba
+backend/test_output.txt
+*.xml
+
+# Variables de entorno
+.env
+.env.*
+
+# IDEs
+.vscode/
+.idea/

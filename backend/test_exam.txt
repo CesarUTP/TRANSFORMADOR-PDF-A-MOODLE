@@ -1,0 +1,57 @@
+📝 Selección Múltiple (Opción Múltiple)
+Pregunta 1
+¿En qué fecha se consolidó la Separación de Panamá de Colombia?
+•	A) 28 de noviembre de 1821
+•	B) 3 de noviembre de 1903
+•	C) 9 de enero de 1964
+•	D) 15 de agosto de 1914
+•	Respuesta correcta: B (3 de noviembre de 1903)
+Pregunta 2
+¿Qué explorador europeo lideró la expedición que avistó el Mar del Sur (Océano Pacífico) en 1513?
+•	A) Cristóbal Colón
+•	B) Pedro Arias Dávila
+•	C) Vasco Núñez de Balboa
+•	D) Rodrigo de Bastidas
+•	Respuesta correcta: C (Vasco Núñez de Balboa)
+Pregunta 3
+¿Mediante qué tratado se acordó la devolución del Canal de Panamá a manos panameñas, concretada el 31 de diciembre de 1999?
+•	A) Tratado Hay-Bunau Varilla
+•	B) Tratado Mallarino-Bidlack
+•	C) Tratado Herrán-Hay
+•	D) Tratados Torrijos-Carter
+•	Respuesta correcta: D (Tratados Torrijos-Carter)
+________________________________________
+🔗 Emparejamiento (Matching)
+Pregunta 4
+Empareje a cada personaje histórico de Panamá con la descripción o logro que le corresponde:
+•	Pedro Arias Dávila (Pedrarias) ➔ Fundó la Ciudad de Panamá en 1519.
+•	Manuel Amador Guerrero ➔ Primer presidente Constitucional de la República de Panamá.
+•	Victoriano Lorenzo ➔ Líder indígena y mártir fusilado tras la Guerra de los Mil Días.
+•	Justo Arosemena ➔ Creador del Estado Federal de Panamá en 1855.
+Pregunta 5
+Empareje los siguientes eventos históricos con su año correspondiente:
+•	Descubrimiento del Istmo de Panamá (por Rodrigo de Bastidas) ➔ 1501
+•	Independencia de Panamá de España ➔ 1821
+•	Inauguración oficial del Canal de Panamá ➔ 1914
+________________________________________
+✅ Cierto y Falso
+Pregunta 6
+El primer intento de construir un canal interoceánico por Panamá fue llevado a cabo por el gobierno de los Estados Unidos.
+•	Respuesta: Falso (Fue llevado a cabo por los franceses bajo el liderazgo de Ferdinand de Lesseps).
+Pregunta 7
+La ciudad de Panamá, fundada en 1519, fue el primer asentamiento europeo en las costas del Océano Pacífico en el continente americano.
+•	Respuesta: Cierto.
+Pregunta 8
+La moneda de curso legal de Panamá lleva su nombre en honor a Rodrigo de Bastidas.
+•	Respuesta: Falso (Lleva el nombre del descubridor del Mar del Sur, Vasco Núñez de Balboa).
+________________________________________
+🧩 Cloze (Respuestas Anidadas)
+Nota: Puede copiar y pegar el texto en el recuadro de texto de la pregunta en Moodle eligiendo el tipo "Respuestas anidadas (Cloze)".
+Pregunta 9 (Tipo: Llenar los espacios en blanco - Short Answer)
+Texto para Moodle:
+El {1:SHORTANSWER:=9 de enero~=nueve de enero} de 1964, un grupo de estudiantes del Instituto Nacional intentó izar la bandera panameña en la Zona del Canal, suceso histórico conocido como el Día de los {1:SHORTANSWER:=Mártires~=martires}.
+•	Respuestas esperadas: Espacio 1 (9 de enero / nueve de enero) | Espacio 2 (Mártires / martires).
+Pregunta 10 (Tipo: Menú desplegable y respuesta numérica)
+Texto para Moodle:
+El istmo de Panamá fue visitado por primera vez por el explorador europeo {1:MULTICHOICE:=Rodrigo de Bastidas~Cristóbal Colón~Vasco Núñez de Balboa} en el año {1:NUMERICAL:=1501:0}.
+•	Respuestas esperadas: Espacio 1 (Desplegable donde la respuesta correcta es Rodrigo de Bastidas) | Espacio 2 (Campo numérico que espera exactamente 1501).
