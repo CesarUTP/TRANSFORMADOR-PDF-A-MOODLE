@@ -33,7 +33,7 @@ def parse_answer_key(full_text: str) -> Dict[int, dict]:
     answer_key: Dict[int, dict] = {}
 
     # ── multichoice ──
-    mc_entries = re.findall(r'(?:^|\n)(\d+)\s+multichoice\s+(.+)', clean_key)
+    mc_entries = re.findall(r'(?:^|\n)(\d+)\s+(?:multichoice|múltiple|multiple)\s+(.+)', clean_key, re.IGNORECASE)
     for num_str, answer_rest in mc_entries:
         num = int(num_str)
         answer = re.split(r'\n\d+\s+\w', answer_rest)[0].strip()
@@ -41,18 +41,17 @@ def parse_answer_key(full_text: str) -> Dict[int, dict]:
         answer_key[num] = {"type": "multichoice", "answer": answer}
 
     # ── truefalse ──
-    tf_entries = re.findall(r'(?:^|\n)(\d+)\s+truefalse\s+(.+)', clean_key)
+    tf_entries = re.findall(r'(?:^|\n)(\d+)\s+(?:truefalse|ciertofalso|verdaderofalso)\s+(.+)', clean_key, re.IGNORECASE)
     for num_str, answer_rest in tf_entries:
         num = int(num_str)
         answer = answer_rest.split()[0].strip()
         answer_key[num] = {"type": "truefalse", "answer": answer}
 
     # ── matching ──
-    # Each matching line: "N  matching  1. A → B; 2. C → D"
-    # We capture ONLY the text after the word "matching" up to the next answer line.
+    # Each matching line: "N  emparejamiento  1. A → B; 2. C → D"
     mt_pattern = re.compile(
-        r'(?:^|\n)(\d+)\s+matching\s+([^\n]+(?:\n(?!\d+\s+\w+\s+).*)*)',
-        re.MULTILINE
+        r'(?:^|\n)(\d+)\s+(?:matching|emparejamiento)\s+([^\n]+(?:\n(?!\d+\s+(?:\w+|múltiple|multiple|ciertofalso|verdaderofalso|emparejamiento|completar)\s+).*)*)',
+        re.MULTILINE | re.IGNORECASE
     )
     for m in mt_pattern.finditer(clean_key):
         num = int(m.group(1))
@@ -63,7 +62,7 @@ def parse_answer_key(full_text: str) -> Dict[int, dict]:
         answer_key[num] = {"type": "matching", "answer": raw}
 
     # ── cloze ──
-    cl_entries = re.findall(r'(?:^|\n)(\d+)\s+cloze\s+(.+)', clean_key)
+    cl_entries = re.findall(r'(?:^|\n)(\d+)\s+(?:cloze|completar)\s+(.+)', clean_key, re.IGNORECASE)
     for num_str, answer_rest in cl_entries:
         num = int(num_str)
         answer = answer_rest.strip()

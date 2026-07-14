@@ -201,7 +201,7 @@ SPLASH_HTML = """<!DOCTYPE html>
     <div class="bar-bg"><div class="bar-fill"></div></div>
     <div class="status-text" id="status">Iniciando aplicaci&oacute;n&hellip;</div>
   </div>
-  <div class="dev-credit">Desarrollado por C&eacute;sar O. Gonz&aacute;lez-Camargo</div>
+  <div class="dev-credit">Desarrollado por los ingenieros C&eacute;sar Gonz&aacute;lez y Vicente Urriola</div>
   <script>
     const msgs = [
       "Iniciando aplicaci\u00f3n\u2026",
@@ -252,10 +252,10 @@ def main():
         title="PDF → Moodle XML",
         html=SPLASH_HTML,
         js_api=api,          # <-- expone api.save_xml_file() a JS
-        width=1000,
-        height=850,
+        width=800,
+        height=750,
         resizable=True,
-        min_size=(800, 650),
+        min_size=(500, 600),
     )
 
     # Guardar referencia de la ventana en el api para los dialogos

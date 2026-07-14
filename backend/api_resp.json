@@ -1,0 +1,227 @@
+{
+  "filename": "a.pdf",
+  "questions": [
+    {
+      "num": 1,
+      "type": "multichoice",
+      "data": {
+        "stem": "¿Cuál es el país más extenso del mundo por superficie?",
+        "options": {
+          "A": "China",
+          "B": "Canadá",
+          "C": "Rusia",
+          "D": "Brasil"
+        }
+      }
+    },
+    {
+      "num": 2,
+      "type": "multichoice",
+      "data": {
+        "stem": "¿En qué continente se encuentra el río Amazonas?",
+        "options": {
+          "A": "África",
+          "B": "Asia",
+          "C": "América del Sur",
+          "D": "Europa"
+        }
+      }
+    },
+    {
+      "num": 3,
+      "type": "multichoice",
+      "data": {
+        "stem": "¿Cuál es el océano más grande del mundo?",
+        "options": {
+          "A": "Atlántico",
+          "B": "Índico",
+          "C": "Ártico",
+          "D": "Pacífico"
+        }
+      }
+    },
+    {
+      "num": 4,
+      "type": "multichoice",
+      "data": {
+        "stem": "¿Cuál fue el primer país en enviar un ser humano al espacio?",
+        "options": {
+          "A": "Estados Unidos",
+          "B": "China",
+          "C": "Alemania",
+          "D": "Unión Soviética"
+        }
+      }
+    },
+    {
+      "num": 5,
+      "type": "multichoice",
+      "data": {
+        "stem": "¿Cuántos continentes tiene el planeta Tierra?",
+        "options": {
+          "A": "5",
+          "B": "6",
+          "C": "7",
+          "D": "8"
+        }
+      }
+    },
+    {
+      "num": 6,
+      "type": "truefalse",
+      "data": {
+        "stem": "La capital de Australia es Sídney."
+      }
+    },
+    {
+      "num": 7,
+      "type": "truefalse",
+      "data": {
+        "stem": "El Nilo es el río más largo del continente africano."
+      }
+    },
+    {
+      "num": 8,
+      "type": "truefalse",
+      "data": {
+        "stem": "El Sol es una estrella de tipo espectral G ubicada en el centro del sistema solar."
+      }
+    },
+    {
+      "num": 9,
+      "type": "truefalse",
+      "data": {
+        "stem": "La Gran Muralla China puede verse a simple vista desde el espacio."
+      }
+    },
+    {
+      "num": 10,
+      "type": "truefalse",
+      "data": {
+        "stem": "El español es la lengua con más hablantes nativos en el mundo."
+      }
+    },
+    {
+      "num": 11,
+      "type": "matching",
+      "data": {
+        "stem": "Una cada capital con el país al que pertenece.",
+        "col_a": {
+          "1": "París",
+          "2": "Tokio",
+          "3": "Brasilia",
+          "4": "El Cairo"
+        },
+        "col_b": {
+          "a": "Francia",
+          "b": "Japón",
+          "c": "Brasil",
+          "d": "Egipto"
+        }
+      }
+    },
+    {
+      "num": 12,
+      "type": "matching",
+      "data": {
+        "stem": "Una cada científico con su aportación más destacada.",
+        "col_a": {
+          "1": "Isaac Newton",
+          "2": "Marie Curie",
+          "3": "Albert Einstein",
+          "4": "Charles Darwin"
+        },
+        "col_b": {
+          "a": "Ley de la gravitación universal",
+          "b": "Descubrimiento de la radioactividad",
+          "c": "Teoría de la relatividad",
+          "d": "Teoría de la evolución"
+        }
+      }
+    },
+    {
+      "num": 13,
+      "type": "cloze",
+      "data": {
+        "text": "El continente [A: Antártida / América del Sur / África] es el más frío del planeta y está cubierto casi en su totalidad por hielo."
+      }
+    },
+    {
+      "num": 14,
+      "type": "cloze",
+      "data": {
+        "text": "Las plantas producen alimento mediante la fotosíntesis, un proceso que requiere [A: luz solar / lluvia / temperatura] y que libera [B: oxígeno / nitrógeno / hidrógeno] como subproducto."
+      }
+    },
+    {
+      "num": 15,
+      "type": "cloze",
+      "data": {
+        "text": "El [A: Monte Everest / K2 / Monte Kilimanjaro], ubicado en el Himalaya, es la montaña más alta del mundo con [B: 8849 / 7500 / 9000] metros sobre el nivel del mar."
+      }
+    }
+  ],
+  "answer_key": {
+    "11": {
+      "type": "matching",
+      "answer": "1. París → Francia; 2. Tokio → Japón; 3. Brasilia → Brasil; 4. El Cairo → Egipto"
+    },
+    "12": {
+      "type": "matching",
+      "answer": "1. Isaac Newton → Ley de la gravitación universal; 2. Marie Curie → Descubrimiento de la radioactividad; 3. Albert Einstein → Teoría de la relatividad; 4. Charles Darwin → Teoría de la evolución"
+    },
+    "13": {
+      "type": "cloze",
+      "answer": "Antártida"
+    },
+    "14": {
+      "type": "cloze",
+      "answer": "luz solar"
+    },
+    "15": {
+      "type": "cloze",
+      "answer": "Monte Everest"
+    },
+    "1": {
+      "type": "multichoice",
+      "answer": "Rusia"
+    },
+    "2": {
+      "type": "multichoice",
+      "answer": "América del Sur"
+    },
+    "3": {
+      "type": "multichoice",
+      "answer": "Pacífico"
+    },
+    "4": {
+      "type": "multichoice",
+      "answer": "Unión Soviética"
+    },
+    "5": {
+      "type": "multichoice",
+      "answer": "7"
+    },
+    "6": {
+      "type": "truefalse",
+      "answer": "Falso"
+    },
+    "7": {
+      "type": "truefalse",
+      "answer": "Verdadero"
+    },
+    "8": {
+      "type": "truefalse",
+      "answer": "Verdadero"
+    },
+    "9": {
+      "type": "truefalse",
+      "answer": "Falso"
+    },
+    "10": {
+      "type": "truefalse",
+      "answer": "Falso"
+    }
+  },
+  "was_reformatted": true
+}

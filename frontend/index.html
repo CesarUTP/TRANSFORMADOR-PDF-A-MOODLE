@@ -9,59 +9,46 @@
     content="Convierte exámenes PDF o TXT al formato Moodle XML Question Format de forma automática, sin IA ni OCR." />
 
   <!-- Fonts -->
-  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet" />
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,800&display=swap" rel="stylesheet" />
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
-  <script>
-    tailwind.config = {
-      darkMode: ['attribute', '[data-theme="dark"]'],
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Satoshi', 'system-ui', 'sans-serif'] },
-          colors: {
-            bg: { light: '#f7f6f2', dark: '#171614' },
-            surface: { light: '#f9f8f5', dark: '#1c1b19' },
-            border: { light: '#d4d1ca', dark: '#393836' },
-            text: { light: '#28251d', dark: '#cdccca' },
-            muted: { light: '#7a7974', dark: '#797876' },
-            primary: { light: '#01696f', dark: '#4f98a3' },
-            primaryh: { light: '#0c4e54', dark: '#227f8b' },
-            error: { light: '#a12c7b', dark: '#d163a7' },
-          },
-        },
-      },
-    };
-  </script>
-
   <style>
+    /* ── CSS Variables ──────────────────────────────────────────────────── */
     :root {
-      --color-bg: #f7f6f2;
-      --color-surface: #f9f8f5;
-      --color-border: #d4d1ca;
-      --color-text: #28251d;
-      --color-text-muted: #7a7974;
-      --color-primary: #01696f;
-      --color-primary-hover: #0c4e54;
-      --color-error: #a12c7b;
+      --color-bg:             #f4f3ef;
+      --color-surface:        #faf9f6;
+      --color-surface-2:      #f0efe9;
+      --color-border:         #d4d1ca;
+      --color-border-subtle:  #e8e6e0;
+      --color-text:           #1e1c18;
+      --color-text-muted:     #7a7974;
+      --color-primary:        #01696f;
+      --color-primary-hover:  #0c4e54;
+      --color-primary-glow:   rgba(1,105,111,.13);
+      --color-error:          #a12c7b;
+      --shadow-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md:  0 4px 16px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+      --shadow-lg:  0 8px 40px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.06);
     }
-
     [data-theme="dark"] {
-      --color-bg: #171614;
-      --color-surface: #1c1b19;
-      --color-border: #393836;
-      --color-text: #cdccca;
-      --color-text-muted: #797876;
-      --color-primary: #4f98a3;
-      --color-primary-hover: #227f8b;
-      --color-error: #d163a7;
+      --color-bg:             #171614;
+      --color-surface:        #1c1b19;
+      --color-surface-2:      #222120;
+      --color-border:         #393836;
+      --color-border-subtle:  #2e2d2b;
+      --color-text:           #dddbd7;
+      --color-text-muted:     #797876;
+      --color-primary:        #4f98a3;
+      --color-primary-hover:  #227f8b;
+      --color-primary-glow:   rgba(79,152,163,.15);
+      --color-error:          #d163a7;
+      --shadow-sm:  0 1px 3px rgba(0,0,0,.2);
+      --shadow-md:  0 4px 16px rgba(0,0,0,.3);
+      --shadow-lg:  0 8px 40px rgba(0,0,0,.5);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       background: var(--color-bg);
@@ -69,134 +56,77 @@
       font-family: 'Satoshi', system-ui, sans-serif;
       transition: background .25s, color .25s;
       min-height: 100vh;
+      line-height: 1.5;
     }
 
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+
+    /* ── Keyframes ──────────────────────────────────────────────────────── */
+    @keyframes spin        { to { transform: rotate(360deg); } }
+    @keyframes fadeInUp    { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes scaleIn     { from { opacity:0; transform:scale(.96); }       to { opacity:1; transform:scale(1); } }
+
+    /* ── Card ───────────────────────────────────────────────────────────── */
     .card {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
-      border-radius: 16px;
+      border-radius: 18px;
+      box-shadow: var(--shadow-sm);
       transition: background .25s, border-color .25s;
     }
 
+    /* ── Buttons ────────────────────────────────────────────────────────── */
     .btn-primary {
       background: var(--color-primary);
       color: #fff;
-      border-radius: 10px;
-      padding: 12px 24px;
-      font-weight: 600;
+      border-radius: 12px;
+      padding: 13px 24px;
+      font-weight: 700;
       font-size: 15px;
+      font-family: inherit;
       cursor: pointer;
       border: none;
-      transition: background .18s, opacity .18s, transform .1s;
+      transition: background .18s, transform .12s, box-shadow .18s;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
+      box-shadow: 0 2px 12px var(--color-primary-glow);
+      letter-spacing: -.1px;
     }
-
     .btn-primary:hover:not(:disabled) {
       background: var(--color-primary-hover);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--color-primary-glow);
     }
-
-    .btn-primary:disabled {
-      opacity: .45;
-      cursor: not-allowed;
-    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
 
     .btn-ghost {
       background: transparent;
       border: 1.5px solid var(--color-border);
       color: var(--color-text);
       border-radius: 10px;
-      padding: 10px 20px;
+      padding: 10px 18px;
       font-weight: 600;
       font-size: 14px;
+      font-family: inherit;
       cursor: pointer;
-      transition: border-color .18s, background .18s;
+      transition: border-color .18s, background .18s, color .18s;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
     }
-
     .btn-ghost:hover {
       border-color: var(--color-primary);
       color: var(--color-primary);
+      background: var(--color-primary-glow);
     }
 
-    /* Drop zone */
-    #drop-zone {
-      border: 2px dashed var(--color-border);
-      border-radius: 14px;
-      transition: border-color .2s, background .2s;
-      cursor: pointer;
-    }
-
-    #drop-zone.drag-over {
-      border-color: var(--color-primary);
-      background: color-mix(in srgb, var(--color-primary) 6%, transparent);
-    }
-
-    #drop-zone:hover {
-      border-color: var(--color-primary);
-    }
-
-    /* Progress bar */
-    @keyframes indeterminate {
-      0% {
-        transform: translateX(-100%) scaleX(.4);
-      }
-
-      50% {
-        transform: translateX(50%) scaleX(.6);
-      }
-
-      100% {
-        transform: translateX(200%) scaleX(.4);
-      }
-    }
-
-    .progress-bar-inner {
-      height: 100%;
-      background: var(--color-primary);
-      border-radius: 4px;
-      animation: indeterminate 1.4s ease-in-out infinite;
-      transform-origin: left;
-    }
-
-    /* Type badge */
-    .type-badge {
-      background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-      color: var(--color-primary);
-      border-radius: 20px;
-      padding: 3px 12px;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    /* Input */
-    .form-input {
-      background: var(--color-bg);
-      border: 1.5px solid var(--color-border);
-      color: var(--color-text);
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 15px;
-      font-family: inherit;
-      width: 100%;
-      outline: none;
-      transition: border-color .18s;
-    }
-
-    .form-input:focus {
-      border-color: var(--color-primary);
-    }
-
-    .form-input::placeholder {
-      color: var(--color-text-muted);
-    }
-
-    /* Toggle */
-    .theme-toggle {
+    .btn-icon {
       background: var(--color-surface);
       border: 1.5px solid var(--color-border);
       border-radius: 50%;
@@ -206,48 +136,98 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: background .2s, border-color .2s;
+      transition: background .18s, border-color .18s, color .18s;
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+      font-family: inherit;
     }
-
-    .theme-toggle:hover {
+    .btn-icon:hover {
       border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-primary-glow);
     }
 
-    /* File preview */
+    /* ── Drop zone ──────────────────────────────────────────────────────── */
+    #drop-zone {
+      border: 2px dashed var(--color-border);
+      border-radius: 16px;
+      transition: border-color .2s, background .2s, transform .15s;
+      cursor: pointer;
+      padding: 52px 24px;
+      text-align: center;
+    }
+    #drop-zone.drag-over {
+      border-color: var(--color-primary);
+      background: var(--color-primary-glow);
+      transform: scale(1.01);
+    }
+    #drop-zone:hover { border-color: var(--color-primary); }
+
+    /* ── File Preview ───────────────────────────────────────────────────── */
     #file-preview {
-      background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+      background: var(--color-primary-glow);
       border: 1.5px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 12px 16px;
       display: flex;
       align-items: center;
       gap: 12px;
+      margin-top: 16px;
     }
 
-    /* Stat card */
-    .stat-card {
+    /* ── Form input ─────────────────────────────────────────────────────── */
+    .form-input {
       background: var(--color-bg);
-      border: 1px solid var(--color-border);
+      border: 1.5px solid var(--color-border);
+      color: var(--color-text);
       border-radius: 10px;
-      padding: 12px 16px;
-      text-align: center;
+      padding: 11px 14px;
+      font-size: 15px;
+      font-family: inherit;
+      width: 100%;
+      outline: none;
+      transition: border-color .18s, box-shadow .18s;
     }
+    .form-input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-primary-glow);
+    }
+    .form-input::placeholder { color: var(--color-text-muted); }
 
-    .stat-card .stat-num {
-      font-size: 28px;
+    /* ── Field label ────────────────────────────────────────────────────── */
+    .field-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
       font-weight: 700;
-      color: var(--color-primary);
-      line-height: 1;
-    }
-
-    .stat-card .stat-label {
-      font-size: 12px;
+      letter-spacing: .5px;
+      margin-bottom: 8px;
       color: var(--color-text-muted);
-      font-weight: 500;
-      margin-top: 4px;
+      text-transform: uppercase;
     }
 
-    /* ── Toast notification ── */
+    /* ── Divider ────────────────────────────────────────────────────────── */
+    .divider { height: 1px; background: var(--color-border-subtle); margin: 18px 0; }
+
+    /* ── Stat cards ─────────────────────────────────────────────────────── */
+    .stat-card {
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: 12px;
+      padding: 14px 10px;
+      text-align: center;
+      transition: background .25s;
+    }
+    .stat-card .stat-num   { font-size: 30px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .stat-card .stat-label { font-size: 11px; color: var(--color-text-muted); font-weight: 600; letter-spacing: .2px; }
+    .stat-card .stat-grade { font-size: 10.5px; margin-top: 3px; }
+    .stat-mc { border-top: 3px solid #3b82f6; }  .stat-mc .stat-num { color: #3b82f6; }
+    .stat-tf { border-top: 3px solid #10b981; }  .stat-tf .stat-num { color: #10b981; }
+    .stat-mt { border-top: 3px solid #f59e0b; }  .stat-mt .stat-num { color: #d97706; }
+    .stat-cl { border-top: 3px solid #8b5cf6; }  .stat-cl .stat-num { color: #8b5cf6; }
+
+    /* ── Toast ──────────────────────────────────────────────────────────── */
     .toast {
       position: fixed;
       bottom: 28px;
@@ -256,13 +236,13 @@
       background: #16a34a;
       color: #fff;
       padding: 12px 20px;
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: 13px;
       font-weight: 600;
       display: flex;
       align-items: center;
       gap: 8px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.35);
+      box-shadow: var(--shadow-lg);
       transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .35s;
       opacity: 0;
       z-index: 9999;
@@ -272,103 +252,136 @@
       text-overflow: ellipsis;
       pointer-events: none;
     }
-    .toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
+    .toast.show  { transform: translateX(-50%) translateY(0); opacity: 1; }
     .toast.error { background: #ef4444; }
 
-    /* ── Format guide ── */
-    .guide-accordion {
-      border: 1.5px solid var(--color-border);
-      border-radius: 14px;
-      overflow: hidden;
-      margin-top: 28px;
-      transition: border-color .2s;
+    /* ── Info note ──────────────────────────────────────────────────────── */
+    .info-note {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--color-text-muted);
+      padding: 8px 12px;
+      background: var(--color-surface-2);
+      border-radius: 8px;
     }
 
-    .guide-header {
+    /* ═══════════════════════════ HELP MODAL ═══════════════════════════ */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: all; }
+
+    .modal-box {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 22px;
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 700px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(14px) scale(.97);
+      transition: transform .28s cubic-bezier(.34,1.2,.64,1), opacity .22s;
+      opacity: 0;
+    }
+    .modal-backdrop.open .modal-box { transform: translateY(0) scale(1); opacity: 1; }
+
+    .modal-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 18px;
-      cursor: pointer;
-      background: var(--color-surface);
-      user-select: none;
-      gap: 12px;
-      transition: background .2s;
-    }
-
-    .guide-header:hover {
-      background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
-    }
-
-    .guide-body {
-      display: none;
-      padding: 0 18px 18px;
-      background: var(--color-surface);
-    }
-
-    .guide-body.open {
-      display: block;
-    }
-
-    .guide-chevron {
-      transition: transform .25s;
+      padding: 22px 24px 0;
       flex-shrink: 0;
     }
-
-    .guide-chevron.open {
-      transform: rotate(180deg);
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -.2px;
     }
 
+    .modal-tabs {
+      display: flex;
+      gap: 2px;
+      padding: 14px 24px 0;
+      border-bottom: 1.5px solid var(--color-border);
+      flex-shrink: 0;
+    }
+    .modal-tab {
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      border-bottom: 2.5px solid transparent;
+      margin-bottom: -1.5px;
+      transition: color .18s, border-color .18s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 0;
+    }
+    .modal-tab:hover { color: var(--color-text); }
+    .modal-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+    .modal-body {
+      padding: 22px 24px 26px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .tab-panel          { display: none; }
+    .tab-panel.active   { display: block; animation: fadeInUp .18s ease; }
+
+    /* ── Guide content ──────────────────────────────────────────────────── */
     .type-block {
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 14px 16px;
       margin-top: 14px;
       border: 1px solid var(--color-border);
+      background: var(--color-bg);
     }
-
     .type-label {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
-      letter-spacing: .4px;
+      letter-spacing: .5px;
       border-radius: 6px;
-      padding: 2px 10px;
-      margin-bottom: 8px;
+      padding: 3px 10px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
     }
-
-    .type-label.mc {
-      background: color-mix(in srgb, #3b82f6 12%, transparent);
-      color: #3b82f6;
-    }
-
-    .type-label.tf {
-      background: color-mix(in srgb, #10b981 12%, transparent);
-      color: #10b981;
-    }
-
-    .type-label.mt {
-      background: color-mix(in srgb, #f59e0b 12%, transparent);
-      color: #d97706;
-    }
-
-    .type-label.cl {
-      background: color-mix(in srgb, #8b5cf6 12%, transparent);
-      color: #8b5cf6;
-    }
-
-    .type-label.ans {
-      background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-      color: var(--color-primary);
-    }
+    .type-label.mc  { background: color-mix(in srgb,#3b82f6 12%,transparent); color: #3b82f6; }
+    .type-label.tf  { background: color-mix(in srgb,#10b981 12%,transparent); color: #10b981; }
+    .type-label.mt  { background: color-mix(in srgb,#f59e0b 12%,transparent); color: #d97706; }
+    .type-label.cl  { background: color-mix(in srgb,#8b5cf6 12%,transparent); color: #8b5cf6; }
+    .type-label.ans { background: color-mix(in srgb,var(--color-primary) 12%,transparent); color: var(--color-primary); }
 
     .code-block {
-      background: var(--color-bg);
-      border: 1px solid var(--color-border);
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border-subtle);
       border-radius: 8px;
       padding: 10px 14px;
       font-family: 'Courier New', monospace;
@@ -378,298 +391,457 @@
       white-space: pre;
       overflow-x: auto;
     }
+    .hl-key   { color: var(--color-primary); font-weight: 700; }
+    .hl-opt   { color: #3b82f6; }
+    .hl-ans   { color: #10b981; }
+    .hl-muted { color: var(--color-text-muted); }
 
-    .hl-key {
-      color: var(--color-primary);
-      font-weight: 700;
+    /* ── Prompt copy button ─────────────────────────────────────────────── */
+    .btn-copy-prompt {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: color-mix(in srgb,#8b5cf6 12%,transparent);
+      color: #8b5cf6;
+      border: 1.5px solid color-mix(in srgb,#8b5cf6 30%,transparent);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background .18s, color .18s, border-color .18s;
+      white-space: nowrap;
+    }
+    .btn-copy-prompt:hover {
+      background: color-mix(in srgb,#8b5cf6 20%,transparent);
     }
 
-    .hl-opt {
-      color: #3b82f6;
-    }
+    
+    /* Editor styling */
+    .editor-card { background: var(--color-surface-2); border: 1px solid var(--color-border-subtle); border-radius: 12px; padding: 14px; }
+    .editor-card input, .editor-card textarea { background: var(--color-bg); border: 1px solid var(--color-border); color: var(--color-text); border-radius: 6px; padding: 6px 10px; width: 100%; font-family: inherit; font-size: 13px; margin-top: 4px; }
+    .editor-card textarea { resize: vertical; min-height: 40px; }
+    .history-item { padding: 16px 24px; border-bottom: 1px solid var(--color-border-subtle); display: flex; align-items: center; justify-content: space-between; transition: background .15s; }
+    .history-item:hover { background: var(--color-surface-2); }
+    .history-item:last-child { border-bottom: none; }
 
-    .hl-ans {
-      color: #10b981;
-    }
-
-    .hl-muted {
-      color: var(--color-text-muted);
+    /* ── Responsive adjustments ─────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      main { padding: 24px 16px 80px !important; }
+      #stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+      .modal-content { width: 95% !important; max-height: 95vh !important; }
+      .modal-body { padding: 16px !important; }
+      .tab-btn { padding: 10px 14px !important; font-size: 13px !important; }
+      
+      /* Make prompt guide stack naturally on small screens */
+      .type-block .code-block { font-size: 11.5px; padding: 12px; }
+      
+      /* Make RESPUESTAS grid single column on small screens */
+      #respuestas-grid { grid-template-columns: 1fr !important; }
     }
   </style>
 </head>
 
 <body>
 
-  <!-- ═══════════════════════════════════════ HEADER ════════════════════════════════════════ -->
-  <header style="border-bottom: 1px solid var(--color-border); background: var(--color-surface);">
-    <div
-      style="max-width: 760px; margin: 0 auto; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <!-- Logo SVG inline -->
-        <div
-          style="width:40px;height:40px;background:var(--color-primary);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
+  <!-- ════════════════════════════════ HEADER ═════════════════════════════ -->
+  <header style="border-bottom:1px solid var(--color-border);background:var(--color-surface);box-shadow:var(--shadow-sm);position:sticky;top:0;z-index:100;transition:background .25s,border-color .25s;">
+    <div style="max-width:680px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
+      <!-- Logo + title -->
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:38px;height:38px;background:var(--color-primary);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px var(--color-primary-glow);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
           </svg>
         </div>
         <div>
-          <h1 style="font-size:17px;font-weight:700;letter-spacing:-.3px;margin:0;">PDF → Moodle XML</h1>
-          <p style="font-size:12px;color:var(--color-text-muted);margin:0;">Conversor de exámenes universitarios</p>
+          <h1 style="font-size:16px;font-weight:800;letter-spacing:-.4px;line-height:1.15;">PDF → Moodle XML</h1>
+          <p style="font-size:11.5px;color:var(--color-text-muted);font-weight:500;">Conversor de exámenes universitarios</p>
         </div>
       </div>
-      <button id="theme-toggle-btn" class="theme-toggle" aria-label="Cambiar tema" title="Cambiar tema claro/oscuro">
-        <i data-lucide="sun" id="icon-sun" style="width:16px;height:16px;color:var(--color-text-muted);"></i>
-        <i data-lucide="moon" id="icon-moon"
-          style="width:16px;height:16px;color:var(--color-text-muted);display:none;"></i>
-      </button>
+      <!-- Actions -->
+      <div style="display:flex;align-items:center;gap:8px;">
+                <!-- History button -->
+        <button id="btn-history" class="btn-icon" aria-label="Historial" title="Historial de conversiones"
+          style="border-radius:10px;width:auto;padding:0 14px;gap:7px;font-size:13px;font-weight:600;color:var(--color-text-muted);">
+          <i data-lucide="clock" style="width:15px;height:15px;"></i>
+          Historial
+        </button>
+        <!-- Help button -->
+        <button id="btn-help" class="btn-icon" aria-label="Abrir guía de uso" title="Guía de uso"
+          style="border-radius:10px;width:auto;padding:0 14px;gap:7px;font-size:13px;font-weight:600;color:var(--color-text-muted);">
+          <i data-lucide="book-open" style="width:15px;height:15px;"></i>
+          Guía
+        </button>
+        <!-- Theme toggle -->
+        <button id="theme-toggle-btn" class="btn-icon" aria-label="Cambiar tema" title="Cambiar tema claro/oscuro">
+          <i data-lucide="sun"  id="icon-sun"  style="width:15px;height:15px;"></i>
+          <i data-lucide="moon" id="icon-moon" style="width:15px;height:15px;display:none;"></i>
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- ═══════════════════════════════════════ MAIN ═════════════════════════════════════════ -->
-  <main style="max-width:760px;margin:0 auto;padding:40px 24px 80px;">
+  <!-- ════════════════════════════════ MAIN ═══════════════════════════════ -->
+  <main style="max-width:680px;margin:0 auto;padding:36px 24px 80px;">
 
     <!-- ── Upload Panel ── -->
     <div id="panel-upload">
 
       <!-- Drop Zone -->
-      <div id="drop-zone" style="padding:48px 24px;text-align:center;" role="button" tabindex="0"
-        aria-label="Zona de carga de archivos">
+      <div id="drop-zone" role="button" tabindex="0" aria-label="Zona de carga de archivos">
         <input type="file" id="file-input" accept=".pdf,.txt" style="display:none;" />
-        <div
-          style="width:56px;height:56px;background:color-mix(in srgb,var(--color-primary) 12%,transparent);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-          <i data-lucide="upload-cloud" style="width:28px;height:28px;color:var(--color-primary);"></i>
+        <div style="width:64px;height:64px;background:var(--color-primary-glow);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;transition:background .25s;">
+          <i data-lucide="upload-cloud" style="width:30px;height:30px;color:var(--color-primary);"></i>
         </div>
-        <p style="font-size:16px;font-weight:600;margin:0 0 6px;">Arrastra tu archivo aquí</p>
-        <p style="font-size:14px;color:var(--color-text-muted);margin:0 0 20px;">o haz clic para seleccionar</p>
-        <span
-          style="background:var(--color-bg);border:1.5px solid var(--color-border);border-radius:8px;padding:5px 14px;font-size:13px;color:var(--color-text-muted);font-weight:500;">.pdf
-          · .txt</span>
+        <p style="font-size:17px;font-weight:800;margin-bottom:6px;letter-spacing:-.2px;">Arrastra tu archivo aquí</p>
+        <p style="font-size:14px;color:var(--color-text-muted);margin-bottom:22px;">o haz clic para seleccionar</p>
+        <span style="background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:8px;padding:5px 16px;font-size:12.5px;color:var(--color-text-muted);font-weight:600;">.pdf &nbsp;·&nbsp; .txt</span>
       </div>
 
       <!-- File Preview -->
-      <div id="file-preview" style="display:none;margin-top:16px;">
-        <div
-          style="width:38px;height:38px;background:var(--color-primary);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <div id="file-preview" style="display:none;">
+        <div style="width:40px;height:40px;background:var(--color-primary);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
           <i id="file-icon" data-lucide="file-text" style="width:18px;height:18px;color:#fff;"></i>
         </div>
         <div style="flex:1;min-width:0;">
-          <p id="file-name"
-            style="font-weight:600;font-size:14px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          </p>
+          <p id="file-name" style="font-weight:700;font-size:14px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></p>
           <p id="file-size" style="font-size:12px;color:var(--color-text-muted);margin:0;"></p>
         </div>
-        <button id="btn-remove-file" class="btn-ghost" style="padding:6px 10px;flex-shrink:0;"
-          aria-label="Quitar archivo">
+        <button id="btn-remove-file" class="btn-ghost" style="padding:6px 10px;flex-shrink:0;" aria-label="Quitar archivo">
           <i data-lucide="x" style="width:15px;height:15px;"></i>
         </button>
       </div>
 
-      <!-- Category Input -->
-      <div style="margin-top:24px;">
-        <label for="category-input"
-          style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;color:var(--color-text-muted);">CATEGORÍA
-          MOODLE</label>
-        <input id="category-input" class="form-input" type="text" placeholder="ej: Parcial-HCI-2026"
-          value="mis-preguntas" />
-      </div>
-
-      <!-- Total Points Input -->
-      <div style="margin-top:16px;">
-        <label for="points-input"
-          style="display:block;font-size:13px;font-weight:600;margin-bottom:8px;color:var(--color-text-muted);">PUNTAJE
-          TOTAL DEL EXAMEN</label>
-        <div style="position:relative;">
-          <input id="points-input" class="form-input" type="number" min="1" step="0.5" value="100"
-            style="padding-right:48px;" />
-          <span
-            style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--color-text-muted);font-weight:600;">pts</span>
+      <!-- Config card -->
+      <div class="card" style="margin-top:20px;padding:20px 22px;">
+        <!-- Category -->
+        <div>
+          <label class="field-label" for="category-input">
+            <i data-lucide="folder" style="width:12px;height:12px;"></i>
+            Categoría Moodle
+          </label>
+          <input id="category-input" class="form-input" type="text"
+            placeholder="ej: Parcial-HCI-2026" value="mis-preguntas" />
         </div>
-        <p id="points-error" style="font-size:12px;color:var(--color-error);margin:6px 0 0;display:none;">⚠ Ingresa un
-          número mayor a 0.</p>
-        <p style="font-size:12px;color:var(--color-text-muted);margin:6px 0 0;">Los puntos se distribuyen: cierto/falso
-          &lt; selección múltiple &lt; emparejamiento = completar</p>
+
+        <div class="divider"></div>
+
+        <!-- Points -->
+        <div>
+          <label class="field-label" for="points-input">
+            <i data-lucide="star" style="width:12px;height:12px;"></i>
+            Puntaje total del examen
+          </label>
+          <div style="position:relative;">
+            <input id="points-input" class="form-input" type="number" min="1" step="0.5" value="100"
+              style="padding-right:48px;" />
+            <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--color-text-muted);font-weight:700;">pts</span>
+          </div>
+          <p id="points-error" style="font-size:12px;color:var(--color-error);margin:6px 0 0;display:none;">⚠ Ingresa un número mayor a 0.</p>
+          <p style="font-size:12px;color:var(--color-text-muted);margin:6px 0 0;line-height:1.55;">
+            Los puntos se distribuyen: cierto/falso &lt; selección múltiple &lt; emparejamiento = completar
+          </p>
+        </div>
       </div>
 
       <!-- Convert Button -->
-      <button id="btn-convert" class="btn-primary" style="width:100%;margin-top:20px;justify-content:center;" disabled>
+      <button id="btn-convert" class="btn-primary" style="width:100%;margin-top:16px;" disabled>
         <i data-lucide="zap" style="width:17px;height:17px;"></i>
         Convertir a Moodle XML
       </button>
 
-      <!-- Info note -->
-      <p style="text-align:center;font-size:13px;color:var(--color-text-muted);margin-top:14px;">
+      <!-- Privacy note -->
+      <div class="info-note" style="margin-top:12px;justify-content:center;">
+        <i data-lucide="shield-check" style="width:13px;height:13px;flex-shrink:0;"></i>
         El procesamiento es local — tu archivo no se sube a ningún servidor externo.
-      </p>
-    </div>
-
-    <!-- ── Format Guide Accordion ── -->
-    <div class="guide-accordion" id="guide-accordion">
-      <div class="guide-header" id="guide-toggle" role="button" tabindex="0" aria-expanded="false">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div
-            style="width:32px;height:32px;background:color-mix(in srgb,var(--color-primary) 12%,transparent);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i data-lucide="book-open" style="width:15px;height:15px;color:var(--color-primary);"></i>
-          </div>
-          <div>
-            <p style="font-weight:700;font-size:14px;margin:0;">¿Cómo debe estar estructurado el archivo?</p>
-            <p style="font-size:12px;color:var(--color-text-muted);margin:0;">Haz clic para ver el formato esperado con
-              ejemplos</p>
-          </div>
-        </div>
-        <i data-lucide="chevron-down" class="guide-chevron" id="guide-chevron"
-          style="width:18px;height:18px;color:var(--color-text-muted);"></i>
-      </div>
-
-      <div class="guide-body" id="guide-body">
-        <p style="font-size:13px;color:var(--color-text-muted);margin:0 0 4px;line-height:1.6;">
-          El archivo debe tener <strong style="color:var(--color-text);">dos partes</strong>: el cuerpo con las
-          preguntas y al final la sección
-          <code style="background:var(--color-bg);padding:1px 6px;border-radius:4px;font-size:12px;">RESPUESTAS</code>.
-          Las preguntas deben numerarse con el formato <code
-            style="background:var(--color-bg);padding:1px 6px;border-radius:4px;font-size:12px;">Pregunta N:</code>.
-        </p>
-
-        <!-- MULTICHOICE -->
-        <div class="type-block">
-          <span class="type-label mc">SELECCIÓN MÚLTIPLE &nbsp;·&nbsp; multichoice</span>
-          <div class="code-block"><span class="hl-key">Pregunta 1:</span>
-            ¿Cuál es el objetivo principal del Diseño Centrado en el Usuario?
-            <span class="hl-opt">A.</span> Reducir costos de desarrollo
-            <span class="hl-opt">B.</span> Satisfacer las necesidades del usuario final
-            <span class="hl-opt">C.</span> Mejorar el rendimiento del servidor
-            <span class="hl-opt">D.</span> Eliminar la documentación técnica
-          </div>
-          <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">Las opciones deben ser
-            <strong>A.</strong> <strong>B.</strong> <strong>C.</strong> <strong>D.</strong> con punto y espacio.</p>
-        </div>
-
-        <!-- TRUEFALSE -->
-        <div class="type-block">
-          <span class="type-label tf">CIERTO / FALSO &nbsp;·&nbsp; truefalse</span>
-          <div class="code-block"><span class="hl-key">Pregunta 19:</span>
-            Afirmación: La usabilidad es sinónimo de experiencia de usuario.</div>
-          <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">Solo lleva el enunciado. Puede empezar
-            con <code style="font-size:11px;">Afirmación:</code> o directamente con la oración.</p>
-        </div>
-
-        <!-- MATCHING -->
-        <div class="type-block">
-          <span class="type-label mt">EMPAREJAMIENTO &nbsp;·&nbsp; matching</span>
-          <div class="code-block"><span class="hl-key">Pregunta 28:</span>
-            Relaciona cada concepto con su definición.
-
-            <span class="hl-opt">Columna A:</span>
-            1. Affordance
-            2. Feedback
-            3. Consistencia
-            4. Visibilidad
-
-            <span class="hl-opt">Columna B:</span>
-            a. Propiedad que indica cómo usar un objeto
-            b. Respuesta del sistema a una acción del usuario
-            c. Uniformidad en elementos similares
-            d. Que las funciones estén siempre a la vista
-          </div>
-          <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">La Columna A usa números (<code
-              style="font-size:11px;">1.</code>) y la Columna B usa letras minúsculas (<code
-              style="font-size:11px;">a.</code>).</p>
-        </div>
-
-        <!-- CLOZE -->
-        <div class="type-block">
-          <span class="type-label cl">COMPLETAR &nbsp;·&nbsp; cloze</span>
-          <div class="code-block"><span class="hl-key">Pregunta 46:</span>
-            El principio que permite al usuario reconocer opciones
-            en vez de recordarlas se llama [<span class="hl-opt">A:</span> reconocimiento / recuerdo / mapeo].
-            Este reduce la carga de [<span class="hl-opt">B:</span> memoria / atención / procesamiento].</div>
-          <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">Los espacios en blanco van entre
-            corchetes: <code style="font-size:11px;">[A: opción correcta / opción2 / opción3]</code>. La primera opción
-            no es necesariamente la correcta — se define en RESPUESTAS.</p>
-        </div>
-
-        <!-- RESPUESTAS -->
-        <div class="type-block" style="border-color:color-mix(in srgb,var(--color-primary) 30%,transparent);">
-          <span class="type-label ans">SECCIÓN RESPUESTAS (obligatoria al final)</span>
-          <div class="code-block"><span class="hl-key">RESPUESTAS</span>
-            <span class="hl-muted">Nº Tipo Respuesta correcta</span>
-            <span class="hl-ans">1 multichoice Satisfacer las necesidades del usuario final</span>
-            <span class="hl-ans">19 truefalse Falso</span>
-            <span class="hl-ans">28 matching 1. Affordance → Propiedad que indica cómo usar un objeto; 2. Feedback →
-              Respuesta del sistema; 3. Consistencia → Uniformidad en elementos similares; 4. Visibilidad → Que las
-              funciones estén siempre a la vista</span>
-            <span class="hl-ans">46 cloze reconocimiento</span>
-          </div>
-          <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div
-              style="font-size:12px;color:var(--color-text-muted);background:var(--color-bg);border-radius:7px;padding:8px 10px;">
-              <strong style="color:var(--color-text);display:block;margin-bottom:3px;">multichoice</strong>
-              Texto completo de la opción correcta.
-            </div>
-            <div
-              style="font-size:12px;color:var(--color-text-muted);background:var(--color-bg);border-radius:7px;padding:8px 10px;">
-              <strong style="color:var(--color-text);display:block;margin-bottom:3px;">truefalse</strong>
-              <code style="font-size:11px;">Verdadero</code> o <code style="font-size:11px;">Falso</code>.
-            </div>
-            <div
-              style="font-size:12px;color:var(--color-text-muted);background:var(--color-bg);border-radius:7px;padding:8px 10px;">
-              <strong style="color:var(--color-text);display:block;margin-bottom:3px;">matching</strong>
-              Pares separados por <code style="font-size:11px;">;</code> con formato <code
-                style="font-size:11px;">N. ColA → ColB</code>.
-            </div>
-            <div
-              style="font-size:12px;color:var(--color-text-muted);background:var(--color-bg);border-radius:7px;padding:8px 10px;">
-              <strong style="color:var(--color-text);display:block;margin-bottom:3px;">cloze</strong>
-              Texto de la opción correcta del primer espacio.
-            </div>
-          </div>
-        </div>
-
-        <p style="font-size:12px;color:var(--color-text-muted);margin:14px 0 0;text-align:center;">
-          💡 El programa detecta automáticamente los tipos — no necesitas rangos fijos.
-        </p>
       </div>
     </div>
 
-    <!-- ── AI Prompt Card (accordion) ── -->
-    <div class="guide-accordion"
-      style="margin-top:16px;border-color:color-mix(in srgb,#8b5cf6 30%,var(--color-border));">
-      <!-- Header (clickable) -->
-      <div class="guide-header" id="prompt-toggle" role="button" tabindex="0" aria-expanded="false"
-        style="border-bottom:1px solid var(--color-border);">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div
-            style="width:32px;height:32px;background:color-mix(in srgb,#8b5cf6 12%,transparent);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i data-lucide="bot" style="width:15px;height:15px;color:#8b5cf6;"></i>
+    <!-- ── Progress Panel ── -->
+    <div id="panel-progress" style="display:none;" class="card">
+      <div style="padding:52px 32px;text-align:center;">
+        <div style="width:64px;height:64px;background:var(--color-primary-glow);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;">
+          <i data-lucide="loader-2" id="spinner-icon"
+            style="width:30px;height:30px;color:var(--color-primary);animation:spin 1s linear infinite;"></i>
+        </div>
+        <p id="progress-title" style="font-weight:800;font-size:18px;margin:0 0 6px;letter-spacing:-.3px;">Procesando archivo…</p>
+        <p id="progress-subtitle" style="font-size:14px;color:var(--color-text-muted);margin:0 0 28px;transition:opacity .2s;">Extrayendo texto del documento...</p>
+        <div style="height:6px;background:var(--color-border-subtle);border-radius:6px;overflow:hidden;">
+          <div id="progress-bar-fill" style="height:100%;width:0%;background:var(--color-primary);border-radius:6px;transition:width .5s ease-out;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Success Panel ── -->
+    <div id="panel-success" style="display:none;" class="card">
+      <div style="padding:28px;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+          <div style="width:50px;height:50px;background:color-mix(in srgb,var(--color-primary) 14%,transparent);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i data-lucide="check-circle-2" style="width:24px;height:24px;color:var(--color-primary);"></i>
           </div>
           <div>
-            <p style="font-weight:700;font-size:14px;margin:0;">¿No lo tienes estructurado así?</p>
-            <p style="font-size:12px;color:var(--color-text-muted);margin:0;">Haz clic para ver el prompt listo para
-              cualquier IA</p>
+            <p style="font-weight:800;font-size:18px;margin:0;letter-spacing:-.3px;">¡Conversión exitosa!</p>
+            <p id="success-subtitle" style="font-size:13px;color:var(--color-text-muted);margin:2px 0 0;"></p>
           </div>
         </div>
-        <i data-lucide="chevron-down" class="guide-chevron" id="prompt-chevron"
-          style="width:18px;height:18px;color:var(--color-text-muted);"></i>
-      </div>
-      <!-- Body (hidden by default) -->
-      <div class="guide-body" id="prompt-body">
-        <p style="font-size:13px;color:var(--color-text-muted);margin:0 0 12px;line-height:1.6;">
-          Adjunta tu examen (PDF o imagen) a la IA, pega el prompt y obtendrás el archivo listo para subir aquí.
-        </p>
-        <!-- Copy button -->
-        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-          <button id="btn-copy-prompt" title="Copiar prompt"
-            style="display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb,#8b5cf6 12%,transparent);color:#8b5cf6;border:1.5px solid color-mix(in srgb,#8b5cf6 30%,transparent);border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:background .18s,color .18s,border-color .18s;white-space:nowrap;">
-            <i data-lucide="copy" id="copy-icon" style="width:13px;height:13px;"></i>
-            <span id="copy-label">Copiar prompt</span>
+
+        <!-- Stats grid -->
+        <div id="stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+          <div class="stat-card stat-mc">
+            <div class="stat-num" id="stat-mc">—</div>
+            <div class="stat-label">Múltiple</div>
+            <div id="grade-mc" class="stat-grade" style="color:#3b82f6;"></div>
+          </div>
+          <div class="stat-card stat-tf">
+            <div class="stat-num" id="stat-tf">—</div>
+            <div class="stat-label">V / F</div>
+            <div id="grade-tf" class="stat-grade" style="color:#10b981;"></div>
+          </div>
+          <div class="stat-card stat-mt">
+            <div class="stat-num" id="stat-mt">—</div>
+            <div class="stat-label">Emparejar</div>
+            <div id="grade-mt" class="stat-grade" style="color:#d97706;"></div>
+          </div>
+          <div class="stat-card stat-cl">
+            <div class="stat-num" id="stat-cl">—</div>
+            <div class="stat-label">Completar</div>
+            <div id="grade-cl" class="stat-grade" style="color:#8b5cf6;"></div>
+          </div>
+        </div>
+
+        <!-- Total points summary -->
+        <div id="points-summary"
+          style="display:none;background:var(--color-primary-glow);border:1.5px solid color-mix(in srgb,var(--color-primary) 20%,transparent);border-radius:10px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:var(--color-text-muted);text-align:center;">
+        </div>
+
+        <!-- Gemini notice -->
+        <div id="gemini-notice"
+          style="display:none;background:color-mix(in srgb,#f59e0b 10%,transparent);border:1.5px solid color-mix(in srgb,#f59e0b 35%,transparent);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#92400e;line-height:1.5;">
+          ⚠️ Tu documento no tenía el formato estándar. Gemini lo reformateó automáticamente antes de convertir.
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button id="btn-download" class="btn-primary" style="flex:1;">
+            <i data-lucide="download" style="width:16px;height:16px;"></i>
+            Descargar XML
+          </button>
+          <button id="btn-reset-success" class="btn-ghost" style="flex:1;">
+            <i data-lucide="refresh-ccw" style="width:15px;height:15px;"></i>
+            Nueva conversión
           </button>
         </div>
-        <pre id="ai-prompt-text"
-          style="margin:0;font-family:'Courier New',monospace;font-size:12.5px;line-height:1.75;color:var(--color-text);white-space:pre-wrap;word-break:break-word;background:var(--color-bg);border:1px solid var(--color-border);border-radius:8px;padding:12px 14px;">Tengo adjunto un examen universitario. Necesito que lo conviertas al siguiente formato de texto plano para poder procesarlo con un programa. Sigue estas reglas EXACTAMENTE:
+      </div>
+    </div>
+
+    
+    <!-- ── Editor Panel ── -->
+    <div id="panel-editor" style="display:none;" class="card">
+      <div style="padding:28px;">
+        <h2 style="margin:0 0 16px;font-size:18px;font-weight:800;letter-spacing:-.3px;">Revisión de Preguntas</h2>
+        <p style="font-size:13px;color:var(--color-text-muted);margin-bottom:24px;">Revisa y edita las opciones o preguntas si notas algún error de lectura.</p>
+        
+        <div id="editor-questions-container" style="display:flex;flex-direction:column;gap:16px;max-height:55vh;overflow-y:auto;padding-right:8px;margin-bottom:24px;"></div>
+        
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button id="btn-generate-xml" class="btn-primary" style="flex:2;">
+            <i data-lucide="check" style="width:16px;height:16px;"></i>
+            Aprobar y Generar XML
+          </button>
+          <button onclick="resetAll()" class="btn-ghost" style="flex:1;">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Error Panel ── -->
+    <div id="panel-error" style="display:none;" class="card">
+      <div style="padding:24px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:20px;">
+          <div style="width:44px;height:44px;background:color-mix(in srgb,var(--color-error) 14%,transparent);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+            <i data-lucide="alert-circle" style="width:20px;height:20px;color:var(--color-error);"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <p style="font-weight:700;font-size:16px;margin:0 0 6px;color:var(--color-error);">Error en la conversión</p>
+            <div id="error-message" style="font-size:14px;color:var(--color-text-muted);margin:0;line-height:1.6;"></div>
+          </div>
+        </div>
+        <!-- OCR hint — now points to the modal -->
+        <div id="error-ocr-hint"
+          style="display:none;background:color-mix(in srgb,#8b5cf6 8%,transparent);border:1.5px solid color-mix(in srgb,#8b5cf6 25%,transparent);border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+          <p style="font-size:13px;font-weight:600;color:#8b5cf6;margin:0 0 4px;display:flex;align-items:center;gap:6px;">
+            <i data-lucide="bot" style="width:14px;height:14px;"></i> ¿Tu PDF es una imagen escaneada?
+          </p>
+          <p style="font-size:12.5px;color:var(--color-text-muted);margin:0;line-height:1.6;">
+            Este programa no puede leer PDFs sin texto digital. Abre la
+            <button onclick="openHelp('prompt')"
+              style="background:none;border:none;padding:0;cursor:pointer;font-family:inherit;font-size:inherit;font-weight:700;color:#8b5cf6;text-decoration:underline;">
+              Guía → Prompt para IA
+            </button>
+            para obtener el prompt y convertir tu examen al formato correcto.
+          </p>
+        </div>
+        <button id="btn-reset-error" class="btn-ghost" style="width:100%;">
+          <i data-lucide="refresh-ccw" style="width:15px;height:15px;"></i>
+          Intentar de nuevo
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- ═══════════════════════════ HELP MODAL ══════════════════════════════ -->
+  <div id="modal-help" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-box">
+
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">
+          <div style="width:32px;height:32px;background:var(--color-primary-glow);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i data-lucide="book-open" style="width:15px;height:15px;color:var(--color-primary);"></i>
+          </div>
+          Guía de uso
+        </div>
+        <button id="btn-close-modal" class="btn-icon" aria-label="Cerrar guía">
+          <i data-lucide="x" style="width:16px;height:16px;"></i>
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="format">
+          <i data-lucide="file-code" style="width:13px;height:13px;"></i>
+          Formato del archivo
+        </button>
+        <button class="modal-tab" data-tab="prompt">
+          <i data-lucide="bot" style="width:13px;height:13px;"></i>
+          Prompt para IA
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+
+        <!-- ── Tab: Format Guide ── -->
+        <div class="tab-panel active" id="modal-panel-format">
+          <p style="font-size:13px;color:var(--color-text-muted);line-height:1.65;margin-bottom:4px;">
+            El archivo debe tener <strong style="color:var(--color-text);">dos partes</strong>: el cuerpo con las preguntas y al final la sección
+            <code style="background:var(--color-surface-2);padding:1px 6px;border-radius:4px;font-size:12px;">RESPUESTAS</code>.
+            Las preguntas deben numerarse con el formato
+            <code style="background:var(--color-surface-2);padding:1px 6px;border-radius:4px;font-size:12px;">Pregunta N:</code>.
+          </p>
+
+          <!-- MULTICHOICE -->
+          <div class="type-block">
+            <span class="type-label mc">Selección múltiple</span>
+            <div class="code-block"><span class="hl-key">Pregunta 1:</span>
+¿Cuál es el objetivo principal del Diseño Centrado en el Usuario?
+<span class="hl-opt">A.</span> Reducir costos de desarrollo
+<span class="hl-opt">B.</span> Satisfacer las necesidades del usuario final
+<span class="hl-opt">C.</span> Mejorar el rendimiento del servidor
+<span class="hl-opt">D.</span> Eliminar la documentación técnica</div>
+            <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">Las opciones deben ser <strong>A.</strong> <strong>B.</strong> <strong>C.</strong> <strong>D.</strong> con punto y espacio.</p>
+          </div>
+
+          <!-- TRUEFALSE -->
+          <div class="type-block">
+            <span class="type-label tf">Cierto / Falso</span>
+            <div class="code-block"><span class="hl-key">Pregunta 19:</span>
+Afirmación: La usabilidad es sinónimo de experiencia de usuario.
+
+<span class="hl-key">Pregunta 20:</span>
+La usabilidad es sinónimo de experiencia de usuario.</div>
+            <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">Puedes escribir el enunciado de varias formas: empezando con <code style="font-size:11px;">Afirmación:</code> o escribiendo la oración directamente, ambas son válidas.</p>
+          </div>
+
+          <!-- MATCHING -->
+          <div class="type-block">
+            <span class="type-label mt">Emparejamiento</span>
+            <div class="code-block"><span class="hl-key">Pregunta 28:</span>
+Relaciona cada concepto con su definición.
+
+<span class="hl-opt">Columna A:</span>
+1. Affordance
+2. Feedback
+3. Consistencia
+4. Visibilidad
+
+<span class="hl-opt">Columna B:</span>
+a. Propiedad que indica cómo usar un objeto
+b. Respuesta del sistema a una acción del usuario
+c. Uniformidad en elementos similares
+d. Que las funciones estén siempre a la vista</div>
+            <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">La Columna A usa números (<code style="font-size:11px;">1.</code>) y la Columna B usa letras minúsculas (<code style="font-size:11px;">a.</code>).</p>
+          </div>
+
+          <!-- CLOZE -->
+          <div class="type-block">
+            <span class="type-label cl">Completar</span>
+            <div class="code-block"><span class="hl-key">Pregunta 46:</span>
+El principio que permite al usuario reconocer opciones
+en vez de recordarlas se llama [<span class="hl-opt">A:</span> reconocimiento / recuerdo / mapeo].
+Este reduce la carga de [<span class="hl-opt">B:</span> memoria / atención / procesamiento].</div>
+            <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">Los espacios van entre corchetes: <code style="font-size:11px;">[A: opción correcta / opción2 / opción3]</code>. La primera opción no es necesariamente la correcta — se define en RESPUESTAS.</p>
+          </div>
+
+          <!-- RESPUESTAS -->
+          <div class="type-block" style="border-color:color-mix(in srgb,var(--color-primary) 30%,transparent);">
+            <span class="type-label ans">Sección RESPUESTAS (obligatoria al final)</span>
+            <div class="code-block"><span class="hl-key">RESPUESTAS</span>
+<span class="hl-muted">Nº Tipo Respuesta correcta</span>
+<span class="hl-ans">1 múltiple Satisfacer las necesidades del usuario final</span>
+<span class="hl-ans">19 ciertofalso Falso</span>
+<span class="hl-ans">28 emparejamiento 1. Affordance → Propiedad que indica cómo usar un objeto; 2. Feedback → Respuesta del sistema; 3. Consistencia → Uniformidad en elementos similares; 4. Visibilidad → Que las funciones estén siempre a la vista</span>
+<span class="hl-ans">46 completar reconocimiento</span></div>
+            <div id="respuestas-grid" style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div style="font-size:12px;color:var(--color-text-muted);background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:7px;padding:8px 10px;">
+                <strong style="color:var(--color-text);display:block;margin-bottom:3px;">múltiple</strong>
+                Texto completo de la opción correcta.
+              </div>
+              <div style="font-size:12px;color:var(--color-text-muted);background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:7px;padding:8px 10px;">
+                <strong style="color:var(--color-text);display:block;margin-bottom:3px;">ciertofalso</strong>
+                <code style="font-size:11px;">Verdadero</code> o <code style="font-size:11px;">Falso</code>.
+              </div>
+              <div style="font-size:12px;color:var(--color-text-muted);background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:7px;padding:8px 10px;">
+                <strong style="color:var(--color-text);display:block;margin-bottom:3px;">emparejamiento</strong>
+                Pares separados por <code style="font-size:11px;">;</code> con formato <code style="font-size:11px;">N. ColA → ColB</code>.
+              </div>
+              <div style="font-size:12px;color:var(--color-text-muted);background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:7px;padding:8px 10px;">
+                <strong style="color:var(--color-text);display:block;margin-bottom:3px;">completar</strong>
+                Texto de la opción correcta del primer espacio.
+              </div>
+            </div>
+          </div>
+
+          <p style="font-size:12px;color:var(--color-text-muted);margin:16px 0 0;text-align:center;">
+            💡 El programa detecta automáticamente los tipos — no necesitas rangos fijos.
+          </p>
+        </div>
+
+        <!-- ── Tab: AI Prompt ── -->
+        <div class="tab-panel" id="modal-panel-prompt">
+          <p style="font-size:13px;color:var(--color-text-muted);margin-bottom:14px;line-height:1.65;">
+            Adjunta tu examen (PDF o imagen) a la IA, pega el prompt y obtendrás el archivo listo para subir aquí.
+          </p>
+          <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+            <button id="btn-copy-prompt" class="btn-copy-prompt" title="Copiar prompt">
+              <i data-lucide="copy" id="copy-icon" style="width:13px;height:13px;"></i>
+              <span id="copy-label">Copiar prompt</span>
+            </button>
+          </div>
+          <pre id="ai-prompt-text"
+            style="margin:0;font-family:'Courier New',monospace;font-size:12.5px;line-height:1.75;color:var(--color-text);white-space:pre-wrap;word-break:break-word;background:var(--color-bg);border:1px solid var(--color-border);border-radius:10px;padding:14px 16px;">Tengo adjunto un examen universitario. Necesito que lo conviertas al siguiente formato de texto plano para poder procesarlo con un programa. Sigue estas reglas EXACTAMENTE:
 
 ── CUERPO DEL EXAMEN ─────────────────────────────────────────
 
@@ -713,177 +885,83 @@ El enunciado con espacios en blanco se escribe así: el concepto de [A: opción 
 
 RESPUESTAS
 Nº  Tipo          Respuesta correcta
-1   multichoice   Escribe aquí el texto EXACTO de la opción correcta (cópialo tal cual de las opciones)
-2   truefalse     Verdadero   ← o Falso
-3   matching      1. ConceptoA → Par de A; 2. ConceptoB → Par de B; 3. ConceptoC → Par de C; 4. ConceptoD → Par de D
-4   cloze         opción correcta del primer espacio
+1   múltiple      Escribe aquí el texto EXACTO de la opción correcta (cópialo tal cual de las opciones)
+2   ciertofalso   Verdadero   ← o Falso
+3   emparejamiento 1. ConceptoA → Par de A; 2. ConceptoB → Par de B; 3. ConceptoC → Par de C; 4. ConceptoD → Par de D
+4   completar     opción correcta del primer espacio
 
 ── REGLAS IMPORTANTES ────────────────────────────────────────
 - El orden de las preguntas debe ser: primero todas las de selección múltiple, luego cierto/falso, luego emparejamiento, luego completar.
-- En la sección RESPUESTAS usa EXACTAMENTE las palabras: multichoice, truefalse, matching, cloze.
-- Para truefalse escribe "Verdadero" o "Falso" (con mayúscula inicial).
-- Para multichoice copia el texto íntegro de la opción correcta tal como aparece en la pregunta.
-- Para matching separa cada par con "; " y usa " → " entre columna A y columna B.
-- Para cloze escribe solo la respuesta del PRIMER espacio en blanco.
+- En la sección RESPUESTAS usa EXACTAMENTE las palabras: múltiple, ciertofalso, emparejamiento, completar.
+- Para ciertofalso escribe "Verdadero" o "Falso" (con mayúscula inicial).
+- Para múltiple copia el texto íntegro de la opción correcta tal como aparece en la pregunta.
+- Para emparejamiento separa cada par con "; " y usa " → " entre columna A y columna B.
+- Para completar escribe solo la respuesta del PRIMER espacio en blanco.
 - No agregues numeración extra, bullets, ni markdown. Solo texto plano.
 - Mantén tildes y caracteres especiales del español (á, é, í, ó, ú, ñ).
 
 Ahora convierte el examen adjunto a este formato.</pre>
-      </div>
-    </div>
-
-    <!-- ── Progress Panel ── -->
-    <div id="panel-progress" style="display:none;margin-top:16px;" class="card">
-      <div style="padding:40px 32px;text-align:center;">
-        <div
-          style="width:52px;height:52px;background:color-mix(in srgb,var(--color-primary) 12%,transparent);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-          <i data-lucide="loader-2" id="spinner-icon"
-            style="width:26px;height:26px;color:var(--color-primary);animation:spin 1s linear infinite;"></i>
-        </div>
-        <p id="progress-title" style="font-weight:600;font-size:16px;margin:0 0 6px;">Procesando archivo…</p>
-        <p id="progress-subtitle" style="font-size:14px;color:var(--color-text-muted);margin:0 0 24px;">Extrayendo texto del documento...</p>
-        <div style="height:6px;background:var(--color-border);border-radius:4px;overflow:hidden;">
-          <div id="progress-bar-fill" style="height:100%;width:0%;background:var(--color-primary);border-radius:4px;transition:width 0.4s ease-out;"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Success Panel ── -->
-    <div id="panel-success" style="display:none;margin-top:16px;" class="card">
-      <div style="padding:32px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-          <div
-            style="width:44px;height:44px;background:color-mix(in srgb,var(--color-primary) 14%,transparent);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i data-lucide="check-circle-2" style="width:22px;height:22px;color:var(--color-primary);"></i>
-          </div>
-          <div>
-            <p style="font-weight:700;font-size:17px;margin:0;">¡Conversión exitosa!</p>
-            <p id="success-subtitle" style="font-size:13px;color:var(--color-text-muted);margin:0;"></p>
-          </div>
         </div>
 
-        <!-- Stats grid -->
-        <div id="stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
-          <div class="stat-card">
-            <div class="stat-num" id="stat-mc">—</div>
-            <div class="stat-label">multichoice</div>
-            <div id="grade-mc" style="font-size:11px;color:var(--color-text-muted);margin-top:2px;"></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num" id="stat-tf">—</div>
-            <div class="stat-label">truefalse</div>
-            <div id="grade-tf" style="font-size:11px;color:var(--color-text-muted);margin-top:2px;"></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num" id="stat-mt">—</div>
-            <div class="stat-label">matching</div>
-            <div id="grade-mt" style="font-size:11px;color:var(--color-text-muted);margin-top:2px;"></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-num" id="stat-cl">—</div>
-            <div class="stat-label">cloze</div>
-            <div id="grade-cl" style="font-size:11px;color:var(--color-text-muted);margin-top:2px;"></div>
-          </div>
-        </div>
+      </div><!-- /modal-body -->
+    </div><!-- /modal-box -->
+  </div><!-- /modal-backdrop -->
 
-        <!-- Total points summary -->
-        <div id="points-summary"
-          style="display:none;background:color-mix(in srgb,var(--color-primary) 8%,transparent);border:1.5px solid color-mix(in srgb,var(--color-primary) 20%,transparent);border-radius:10px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:var(--color-text-muted);text-align:center;">
-        </div>
-
-        <!-- Gemini reformatted notice (shown conditionally) -->
-        <div id="gemini-notice"
-          style="display:none;background:color-mix(in srgb,#f59e0b 10%,transparent);border:1.5px solid color-mix(in srgb,#f59e0b 35%,transparent);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#92400e;line-height:1.5;">
-          ⚠️ Tu documento no tenía el formato estándar. Gemini lo reformateó automáticamente antes de convertir.
-        </div>
-
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <button id="btn-download" class="btn-primary" style="flex:1;justify-content:center;">
-            <i data-lucide="download" style="width:16px;height:16px;"></i>
-            Descargar XML
-          </button>
-          <button id="btn-reset-success" class="btn-ghost" style="flex:1;justify-content:center;">
-            <i data-lucide="refresh-ccw" style="width:15px;height:15px;"></i>
-            Nueva conversión
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Error Panel ── -->
-    <div id="panel-error" style="display:none;margin-top:16px;" class="card">
-      <div style="padding:28px;">
-        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:20px;">
-          <div
-            style="width:40px;height:40px;background:color-mix(in srgb,var(--color-error) 14%,transparent);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
-            <i data-lucide="alert-circle" style="width:20px;height:20px;color:var(--color-error);"></i>
-          </div>
-          <div>
-            <p style="font-weight:700;font-size:16px;margin:0 0 6px;color:var(--color-error);">Error en la conversión
-            </p>
-            <div id="error-message" style="font-size:14px;color:var(--color-text-muted);margin:0;line-height:1.6;"></div>
-          </div>
-        </div>
-        <!-- OCR / empty-PDF hint (shown conditionally) -->
-        <div id="error-ocr-hint"
-          style="display:none;background:color-mix(in srgb,#8b5cf6 8%,transparent);border:1.5px solid color-mix(in srgb,#8b5cf6 25%,transparent);border-radius:10px;padding:12px 14px;margin-bottom:16px;">
-          <p
-            style="font-size:13px;font-weight:600;color:#8b5cf6;margin:0 0 4px;display:flex;align-items:center;gap:6px;">
-            <i data-lucide="bot" style="width:14px;height:14px;"></i> ¿Tu PDF es una imagen escaneada?
-          </p>
-          <p style="font-size:12.5px;color:var(--color-text-muted);margin:0;line-height:1.6;">
-            Este programa no puede leer PDFs sin texto digital. Usa el <strong style="color:var(--color-text);">prompt
-              de IA</strong> que está más abajo para convertir tu examen al formato correcto y luego súbelo como .txt.
-          </p>
-        </div>
-        <button id="btn-reset-error" class="btn-ghost" style="width:100%;justify-content:center;">
-          <i data-lucide="refresh-ccw" style="width:15px;height:15px;"></i>
-          Intentar de nuevo
-        </button>
-      </div>
-    </div>
-
-  </main>
-
-<!-- Toast notification -->
-<div id="toast" class="toast" role="alert" aria-live="polite"></div>
-
-  <style>
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-  </style>
-
+  <!-- ════════════════════════════════ SCRIPTS ═════════════════════════════ -->
   <script>
-    // ── Format guide accordion ──────────────────────────────────────────────
-    const guideToggle = document.getElementById('guide-toggle');
-    const guideBody = document.getElementById('guide-body');
-    const guideChevron = document.getElementById('guide-chevron');
-    function makeAccordion(toggle, body, chevron) {
-      toggle.addEventListener('click', () => {
-        const open = body.classList.toggle('open');
-        chevron.classList.toggle('open', open);
-        toggle.setAttribute('aria-expanded', open);
-      });
-      toggle.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle.click(); }
-      });
+    // ── Init Lucide ──────────────────────────────────────────────────────────
+    lucide.createIcons();
+
+    // ── Theme toggle ─────────────────────────────────────────────────────────
+    function applyTheme(dark) {
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      document.getElementById('icon-sun').style.display  = dark ? 'none'  : 'block';
+      document.getElementById('icon-moon').style.display = dark ? 'block' : 'none';
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
     }
-    makeAccordion(guideToggle, guideBody, guideChevron);
+    (function initTheme() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark));
+    })();
+    document.getElementById('theme-toggle-btn').addEventListener('click', () => {
+      applyTheme(document.documentElement.getAttribute('data-theme') !== 'dark');
+    });
 
-    // ── AI Prompt accordion ──────────────────────────────────────────────────
-    const promptToggle = document.getElementById('prompt-toggle');
-    const promptBody = document.getElementById('prompt-body');
-    const promptChevron = document.getElementById('prompt-chevron');
-    makeAccordion(promptToggle, promptBody, promptChevron);
+    // ── Help Modal ────────────────────────────────────────────────────────────
+    const modalHelp   = document.getElementById('modal-help');
+    const modalTabs   = document.querySelectorAll('.modal-tab');
+    const modalPanels = {
+      format: document.getElementById('modal-panel-format'),
+      prompt: document.getElementById('modal-panel-prompt'),
+    };
 
-    // ── Copy AI prompt ───────────────────────────────────────────────────────
+    function openHelp(tabId) {
+      modalHelp.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      if (tabId) switchTab(tabId);
+      lucide.createIcons();
+    }
+    function closeHelp() {
+      modalHelp.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    function switchTab(tabId) {
+      modalTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
+      Object.entries(modalPanels).forEach(([id, panel]) => panel.classList.toggle('active', id === tabId));
+    }
+
+    document.getElementById('btn-help').addEventListener('click', () => openHelp('format'));
+    document.getElementById('btn-close-modal').addEventListener('click', closeHelp);
+    modalHelp.addEventListener('click', e => { if (e.target === modalHelp) closeHelp(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
+    modalTabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+
+    // ── Copy AI prompt ────────────────────────────────────────────────────────
     const btnCopyPrompt = document.getElementById('btn-copy-prompt');
-    const copyLabel = document.getElementById('copy-label');
-    const copyIcon = document.getElementById('copy-icon');
-    const aiPromptText = document.getElementById('ai-prompt-text');
+    const copyLabel     = document.getElementById('copy-label');
+    const copyIcon      = document.getElementById('copy-icon');
+    const aiPromptText  = document.getElementById('ai-prompt-text');
 
     btnCopyPrompt.addEventListener('click', async () => {
       try {
@@ -891,104 +969,77 @@ Ahora convierte el examen adjunto a este formato.</pre>
         copyLabel.textContent = '¡Copiado!';
         copyIcon.setAttribute('data-lucide', 'check');
         lucide.createIcons();
-        btnCopyPrompt.style.background = 'color-mix(in srgb,#10b981 15%,transparent)';
-        btnCopyPrompt.style.color = '#10b981';
-        btnCopyPrompt.style.borderColor = 'color-mix(in srgb,#10b981 35%,transparent)';
+        btnCopyPrompt.style.background   = 'color-mix(in srgb,#10b981 15%,transparent)';
+        btnCopyPrompt.style.color        = '#10b981';
+        btnCopyPrompt.style.borderColor  = 'color-mix(in srgb,#10b981 35%,transparent)';
         setTimeout(() => {
-          copyLabel.textContent = 'Copiar';
+          copyLabel.textContent = 'Copiar prompt';
           copyIcon.setAttribute('data-lucide', 'copy');
           lucide.createIcons();
-          btnCopyPrompt.style.background = '';
-          btnCopyPrompt.style.color = '';
+          btnCopyPrompt.style.background  = '';
+          btnCopyPrompt.style.color       = '';
           btnCopyPrompt.style.borderColor = '';
         }, 2200);
       } catch (_) {
         copyLabel.textContent = 'Selecciona y copia manualmente';
-        setTimeout(() => { copyLabel.textContent = 'Copiar'; }, 2500);
+        setTimeout(() => { copyLabel.textContent = 'Copiar prompt'; }, 2500);
       }
     });
-  </script>
 
-  <script>
-    // ── State ──────────────────────────────────────────────────────────────
-    let selectedFile = null;
-    let downloadBlob = null;
+    // ── State ─────────────────────────────────────────────────────────────────
+    let selectedFile    = null;
+    let downloadBlob    = null;
     let downloadFilename = '';
 
-    // ── DOM refs ──────────────────────────────────────────────────────────
-    const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    const filePreview = document.getElementById('file-preview');
-    const fileName = document.getElementById('file-name');
-    const fileSize = document.getElementById('file-size');
-    const fileIconEl = document.getElementById('file-icon');
-    const btnRemoveFile = document.getElementById('btn-remove-file');
-    const categoryInput = document.getElementById('category-input');
-    const btnConvert = document.getElementById('btn-convert');
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+    const dropZone       = document.getElementById('drop-zone');
+    const fileInput      = document.getElementById('file-input');
+    const filePreview    = document.getElementById('file-preview');
+    const fileNameEl     = document.getElementById('file-name');
+    const fileSizeEl     = document.getElementById('file-size');
+    const fileIconEl     = document.getElementById('file-icon');
+    const btnRemoveFile  = document.getElementById('btn-remove-file');
+    const categoryInput  = document.getElementById('category-input');
+    const btnConvert     = document.getElementById('btn-convert');
+    const panelUpload    = document.getElementById('panel-upload');
+    const panelProgress  = document.getElementById('panel-progress');
+    const panelSuccess   = document.getElementById('panel-success');
+    const panelError     = document.getElementById('panel-error');
+    const statMc         = document.getElementById('stat-mc');
+    const statTf         = document.getElementById('stat-tf');
+    const statMt         = document.getElementById('stat-mt');
+    const statCl         = document.getElementById('stat-cl');
+    const gradeMc        = document.getElementById('grade-mc');
+    const gradeTf        = document.getElementById('grade-tf');
+    const gradeMt        = document.getElementById('grade-mt');
+    const gradeCl        = document.getElementById('grade-cl');
+    const pointsSummary  = document.getElementById('points-summary');
+    const successSubtitle= document.getElementById('success-subtitle');
+    const errorMessage   = document.getElementById('error-message');
+    const btnDownload    = document.getElementById('btn-download');
+    const btnResetOk     = document.getElementById('btn-reset-success');
+    const btnResetErr    = document.getElementById('btn-reset-error');
+    const pointsInput    = document.getElementById('points-input');
+    const pointsError    = document.getElementById('points-error');
+    const ocrHint        = document.getElementById('error-ocr-hint');
+    const toastEl        = document.getElementById('toast');
 
-    const panelUpload = document.getElementById('panel-upload');
-    const panelProgress = document.getElementById('panel-progress');
-    const panelSuccess = document.getElementById('panel-success');
-    const panelError = document.getElementById('panel-error');
-
-    const statMc = document.getElementById('stat-mc');
-    const statTf = document.getElementById('stat-tf');
-    const statMt = document.getElementById('stat-mt');
-    const statCl = document.getElementById('stat-cl');
-    const gradeMc = document.getElementById('grade-mc');
-    const gradeTf = document.getElementById('grade-tf');
-    const gradeMt = document.getElementById('grade-mt');
-    const gradeCl = document.getElementById('grade-cl');
-    const pointsSummary = document.getElementById('points-summary');
-    const successSubtitle = document.getElementById('success-subtitle');
-    const errorMessage = document.getElementById('error-message');
-    const btnDownload = document.getElementById('btn-download');
-    const btnResetOk = document.getElementById('btn-reset-success');
-    const btnResetErr = document.getElementById('btn-reset-error');
-    const themeBtn = document.getElementById('theme-toggle-btn');
-    const iconSun = document.getElementById('icon-sun');
-    const iconMoon = document.getElementById('icon-moon');
-    const pointsInput = document.getElementById('points-input');
-
-    // ── Init Lucide ────────────────────────────────────────────────────────
-    lucide.createIcons();
-
-    // ── Theme toggle ───────────────────────────────────────────────────────
-    function applyTheme(dark) {
-      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-      iconSun.style.display = dark ? 'none' : 'block';
-      iconMoon.style.display = dark ? 'block' : 'none';
-      localStorage.setItem('theme', dark ? 'dark' : 'light');
-    }
-
-    (function initTheme() {
-      const saved = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      applyTheme(saved === 'dark' || (!saved && prefersDark));
-    })();
-
-    themeBtn.addEventListener('click', () => {
-      applyTheme(document.documentElement.getAttribute('data-theme') !== 'dark');
-    });
-
-    // ── File helpers ───────────────────────────────────────────────────────
+    // ── File helpers ─────────────────────────────────────────────────────────
     function formatBytes(bytes) {
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
       return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
     }
-
     function showFilePreview(file) {
       selectedFile = file;
-      fileName.textContent = file.name;
-      fileSize.textContent = formatBytes(file.size);
+      fileNameEl.textContent = file.name;
+      fileSizeEl.textContent = formatBytes(file.size);
       const isPdf = file.name.toLowerCase().endsWith('.pdf');
       fileIconEl.setAttribute('data-lucide', isPdf ? 'file-text' : 'file');
       lucide.createIcons();
       filePreview.style.display = 'flex';
       btnConvert.disabled = false;
     }
-
     function clearFile() {
       selectedFile = null;
       fileInput.value = '';
@@ -996,14 +1047,14 @@ Ahora convierte el examen adjunto a este formato.</pre>
       btnConvert.disabled = true;
     }
 
-    // ── Panel management ───────────────────────────────────────────────────
+    // ── Panel management ─────────────────────────────────────────────────────
     function showPanel(name) {
-      panelUpload.style.display = name === 'upload' ? 'block' : 'none';
+      panelUpload.style.display   = name === 'upload'   ? 'block' : 'none';
       panelProgress.style.display = name === 'progress' ? 'block' : 'none';
-      panelSuccess.style.display = name === 'success' ? 'block' : 'none';
-      panelError.style.display = name === 'error' ? 'block' : 'none';
+      panelSuccess.style.display  = name === 'success'  ? 'block' : 'none';
+      panelError.style.display    = name === 'error'    ? 'block' : 'none';
+      document.getElementById('panel-editor').style.display = name === 'editor' ? 'block' : 'none';
     }
-
     function resetAll() {
       clearFile();
       downloadBlob = null;
@@ -1011,23 +1062,235 @@ Ahora convierte el examen adjunto a este formato.</pre>
       showPanel('upload');
     }
 
-    // ── Drop zone events ───────────────────────────────────────────────────
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+    
+    // ── Editor Logic ─────────────────────────────────────────────────────────
+    let currentParseResult = null;
+    let currentUploadMetadata = null;
 
-    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    function renderEditor(data) {
+      currentParseResult = data;
+      const container = document.getElementById('editor-questions-container');
+      container.innerHTML = '';
+      
+      data.questions.forEach((q, i) => {
+        const typeInfo = q.type;
+        const keyInfo = data.answer_key[q.num] || { answer: '' };
+        
+        let html = `<div class="editor-card" data-idx="${i}">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <strong style="color:var(--color-primary);font-size:14px;">Pregunta ${q.num}</strong>
+            <span style="font-size:11px;background:var(--color-bg);padding:2px 6px;border-radius:4px;border:1px solid var(--color-border);">${q.type}</span>
+          </div>`;
+          
+        if (q.type === 'multichoice' || q.type === 'truefalse') {
+           html += `<div><label style="font-size:11px;color:var(--color-text-muted);">Enunciado</label><textarea class="q-stem">${q.data.stem || ''}</textarea></div>`;
+        }
+        
+        if (q.type === 'multichoice') {
+           html += `<div style="margin-top:8px;"><label style="font-size:11px;color:var(--color-text-muted);">Opciones (A, B, C...)</label>`;
+           for (const [letter, opt] of Object.entries(q.data.options)) {
+             html += `<div style="display:flex;gap:6px;margin-top:4px;"><span style="font-weight:bold;width:15px;">${letter}</span><input class="q-opt" data-letter="${letter}" value="${opt.replace(/"/g, '&quot;')}"/></div>`;
+           }
+           html += `</div>`;
+        } else if (q.type === 'cloze') {
+           html += `<div><label style="font-size:11px;color:var(--color-text-muted);">Texto Completo</label><textarea class="q-text" style="min-height:80px;">${q.data.text || ''}</textarea></div>`;
+        } else if (q.type === 'matching') {
+           html += `<div><label style="font-size:11px;color:var(--color-text-muted);">Enunciado</label><textarea class="q-stem">${q.data.stem || ''}</textarea></div>`;
+        }
+        
+        html += `<div style="margin-top:10px;"><label style="font-size:11px;color:var(--color-text-muted);">Respuesta Correcta</label>
+            <input class="q-ans" value="${keyInfo.answer.replace(/"/g, '&quot;')}" />
+        </div></div>`;
+        container.innerHTML += html;
+      });
+    }
+
+    function collectEditorData() {
+      const qs = [];
+      const ak = {};
+      const cards = document.querySelectorAll('.editor-card');
+      cards.forEach(card => {
+        const idx = parseInt(card.getAttribute('data-idx'));
+        const originalQ = currentParseResult.questions[idx];
+        const newQ = JSON.parse(JSON.stringify(originalQ)); // clone
+        
+        if (newQ.type === 'multichoice' || newQ.type === 'truefalse') {
+          const stemEl = card.querySelector('.q-stem');
+          if (stemEl) newQ.data.stem = stemEl.value;
+        }
+        if (newQ.type === 'multichoice') {
+           const optEls = card.querySelectorAll('.q-opt');
+           optEls.forEach(optEl => {
+             newQ.data.options[optEl.getAttribute('data-letter')] = optEl.value;
+           });
+        } else if (newQ.type === 'cloze') {
+           const textEl = card.querySelector('.q-text');
+           if (textEl) newQ.data.text = textEl.value;
+        } else if (newQ.type === 'matching') {
+           const stemEl = card.querySelector('.q-stem');
+           if (stemEl) newQ.data.stem = stemEl.value;
+        }
+        qs.push(newQ);
+        
+        const ansEl = card.querySelector('.q-ans');
+        ak[newQ.num] = { type: newQ.type, answer: ansEl.value };
+      });
+      return { questions: qs, answer_key: ak };
+    }
+
+    
+    function updateSuccessStats(stats) {
+        const g = stats.grades || {};
+        const fmt = n => Number(n).toFixed(4).replace(/\.?0+$/, '') + ' pts';
+        const total = (stats.multichoice || 0) + (stats.truefalse || 0) + (stats.matching || 0) + (stats.cloze || 0);
+        
+        document.getElementById('success-subtitle').textContent = `${total} pregunta${total !== 1 ? 's' : ''} procesada${total !== 1 ? 's' : ''} · ${downloadFilename}`;
+        document.getElementById('stat-mc').textContent = stats.multichoice || 0;
+        document.getElementById('stat-tf').textContent = stats.truefalse   || 0;
+        document.getElementById('stat-mt').textContent = stats.matching    || 0;
+        document.getElementById('stat-cl').textContent = stats.cloze       || 0;
+
+        if (g.multichoice !== undefined) {
+          document.getElementById('grade-mc').textContent = fmt(g.multichoice) + '/preg';
+          document.getElementById('grade-tf').textContent = fmt(g.truefalse)   + '/preg';
+          document.getElementById('grade-mt').textContent = fmt(g.matching)    + '/preg';
+          document.getElementById('grade-cl').textContent = fmt(g.cloze)       + '/preg';
+          document.getElementById('points-summary').textContent =
+            `Total: ${stats.total_points} pts  ·  Pesos: cierto/falso ×1 · múltiple ×2 · emparejamiento ×3 · completar ×3`;
+          document.getElementById('points-summary').style.display = 'block';
+        }
+    }
+
+    document.getElementById('btn-generate-xml').addEventListener('click', async () => {
+      const { questions, answer_key } = collectEditorData();
+      
+      const payload = {
+         filename: currentUploadMetadata.filename,
+         category: currentUploadMetadata.category,
+         total_points: currentUploadMetadata.total_points,
+         questions,
+         answer_key
+      };
+      
+      showPanel('progress');
+      document.getElementById('progress-subtitle').textContent = 'Generando archivo XML...';
+      document.getElementById('progress-bar-fill').style.width = '50%';
+      
+      try {
+        const res = await fetch('/api/generate_xml', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(payload)
+        });
+        
+        stopProgress(res.ok);
+        if (!res.ok) {
+          let errMsg = `Error del servidor (${res.status})`;
+          try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
+          showError(errMsg);
+          return;
+        }
+
+        const statsHeader = res.headers.get('X-Question-Stats');
+        if (statsHeader) updateSuccessStats(JSON.parse(statsHeader));
+
+        const disposition = res.headers.get('Content-Disposition');
+        let filename = 'examen_moodle.xml';
+        if (disposition && disposition.indexOf('filename=') !== -1) {
+          const match = disposition.match(/filename="(.+)"/);
+          if (match) filename = match[1];
+        }
+
+        const blob = await res.blob();
+        downloadBlob = blob;
+        downloadFilename = filename;
+
+        document.getElementById('gemini-notice').style.display = currentParseResult.was_reformatted ? 'block' : 'none';
+        showPanel('success');
+        
+        if (window.pywebview) {
+           await window.pywebview.api.save_xml_file(await blob.text(), filename);
+        }
+        
+      } catch (err) {
+        stopProgress(false);
+        showError("Error de red: " + err.message);
+      }
+    });
+
+    // ── History Logic ────────────────────────────────────────────────────────
+    const modalHistory = document.getElementById('modal-history');
+    document.getElementById('btn-history').addEventListener('click', async () => {
+       modalHistory.style.display = 'flex';
+       document.body.style.overflow = 'hidden';
+       const list = document.getElementById('history-list');
+       list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-text-muted);">Cargando...</div>';
+       
+       try {
+         const res = await fetch('/api/history');
+         if (!res.ok) throw new Error('Error al cargar historial');
+         const data = await res.json();
+         if (data.length === 0) {
+            list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-text-muted);">No hay exámenes generados aún.</div>';
+            return;
+         }
+         list.innerHTML = data.map(item => `
+            <div class="history-item">
+              <div>
+                <strong style="display:block;margin-bottom:4px;font-size:14px;">${item.filename}</strong>
+                <span style="font-size:12px;color:var(--color-text-muted);">${item.category} &bull; ${item.total_points} pts &bull; ${new Date(item.created_at).toLocaleString()}</span>
+              </div>
+              <button class="btn-ghost" onclick="downloadHistory(${item.id}, '${item.filename.replace(/'/g, "\'")}')" style="padding:8px 12px;font-size:12px;">
+                <i data-lucide="download" style="width:14px;height:14px;margin-right:6px;"></i>XML
+              </button>
+            </div>
+         `).join('');
+         lucide.createIcons();
+       } catch (err) {
+         list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-error);">Error cargando historial</div>';
+       }
+    });
+    
+    function closeHistory() {
+       modalHistory.style.display = 'none';
+       document.body.style.overflow = '';
+    }
+    
+    async function downloadHistory(id, originalFilename) {
+       try {
+          const res = await fetch(`/api/history/${id}/download`);
+          if (!res.ok) throw new Error('Error en descarga');
+          const blob = await res.blob();
+          const stem = originalFilename.split('.').slice(0, -1).join('.') || originalFilename;
+          const outName = stem + '.xml';
+          
+          if (window.pywebview) {
+             await window.pywebview.api.save_xml_file(await blob.text(), outName);
+          } else {
+             const url = URL.createObjectURL(blob);
+             const a = document.createElement('a');
+             a.href = url;
+             a.download = outName;
+             a.click();
+             URL.revokeObjectURL(url);
+          }
+       } catch (err) {
+          alert("Error descargando el historial: " + err.message);
+       }
+    }
+
+    // ── Drop zone events ─────────────────────────────────────────────────────
+    dropZone.addEventListener('click',    () => fileInput.click());
+    dropZone.addEventListener('keydown',  e  => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+    dropZone.addEventListener('dragover', e  => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave',()  => dropZone.classList.remove('drag-over'));
     dropZone.addEventListener('drop', e => {
       e.preventDefault();
       dropZone.classList.remove('drag-over');
       const file = e.dataTransfer.files[0];
       if (file) handleFileSelected(file);
     });
-
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files[0]) handleFileSelected(fileInput.files[0]);
-    });
-
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFileSelected(fileInput.files[0]); });
     btnRemoveFile.addEventListener('click', e => { e.stopPropagation(); clearFile(); });
 
     function handleFileSelected(file) {
@@ -1040,36 +1303,29 @@ Ahora convierte el examen adjunto a este formato.</pre>
       showFilePreview(file);
     }
 
-    // ── Extra DOM refs for new features ───────────────────────────────────
-    const pointsError = document.getElementById('points-error');
-    const ocrHint = document.getElementById('error-ocr-hint');
-
-    // ── Rec 1: Real-time points validation ────────────────────────────────
+    // ── Points validation ────────────────────────────────────────────────────
     function validatePoints() {
       const val = parseFloat(pointsInput.value);
       const invalid = isNaN(val) || val <= 0;
-      pointsError.style.display = invalid ? 'block' : 'none';
+      pointsError.style.display    = invalid ? 'block' : 'none';
       pointsInput.style.borderColor = invalid ? 'var(--color-error)' : '';
       return !invalid;
     }
     pointsInput.addEventListener('input', validatePoints);
-    pointsInput.addEventListener('blur', validatePoints);
+    pointsInput.addEventListener('blur',  validatePoints);
 
-    // ── Rec 2: Show error with optional OCR hint ───────────────────────────
+    // ── Error display ────────────────────────────────────────────────────────
     function showError(msg) {
       showPanel('error');
       errorMessage.innerHTML = '';
-      
       let ocrCheckText = '';
-      
       if (typeof msg === 'object' && msg !== null && msg.errors) {
         const titleEl = document.createElement('p');
-        titleEl.className = 'font-bold mb-2 text-[#a12c7b] dark:text-[#d163a7]';
+        titleEl.style.cssText = 'font-weight:700;margin-bottom:8px;';
         titleEl.textContent = msg.message || 'Se detectaron errores en el examen:';
         errorMessage.appendChild(titleEl);
-        
         const ulEl = document.createElement('ul');
-        ulEl.className = 'list-disc pl-5 space-y-1.5 text-sm';
+        ulEl.style.cssText = 'padding-left:18px;display:flex;flex-direction:column;gap:4px;';
         msg.errors.forEach(err => {
           const liEl = document.createElement('li');
           liEl.textContent = err;
@@ -1081,68 +1337,48 @@ Ahora convierte el examen adjunto a este formato.</pre>
         errorMessage.textContent = String(msg);
         ocrCheckText = String(msg);
       }
-      
-      // Keywords that indicate the PDF has no extractable text
       const isOcrIssue = /escaneado|texto legible|sin texto|no contiene texto/i.test(ocrCheckText);
       ocrHint.style.display = isOcrIssue ? 'block' : 'none';
       if (isOcrIssue) lucide.createIcons();
     }
 
-    // ── Conversion ─────────────────────────────────────────────────────────
+    // ── Progress ─────────────────────────────────────────────────────────────
     let progressInterval;
-    
     function startProgress() {
       const pSubtitle = document.getElementById('progress-subtitle');
-      const pFill = document.getElementById('progress-bar-fill');
+      const pFill     = document.getElementById('progress-bar-fill');
       let elapsed = 0;
-      
-      // Sequence of messages
       const sequence = [
-        { time: 0, text: "Extrayendo texto del documento..." },
-        { time: 3, text: "Analizando la estructura del examen..." },
-        { time: 8, text: "Reformateando contenido (esto puede tomar unos 30s)..." },
-        { time: 18, text: "Revisando consistencia de las preguntas..." },
-        { time: 30, text: "El servicio está un poco lento, reintentando conexión..." },
+        { time: 0,  text: 'Extrayendo texto del documento...' },
+        { time: 3,  text: 'Analizando la estructura del examen...' },
+        { time: 8,  text: 'Reformateando contenido (esto puede tomar unos 30s)...' },
+        { time: 18, text: 'Revisando consistencia de las preguntas...' },
+        { time: 30, text: 'El servicio está un poco lento, reintentando conexión...' },
       ];
-
-      pFill.style.width = '0%';
-      pSubtitle.textContent = sequence[0].text;
-
+      pFill.style.width      = '0%';
+      pSubtitle.textContent  = sequence[0].text;
       progressInterval = setInterval(() => {
         elapsed += 1;
-        
-        // Faux progress bar: fast to 40%, slower to 90%, very slow to 98%
         let pct = 0;
-        if (elapsed <= 10) pct = (elapsed / 10) * 40; // 0-40% in 10s
-        else if (elapsed <= 30) pct = 40 + ((elapsed - 10) / 20) * 50; // 40-90% in next 20s
-        else pct = 90 + Math.min((elapsed - 30) * 0.2, 8); // slowly up to 98%
-
+        if      (elapsed <= 10) pct = (elapsed / 10) * 40;
+        else if (elapsed <= 30) pct = 40 + ((elapsed - 10) / 20) * 50;
+        else                    pct = 90 + Math.min((elapsed - 30) * 0.2, 8);
         pFill.style.width = `${pct}%`;
-
-        // Update text
         const currentStage = sequence.slice().reverse().find(s => elapsed >= s.time);
         if (currentStage && pSubtitle.textContent !== currentStage.text) {
           pSubtitle.style.opacity = 0;
-          setTimeout(() => {
-            pSubtitle.textContent = currentStage.text;
-            pSubtitle.style.opacity = 1;
-          }, 200);
+          setTimeout(() => { pSubtitle.textContent = currentStage.text; pSubtitle.style.opacity = 1; }, 200);
         }
       }, 1000);
     }
-
     function stopProgress(success) {
       clearInterval(progressInterval);
-      const pFill = document.getElementById('progress-bar-fill');
-      if (success) {
-        pFill.style.width = '100%';
-      }
+      if (success) document.getElementById('progress-bar-fill').style.width = '100%';
     }
 
+    // ── Convert ───────────────────────────────────────────────────────────────
     btnConvert.addEventListener('click', async () => {
       if (!selectedFile) return;
-
-      // Rec 1: Validate points BEFORE sending
       if (!validatePoints()) {
         pointsInput.focus();
         pointsInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1154,93 +1390,54 @@ Ahora convierte el examen adjunto a este formato.</pre>
 
       const formData = new FormData();
       formData.append('file', selectedFile);
-      formData.append('category', categoryInput.value.trim() || 'mis-preguntas');
-      formData.append('total_points', parseFloat(pointsInput.value));
 
       try {
-        const res = await fetch('/convert', {
-          method: 'POST',
-          body: formData,
-        });
-
+        const res = await fetch('/api/parse', { method: 'POST', body: formData });
         stopProgress(res.ok);
 
         if (!res.ok) {
           let errMsg = `Error del servidor (${res.status})`;
-          try {
-            const json = await res.json();
-            errMsg = json.detail || errMsg;
-          } catch (_) { }
+          try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
           showError(errMsg);
           return;
         }
 
-        // Parse stats header
-        const statsRaw = res.headers.get('X-Question-Stats');
-        let stats = { multichoice: 0, truefalse: 0, matching: 0, cloze: 0, total_points: 100, grades: {} };
-        if (statsRaw) {
-          try { stats = JSON.parse(statsRaw); } catch (_) { }
-        }
-        const g = stats.grades || {};
-        const fmt = n => Number(n).toFixed(4).replace(/\.?0+$/, '') + ' pts';
-
-        // Get filename from Content-Disposition
-        const cd = res.headers.get('Content-Disposition') || '';
-        const fnMatch = cd.match(/filename="?([^"]+)"?/);
-        downloadFilename = fnMatch ? fnMatch[1] : 'output.xml';
-
-        downloadBlob = await res.blob();
-
-        // Populate success panel
-        const total = (stats.multichoice || 0) + (stats.truefalse || 0) + (stats.matching || 0) + (stats.cloze || 0);
-        successSubtitle.textContent = `${total} pregunta${total !== 1 ? 's' : ''} procesada${total !== 1 ? 's' : ''} · ${downloadFilename}`;
-        statMc.textContent = stats.multichoice || 0;
-        statTf.textContent = stats.truefalse || 0;
-        statMt.textContent = stats.matching || 0;
-        statCl.textContent = stats.cloze || 0;
-
-        if (g.multichoice !== undefined) {
-          gradeMc.textContent = fmt(g.multichoice) + '/preg';
-          gradeTf.textContent = fmt(g.truefalse) + '/preg';
-          gradeMt.textContent = fmt(g.matching) + '/preg';
-          gradeCl.textContent = fmt(g.cloze) + '/preg';
-          pointsSummary.textContent =
-            `Total: ${stats.total_points} pts  ·  Pesos: cierto/falso ×1 · múltiple ×2 · emparejamiento ×3 · completar ×3`;
-          pointsSummary.style.display = 'block';
-        }
-
-        // Gemini reformatted notice
-        const wasReformatted = res.headers.get('X-Was-Reformatted');
-        const geminiNotice = document.getElementById('gemini-notice');
-        geminiNotice.style.display = wasReformatted === 'true' ? 'block' : 'none';
-
-        showPanel('success');
+        const parsedData = await res.json();
+        currentUploadMetadata = {
+           filename: selectedFile.name,
+           category: categoryInput.value.trim() || 'mis-preguntas',
+           total_points: parseFloat(pointsInput.value)
+        };
+        
+        renderEditor(parsedData);
+        showPanel('editor');
+        lucide.createIcons();
 
       } catch (err) {
-        showError(`No se pudo conectar con el servidor. Verifica que el programa esté ejecutándose correctamente. Detalle: ${err.message}`);
+        stopProgress(false);
+        showError("No se pudo conectar con el servidor. Verifica que el programa esté ejecutándose correctamente. Detalle: " + err.message);
       }
     });
-
-    // ── Toast helper ───────────────────────────────────────────────────────
-    const toastEl = document.getElementById('toast');
+    
+    // ── Toast ─────────────────────────────────────────────────────────────────
     let toastTimer = null;
     function showToast(msg, type = 'success') {
       toastEl.textContent = (type === 'success' ? '✓ ' : '⚠ ') + msg;
-      toastEl.className = 'toast' + (type === 'error' ? ' error' : '');
-      void toastEl.offsetWidth; // force reflow para reiniciar transición
+      toastEl.className   = 'toast' + (type === 'error' ? ' error' : '');
+      void toastEl.offsetWidth;
       toastEl.classList.add('show');
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => { toastEl.classList.remove('show'); }, 4000);
     }
 
-    // ── Download: diálogo nativo en desktop, blob en navegador ────────────
+    // ── Download ──────────────────────────────────────────────────────────────
     function _btnDownloadFeedback() {
       btnDownload.style.background = '#16a34a';
-      btnDownload.innerHTML = '<i data-lucide="check-circle-2"></i> ¡Guardado!';
+      btnDownload.innerHTML = '<i data-lucide="check-circle-2" style="width:16px;height:16px;"></i> ¡Guardado!';
       lucide.createIcons();
       setTimeout(() => {
         btnDownload.style.background = '';
-        btnDownload.innerHTML = '<i data-lucide="download"></i> Descargar XML';
+        btnDownload.innerHTML = '<i data-lucide="download" style="width:16px;height:16px;"></i> Descargar XML';
         lucide.createIcons();
       }, 2500);
     }
@@ -1248,7 +1445,6 @@ Ahora convierte el examen adjunto a este formato.</pre>
     btnDownload.addEventListener('click', async () => {
       if (!downloadBlob) return;
 
-      // Modo escritorio (PyWebView): diálogo nativo Guardar Como
       if (window.pywebview && window.pywebview.api) {
         const reader = new FileReader();
         reader.onloadend = async () => {
@@ -1257,14 +1453,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
             const result = await window.pywebview.api.save_xml_file(downloadFilename, b64);
             if (result && result.saved) {
               _btnDownloadFeedback();
-              const shortPath = result.path.length > 60
-                ? '...' + result.path.slice(-57)
-                : result.path;
+              const shortPath = result.path.length > 60 ? '...' + result.path.slice(-57) : result.path;
               showToast('Guardado en: ' + shortPath, 'success');
             } else if (result && result.error) {
               showToast('Error al guardar: ' + result.error, 'error');
             }
-            // saved=false sin error = usuario canceló el diálogo → no hacer nada
           } catch (e) {
             showToast('Error inesperado al guardar: ' + (e.message || e.toString()), 'error');
           }
@@ -1273,21 +1466,17 @@ Ahora convierte el examen adjunto a este formato.</pre>
         return;
       }
 
-      // Modo navegador (desarrollo): descarga directa por blob URL
       const url = URL.createObjectURL(downloadBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = downloadFilename;
-      a.click();
+      const a   = document.createElement('a');
+      a.href = url; a.download = downloadFilename; a.click();
       URL.revokeObjectURL(url);
       _btnDownloadFeedback();
       showToast('¡Archivo descargado!', 'success');
     });
 
-    // ── Reset buttons ──────────────────────────────────────────────────────
-    btnResetOk.addEventListener('click', resetAll);
+    // ── Reset ─────────────────────────────────────────────────────────────────
+    btnResetOk.addEventListener('click',  resetAll);
     btnResetErr.addEventListener('click', resetAll);
   </script>
 </body>
-
 </html>

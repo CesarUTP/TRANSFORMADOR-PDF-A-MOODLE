@@ -13,7 +13,7 @@ GEMINI_API_KEY: str = os.environ.get(
     "GEMINI_API_KEY",
     "AIzaSyD-O2eEgokFLV-XZmcmH7-hBmsLRdfWOXE",  # fallback dev-only
 )
-GEMINI_MODEL_NAME: str = "gemini-2.0-flash-lite"
+GEMINI_MODEL_NAME: str = "gemini-3.1-flash-lite"
 GEMINI_MAX_RETRIES: int = 3
 GEMINI_RETRY_WAIT_SECONDS: int = 10
 
