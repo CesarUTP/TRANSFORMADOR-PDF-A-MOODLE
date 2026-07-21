@@ -64,9 +64,7 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
     """
     Convert [A: correct_option / option2 / option3] brackets to
     Moodle {1:MULTICHOICE:=correct~opt2~opt3} syntax.
-
-    Convention (enforced by the Gemini prompt):
-        The FIRST option in each bracket is always the correct answer.
+    Handles multiple embedded gaps (A, B, C...) dynamically.
     """
     def strip_accents(s: str) -> str:
         return (s.replace('á', 'a').replace('é', 'e').replace('í', 'i')
@@ -75,25 +73,48 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
                  .replace('Ó', 'O').replace('Ú', 'U')
                  .replace('ñ', 'n').replace('Ñ', 'N'))
 
+    key_info = answer_key.get(q_num, {})
+    raw_key_ans = str(key_info.get("answer", ""))
+
+    # Parse slot answers if present (e.g., "A. respuesta A; B. respuesta B" or "A: respuesta A; B: respuesta B")
+    slot_answers: Dict[str, str] = {}
+    for m in re.finditer(r'([A-Za-z])[\.:]\s*([^;\n]+)', raw_key_ans):
+        slot_answers[m.group(1).upper()] = m.group(2).strip()
+
     def replace_bracket(match):
         inner = match.group(1).strip()
         parts = re.split(r':\s*', inner, maxsplit=1)
         if len(parts) != 2:
             return match.group(0)
 
-        letter = parts[0].strip()
+        letter = parts[0].strip().upper()
         options_raw = parts[1].strip()
         options = [o.strip() for o in options_raw.split('/') if o.strip()]
 
         if not options:
             return match.group(0)
 
-        # First option is always correct (enforced by Gemini prompt)
+        # Determine which option is correct for this slot
+        correct_idx = 0  # default to first option
+        target_ans = slot_answers.get(letter, "").strip()
+
+        if target_ans:
+            for idx, opt in enumerate(options):
+                if target_ans.lower() == opt.lower() or target_ans.lower() in opt.lower() or opt.lower() in target_ans.lower():
+                    correct_idx = idx
+                    break
+        elif raw_key_ans:
+            # Fallback: check if raw_key_ans matches any option in this bracket
+            for idx, opt in enumerate(options):
+                if opt.lower() in raw_key_ans.lower() or raw_key_ans.lower() in opt.lower():
+                    correct_idx = idx
+                    break
+
         moodle_options = [
-            f"={strip_accents(opt)}" if i == 0 else strip_accents(opt)
+            f"={strip_accents(opt)}" if i == correct_idx else strip_accents(opt)
             for i, opt in enumerate(options)
         ]
-        slot_num = str(ord(letter.upper()) - ord('A') + 1)
+        slot_num = str(ord(letter) - ord('A') + 1) if 'A' <= letter <= 'Z' else "1"
         return f"{{{slot_num}:MULTICHOICE:{'~'.join(moodle_options)}}}"
 
     return re.sub(r'\[([A-Za-z]:\s*[^\]]+)\]', replace_bracket, cloze_text)
@@ -149,10 +170,17 @@ def build_xml(
             options: Dict[str, str] = data["options"]
 
             correct_letter = None
-            for letter, opt_text in options.items():
-                if correct_answer and correct_answer.lower() in opt_text.lower():
-                    correct_letter = letter
-                    break
+            if correct_answer:
+                ca_clean = correct_answer.strip().lower()
+                for letter, opt_text in options.items():
+                    opt_clean = opt_text.strip().lower()
+                    if (ca_clean == letter.lower() or
+                        ca_clean == opt_clean or
+                        ca_clean in opt_clean or
+                        opt_clean in ca_clean):
+                        correct_letter = letter
+                        break
+
             if correct_letter is None:
                 correct_letter = "A"
                 logger.warning(
@@ -188,7 +216,7 @@ def build_xml(
         # Spec: exactly 2 <answer> tags (true + false), fraction 100/0
         elif qtype == "truefalse":
             stem = data["stem"]
-            is_true = correct_answer.lower() == "verdadero"
+            is_true = correct_answer.strip().lower() in ("verdadero", "true", "v")
 
             xml_parts.append('  <question type="truefalse">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
@@ -223,19 +251,28 @@ def build_xml(
         # ── matching ──
         # Spec: <subquestion> with <text> + <answer><text>, <shuffleanswers>
         elif qtype == "matching":
-            col_a: Dict[str, str] = data["col_a"]
-            col_b: Dict[str, str] = data["col_b"]
+            col_a: Dict[str, str] = data.get("col_a", {})
+            col_b: Dict[str, str] = data.get("col_b", {})
 
             pairs_ordered: list[tuple[str, str]] = []
 
-            # Build ordered pairs directly from answer key
-            # Format: "1. ElementoA → DescB; 2. ElementoB → DescC"
-            key_pairs = re.findall(
-                r'\d+\.\s*([^→;\n]+?)\s*→\s*([^;\n]+?)(?=;\s*\d+\.|\s*$)',
-                correct_answer,
-            )
+            # Priority 1: Use col_a & col_b directly from data (reflects live user edits in UI)
+            if col_a and col_b:
+                a_keys = sorted(col_a.keys(), key=lambda x: int(x) if str(x).isdigit() else str(x))
+                b_keys = sorted(col_b.keys())
+                for idx, a_k in enumerate(a_keys):
+                    a_val = col_a[a_k].strip()
+                    b_k = b_keys[idx] if idx < len(b_keys) else None
+                    b_val = col_b[b_k].strip() if b_k else ""
+                    if a_val or b_val:
+                        pairs_ordered.append((a_val, b_val))
 
-            if key_pairs:
+            # Priority 2: Fallback to parsing key_pairs from correct_answer string
+            if not pairs_ordered and correct_answer:
+                key_pairs = re.findall(
+                    r'\d+\.\s*([^→;\n]+?)\s*→\s*([^;\n]+?)(?=;\s*\d+\.|\s*$)',
+                    correct_answer,
+                )
                 for a_text, b_text in key_pairs:
                     pairs_ordered.append((a_text.strip(), b_text.strip()))
             else:

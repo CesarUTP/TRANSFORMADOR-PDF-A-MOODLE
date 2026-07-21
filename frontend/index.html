@@ -1,847 +1,1014 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="light">
+<html lang="es" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF → Moodle XML | Conversor de Exámenes</title>
+  <title>PDF → Moodle XML | Conversor de Exámenes de Alta Precision</title>
   <meta name="description"
-    content="Convierte exámenes PDF o TXT al formato Moodle XML Question Format de forma automática, sin IA ni OCR." />
+    content="Plataforma de ingeniería de evaluación académica para convertir exámenes en PDF o TXT al formato Moodle XML con validación estructural e IA." />
 
-  <!-- Fonts -->
-  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,800&display=swap" rel="stylesheet" />
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
   <style>
-    /* ── CSS Variables ──────────────────────────────────────────────────── */
+    /* ── DESIGN SYSTEM & TOKENS (Impeccable & Design Tokens) ──────────────── */
     :root {
-      --color-bg:             #f4f3ef;
-      --color-surface:        #faf9f6;
-      --color-surface-2:      #f0efe9;
-      --color-border:         #d4d1ca;
-      --color-border-subtle:  #e8e6e0;
-      --color-text:           #1e1c18;
-      --color-text-muted:     #7a7974;
-      --color-primary:        #01696f;
-      --color-primary-hover:  #0c4e54;
-      --color-primary-glow:   rgba(1,105,111,.13);
-      --color-error:          #a12c7b;
-      --shadow-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-      --shadow-md:  0 4px 16px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
-      --shadow-lg:  0 8px 40px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.06);
-    }
-    [data-theme="dark"] {
-      --color-bg:             #171614;
-      --color-surface:        #1c1b19;
-      --color-surface-2:      #222120;
-      --color-border:         #393836;
-      --color-border-subtle:  #2e2d2b;
-      --color-text:           #dddbd7;
-      --color-text-muted:     #797876;
-      --color-primary:        #4f98a3;
-      --color-primary-hover:  #227f8b;
-      --color-primary-glow:   rgba(79,152,163,.15);
-      --color-error:          #d163a7;
-      --shadow-sm:  0 1px 3px rgba(0,0,0,.2);
-      --shadow-md:  0 4px 16px rgba(0,0,0,.3);
-      --shadow-lg:  0 8px 40px rgba(0,0,0,.5);
+      /* Color Palette — Dark Mode Default (Rich Deep Slate & Electric Cyan) */
+      --color-bg:             #090d16;
+      --color-bg-alt:         #0f172a;
+      --color-surface:        #131c31;
+      --color-surface-hover:  #1e293b;
+      --color-surface-card:   rgba(19, 28, 49, 0.75);
+      --color-surface-modal:  rgba(15, 23, 42, 0.88);
+      --color-border:         rgba(255, 255, 255, 0.12);
+      --color-border-subtle:  rgba(255, 255, 255, 0.06);
+      --color-border-glow:    rgba(56, 189, 248, 0.35);
+      
+      --color-text:           #f8fafc;
+      --color-text-muted:     #94a3b8;
+      --color-text-subtle:    #64748b;
+      
+      --color-primary:        #0284c7;
+      --color-primary-hover:  #0369a1;
+      --color-primary-glow:   rgba(2, 132, 199, 0.25);
+      
+      --color-accent:         #38bdf8;
+      --color-accent-gradient: linear-gradient(135deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
+      --color-accent-glow:   rgba(56, 189, 248, 0.2);
+      
+      --color-success:        #10b981;
+      --color-success-bg:     rgba(16, 185, 129, 0.12);
+      --color-warning:        #f59e0b;
+      --color-warning-bg:     rgba(245, 158, 11, 0.12);
+      --color-error:          #f43f5e;
+      --color-error-bg:       rgba(244, 63, 94, 0.12);
+
+      --color-mc:             #38bdf8;
+      --color-tf:             #34d399;
+      --color-mt:             #fbbf24;
+      --color-cl:             #a78bfa;
+
+      /* Radii */
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --radius-full: 9999px;
+
+      /* Shadows */
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.45);
+      --shadow-glow: 0 0 30px rgba(56, 189, 248, 0.25);
+
+      /* Typography */
+      --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-heading: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
     }
 
+    [data-theme="light"] {
+      --color-bg:             #f1f5f9;
+      --color-bg-alt:         #e2e8f0;
+      --color-surface:        #ffffff;
+      --color-surface-hover:  #f8fafc;
+      --color-surface-card:   rgba(255, 255, 255, 0.85);
+      --color-surface-modal:  rgba(255, 255, 255, 0.94);
+      --color-border:         #cbd5e1;
+      --color-border-subtle:  #e2e8f0;
+      --color-border-glow:    rgba(2, 132, 199, 0.3);
+      
+      --color-text:           #0f172a;
+      --color-text-muted:     #475569;
+      --color-text-subtle:    #64748b;
+      
+      --color-primary:        #0284c7;
+      --color-primary-hover:  #0369a1;
+      --color-primary-glow:   rgba(2, 132, 199, 0.15);
+      
+      --color-accent:         #0284c7;
+      --color-accent-gradient: linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #4f46e5 100%);
+      --color-accent-glow:   rgba(2, 132, 199, 0.15);
+      
+      --color-success:        #059669;
+      --color-success-bg:     #ecfdf5;
+      --color-warning:        #d97706;
+      --color-warning-bg:     #fffbeb;
+      --color-error:          #e11d48;
+      --color-error-bg:       #fff1f2;
+
+      --color-mc:             #0284c7;
+      --color-tf:             #059669;
+      --color-mt:             #d97706;
+      --color-cl:             #7c3aed;
+
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+      --shadow-glow: 0 0 25px rgba(2, 132, 199, 0.18);
+    }
+
+    /* ── BASE STYLES & RESET ─────────────────────────────────────────────── */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
+    
     body {
       background: var(--color-bg);
+      background-image: 
+        radial-gradient(at 0% 0%, var(--color-primary-glow) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, var(--color-accent-glow) 0px, transparent 50%);
+      background-attachment: fixed;
       color: var(--color-text);
-      font-family: 'Satoshi', system-ui, sans-serif;
-      transition: background .25s, color .25s;
+      font-family: var(--font-body);
       min-height: 100vh;
-      line-height: 1.5;
+      line-height: 1.6;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      -webkit-font-smoothing: antialiased;
     }
 
-    ::-webkit-scrollbar { width: 6px; }
+    /* Focus visible for accessibility (WCAG AA) */
+    :focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 3px;
+      border-radius: var(--radius-sm);
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--color-text-subtle); }
 
-    /* ── Keyframes ──────────────────────────────────────────────────────── */
-    @keyframes spin        { to { transform: rotate(360deg); } }
-    @keyframes fadeInUp    { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes scaleIn     { from { opacity:0; transform:scale(.96); }       to { opacity:1; transform:scale(1); } }
-
-    /* ── Card ───────────────────────────────────────────────────────────── */
-    .card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: 18px;
-      box-shadow: var(--shadow-sm);
-      transition: background .25s, border-color .25s;
+    /* ── KEYFRAMES & ANIMATIONS (Emil Design Eng) ────────────────────────── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleUp {
+      from { opacity: 0; transform: scale(0.96); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes spinSlow {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulseRing {
+      0%   { transform: scale(0.95); box-shadow: 0 0 0 0 var(--color-accent-glow); }
+      70%  { transform: scale(1); box-shadow: 0 0 0 16px rgba(56, 189, 248, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
     }
 
-    /* ── Buttons ────────────────────────────────────────────────────────── */
-    .btn-primary {
-      background: var(--color-primary);
-      color: #fff;
-      border-radius: 12px;
-      padding: 13px 24px;
+    .animate-fadeIn { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .animate-scaleUp { animation: scaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    /* ── CONTAINER & CARDS ───────────────────────────────────────────────── */
+    .app-header {
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: border-color 0.3s;
+    }
+    .header-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo-badge {
+      width: 44px;
+      height: 44px;
+      background: var(--color-accent-gradient);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-glow);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .logo-badge:hover { transform: scale(1.05) rotate(-3deg); }
+
+    .brand-title {
+      font-family: var(--font-heading);
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      background: var(--color-accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-sub {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .main-wrapper {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 36px 24px 80px;
+    }
+
+    /* ── STEPPER (UI-UX Pro Max Flow) ────────────────────────────────────── */
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      background: var(--color-surface-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 12px 20px;
+      backdrop-filter: blur(12px);
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
       font-weight: 700;
-      font-size: 15px;
-      font-family: inherit;
+      color: var(--color-text-subtle);
+      transition: color 0.25s;
+    }
+    .step-item.active {
+      color: var(--color-accent);
+    }
+    .step-item.completed {
+      color: var(--color-success);
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      background: var(--color-surface-hover);
+      border: 1.5px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      transition: all 0.25s;
+    }
+    .step-item.active .step-num {
+      background: var(--color-primary);
+      border-color: var(--color-accent);
+      color: #ffffff;
+      box-shadow: 0 0 12px var(--color-primary-glow);
+    }
+    .step-item.completed .step-num {
+      background: var(--color-success);
+      border-color: var(--color-success);
+      color: #ffffff;
+    }
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--color-border);
+      margin: 0 12px;
+      border-radius: 2px;
+      transition: background 0.25s;
+    }
+    .step-line.active {
+      background: var(--color-accent);
+    }
+
+    /* ── CARD COMPONENTS ─────────────────────────────────────────────────── */
+    .glass-card {
+      background: var(--color-surface-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .glass-card:hover {
+      border-color: var(--color-border-glow);
+    }
+
+    /* ── BUTTONS ─────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 22px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: var(--radius-md);
       cursor: pointer;
       border: none;
-      transition: background .18s, transform .12s, box-shadow .18s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      box-shadow: 0 2px 12px var(--color-primary-glow);
-      letter-spacing: -.1px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      text-decoration: none;
+      letter-spacing: -0.1px;
+    }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+
+    .btn-primary {
+      background: var(--color-accent-gradient);
+      color: #ffffff;
+      box-shadow: var(--shadow-glow);
     }
     .btn-primary:hover:not(:disabled) {
-      background: var(--color-primary-hover);
+      filter: brightness(1.1);
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px var(--color-primary-glow);
+      box-shadow: 0 8px 24px var(--color-primary-glow);
     }
-    .btn-primary:active:not(:disabled) { transform: translateY(0); }
-    .btn-primary:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+    .btn-primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
 
     .btn-ghost {
-      background: transparent;
-      border: 1.5px solid var(--color-border);
-      color: var(--color-text);
-      border-radius: 10px;
-      padding: 10px 18px;
-      font-weight: 600;
-      font-size: 14px;
-      font-family: inherit;
-      cursor: pointer;
-      transition: border-color .18s, background .18s, color .18s;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .btn-ghost:hover {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-      background: var(--color-primary-glow);
-    }
-
-    .btn-icon {
       background: var(--color-surface);
       border: 1.5px solid var(--color-border);
-      border-radius: 50%;
-      width: 38px;
-      height: 38px;
+      color: var(--color-text);
+    }
+    .btn-ghost:hover:not(:disabled) {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+      background: var(--color-surface-hover);
+    }
+
+    .btn-icon-text {
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      background: var(--color-surface-hover);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-icon-text:hover {
+      color: var(--color-text);
+      border-color: var(--color-border-glow);
+      background: var(--color-surface);
+    }
+
+    /* ── DROPZONE ────────────────────────────────────────────────────────── */
+    #drop-zone {
+      border: 2px dashed var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      background: rgba(19, 28, 49, 0.25);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #drop-zone.drag-over, #drop-zone:hover {
+      border-color: var(--color-accent);
+      background: var(--color-accent-glow);
+      transform: scale(1.01);
+    }
+    .drop-icon-wrapper {
+      width: 72px;
+      height: 72px;
+      background: var(--color-accent-glow);
+      border: 1px solid var(--color-border-glow);
+      border-radius: var(--radius-xl);
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      transition: background .18s, border-color .18s, color .18s;
-      color: var(--color-text-muted);
-      flex-shrink: 0;
-      font-family: inherit;
-    }
-    .btn-icon:hover {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-      background: var(--color-primary-glow);
+      margin: 0 auto 20px;
+      animation: pulseRing 3s infinite;
     }
 
-    /* ── Drop zone ──────────────────────────────────────────────────────── */
-    #drop-zone {
-      border: 2px dashed var(--color-border);
-      border-radius: 16px;
-      transition: border-color .2s, background .2s, transform .15s;
-      cursor: pointer;
-      padding: 52px 24px;
-      text-align: center;
-    }
-    #drop-zone.drag-over {
-      border-color: var(--color-primary);
-      background: var(--color-primary-glow);
-      transform: scale(1.01);
-    }
-    #drop-zone:hover { border-color: var(--color-primary); }
-
-    /* ── File Preview ───────────────────────────────────────────────────── */
+    /* ── FILE PREVIEW ────────────────────────────────────────────────────── */
     #file-preview {
-      background: var(--color-primary-glow);
-      border: 1.5px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
-      border-radius: 12px;
-      padding: 12px 16px;
+      background: var(--color-accent-glow);
+      border: 1.5px solid var(--color-border-glow);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-top: 16px;
+      gap: 14px;
+      margin-top: 20px;
     }
 
-    /* ── Form input ─────────────────────────────────────────────────────── */
-    .form-input {
-      background: var(--color-bg);
-      border: 1.5px solid var(--color-border);
-      color: var(--color-text);
-      border-radius: 10px;
-      padding: 11px 14px;
-      font-size: 15px;
-      font-family: inherit;
-      width: 100%;
-      outline: none;
-      transition: border-color .18s, box-shadow .18s;
+    /* ── FORM CONTROLS ───────────────────────────────────────────────────── */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    .form-input:focus {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px var(--color-primary-glow);
-    }
-    .form-input::placeholder { color: var(--color-text-muted); }
-
-    /* ── Field label ────────────────────────────────────────────────────── */
     .field-label {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 11.5px;
-      font-weight: 700;
-      letter-spacing: .5px;
-      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
       color: var(--color-text-muted);
       text-transform: uppercase;
     }
+    .form-input {
+      background: var(--color-bg);
+      border: 1.5px solid var(--color-border);
+      color: var(--color-text);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 14.5px;
+      font-family: inherit;
+      width: 100%;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px var(--color-accent-glow);
+    }
 
-    /* ── Divider ────────────────────────────────────────────────────────── */
-    .divider { height: 1px; background: var(--color-border-subtle); margin: 18px 0; }
+    /* ── EDITOR CARDS (Interactive Question Editor) ──────────────────────── */
+    .editor-card {
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+    .editor-card:hover {
+      border-color: var(--color-border-glow);
+    }
+    .editor-card textarea, .editor-card input {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      width: 100%;
+      font-family: inherit;
+      font-size: 13.5px;
+      margin-top: 6px;
+      outline: none;
+    }
+    .editor-card textarea:focus, .editor-card input:focus {
+      border-color: var(--color-accent);
+    }
+    .type-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .type-badge.multichoice { background: rgba(56, 189, 248, 0.15); color: var(--color-mc); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .type-badge.truefalse   { background: rgba(52, 211, 153, 0.15); color: var(--color-tf); border: 1px solid rgba(52, 211, 153, 0.3); }
+    .type-badge.matching    { background: rgba(251, 191, 36, 0.15); color: var(--color-mt); border: 1px solid rgba(251, 191, 36, 0.3); }
+    .type-badge.cloze       { background: rgba(167, 139, 250, 0.15); color: var(--color-cl); border: 1px solid rgba(167, 139, 250, 0.3); }
 
-    /* ── Stat cards ─────────────────────────────────────────────────────── */
+    /* ── STATS CARDS ─────────────────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
     .stat-card {
-      background: var(--color-surface-2);
-      border: 1px solid var(--color-border-subtle);
-      border-radius: 12px;
-      padding: 14px 10px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 16px 12px;
       text-align: center;
-      transition: background .25s;
+      transition: transform 0.2s ease, border-color 0.2s ease;
     }
-    .stat-card .stat-num   { font-size: 30px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
-    .stat-card .stat-label { font-size: 11px; color: var(--color-text-muted); font-weight: 600; letter-spacing: .2px; }
-    .stat-card .stat-grade { font-size: 10.5px; margin-top: 3px; }
-    .stat-mc { border-top: 3px solid #3b82f6; }  .stat-mc .stat-num { color: #3b82f6; }
-    .stat-tf { border-top: 3px solid #10b981; }  .stat-tf .stat-num { color: #10b981; }
-    .stat-mt { border-top: 3px solid #f59e0b; }  .stat-mt .stat-num { color: #d97706; }
-    .stat-cl { border-top: 3px solid #8b5cf6; }  .stat-cl .stat-num { color: #8b5cf6; }
-
-    /* ── Toast ──────────────────────────────────────────────────────────── */
-    .toast {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: #16a34a;
-      color: #fff;
-      padding: 12px 20px;
-      border-radius: 14px;
-      font-size: 13px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: var(--shadow-lg);
-      transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .35s;
-      opacity: 0;
-      z-index: 9999;
-      max-width: calc(100vw - 48px);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      pointer-events: none;
+    .stat-card:hover { transform: translateY(-3px); }
+    .stat-card .stat-num {
+      font-family: var(--font-heading);
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
     }
-    .toast.show  { transform: translateX(-50%) translateY(0); opacity: 1; }
-    .toast.error { background: #ef4444; }
-
-    /* ── Info note ──────────────────────────────────────────────────────── */
-    .info-note {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
+    .stat-card .stat-label {
+      font-size: 11.5px;
       color: var(--color-text-muted);
-      padding: 8px 12px;
-      background: var(--color-surface-2);
-      border-radius: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .stat-card .stat-grade {
+      font-size: 11px;
+      margin-top: 4px;
+      font-weight: 700;
     }
 
-    /* ═══════════════════════════ HELP MODAL ═══════════════════════════ */
+    /* ── MODALS (Help & History) ──────────────────────────────────────────── */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.5);
-      backdrop-filter: blur(5px);
-      -webkit-backdrop-filter: blur(5px);
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       z-index: 1000;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 20px;
       opacity: 0;
       pointer-events: none;
-      transition: opacity .22s;
+      transition: opacity 0.25s ease;
     }
     .modal-backdrop.open { opacity: 1; pointer-events: all; }
-
     .modal-box {
-      background: var(--color-surface);
+      background: var(--color-surface-modal);
       border: 1px solid var(--color-border);
-      border-radius: 22px;
+      border-radius: var(--radius-xl);
       box-shadow: var(--shadow-lg);
       width: 100%;
-      max-width: 700px;
-      max-height: 88vh;
+      max-width: 720px;
+      max-height: 85vh;
       display: flex;
       flex-direction: column;
-      transform: translateY(14px) scale(.97);
-      transition: transform .28s cubic-bezier(.34,1.2,.64,1), opacity .22s;
-      opacity: 0;
+      transform: translateY(20px) scale(0.96);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s;
     }
-    .modal-backdrop.open .modal-box { transform: translateY(0) scale(1); opacity: 1; }
+    .modal-backdrop.open .modal-box { transform: translateY(0) scale(1); }
 
     .modal-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 22px 24px 0;
-      flex-shrink: 0;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--color-border);
     }
-    .modal-title {
-      font-size: 16px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      letter-spacing: -.2px;
-    }
-
     .modal-tabs {
       display: flex;
-      gap: 2px;
-      padding: 14px 24px 0;
-      border-bottom: 1.5px solid var(--color-border);
-      flex-shrink: 0;
+      gap: 4px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--color-border);
+      background: rgba(0,0,0,0.1);
     }
     .modal-tab {
-      padding: 9px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
+      padding: 12px 18px;
+      font-size: 13.5px;
+      font-weight: 700;
       color: var(--color-text-muted);
       cursor: pointer;
       border: none;
       background: transparent;
-      border-bottom: 2.5px solid transparent;
-      margin-bottom: -1.5px;
-      transition: color .18s, border-color .18s;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
       display: flex;
       align-items: center;
-      gap: 6px;
-      border-radius: 0;
+      gap: 8px;
     }
-    .modal-tab:hover { color: var(--color-text); }
-    .modal-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
-
+    .modal-tab.active {
+      color: var(--color-accent);
+      border-bottom-color: var(--color-accent);
+    }
     .modal-body {
-      padding: 22px 24px 26px;
+      padding: 24px;
       overflow-y: auto;
       flex: 1;
     }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeInUp 0.25s ease; }
 
-    .tab-panel          { display: none; }
-    .tab-panel.active   { display: block; animation: fadeInUp .18s ease; }
-
-    /* ── Guide content ──────────────────────────────────────────────────── */
-    .type-block {
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-top: 14px;
-      border: 1px solid var(--color-border);
-      background: var(--color-bg);
-    }
-    .type-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .5px;
-      border-radius: 6px;
-      padding: 3px 10px;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-    }
-    .type-label.mc  { background: color-mix(in srgb,#3b82f6 12%,transparent); color: #3b82f6; }
-    .type-label.tf  { background: color-mix(in srgb,#10b981 12%,transparent); color: #10b981; }
-    .type-label.mt  { background: color-mix(in srgb,#f59e0b 12%,transparent); color: #d97706; }
-    .type-label.cl  { background: color-mix(in srgb,#8b5cf6 12%,transparent); color: #8b5cf6; }
-    .type-label.ans { background: color-mix(in srgb,var(--color-primary) 12%,transparent); color: var(--color-primary); }
-
+    /* ── CODE BLOCKS ─────────────────────────────────────────────────────── */
     .code-block {
-      background: var(--color-surface-2);
-      border: 1px solid var(--color-border-subtle);
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-family: 'Courier New', monospace;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      font-family: var(--font-mono);
       font-size: 12.5px;
       line-height: 1.7;
       color: var(--color-text);
-      white-space: pre;
+      white-space: pre-wrap;
+      word-break: break-word;
       overflow-x: auto;
     }
-    .hl-key   { color: var(--color-primary); font-weight: 700; }
-    .hl-opt   { color: #3b82f6; }
-    .hl-ans   { color: #10b981; }
-    .hl-muted { color: var(--color-text-muted); }
 
-    /* ── Prompt copy button ─────────────────────────────────────────────── */
-    .btn-copy-prompt {
-      display: inline-flex;
+    /* ── TOAST ───────────────────────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--color-success);
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: var(--radius-full);
+      font-size: 13.5px;
+      font-weight: 700;
+      display: flex;
       align-items: center;
-      gap: 6px;
-      background: color-mix(in srgb,#8b5cf6 12%,transparent);
-      color: #8b5cf6;
-      border: 1.5px solid color-mix(in srgb,#8b5cf6 30%,transparent);
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background .18s, color .18s, border-color .18s;
-      white-space: nowrap;
+      gap: 10px;
+      box-shadow: var(--shadow-lg);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s;
+      opacity: 0;
+      z-index: 9999;
+      pointer-events: none;
     }
-    .btn-copy-prompt:hover {
-      background: color-mix(in srgb,#8b5cf6 20%,transparent);
-    }
+    .toast.show  { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.error { background: var(--color-error); }
 
-    
-    /* Editor styling */
-    .editor-card { background: var(--color-surface-2); border: 1px solid var(--color-border-subtle); border-radius: 12px; padding: 14px; }
-    .editor-card input, .editor-card textarea { background: var(--color-bg); border: 1px solid var(--color-border); color: var(--color-text); border-radius: 6px; padding: 6px 10px; width: 100%; font-family: inherit; font-size: 13px; margin-top: 4px; }
-    .editor-card textarea { resize: vertical; min-height: 40px; }
-    .history-item { padding: 16px 24px; border-bottom: 1px solid var(--color-border-subtle); display: flex; align-items: center; justify-content: space-between; transition: background .15s; }
-    .history-item:hover { background: var(--color-surface-2); }
-    .history-item:last-child { border-bottom: none; }
-
-    /* ── Responsive adjustments ─────────────────────────────────────────── */
-    @media (max-width: 600px) {
-      main { padding: 24px 16px 80px !important; }
-      #stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
-      .modal-content { width: 95% !important; max-height: 95vh !important; }
-      .modal-body { padding: 16px !important; }
-      .tab-btn { padding: 10px 14px !important; font-size: 13px !important; }
-      
-      /* Make prompt guide stack naturally on small screens */
-      .type-block .code-block { font-size: 11.5px; padding: 12px; }
-      
-      /* Make RESPUESTAS grid single column on small screens */
-      #respuestas-grid { grid-template-columns: 1fr !important; }
+    /* Responsive */
+    @media (max-width: 640px) {
+      .main-wrapper { padding: 20px 16px 60px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .stepper { padding: 10px 12px; }
+      .step-item span { display: none; }
     }
   </style>
 </head>
 
 <body>
 
-  <!-- ════════════════════════════════ HEADER ═════════════════════════════ -->
-  <header style="border-bottom:1px solid var(--color-border);background:var(--color-surface);box-shadow:var(--shadow-sm);position:sticky;top:0;z-index:100;transition:background .25s,border-color .25s;">
-    <div style="max-width:680px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
-      <!-- Logo + title -->
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="width:38px;height:38px;background:var(--color-primary);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px var(--color-primary-glow);">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- ════════════════════════════ HEADER ════════════════════════════ -->
+  <header class="app-header" role="banner">
+    <div class="header-inner">
+      <!-- Logo + Branding -->
+      <div class="logo-container">
+        <div class="logo-badge" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="16" y1="13" x2="8" y2="13"/>
             <line x1="16" y1="17" x2="8" y2="17"/>
-            <polyline points="10 9 9 9 8 9"/>
           </svg>
         </div>
         <div>
-          <h1 style="font-size:16px;font-weight:800;letter-spacing:-.4px;line-height:1.15;">PDF → Moodle XML</h1>
-          <p style="font-size:11.5px;color:var(--color-text-muted);font-weight:500;">Conversor de exámenes universitarios</p>
+          <h1 class="brand-title">PDF → Moodle XML</h1>
+          <p class="brand-sub">Conversor de Exámenes Universitarios</p>
         </div>
       </div>
-      <!-- Actions -->
-      <div style="display:flex;align-items:center;gap:8px;">
-                <!-- History button -->
-        <button id="btn-history" class="btn-icon" aria-label="Historial" title="Historial de conversiones"
-          style="border-radius:10px;width:auto;padding:0 14px;gap:7px;font-size:13px;font-weight:600;color:var(--color-text-muted);">
-          <i data-lucide="clock" style="width:15px;height:15px;"></i>
-          Historial
+
+      <!-- Action Navigation -->
+      <nav style="display:flex; align-items:center; gap:8px;" aria-label="Navegación principal">
+        <button id="btn-history" class="btn-icon-text" aria-label="Abrir historial de conversiones" title="Historial">
+          <i data-lucide="clock" style="width:16px;height:16px;"></i>
+          <span>Historial</span>
         </button>
-        <!-- Help button -->
-        <button id="btn-help" class="btn-icon" aria-label="Abrir guía de uso" title="Guía de uso"
-          style="border-radius:10px;width:auto;padding:0 14px;gap:7px;font-size:13px;font-weight:600;color:var(--color-text-muted);">
-          <i data-lucide="book-open" style="width:15px;height:15px;"></i>
-          Guía
+        <button id="btn-help" class="btn-icon-text" aria-label="Abrir guía de uso" title="Guía">
+          <i data-lucide="book-open" style="width:16px;height:16px;"></i>
+          <span>Guía</span>
         </button>
-        <!-- Theme toggle -->
-        <button id="theme-toggle-btn" class="btn-icon" aria-label="Cambiar tema" title="Cambiar tema claro/oscuro">
-          <i data-lucide="sun"  id="icon-sun"  style="width:15px;height:15px;"></i>
-          <i data-lucide="moon" id="icon-moon" style="width:15px;height:15px;display:none;"></i>
+        <button id="theme-toggle-btn" class="btn-icon-text" aria-label="Cambiar tema claro u oscuro" title="Modo Claro/Oscuro" style="padding:8px 10px;">
+          <i data-lucide="sun" id="icon-sun" style="width:16px;height:16px;"></i>
+          <i data-lucide="moon" id="icon-moon" style="width:16px;height:16px;display:none;"></i>
         </button>
-      </div>
+      </nav>
     </div>
   </header>
 
-  <!-- ════════════════════════════════ MAIN ═══════════════════════════════ -->
-  <main style="max-width:680px;margin:0 auto;padding:36px 24px 80px;">
+  <!-- ════════════════════════════ MAIN CONTENT ════════════════════════════ -->
+  <main class="main-wrapper" role="main">
 
-    <!-- ── Upload Panel ── -->
-    <div id="panel-upload">
+    <!-- Stepper Indicator -->
+    <div class="stepper" aria-label="Pasos del proceso">
+      <div class="step-item active" id="step-1-indicator">
+        <div class="step-num">1</div>
+        <span>Cargar y Configurar</span>
+      </div>
+      <div class="step-line" id="step-line-1"></div>
+      <div class="step-item" id="step-2-indicator">
+        <div class="step-num">2</div>
+        <span>Revisar Preguntas</span>
+      </div>
+      <div class="step-line" id="step-line-2"></div>
+      <div class="step-item" id="step-3-indicator">
+        <div class="step-num">3</div>
+        <span>Descargar XML</span>
+      </div>
+    </div>
+
+    <!-- ── PANEL 1: UPLOAD & CONFIGURATION ── -->
+    <section id="panel-upload" class="animate-fadeIn" aria-labelledby="upload-heading">
+      <h2 id="upload-heading" class="sr-only" style="display:none;">Zona de Carga de Archivos</h2>
 
       <!-- Drop Zone -->
-      <div id="drop-zone" role="button" tabindex="0" aria-label="Zona de carga de archivos">
+      <div id="drop-zone" role="button" tabindex="0" aria-label="Zona interactiva de carga de archivos PDF o TXT">
         <input type="file" id="file-input" accept=".pdf,.txt" style="display:none;" />
-        <div style="width:64px;height:64px;background:var(--color-primary-glow);border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;transition:background .25s;">
-          <i data-lucide="upload-cloud" style="width:30px;height:30px;color:var(--color-primary);"></i>
+        <div class="drop-icon-wrapper">
+          <i data-lucide="upload-cloud" style="width:34px;height:34px;color:var(--color-accent);"></i>
         </div>
-        <p style="font-size:17px;font-weight:800;margin-bottom:6px;letter-spacing:-.2px;">Arrastra tu archivo aquí</p>
-        <p style="font-size:14px;color:var(--color-text-muted);margin-bottom:22px;">o haz clic para seleccionar</p>
-        <span style="background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:8px;padding:5px 16px;font-size:12.5px;color:var(--color-text-muted);font-weight:600;">.pdf &nbsp;·&nbsp; .txt</span>
+        <p style="font-family:var(--font-heading);font-size:19px;font-weight:800;margin-bottom:6px;">Arrastra tu examen aquí</p>
+        <p style="font-size:14px;color:var(--color-text-muted);margin-bottom:20px;">o haz clic para explorar en tu computadora</p>
+        <div style="display:flex;justify-content:center;gap:8px;">
+          <span style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:4px 14px;font-size:12px;font-weight:700;color:var(--color-accent);">.PDF</span>
+          <span style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:4px 14px;font-size:12px;font-weight:700;color:var(--color-accent);">.TXT</span>
+        </div>
       </div>
 
-      <!-- File Preview -->
-      <div id="file-preview" style="display:none;">
-        <div style="width:40px;height:40px;background:var(--color-primary);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <i id="file-icon" data-lucide="file-text" style="width:18px;height:18px;color:#fff;"></i>
+      <!-- Selected File Preview -->
+      <div id="file-preview" style="display:none;" class="animate-scaleUp">
+        <div style="width:44px;height:44px;background:var(--color-primary);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i id="file-icon" data-lucide="file-text" style="width:20px;height:20px;color:#fff;"></i>
         </div>
         <div style="flex:1;min-width:0;">
-          <p id="file-name" style="font-weight:700;font-size:14px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></p>
-          <p id="file-size" style="font-size:12px;color:var(--color-text-muted);margin:0;"></p>
+          <p id="file-name" style="font-weight:700;font-size:14.5px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></p>
+          <p id="file-size" style="font-size:12.5px;color:var(--color-text-muted);margin:0;"></p>
         </div>
-        <button id="btn-remove-file" class="btn-ghost" style="padding:6px 10px;flex-shrink:0;" aria-label="Quitar archivo">
-          <i data-lucide="x" style="width:15px;height:15px;"></i>
-        </button>
-      </div>
-
-      <!-- Config card -->
-      <div class="card" style="margin-top:20px;padding:20px 22px;">
-        <!-- Category -->
-        <div>
-          <label class="field-label" for="category-input">
-            <i data-lucide="folder" style="width:12px;height:12px;"></i>
-            Categoría Moodle
-          </label>
-          <input id="category-input" class="form-input" type="text"
-            placeholder="ej: Parcial-HCI-2026" value="mis-preguntas" />
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Points -->
-        <div>
-          <label class="field-label" for="points-input">
-            <i data-lucide="star" style="width:12px;height:12px;"></i>
-            Puntaje total del examen
-          </label>
-          <div style="position:relative;">
-            <input id="points-input" class="form-input" type="number" min="1" step="0.5" value="100"
-              style="padding-right:48px;" />
-            <span style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--color-text-muted);font-weight:700;">pts</span>
-          </div>
-          <p id="points-error" style="font-size:12px;color:var(--color-error);margin:6px 0 0;display:none;">⚠ Ingresa un número mayor a 0.</p>
-          <p style="font-size:12px;color:var(--color-text-muted);margin:6px 0 0;line-height:1.55;">
-            Los puntos se distribuyen: cierto/falso &lt; selección múltiple &lt; emparejamiento = completar
-          </p>
-        </div>
-      </div>
-
-      <!-- Convert Button -->
-      <button id="btn-convert" class="btn-primary" style="width:100%;margin-top:16px;" disabled>
-        <i data-lucide="zap" style="width:17px;height:17px;"></i>
-        Convertir a Moodle XML
-      </button>
-
-      <!-- Privacy note -->
-      <div class="info-note" style="margin-top:12px;justify-content:center;">
-        <i data-lucide="shield-check" style="width:13px;height:13px;flex-shrink:0;"></i>
-        El procesamiento es local — tu archivo no se sube a ningún servidor externo.
-      </div>
-    </div>
-
-    <!-- ── Progress Panel ── -->
-    <div id="panel-progress" style="display:none;" class="card">
-      <div style="padding:52px 32px;text-align:center;">
-        <div style="width:64px;height:64px;background:var(--color-primary-glow);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;">
-          <i data-lucide="loader-2" id="spinner-icon"
-            style="width:30px;height:30px;color:var(--color-primary);animation:spin 1s linear infinite;"></i>
-        </div>
-        <p id="progress-title" style="font-weight:800;font-size:18px;margin:0 0 6px;letter-spacing:-.3px;">Procesando archivo…</p>
-        <p id="progress-subtitle" style="font-size:14px;color:var(--color-text-muted);margin:0 0 28px;transition:opacity .2s;">Extrayendo texto del documento...</p>
-        <div style="height:6px;background:var(--color-border-subtle);border-radius:6px;overflow:hidden;">
-          <div id="progress-bar-fill" style="height:100%;width:0%;background:var(--color-primary);border-radius:6px;transition:width .5s ease-out;"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Success Panel ── -->
-    <div id="panel-success" style="display:none;" class="card">
-      <div style="padding:28px;">
-        <!-- Header -->
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
-          <div style="width:50px;height:50px;background:color-mix(in srgb,var(--color-primary) 14%,transparent);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i data-lucide="check-circle-2" style="width:24px;height:24px;color:var(--color-primary);"></i>
-          </div>
-          <div>
-            <p style="font-weight:800;font-size:18px;margin:0;letter-spacing:-.3px;">¡Conversión exitosa!</p>
-            <p id="success-subtitle" style="font-size:13px;color:var(--color-text-muted);margin:2px 0 0;"></p>
-          </div>
-        </div>
-
-        <!-- Stats grid -->
-        <div id="stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
-          <div class="stat-card stat-mc">
-            <div class="stat-num" id="stat-mc">—</div>
-            <div class="stat-label">Múltiple</div>
-            <div id="grade-mc" class="stat-grade" style="color:#3b82f6;"></div>
-          </div>
-          <div class="stat-card stat-tf">
-            <div class="stat-num" id="stat-tf">—</div>
-            <div class="stat-label">V / F</div>
-            <div id="grade-tf" class="stat-grade" style="color:#10b981;"></div>
-          </div>
-          <div class="stat-card stat-mt">
-            <div class="stat-num" id="stat-mt">—</div>
-            <div class="stat-label">Emparejar</div>
-            <div id="grade-mt" class="stat-grade" style="color:#d97706;"></div>
-          </div>
-          <div class="stat-card stat-cl">
-            <div class="stat-num" id="stat-cl">—</div>
-            <div class="stat-label">Completar</div>
-            <div id="grade-cl" class="stat-grade" style="color:#8b5cf6;"></div>
-          </div>
-        </div>
-
-        <!-- Total points summary -->
-        <div id="points-summary"
-          style="display:none;background:var(--color-primary-glow);border:1.5px solid color-mix(in srgb,var(--color-primary) 20%,transparent);border-radius:10px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:var(--color-text-muted);text-align:center;">
-        </div>
-
-        <!-- Gemini notice -->
-        <div id="gemini-notice"
-          style="display:none;background:color-mix(in srgb,#f59e0b 10%,transparent);border:1.5px solid color-mix(in srgb,#f59e0b 35%,transparent);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#92400e;line-height:1.5;">
-          ⚠️ Tu documento no tenía el formato estándar. Gemini lo reformateó automáticamente antes de convertir.
-        </div>
-
-        <!-- Actions -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button id="btn-download" class="btn-primary" style="flex:1;">
-            <i data-lucide="download" style="width:16px;height:16px;"></i>
-            Descargar XML
-          </button>
-          <button id="btn-reset-success" class="btn-ghost" style="flex:1;">
-            <i data-lucide="refresh-ccw" style="width:15px;height:15px;"></i>
-            Nueva conversión
-          </button>
-        </div>
-      </div>
-    </div>
-
-    
-    <!-- ── Editor Panel ── -->
-    <div id="panel-editor" style="display:none;" class="card">
-      <div style="padding:28px;">
-        <h2 style="margin:0 0 16px;font-size:18px;font-weight:800;letter-spacing:-.3px;">Revisión de Preguntas</h2>
-        <p style="font-size:13px;color:var(--color-text-muted);margin-bottom:24px;">Revisa y edita las opciones o preguntas si notas algún error de lectura.</p>
-        
-        <div id="editor-questions-container" style="display:flex;flex-direction:column;gap:16px;max-height:55vh;overflow-y:auto;padding-right:8px;margin-bottom:24px;"></div>
-        
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button id="btn-generate-xml" class="btn-primary" style="flex:2;">
-            <i data-lucide="check" style="width:16px;height:16px;"></i>
-            Aprobar y Generar XML
-          </button>
-          <button onclick="resetAll()" class="btn-ghost" style="flex:1;">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Error Panel ── -->
-    <div id="panel-error" style="display:none;" class="card">
-      <div style="padding:24px;">
-        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:20px;">
-          <div style="width:44px;height:44px;background:color-mix(in srgb,var(--color-error) 14%,transparent);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
-            <i data-lucide="alert-circle" style="width:20px;height:20px;color:var(--color-error);"></i>
-          </div>
-          <div style="flex:1;min-width:0;">
-            <p style="font-weight:700;font-size:16px;margin:0 0 6px;color:var(--color-error);">Error en la conversión</p>
-            <div id="error-message" style="font-size:14px;color:var(--color-text-muted);margin:0;line-height:1.6;"></div>
-          </div>
-        </div>
-        <!-- OCR hint — now points to the modal -->
-        <div id="error-ocr-hint"
-          style="display:none;background:color-mix(in srgb,#8b5cf6 8%,transparent);border:1.5px solid color-mix(in srgb,#8b5cf6 25%,transparent);border-radius:10px;padding:12px 14px;margin-bottom:16px;">
-          <p style="font-size:13px;font-weight:600;color:#8b5cf6;margin:0 0 4px;display:flex;align-items:center;gap:6px;">
-            <i data-lucide="bot" style="width:14px;height:14px;"></i> ¿Tu PDF es una imagen escaneada?
-          </p>
-          <p style="font-size:12.5px;color:var(--color-text-muted);margin:0;line-height:1.6;">
-            Este programa no puede leer PDFs sin texto digital. Abre la
-            <button onclick="openHelp('prompt')"
-              style="background:none;border:none;padding:0;cursor:pointer;font-family:inherit;font-size:inherit;font-weight:700;color:#8b5cf6;text-decoration:underline;">
-              Guía → Prompt para IA
-            </button>
-            para obtener el prompt y convertir tu examen al formato correcto.
-          </p>
-        </div>
-        <button id="btn-reset-error" class="btn-ghost" style="width:100%;">
-          <i data-lucide="refresh-ccw" style="width:15px;height:15px;"></i>
-          Intentar de nuevo
-        </button>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- Toast -->
-  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
-
-  <!-- ═══════════════════════════ HELP MODAL ══════════════════════════════ -->
-  <div id="modal-help" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal-box">
-
-      <!-- Modal Header -->
-      <div class="modal-header">
-        <div class="modal-title" id="modal-title">
-          <div style="width:32px;height:32px;background:var(--color-primary-glow);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i data-lucide="book-open" style="width:15px;height:15px;color:var(--color-primary);"></i>
-          </div>
-          Guía de uso
-        </div>
-        <button id="btn-close-modal" class="btn-icon" aria-label="Cerrar guía">
+        <button id="btn-remove-file" class="btn-ghost" style="padding:6px 10px;" aria-label="Remover archivo seleccionado">
           <i data-lucide="x" style="width:16px;height:16px;"></i>
         </button>
       </div>
 
-      <!-- Tabs -->
-      <div class="modal-tabs">
-        <button class="modal-tab active" data-tab="format">
-          <i data-lucide="file-code" style="width:13px;height:13px;"></i>
-          Formato del archivo
-        </button>
-        <button class="modal-tab" data-tab="prompt">
-          <i data-lucide="bot" style="width:13px;height:13px;"></i>
-          Prompt para IA
-        </button>
-      </div>
-
-      <!-- Modal Body -->
-      <div class="modal-body">
-
-        <!-- ── Tab: Format Guide ── -->
-        <div class="tab-panel active" id="modal-panel-format">
-          <p style="font-size:13px;color:var(--color-text-muted);line-height:1.65;margin-bottom:4px;">
-            El archivo debe tener <strong style="color:var(--color-text);">dos partes</strong>: el cuerpo con las preguntas y al final la sección
-            <code style="background:var(--color-surface-2);padding:1px 6px;border-radius:4px;font-size:12px;">RESPUESTAS</code>.
-            Las preguntas deben numerarse con el formato
-            <code style="background:var(--color-surface-2);padding:1px 6px;border-radius:4px;font-size:12px;">Pregunta N:</code>.
-          </p>
-
-          <!-- MULTICHOICE -->
-          <div class="type-block">
-            <span class="type-label mc">Selección múltiple</span>
-            <div class="code-block"><span class="hl-key">Pregunta 1:</span>
-¿Cuál es el objetivo principal del Diseño Centrado en el Usuario?
-<span class="hl-opt">A.</span> Reducir costos de desarrollo
-<span class="hl-opt">B.</span> Satisfacer las necesidades del usuario final
-<span class="hl-opt">C.</span> Mejorar el rendimiento del servidor
-<span class="hl-opt">D.</span> Eliminar la documentación técnica</div>
-            <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">Las opciones deben ser <strong>A.</strong> <strong>B.</strong> <strong>C.</strong> <strong>D.</strong> con punto y espacio.</p>
+      <!-- Config Card -->
+      <div class="glass-card" style="margin-top:24px;padding:24px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <!-- Category -->
+          <div class="form-group">
+            <label class="field-label" for="category-input">
+              <i data-lucide="folder" style="width:14px;height:14px;color:var(--color-accent);"></i>
+              Categoría Moodle
+            </label>
+            <input id="category-input" class="form-input" type="text" placeholder="ej: Parcial-Historia-2026" value="mis-preguntas" />
           </div>
 
-          <!-- TRUEFALSE -->
-          <div class="type-block">
-            <span class="type-label tf">Cierto / Falso</span>
-            <div class="code-block"><span class="hl-key">Pregunta 19:</span>
-Afirmación: La usabilidad es sinónimo de experiencia de usuario.
-
-<span class="hl-key">Pregunta 20:</span>
-La usabilidad es sinónimo de experiencia de usuario.</div>
-            <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">Puedes escribir el enunciado de varias formas: empezando con <code style="font-size:11px;">Afirmación:</code> o escribiendo la oración directamente, ambas son válidas.</p>
-          </div>
-
-          <!-- MATCHING -->
-          <div class="type-block">
-            <span class="type-label mt">Emparejamiento</span>
-            <div class="code-block"><span class="hl-key">Pregunta 28:</span>
-Relaciona cada concepto con su definición.
-
-<span class="hl-opt">Columna A:</span>
-1. Affordance
-2. Feedback
-3. Consistencia
-4. Visibilidad
-
-<span class="hl-opt">Columna B:</span>
-a. Propiedad que indica cómo usar un objeto
-b. Respuesta del sistema a una acción del usuario
-c. Uniformidad en elementos similares
-d. Que las funciones estén siempre a la vista</div>
-            <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">La Columna A usa números (<code style="font-size:11px;">1.</code>) y la Columna B usa letras minúsculas (<code style="font-size:11px;">a.</code>).</p>
-          </div>
-
-          <!-- CLOZE -->
-          <div class="type-block">
-            <span class="type-label cl">Completar</span>
-            <div class="code-block"><span class="hl-key">Pregunta 46:</span>
-El principio que permite al usuario reconocer opciones
-en vez de recordarlas se llama [<span class="hl-opt">A:</span> reconocimiento / recuerdo / mapeo].
-Este reduce la carga de [<span class="hl-opt">B:</span> memoria / atención / procesamiento].</div>
-            <p style="font-size:12px;color:var(--color-text-muted);margin:8px 0 0;">Los espacios van entre corchetes: <code style="font-size:11px;">[A: opción correcta / opción2 / opción3]</code>. La primera opción no es necesariamente la correcta — se define en RESPUESTAS.</p>
-          </div>
-
-          <!-- RESPUESTAS -->
-          <div class="type-block" style="border-color:color-mix(in srgb,var(--color-primary) 30%,transparent);">
-            <span class="type-label ans">Sección RESPUESTAS (obligatoria al final)</span>
-            <div class="code-block"><span class="hl-key">RESPUESTAS</span>
-<span class="hl-muted">Nº Tipo Respuesta correcta</span>
-<span class="hl-ans">1 múltiple Satisfacer las necesidades del usuario final</span>
-<span class="hl-ans">19 ciertofalso Falso</span>
-<span class="hl-ans">28 emparejamiento 1. Affordance → Propiedad que indica cómo usar un objeto; 2. Feedback → Respuesta del sistema; 3. Consistencia → Uniformidad en elementos similares; 4. Visibilidad → Que las funciones estén siempre a la vista</span>
-<span class="hl-ans">46 completar reconocimiento</span></div>
-            <div id="respuestas-grid" style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-              <div style="font-size:12px;color:var(--color-text-muted);background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:7px;padding:8px 10px;">
-                <strong style="color:var(--color-text);display:block;margin-bottom:3px;">múltiple</strong>
-                Texto completo de la opción correcta.
-              </div>
-              <div style="font-size:12px;color:var(--color-text-muted);background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:7px;padding:8px 10px;">
-                <strong style="color:var(--color-text);display:block;margin-bottom:3px;">ciertofalso</strong>
-                <code style="font-size:11px;">Verdadero</code> o <code style="font-size:11px;">Falso</code>.
-              </div>
-              <div style="font-size:12px;color:var(--color-text-muted);background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:7px;padding:8px 10px;">
-                <strong style="color:var(--color-text);display:block;margin-bottom:3px;">emparejamiento</strong>
-                Pares separados por <code style="font-size:11px;">;</code> con formato <code style="font-size:11px;">N. ColA → ColB</code>.
-              </div>
-              <div style="font-size:12px;color:var(--color-text-muted);background:var(--color-surface);border:1px solid var(--color-border-subtle);border-radius:7px;padding:8px 10px;">
-                <strong style="color:var(--color-text);display:block;margin-bottom:3px;">completar</strong>
-                Texto de la opción correcta del primer espacio.
-              </div>
+          <!-- Total Points -->
+          <div class="form-group">
+            <label class="field-label" for="points-input">
+              <i data-lucide="award" style="width:14px;height:14px;color:var(--color-accent);"></i>
+              Puntaje Total del Examen
+            </label>
+            <div style="position:relative;">
+              <input id="points-input" class="form-input" type="number" min="1" step="0.5" value="100" style="padding-right:50px;" />
+              <span style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--color-text-muted);font-weight:800;">pts</span>
             </div>
           </div>
+        </div>
 
-          <p style="font-size:12px;color:var(--color-text-muted);margin:16px 0 0;text-align:center;">
-            💡 El programa detecta automáticamente los tipos — no necesitas rangos fijos.
+        <p id="points-error" style="font-size:12.5px;color:var(--color-error);margin-top:10px;display:none;">⚠ Ingresa un valor numérico mayor a 0.</p>
+        
+        <div style="margin-top:16px;padding:10px 14px;background:var(--color-surface);border-radius:var(--radius-sm);border:1px solid var(--color-border-subtle);font-size:12.5px;color:var(--color-text-muted);display:flex;align-items:center;gap:8px;">
+          <i data-lucide="info" style="width:15px;height:15px;color:var(--color-accent);flex-shrink:0;"></i>
+          <span>Los puntos se ponderan automáticamente por tipo: cierto/falso ×1 &bull; opción múltiple ×2 &bull; emparejar y completar ×3.</span>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <button id="btn-convert" class="btn btn-primary" style="width:100%;margin-top:20px;padding:16px;font-size:16px;" disabled>
+        <i data-lucide="zap" style="width:20px;height:20px;"></i>
+        Procesar y Convertir Examen
+      </button>
+
+      <!-- Privacy Banner -->
+      <div style="margin-top:16px;text-align:center;font-size:12.5px;color:var(--color-text-subtle);display:flex;align-items:center;justify-content:center;gap:6px;">
+        <i data-lucide="shield-check" style="width:15px;height:15px;color:var(--color-success);"></i>
+        <span>Procesamiento 100% privado y local. Tus datos nunca salen de tu equipo.</span>
+      </div>
+    </section>
+
+    <!-- ── PANEL 2: PROGRESS ── -->
+    <section id="panel-progress" style="display:none;" class="glass-card animate-fadeIn" aria-live="polite">
+      <div style="padding:60px 32px;text-align:center;">
+        <div style="width:72px;height:72px;background:var(--color-accent-glow);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;position:relative;">
+          <i data-lucide="loader-2" id="spinner-icon" style="width:36px;height:36px;color:var(--color-accent);animation:spinSlow 1.2s linear infinite;"></i>
+        </div>
+        <h3 id="progress-title" style="font-family:var(--font-heading);font-size:22px;font-weight:800;margin-bottom:8px;">Procesando documento…</h3>
+        <p id="progress-subtitle" style="font-size:14.5px;color:var(--color-text-muted);margin-bottom:32px;">Extrayendo texto del examen...</p>
+        
+        <div style="height:8px;background:var(--color-bg);border-radius:var(--radius-full);overflow:hidden;max-width:480px;margin:0 auto;border:1px solid var(--color-border-subtle);">
+          <div id="progress-bar-fill" style="height:100%;width:0%;background:var(--color-accent-gradient);border-radius:var(--radius-full);transition:width 0.4s ease-out;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PANEL 3: INTERACTIVE QUESTION EDITOR ── -->
+    <section id="panel-editor" style="display:none;" class="glass-card animate-fadeIn">
+      <div style="padding:28px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div>
+            <h2 style="font-family:var(--font-heading);font-size:20px;font-weight:800;">Revisión de Preguntas Parseadas</h2>
+            <p style="font-size:13.5px;color:var(--color-text-muted);">Inspecciona y edita cualquier pregunta antes de generar el paquete Moodle XML.</p>
+          </div>
+        </div>
+
+        <div id="editor-questions-container" style="display:flex;flex-direction:column;gap:18px;max-height:58vh;overflow-y:auto;padding-right:8px;margin:20px 0 28px;"></div>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button id="btn-generate-xml" class="btn btn-primary" style="flex:2;">
+            <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
+            Aprobar y Generar Moodle XML
+          </button>
+          <button onclick="resetAll()" class="btn btn-ghost" style="flex:1;">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PANEL 4: SUCCESS ── -->
+    <section id="panel-success" style="display:none;" class="glass-card animate-fadeIn">
+      <div style="padding:32px;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;">
+          <div style="width:54px;height:54px;background:var(--color-success-bg);border:1px solid rgba(16,185,129,0.3);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i data-lucide="check" style="width:28px;height:28px;color:var(--color-success);"></i>
+          </div>
+          <div>
+            <h2 style="font-family:var(--font-heading);font-size:22px;font-weight:800;margin:0;">¡Conversión Completada con Éxito!</h2>
+            <p id="success-subtitle" style="font-size:14px;color:var(--color-text-muted);margin-top:2px;"></p>
+          </div>
+        </div>
+
+        <!-- Stats grid -->
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card" style="border-top:3px solid var(--color-mc);">
+            <div class="stat-num" id="stat-mc" style="color:var(--color-mc);">—</div>
+            <div class="stat-label">Múltiple</div>
+            <div id="grade-mc" class="stat-grade" style="color:var(--color-mc);"></div>
+          </div>
+          <div class="stat-card" style="border-top:3px solid var(--color-tf);">
+            <div class="stat-num" id="stat-tf" style="color:var(--color-tf);">—</div>
+            <div class="stat-label">V / F</div>
+            <div id="grade-tf" class="stat-grade" style="color:var(--color-tf);"></div>
+          </div>
+          <div class="stat-card" style="border-top:3px solid var(--color-mt);">
+            <div class="stat-num" id="stat-mt" style="color:var(--color-mt);">—</div>
+            <div class="stat-label">Emparejar</div>
+            <div id="grade-mt" class="stat-grade" style="color:var(--color-mt);"></div>
+          </div>
+          <div class="stat-card" style="border-top:3px solid var(--color-cl);">
+            <div class="stat-num" id="stat-cl" style="color:var(--color-cl);">—</div>
+            <div class="stat-label">Completar</div>
+            <div id="grade-cl" class="stat-grade" style="color:var(--color-cl);"></div>
+          </div>
+        </div>
+
+        <!-- Points summary -->
+        <div id="points-summary" style="display:none;background:var(--color-accent-glow);border:1px solid var(--color-border-glow);border-radius:var(--radius-md);padding:12px 18px;margin-bottom:20px;font-size:13.5px;color:var(--color-text);text-align:center;">
+        </div>
+
+        <!-- Gemini notice -->
+        <div id="gemini-notice" style="display:none;background:var(--color-warning-bg);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius-md);padding:12px 18px;margin-bottom:20px;font-size:13.5px;color:var(--color-warning);line-height:1.5;">
+          ⚡ El documento original requería normalización estructural. Gemini aplicó un prefiltro inteligente para asegurar la extracción perfecta sin alterar tus preguntas.
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button id="btn-download" class="btn btn-primary" style="flex:1;padding:14px;">
+            <i data-lucide="download" style="width:18px;height:18px;"></i>
+            Descargar Moodle XML
+          </button>
+          <button id="btn-reset-success" class="btn btn-ghost" style="flex:1;padding:14px;">
+            <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+            Convertir Otro Examen
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PANEL 5: ERROR ── -->
+    <section id="panel-error" style="display:none;" class="glass-card animate-fadeIn">
+      <div style="padding:28px;">
+        <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;">
+          <div style="width:48px;height:48px;background:var(--color-error-bg);border:1px solid rgba(244,63,94,0.3);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i data-lucide="alert-triangle" style="width:24px;height:24px;color:var(--color-error);"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <h3 style="font-family:var(--font-heading);font-size:19px;font-weight:800;color:var(--color-error);margin:0 0 6px;">Error en el Procesamiento</h3>
+            <div id="error-message" style="font-size:14px;color:var(--color-text-muted);line-height:1.65;"></div>
+          </div>
+        </div>
+
+        <!-- OCR Hint -->
+        <div id="error-ocr-hint" style="display:none;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:20px;">
+          <p style="font-size:13.5px;font-weight:700;color:var(--color-cl);margin:0 0 6px;display:flex;align-items:center;gap:6px;">
+            <i data-lucide="bot" style="width:16px;height:16px;"></i> ¿Tu archivo PDF es una imagen o documento escaneado?
+          </p>
+          <p style="font-size:13px;color:var(--color-text-muted);margin:0;">
+            Los PDFs escaneados requieren OCR. Puedes usar nuestro
+            <button onclick="openHelp('prompt')" style="background:none;border:none;padding:0;cursor:pointer;font-family:inherit;font-weight:800;color:var(--color-accent);text-decoration:underline;">
+              Prompt IA Profesional
+            </button>
+            para convertirlo en 10 segundos con ChatGPT o Gemini.
           </p>
         </div>
 
-        <!-- ── Tab: AI Prompt ── -->
-        <div class="tab-panel" id="modal-panel-prompt">
-          <p style="font-size:13px;color:var(--color-text-muted);margin-bottom:14px;line-height:1.65;">
-            Adjunta tu examen (PDF o imagen) a la IA, pega el prompt y obtendrás el archivo listo para subir aquí.
+        <button id="btn-reset-error" class="btn btn-ghost" style="width:100%;">
+          <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+          Intentar Nuevamente
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- ════════════════════════════ HELP MODAL ════════════════════════════ -->
+  <div id="modal-help" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:18px;font-weight:800;" id="modal-title">
+          <i data-lucide="book-open" style="width:20px;height:20px;color:var(--color-accent);"></i>
+          Guía de Formato & Prompt IA
+        </div>
+        <button id="btn-close-modal" class="btn-ghost" style="padding:6px 10px;" aria-label="Cerrar ventana de guía">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="format">
+          <i data-lucide="file-code" style="width:15px;height:15px;"></i>
+          Formato de Texto Examen
+        </button>
+        <button class="modal-tab" data-tab="prompt">
+          <i data-lucide="bot" style="width:15px;height:15px;"></i>
+          Prompt IA Automático
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Tab 1: Format -->
+        <div class="tab-panel active" id="modal-panel-format">
+          <p style="font-size:13.5px;color:var(--color-text-muted);margin-bottom:16px;">
+            El examen debe estructurarse con preguntas numeradas (<code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">Pregunta N:</code>) y finalizar con la sección obligatoria <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">RESPUESTAS</code>.
           </p>
-          <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-            <button id="btn-copy-prompt" class="btn-copy-prompt" title="Copiar prompt">
-              <i data-lucide="copy" id="copy-icon" style="width:13px;height:13px;"></i>
-              <span id="copy-label">Copiar prompt</span>
+
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
+              <span class="type-badge multichoice">1. Selección Múltiple</span>
+              <div class="code-block" style="margin-top:8px;">Pregunta 1:
+¿Cuál es la función principal de un compilador?
+A. Ejecutar código línea por línea
+B. Traducir código fuente a lenguaje máquina
+C. Gestionar la memoria RAM del sistema
+D. Diseñar interfaces gráficas de usuario</div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
+              <span class="type-badge truefalse">2. Cierto / Falso</span>
+              <div class="code-block" style="margin-top:8px;">Pregunta 2:
+Afirmación: La arquitectura REST utiliza el protocolo HTTP para comunicarse.</div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
+              <span class="type-badge matching">3. Emparejamiento</span>
+              <div class="code-block" style="margin-top:8px;">Pregunta 3:
+Relaciona los patrones de diseño con su categoría.
+
+Columna A:
+1. Singleton
+2. Observer
+3. Adapter
+
+Columna B:
+a. Creacional
+b. Comportamiento
+c. Estructural</div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
+              <span class="type-badge cloze">4. Completar Espacios (Cloze)</span>
+              <div class="code-block" style="margin-top:8px;">Pregunta 4:
+En Python, la palabra clave para definir una función es [A: def / function / void].</div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border-glow);border-radius:var(--radius-md);padding:14px;">
+              <span style="font-size:11px;font-weight:800;color:var(--color-accent);text-transform:uppercase;letter-spacing:0.5px;">Sección RESPUESTAS (Al final del archivo)</span>
+              <div class="code-block" style="margin-top:8px;">RESPUESTAS
+Nº Tipo Respuesta correcta
+1 múltiple Traducir código fuente a lenguaje máquina
+2 ciertofalso Verdadero
+3 emparejamiento 1. Singleton → Creacional; 2. Observer → Comportamiento; 3. Adapter → Estructural
+4 completar def</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: AI Prompt -->
+        <div class="tab-panel" id="modal-panel-prompt">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <p style="font-size:13.5px;color:var(--color-text-muted);">
+              Copia este prompt, adjunta tu examen PDF/Imagen en ChatGPT, Gemini o Claude, y pega el resultado aquí.
+            </p>
+            <button id="btn-copy-prompt" class="btn btn-ghost" style="padding:8px 14px;font-size:13px;">
+              <i data-lucide="copy" id="copy-icon" style="width:14px;height:14px;"></i>
+              <span id="copy-label">Copiar Prompt</span>
             </button>
           </div>
-          <pre id="ai-prompt-text"
-            style="margin:0;font-family:'Courier New',monospace;font-size:12.5px;line-height:1.75;color:var(--color-text);white-space:pre-wrap;word-break:break-word;background:var(--color-bg);border:1px solid var(--color-border);border-radius:10px;padding:14px 16px;">Tengo adjunto un examen universitario. Necesito que lo conviertas al siguiente formato de texto plano para poder procesarlo con un programa. Sigue estas reglas EXACTAMENTE:
+
+          <pre id="ai-prompt-text" class="code-block" style="max-height:420px;">Tengo adjunto un examen universitario. Necesito que lo conviertas al siguiente formato de texto plano para poder procesarlo con un programa. Sigue estas reglas EXACTAMENTE:
 
 ── CUERPO DEL EXAMEN ─────────────────────────────────────────
 
@@ -902,17 +1069,34 @@ Nº  Tipo          Respuesta correcta
 
 Ahora convierte el examen adjunto a este formato.</pre>
         </div>
+      </div>
+    </div>
+  </div>
 
-      </div><!-- /modal-body -->
-    </div><!-- /modal-box -->
-  </div><!-- /modal-backdrop -->
+  <!-- ════════════════════════════ HISTORY MODAL ════════════════════════════ -->
+  <div id="modal-history" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="history-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:18px;font-weight:800;" id="history-title">
+          <i data-lucide="clock" style="width:20px;height:20px;color:var(--color-accent);"></i>
+          Historial de Exámenes Convertidos
+        </div>
+        <button id="btn-close-history" class="btn-ghost" style="padding:6px 10px;" aria-label="Cerrar historial" onclick="closeHistory()">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="history-list" style="padding:16px 24px;">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </div>
 
-  <!-- ════════════════════════════════ SCRIPTS ═════════════════════════════ -->
+  <!-- ════════════════════════════ SCRIPT LOGIC ════════════════════════════ -->
   <script>
-    // ── Init Lucide ──────────────────────────────────────────────────────────
+    // Init Lucide Icons
     lucide.createIcons();
 
-    // ── Theme toggle ─────────────────────────────────────────────────────────
+    // Theme Toggle
     function applyTheme(dark) {
       document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
       document.getElementById('icon-sun').style.display  = dark ? 'none'  : 'block';
@@ -928,9 +1112,25 @@ Ahora convierte el examen adjunto a este formato.</pre>
       applyTheme(document.documentElement.getAttribute('data-theme') !== 'dark');
     });
 
-    // ── Help Modal ────────────────────────────────────────────────────────────
-    const modalHelp   = document.getElementById('modal-help');
-    const modalTabs   = document.querySelectorAll('.modal-tab');
+    // Stepper Manager
+    function updateStepper(step) {
+      const s1 = document.getElementById('step-1-indicator');
+      const s2 = document.getElementById('step-2-indicator');
+      const s3 = document.getElementById('step-3-indicator');
+      const l1 = document.getElementById('step-line-1');
+      const l2 = document.getElementById('step-line-2');
+
+      s1.className = 'step-item ' + (step === 1 ? 'active' : step > 1 ? 'completed' : '');
+      s2.className = 'step-item ' + (step === 2 ? 'active' : step > 2 ? 'completed' : '');
+      s3.className = 'step-item ' + (step === 3 ? 'active' : '');
+
+      l1.className = 'step-line ' + (step >= 2 ? 'active' : '');
+      l2.className = 'step-line ' + (step >= 3 ? 'active' : '');
+    }
+
+    // Modal Help
+    const modalHelp = document.getElementById('modal-help');
+    const modalTabs = document.querySelectorAll('.modal-tab');
     const modalPanels = {
       format: document.getElementById('modal-panel-format'),
       prompt: document.getElementById('modal-panel-prompt'),
@@ -957,74 +1157,56 @@ Ahora convierte el examen adjunto a este formato.</pre>
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
     modalTabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
 
-    // ── Copy AI prompt ────────────────────────────────────────────────────────
+    // Copy Prompt
     const btnCopyPrompt = document.getElementById('btn-copy-prompt');
-    const copyLabel     = document.getElementById('copy-label');
-    const copyIcon      = document.getElementById('copy-icon');
-    const aiPromptText  = document.getElementById('ai-prompt-text');
+    const copyLabel = document.getElementById('copy-label');
+    const copyIcon = document.getElementById('copy-icon');
+    const aiPromptText = document.getElementById('ai-prompt-text');
 
     btnCopyPrompt.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(aiPromptText.textContent);
-        copyLabel.textContent = '¡Copiado!';
+        copyLabel.textContent = '¡Copiado Exitosamente!';
         copyIcon.setAttribute('data-lucide', 'check');
         lucide.createIcons();
-        btnCopyPrompt.style.background   = 'color-mix(in srgb,#10b981 15%,transparent)';
-        btnCopyPrompt.style.color        = '#10b981';
-        btnCopyPrompt.style.borderColor  = 'color-mix(in srgb,#10b981 35%,transparent)';
         setTimeout(() => {
-          copyLabel.textContent = 'Copiar prompt';
+          copyLabel.textContent = 'Copiar Prompt';
           copyIcon.setAttribute('data-lucide', 'copy');
           lucide.createIcons();
-          btnCopyPrompt.style.background  = '';
-          btnCopyPrompt.style.color       = '';
-          btnCopyPrompt.style.borderColor = '';
-        }, 2200);
+        }, 2500);
       } catch (_) {
-        copyLabel.textContent = 'Selecciona y copia manualmente';
-        setTimeout(() => { copyLabel.textContent = 'Copiar prompt'; }, 2500);
+        showToast('Selecciona el texto manualmente', 'error');
       }
     });
 
-    // ── State ─────────────────────────────────────────────────────────────────
-    let selectedFile    = null;
-    let downloadBlob    = null;
+    // State Variables
+    let selectedFile = null;
+    let downloadBlob = null;
     let downloadFilename = '';
+    let currentParseResult = null;
+    let currentUploadMetadata = null;
 
-    // ── DOM refs ──────────────────────────────────────────────────────────────
-    const dropZone       = document.getElementById('drop-zone');
-    const fileInput      = document.getElementById('file-input');
-    const filePreview    = document.getElementById('file-preview');
-    const fileNameEl     = document.getElementById('file-name');
-    const fileSizeEl     = document.getElementById('file-size');
-    const fileIconEl     = document.getElementById('file-icon');
-    const btnRemoveFile  = document.getElementById('btn-remove-file');
-    const categoryInput  = document.getElementById('category-input');
-    const btnConvert     = document.getElementById('btn-convert');
-    const panelUpload    = document.getElementById('panel-upload');
-    const panelProgress  = document.getElementById('panel-progress');
-    const panelSuccess   = document.getElementById('panel-success');
-    const panelError     = document.getElementById('panel-error');
-    const statMc         = document.getElementById('stat-mc');
-    const statTf         = document.getElementById('stat-tf');
-    const statMt         = document.getElementById('stat-mt');
-    const statCl         = document.getElementById('stat-cl');
-    const gradeMc        = document.getElementById('grade-mc');
-    const gradeTf        = document.getElementById('grade-tf');
-    const gradeMt        = document.getElementById('grade-mt');
-    const gradeCl        = document.getElementById('grade-cl');
-    const pointsSummary  = document.getElementById('points-summary');
-    const successSubtitle= document.getElementById('success-subtitle');
-    const errorMessage   = document.getElementById('error-message');
-    const btnDownload    = document.getElementById('btn-download');
-    const btnResetOk     = document.getElementById('btn-reset-success');
-    const btnResetErr    = document.getElementById('btn-reset-error');
-    const pointsInput    = document.getElementById('points-input');
-    const pointsError    = document.getElementById('points-error');
-    const ocrHint        = document.getElementById('error-ocr-hint');
-    const toastEl        = document.getElementById('toast');
+    // DOM Elements
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const filePreview = document.getElementById('file-preview');
+    const fileNameEl = document.getElementById('file-name');
+    const fileSizeEl = document.getElementById('file-size');
+    const fileIconEl = document.getElementById('file-icon');
+    const btnRemoveFile = document.getElementById('btn-remove-file');
+    const categoryInput = document.getElementById('category-input');
+    const pointsInput = document.getElementById('points-input');
+    const pointsError = document.getElementById('points-error');
+    const btnConvert = document.getElementById('btn-convert');
+    
+    const panelUpload = document.getElementById('panel-upload');
+    const panelProgress = document.getElementById('panel-progress');
+    const panelEditor = document.getElementById('panel-editor');
+    const panelSuccess = document.getElementById('panel-success');
+    const panelError = document.getElementById('panel-error');
+    const toastEl = document.getElementById('toast');
 
-    // ── File helpers ─────────────────────────────────────────────────────────
+    // File Helpers
     function formatBytes(bytes) {
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
@@ -1047,13 +1229,17 @@ Ahora convierte el examen adjunto a este formato.</pre>
       btnConvert.disabled = true;
     }
 
-    // ── Panel management ─────────────────────────────────────────────────────
+    // Panel Manager
     function showPanel(name) {
       panelUpload.style.display   = name === 'upload'   ? 'block' : 'none';
       panelProgress.style.display = name === 'progress' ? 'block' : 'none';
+      panelEditor.style.display   = name === 'editor'   ? 'block' : 'none';
       panelSuccess.style.display  = name === 'success'  ? 'block' : 'none';
       panelError.style.display    = name === 'error'    ? 'block' : 'none';
-      document.getElementById('panel-editor').style.display = name === 'editor' ? 'block' : 'none';
+
+      if (name === 'upload') updateStepper(1);
+      else if (name === 'editor') updateStepper(2);
+      else if (name === 'success') updateStepper(3);
     }
     function resetAll() {
       clearFile();
@@ -1062,45 +1248,265 @@ Ahora convierte el examen adjunto a este formato.</pre>
       showPanel('upload');
     }
 
-    
-    // ── Editor Logic ─────────────────────────────────────────────────────────
-    let currentParseResult = null;
-    let currentUploadMetadata = null;
+    function deleteQuestionCard(btn) {
+      const card = btn.closest('.editor-card');
+      if (card) {
+        card.remove();
+        showToast('Pregunta eliminada de la lista', 'error');
+      }
+    }
 
+    function addNewQuestion(type) {
+      if (!currentParseResult) {
+        currentParseResult = { questions: [], answer_key: {} };
+      }
+      const existingCards = document.querySelectorAll('.editor-card');
+      const nextNum = existingCards.length + 1;
+
+      let newQ = { num: nextNum, type: type, data: {} };
+      let defaultAns = '';
+
+      if (type === 'multichoice') {
+        newQ.data = {
+          stem: 'Escribe aquí el enunciado de la nueva pregunta de selección múltiple.',
+          options: { A: 'Primera opción', B: 'Segunda opción', C: 'Tercera opción', D: 'Cuarta opción' }
+        };
+        defaultAns = 'Primera opción';
+      } else if (type === 'truefalse') {
+        newQ.data = { stem: 'Afirmación: Escribe aquí la afirmación para verdadero o falso.' };
+        defaultAns = 'Verdadero';
+      } else if (type === 'cloze') {
+        newQ.data = { text: 'El concepto principal de [A: opción1 / opción2 / opción3] es clave.' };
+        defaultAns = 'A. opción1';
+      } else if (type === 'matching') {
+        newQ.data = {
+          stem: 'Relaciona cada concepto de la Columna A con su pareja en la Columna B.',
+          col_a: { '1': 'Primer concepto', '2': 'Segundo concepto' },
+          col_b: { 'a': 'Primera pareja', 'b': 'Segunda pareja' }
+        };
+        defaultAns = '1. Primer concepto → Primera pareja; 2. Segundo concepto → Segunda pareja';
+      }
+
+      currentParseResult.questions.push(newQ);
+      currentParseResult.answer_key[nextNum] = { type: type, answer: defaultAns };
+
+      renderEditor(currentParseResult);
+      lucide.createIcons();
+      showToast(`Pregunta ${nextNum} (${type}) añadida exitosamente`);
+      
+      setTimeout(() => {
+        const container = document.getElementById('editor-questions-container');
+        container.scrollTop = container.scrollHeight;
+      }, 100);
+    }
+
+    // Helper to get Cloze slots from question text and key answer
+    function getClozeSlots(clozeText, keyAnswer) {
+      const slots = [];
+      const bracketRegex = /\[([A-Za-z]):\s*([^\]]+)\]/g;
+      let match;
+
+      const keyMap = {};
+      if (keyAnswer) {
+        const keySlotRegex = /([A-Za-z])[\.:]\s*([^;\n]+)/g;
+        let km;
+        while ((km = keySlotRegex.exec(keyAnswer)) !== null) {
+          keyMap[km[1].toUpperCase()] = km[2].trim();
+        }
+      }
+
+      while ((match = bracketRegex.exec(clozeText)) !== null) {
+        const letter = match[1].toUpperCase();
+        const optionsRaw = match[2].trim();
+        const options = optionsRaw.split('/').map(s => s.trim()).filter(Boolean);
+
+        let selected = keyMap[letter] || '';
+        if (!selected && keyAnswer) {
+          for (const opt of options) {
+            if (keyAnswer.toLowerCase().includes(opt.toLowerCase())) {
+              selected = opt;
+              break;
+            }
+          }
+        }
+        if (!selected && options.length > 0) {
+          selected = options[0];
+        }
+
+        slots.push({ letter, options, selected });
+      }
+      return slots;
+    }
+
+    // Helper to extract Matching pairs from question and key info
+    function getMatchingPairs(q, keyInfo) {
+      const pairs = [];
+      const rawKey = (keyInfo && keyInfo.answer) || '';
+      
+      const regex = /\d+\.\s*([^→;\n]+?)\s*→\s*([^;\n]+)/g;
+      let match;
+      while ((match = regex.exec(rawKey)) !== null) {
+        pairs.push({ left: match[1].trim(), right: match[2].trim() });
+      }
+
+      if (pairs.length === 0 && q.data) {
+        const colA = q.data.col_a || {};
+        const colB = q.data.col_b || {};
+        const aKeys = Object.keys(colA).sort((a, b) => parseInt(a) - parseInt(b));
+        const bKeys = Object.keys(colB).sort();
+        
+        aKeys.forEach((aKey, idx) => {
+          const left = colA[aKey] || '';
+          const bKey = bKeys[idx];
+          const right = bKey ? colB[bKey] : '';
+          if (left || right) pairs.push({ left, right });
+        });
+      }
+
+      if (pairs.length === 0) {
+        pairs.push({ left: '', right: '' });
+      }
+      return pairs;
+    }
+
+    function addMatchingPairRow(qIdx) {
+      const container = document.getElementById(`matching-pairs-list-${qIdx}`);
+      if (!container) return;
+      const pairIdx = container.querySelectorAll('.matching-pair-row').length + 1;
+      const div = document.createElement('div');
+      div.className = 'matching-pair-row';
+      div.style.cssText = 'display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px;align-items:center;background:var(--color-surface);padding:8px 10px;border-radius:var(--radius-md);border:1px solid var(--color-border-subtle);margin-top:6px;';
+      div.innerHTML = `
+        <input class="pair-left form-input" value="" placeholder="Concepto (Columna A ${pairIdx})" />
+        <span style="color:var(--color-accent);font-weight:bold;font-size:16px;">→</span>
+        <input class="pair-right form-input" value="" placeholder="Pareja Correcta (Columna B ${pairIdx})" />
+        <button type="button" class="btn-ghost" onclick="this.closest('.matching-pair-row').remove()" style="padding:6px 10px;color:var(--color-error);" title="Eliminar pareja">
+          <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
+        </button>
+      `;
+      container.appendChild(div);
+      lucide.createIcons();
+    }
+
+    // Interactive Question Editor Renderer
     function renderEditor(data) {
       currentParseResult = data;
       const container = document.getElementById('editor-questions-container');
       container.innerHTML = '';
-      
+
+      // Toolbar for adding new questions
+      const toolbarHtml = `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;background:var(--color-surface-hover);padding:12px 16px;border-radius:var(--radius-md);border:1px solid var(--color-border-subtle);">
+        <span style="font-size:13px;font-weight:700;color:var(--color-text-muted);"><i data-lucide="plus-circle" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i> Añadir nueva pregunta:</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="btn-ghost" onclick="addNewQuestion('multichoice')" style="padding:6px 12px;font-size:12.5px;color:var(--color-mc);">+ Múltiple</button>
+          <button type="button" class="btn-ghost" onclick="addNewQuestion('truefalse')" style="padding:6px 12px;font-size:12.5px;color:var(--color-tf);">+ Cierto/Falso</button>
+          <button type="button" class="btn-ghost" onclick="addNewQuestion('cloze')" style="padding:6px 12px;font-size:12.5px;color:var(--color-cl);">+ Completar</button>
+          <button type="button" class="btn-ghost" onclick="addNewQuestion('matching')" style="padding:6px 12px;font-size:12.5px;color:var(--color-mt);">+ Emparejamiento</button>
+        </div>
+      </div>`;
+      container.innerHTML = toolbarHtml;
+
       data.questions.forEach((q, i) => {
-        const typeInfo = q.type;
         const keyInfo = data.answer_key[q.num] || { answer: '' };
-        
-        let html = `<div class="editor-card" data-idx="${i}">
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-            <strong style="color:var(--color-primary);font-size:14px;">Pregunta ${q.num}</strong>
-            <span style="font-size:11px;background:var(--color-bg);padding:2px 6px;border-radius:4px;border:1px solid var(--color-border);">${q.type}</span>
+        let html = `<div class="editor-card" data-idx="${i}" data-qnum="${q.num}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <strong style="color:var(--color-accent);font-size:15px;font-family:var(--font-heading);">Pregunta ${q.num}</strong>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="type-badge ${q.type}">${q.type}</span>
+              <button type="button" class="btn-ghost" onclick="deleteQuestionCard(this)" style="padding:4px 8px;color:var(--color-error);font-size:12px;" title="Eliminar esta pregunta">
+                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+              </button>
+            </div>
           </div>`;
-          
-        if (q.type === 'multichoice' || q.type === 'truefalse') {
-           html += `<div><label style="font-size:11px;color:var(--color-text-muted);">Enunciado</label><textarea class="q-stem">${q.data.stem || ''}</textarea></div>`;
+
+        if (q.type === 'multichoice' || q.type === 'truefalse' || q.type === 'matching') {
+          html += `<div><label class="field-label">Enunciado de la Pregunta</label><textarea class="q-stem" rows="2">${q.data.stem || ''}</textarea></div>`;
         }
-        
+
         if (q.type === 'multichoice') {
-           html += `<div style="margin-top:8px;"><label style="font-size:11px;color:var(--color-text-muted);">Opciones (A, B, C...)</label>`;
-           for (const [letter, opt] of Object.entries(q.data.options)) {
-             html += `<div style="display:flex;gap:6px;margin-top:4px;"><span style="font-weight:bold;width:15px;">${letter}</span><input class="q-opt" data-letter="${letter}" value="${opt.replace(/"/g, '&quot;')}"/></div>`;
-           }
-           html += `</div>`;
+          html += `<div style="margin-top:12px;"><label class="field-label">Opciones de Respuesta</label>`;
+          const optEntries = Object.entries(q.data.options || {});
+          optEntries.forEach(([letter, optText]) => {
+            html += `<div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+              <span style="font-weight:800;color:var(--color-accent);width:16px;">${letter}</span>
+              <input class="q-opt" data-letter="${letter}" value="${optText.replace(/"/g, '&quot;')}" />
+            </div>`;
+          });
+          html += `</div>`;
+          
+          html += `<div style="margin-top:14px;"><label class="field-label" style="color:var(--color-success);">Respuesta Correcta Identificada</label>
+            <select class="q-ans form-input" style="border-color:var(--color-success);">`;
+          optEntries.forEach(([letter, optText]) => {
+            const isCorrect = (keyInfo.answer && (keyInfo.answer.toUpperCase() === letter || optText.toLowerCase().includes(keyInfo.answer.toLowerCase()) || keyInfo.answer.toLowerCase().includes(optText.toLowerCase())));
+            html += `<option value="${optText.replace(/"/g, '&quot;')}" ${isCorrect ? 'selected' : ''}>Opción ${letter}: ${optText}</option>`;
+          });
+          html += `</select></div>`;
+
+        } else if (q.type === 'truefalse') {
+          html += `<div style="margin-top:14px;"><label class="field-label" style="color:var(--color-success);">Respuesta Correcta (Verdadero / Falso)</label>
+            <select class="q-ans form-input" style="border-color:var(--color-success);">
+              <option value="Verdadero" ${keyInfo.answer.toLowerCase() === 'verdadero' ? 'selected' : ''}>Verdadero</option>
+              <option value="Falso" ${keyInfo.answer.toLowerCase() === 'falso' ? 'selected' : ''}>Falso</option>
+            </select>
+          </div>`;
+
         } else if (q.type === 'cloze') {
-           html += `<div><label style="font-size:11px;color:var(--color-text-muted);">Texto Completo</label><textarea class="q-text" style="min-height:80px;">${q.data.text || ''}</textarea></div>`;
+          html += `<div><label class="field-label">Texto de la Pregunta (Cloze con espacios [A: ...])</label><textarea class="q-text" rows="3">${q.data.text || ''}</textarea></div>`;
+          
+          const slots = getClozeSlots(q.data.text || '', keyInfo.answer);
+          if (slots.length > 0) {
+            html += `<div style="margin-top:14px;background:var(--color-bg);padding:14px;border-radius:var(--radius-md);border:1px solid var(--color-border);">
+              <label class="field-label" style="color:var(--color-success);margin-bottom:10px;">
+                <i data-lucide="check-circle-2" style="width:14px;height:14px;color:var(--color-success);"></i>
+                Seleccionar Respuesta Correcta por Espacio Embebido
+              </label>
+              <div style="display:flex;flex-direction:column;gap:10px;">`;
+            
+            slots.forEach(slot => {
+              html += `<div style="display:flex;align-items:center;gap:12px;">
+                <span style="font-weight:800;color:var(--color-accent);font-size:13px;width:90px;">Espacio ${slot.letter}:</span>
+                <select class="q-cloze-slot-ans form-input" data-slot="${slot.letter}" style="flex:1;border-color:var(--color-success);">`;
+              slot.options.forEach(opt => {
+                const isSel = opt.toLowerCase() === slot.selected.toLowerCase();
+                html += `<option value="${opt.replace(/"/g, '&quot;')}" ${isSel ? 'selected' : ''}>${opt}</option>`;
+              });
+              html += `</select></div>`;
+            });
+            html += `</div></div>`;
+          } else {
+            html += `<div style="margin-top:14px;"><label class="field-label" style="color:var(--color-success);">Respuesta Correcta Identificada</label>
+              <input class="q-ans" value="${keyInfo.answer.replace(/"/g, '&quot;')}" style="border-color:var(--color-success);" />
+            </div>`;
+          }
+
         } else if (q.type === 'matching') {
-           html += `<div><label style="font-size:11px;color:var(--color-text-muted);">Enunciado</label><textarea class="q-stem">${q.data.stem || ''}</textarea></div>`;
+          const pairs = getMatchingPairs(q, keyInfo);
+          html += `<div style="margin-top:14px;background:var(--color-bg);padding:14px;border-radius:var(--radius-md);border:1px solid var(--color-border);">
+            <label class="field-label" style="color:var(--color-success);margin-bottom:10px;">
+              <i data-lucide="link-2" style="width:14px;height:14px;color:var(--color-success);"></i>
+              Parejas de Emparejamiento (Concepto Columna A → Pareja Columna B)
+            </label>
+            <div id="matching-pairs-list-${i}" style="display:flex;flex-direction:column;gap:8px;">`;
+
+          pairs.forEach((p, pIdx) => {
+            html += `<div class="matching-pair-row" style="display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px;align-items:center;background:var(--color-surface);padding:8px 10px;border-radius:var(--radius-md);border:1px solid var(--color-border-subtle);">
+              <input class="pair-left form-input" value="${p.left.replace(/"/g, '&quot;')}" placeholder="Concepto (Columna A)" />
+              <span style="color:var(--color-accent);font-weight:bold;font-size:16px;">→</span>
+              <input class="pair-right form-input" value="${p.right.replace(/"/g, '&quot;')}" placeholder="Pareja Correcta (Columna B)" />
+              <button type="button" class="btn-ghost" onclick="this.closest('.matching-pair-row').remove()" style="padding:6px 10px;color:var(--color-error);" title="Eliminar pareja">
+                <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
+              </button>
+            </div>`;
+          });
+
+          html += `</div>
+            <button type="button" class="btn-ghost" onclick="addMatchingPairRow(${i})" style="margin-top:10px;padding:8px 14px;font-size:12.5px;color:var(--color-accent);width:100%;">
+              <i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar Nueva Pareja
+            </button>
+          </div>`;
         }
-        
-        html += `<div style="margin-top:10px;"><label style="font-size:11px;color:var(--color-text-muted);">Respuesta Correcta</label>
-            <input class="q-ans" value="${keyInfo.answer.replace(/"/g, '&quot;')}" />
-        </div></div>`;
+
+        html += `</div>`;
         container.innerHTML += html;
       });
     }
@@ -1109,281 +1515,120 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const qs = [];
       const ak = {};
       const cards = document.querySelectorAll('.editor-card');
-      cards.forEach(card => {
-        const idx = parseInt(card.getAttribute('data-idx'));
-        const originalQ = currentParseResult.questions[idx];
-        const newQ = JSON.parse(JSON.stringify(originalQ)); // clone
-        
-        if (newQ.type === 'multichoice' || newQ.type === 'truefalse') {
+      
+      cards.forEach((card, newIndex) => {
+        const qNum = newIndex + 1; // Re-index questions cleanly 1, 2, 3...
+        const idxAttr = card.getAttribute('data-idx');
+        const originalQ = (currentParseResult && currentParseResult.questions && idxAttr !== null && currentParseResult.questions[parseInt(idxAttr)]) 
+                          ? currentParseResult.questions[parseInt(idxAttr)] 
+                          : { num: qNum, type: 'multichoice', data: {} };
+                          
+        const newQ = JSON.parse(JSON.stringify(originalQ));
+        newQ.num = qNum; // Update question number if additions/deletions happened
+
+        // Detect type from card badge
+        const badgeEl = card.querySelector('.type-badge');
+        if (badgeEl) {
+          const typeClass = Array.from(badgeEl.classList).find(c => ['multichoice', 'truefalse', 'cloze', 'matching'].includes(c));
+          if (typeClass) newQ.type = typeClass;
+        }
+
+        if (newQ.type === 'multichoice' || newQ.type === 'truefalse' || newQ.type === 'matching') {
           const stemEl = card.querySelector('.q-stem');
           if (stemEl) newQ.data.stem = stemEl.value;
         }
+
         if (newQ.type === 'multichoice') {
-           const optEls = card.querySelectorAll('.q-opt');
-           optEls.forEach(optEl => {
-             newQ.data.options[optEl.getAttribute('data-letter')] = optEl.value;
-           });
+          const optEls = card.querySelectorAll('.q-opt');
+          newQ.data.options = newQ.data.options || {};
+          optEls.forEach(optEl => {
+            newQ.data.options[optEl.getAttribute('data-letter')] = optEl.value;
+          });
+          const ansEl = card.querySelector('.q-ans');
+          ak[qNum] = { type: newQ.type, answer: ansEl ? ansEl.value : '' };
+
+        } else if (newQ.type === 'truefalse') {
+          const ansEl = card.querySelector('.q-ans');
+          ak[qNum] = { type: newQ.type, answer: ansEl ? ansEl.value : 'Verdadero' };
+
         } else if (newQ.type === 'cloze') {
-           const textEl = card.querySelector('.q-text');
-           if (textEl) newQ.data.text = textEl.value;
+          const textEl = card.querySelector('.q-text');
+          if (textEl) newQ.data.text = textEl.value;
+          
+          const slotSelects = card.querySelectorAll('.q-cloze-slot-ans');
+          if (slotSelects.length > 0) {
+            const slotAnswers = [];
+            slotSelects.forEach(sel => {
+              const letter = sel.getAttribute('data-slot');
+              slotAnswers.push(`${letter}. ${sel.value}`);
+            });
+            ak[qNum] = { type: newQ.type, answer: slotAnswers.join('; ') };
+          } else {
+            const ansEl = card.querySelector('.q-ans');
+            ak[qNum] = { type: newQ.type, answer: ansEl ? ansEl.value : '' };
+          }
+
         } else if (newQ.type === 'matching') {
-           const stemEl = card.querySelector('.q-stem');
-           if (stemEl) newQ.data.stem = stemEl.value;
+          const pairRows = card.querySelectorAll('.matching-pair-row');
+          const colA = {};
+          const colB = {};
+          const keyPairs = [];
+
+          pairRows.forEach((row, pIdx) => {
+            const leftVal = row.querySelector('.pair-left').value.trim();
+            const rightVal = row.querySelector('.pair-right').value.trim();
+            if (leftVal || rightVal) {
+              const numKey = String(pIdx + 1);
+              const letterKey = String.fromCharCode(97 + pIdx);
+              colA[numKey] = leftVal;
+              colB[letterKey] = rightVal;
+              keyPairs.push(`${numKey}. ${leftVal} → ${rightVal}`);
+            }
+          });
+
+          newQ.data.col_a = colA;
+          newQ.data.col_b = colB;
+          ak[qNum] = { type: newQ.type, answer: keyPairs.join('; ') };
         }
+
         qs.push(newQ);
-        
-        const ansEl = card.querySelector('.q-ans');
-        ak[newQ.num] = { type: newQ.type, answer: ansEl.value };
       });
       return { questions: qs, answer_key: ak };
     }
 
-    
+    // Stats Updater
     function updateSuccessStats(stats) {
-        const g = stats.grades || {};
-        const fmt = n => Number(n).toFixed(4).replace(/\.?0+$/, '') + ' pts';
-        const total = (stats.multichoice || 0) + (stats.truefalse || 0) + (stats.matching || 0) + (stats.cloze || 0);
+      const g = stats.grades || {};
+      const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '') + ' pts';
+      const total = (stats.multichoice || 0) + (stats.truefalse || 0) + (stats.matching || 0) + (stats.cloze || 0);
+
+      document.getElementById('success-subtitle').textContent = `${total} pregunta${total !== 1 ? 's' : ''} extraída${total !== 1 ? 's' : ''} &bull; ${downloadFilename}`;
+      document.getElementById('stat-mc').textContent = stats.multichoice || 0;
+      document.getElementById('stat-tf').textContent = stats.truefalse   || 0;
+      document.getElementById('stat-mt').textContent = stats.matching    || 0;
+      document.getElementById('stat-cl').textContent = stats.cloze       || 0;
+
+      if (g.multichoice !== undefined) {
+        document.getElementById('grade-mc').textContent = fmt(g.multichoice) + '/preg';
+        document.getElementById('grade-tf').textContent = fmt(g.truefalse)   + '/preg';
+        document.getElementById('grade-mt').textContent = fmt(g.matching)    + '/preg';
+        document.getElementById('grade-cl').textContent = fmt(g.cloze)       + '/preg';
         
-        document.getElementById('success-subtitle').textContent = `${total} pregunta${total !== 1 ? 's' : ''} procesada${total !== 1 ? 's' : ''} · ${downloadFilename}`;
-        document.getElementById('stat-mc').textContent = stats.multichoice || 0;
-        document.getElementById('stat-tf').textContent = stats.truefalse   || 0;
-        document.getElementById('stat-mt').textContent = stats.matching    || 0;
-        document.getElementById('stat-cl').textContent = stats.cloze       || 0;
-
-        if (g.multichoice !== undefined) {
-          document.getElementById('grade-mc').textContent = fmt(g.multichoice) + '/preg';
-          document.getElementById('grade-tf').textContent = fmt(g.truefalse)   + '/preg';
-          document.getElementById('grade-mt').textContent = fmt(g.matching)    + '/preg';
-          document.getElementById('grade-cl').textContent = fmt(g.cloze)       + '/preg';
-          document.getElementById('points-summary').textContent =
-            `Total: ${stats.total_points} pts  ·  Pesos: cierto/falso ×1 · múltiple ×2 · emparejamiento ×3 · completar ×3`;
-          document.getElementById('points-summary').style.display = 'block';
-        }
-    }
-
-    document.getElementById('btn-generate-xml').addEventListener('click', async () => {
-      const { questions, answer_key } = collectEditorData();
-      
-      const payload = {
-         filename: currentUploadMetadata.filename,
-         category: currentUploadMetadata.category,
-         total_points: currentUploadMetadata.total_points,
-         questions,
-         answer_key
-      };
-      
-      showPanel('progress');
-      document.getElementById('progress-subtitle').textContent = 'Generando archivo XML...';
-      document.getElementById('progress-bar-fill').style.width = '50%';
-      
-      try {
-        const res = await fetch('/api/generate_xml', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify(payload)
-        });
-        
-        stopProgress(res.ok);
-        if (!res.ok) {
-          let errMsg = `Error del servidor (${res.status})`;
-          try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
-          showError(errMsg);
-          return;
-        }
-
-        const statsHeader = res.headers.get('X-Question-Stats');
-        if (statsHeader) updateSuccessStats(JSON.parse(statsHeader));
-
-        const disposition = res.headers.get('Content-Disposition');
-        let filename = 'examen_moodle.xml';
-        if (disposition && disposition.indexOf('filename=') !== -1) {
-          const match = disposition.match(/filename="(.+)"/);
-          if (match) filename = match[1];
-        }
-
-        const blob = await res.blob();
-        downloadBlob = blob;
-        downloadFilename = filename;
-
-        document.getElementById('gemini-notice').style.display = currentParseResult.was_reformatted ? 'block' : 'none';
-        showPanel('success');
-        
-        if (window.pywebview) {
-           await window.pywebview.api.save_xml_file(await blob.text(), filename);
-        }
-        
-      } catch (err) {
-        stopProgress(false);
-        showError("Error de red: " + err.message);
+        const summary = document.getElementById('points-summary');
+        summary.textContent = `Puntaje Total: ${stats.total_points} pts | Ponderación: V/F ×1 · Múltiple ×2 · Emparejar ×3 · Completar ×3`;
+        summary.style.display = 'block';
       }
-    });
-
-    // ── History Logic ────────────────────────────────────────────────────────
-    const modalHistory = document.getElementById('modal-history');
-    document.getElementById('btn-history').addEventListener('click', async () => {
-       modalHistory.style.display = 'flex';
-       document.body.style.overflow = 'hidden';
-       const list = document.getElementById('history-list');
-       list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-text-muted);">Cargando...</div>';
-       
-       try {
-         const res = await fetch('/api/history');
-         if (!res.ok) throw new Error('Error al cargar historial');
-         const data = await res.json();
-         if (data.length === 0) {
-            list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-text-muted);">No hay exámenes generados aún.</div>';
-            return;
-         }
-         list.innerHTML = data.map(item => `
-            <div class="history-item">
-              <div>
-                <strong style="display:block;margin-bottom:4px;font-size:14px;">${item.filename}</strong>
-                <span style="font-size:12px;color:var(--color-text-muted);">${item.category} &bull; ${item.total_points} pts &bull; ${new Date(item.created_at).toLocaleString()}</span>
-              </div>
-              <button class="btn-ghost" onclick="downloadHistory(${item.id}, '${item.filename.replace(/'/g, "\'")}')" style="padding:8px 12px;font-size:12px;">
-                <i data-lucide="download" style="width:14px;height:14px;margin-right:6px;"></i>XML
-              </button>
-            </div>
-         `).join('');
-         lucide.createIcons();
-       } catch (err) {
-         list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-error);">Error cargando historial</div>';
-       }
-    });
-    
-    function closeHistory() {
-       modalHistory.style.display = 'none';
-       document.body.style.overflow = '';
-    }
-    
-    async function downloadHistory(id, originalFilename) {
-       try {
-          const res = await fetch(`/api/history/${id}/download`);
-          if (!res.ok) throw new Error('Error en descarga');
-          const blob = await res.blob();
-          const stem = originalFilename.split('.').slice(0, -1).join('.') || originalFilename;
-          const outName = stem + '.xml';
-          
-          if (window.pywebview) {
-             await window.pywebview.api.save_xml_file(await blob.text(), outName);
-          } else {
-             const url = URL.createObjectURL(blob);
-             const a = document.createElement('a');
-             a.href = url;
-             a.download = outName;
-             a.click();
-             URL.revokeObjectURL(url);
-          }
-       } catch (err) {
-          alert("Error descargando el historial: " + err.message);
-       }
     }
 
-    // ── Drop zone events ─────────────────────────────────────────────────────
-    dropZone.addEventListener('click',    () => fileInput.click());
-    dropZone.addEventListener('keydown',  e  => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
-    dropZone.addEventListener('dragover', e  => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-    dropZone.addEventListener('dragleave',()  => dropZone.classList.remove('drag-over'));
-    dropZone.addEventListener('drop', e => {
-      e.preventDefault();
-      dropZone.classList.remove('drag-over');
-      const file = e.dataTransfer.files[0];
-      if (file) handleFileSelected(file);
-    });
-    fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFileSelected(fileInput.files[0]); });
-    btnRemoveFile.addEventListener('click', e => { e.stopPropagation(); clearFile(); });
-
-    function handleFileSelected(file) {
-      const ext = file.name.split('.').pop().toLowerCase();
-      if (!['pdf', 'txt'].includes(ext)) {
-        showPanel('error');
-        errorMessage.textContent = `Formato no válido: ".${ext}". Solo se aceptan archivos .pdf o .txt.`;
-        return;
-      }
-      showFilePreview(file);
-    }
-
-    // ── Points validation ────────────────────────────────────────────────────
-    function validatePoints() {
-      const val = parseFloat(pointsInput.value);
-      const invalid = isNaN(val) || val <= 0;
-      pointsError.style.display    = invalid ? 'block' : 'none';
-      pointsInput.style.borderColor = invalid ? 'var(--color-error)' : '';
-      return !invalid;
-    }
-    pointsInput.addEventListener('input', validatePoints);
-    pointsInput.addEventListener('blur',  validatePoints);
-
-    // ── Error display ────────────────────────────────────────────────────────
-    function showError(msg) {
-      showPanel('error');
-      errorMessage.innerHTML = '';
-      let ocrCheckText = '';
-      if (typeof msg === 'object' && msg !== null && msg.errors) {
-        const titleEl = document.createElement('p');
-        titleEl.style.cssText = 'font-weight:700;margin-bottom:8px;';
-        titleEl.textContent = msg.message || 'Se detectaron errores en el examen:';
-        errorMessage.appendChild(titleEl);
-        const ulEl = document.createElement('ul');
-        ulEl.style.cssText = 'padding-left:18px;display:flex;flex-direction:column;gap:4px;';
-        msg.errors.forEach(err => {
-          const liEl = document.createElement('li');
-          liEl.textContent = err;
-          ulEl.appendChild(liEl);
-          ocrCheckText += ' ' + err;
-        });
-        errorMessage.appendChild(ulEl);
-      } else {
-        errorMessage.textContent = String(msg);
-        ocrCheckText = String(msg);
-      }
-      const isOcrIssue = /escaneado|texto legible|sin texto|no contiene texto/i.test(ocrCheckText);
-      ocrHint.style.display = isOcrIssue ? 'block' : 'none';
-      if (isOcrIssue) lucide.createIcons();
-    }
-
-    // ── Progress ─────────────────────────────────────────────────────────────
-    let progressInterval;
-    function startProgress() {
-      const pSubtitle = document.getElementById('progress-subtitle');
-      const pFill     = document.getElementById('progress-bar-fill');
-      let elapsed = 0;
-      const sequence = [
-        { time: 0,  text: 'Extrayendo texto del documento...' },
-        { time: 3,  text: 'Analizando la estructura del examen...' },
-        { time: 8,  text: 'Reformateando contenido (esto puede tomar unos 30s)...' },
-        { time: 18, text: 'Revisando consistencia de las preguntas...' },
-        { time: 30, text: 'El servicio está un poco lento, reintentando conexión...' },
-      ];
-      pFill.style.width      = '0%';
-      pSubtitle.textContent  = sequence[0].text;
-      progressInterval = setInterval(() => {
-        elapsed += 1;
-        let pct = 0;
-        if      (elapsed <= 10) pct = (elapsed / 10) * 40;
-        else if (elapsed <= 30) pct = 40 + ((elapsed - 10) / 20) * 50;
-        else                    pct = 90 + Math.min((elapsed - 30) * 0.2, 8);
-        pFill.style.width = `${pct}%`;
-        const currentStage = sequence.slice().reverse().find(s => elapsed >= s.time);
-        if (currentStage && pSubtitle.textContent !== currentStage.text) {
-          pSubtitle.style.opacity = 0;
-          setTimeout(() => { pSubtitle.textContent = currentStage.text; pSubtitle.style.opacity = 1; }, 200);
-        }
-      }, 1000);
-    }
-    function stopProgress(success) {
-      clearInterval(progressInterval);
-      if (success) document.getElementById('progress-bar-fill').style.width = '100%';
-    }
-
-    // ── Convert ───────────────────────────────────────────────────────────────
+    // Conversion Step 1: Parse
     btnConvert.addEventListener('click', async () => {
       if (!selectedFile) return;
-      if (!validatePoints()) {
-        pointsInput.focus();
-        pointsInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const ptsVal = parseFloat(pointsInput.value);
+      if (isNaN(ptsVal) || ptsVal <= 0) {
+        pointsError.style.display = 'block';
         return;
       }
+      pointsError.style.display = 'none';
 
       showPanel('progress');
       startProgress();
@@ -1404,62 +1649,235 @@ Ahora convierte el examen adjunto a este formato.</pre>
 
         const parsedData = await res.json();
         currentUploadMetadata = {
-           filename: selectedFile.name,
-           category: categoryInput.value.trim() || 'mis-preguntas',
-           total_points: parseFloat(pointsInput.value)
+          filename: selectedFile.name,
+          category: categoryInput.value.trim() || 'mis-preguntas',
+          total_points: ptsVal
         };
-        
+
         renderEditor(parsedData);
         showPanel('editor');
         lucide.createIcons();
-
       } catch (err) {
         stopProgress(false);
-        showError("No se pudo conectar con el servidor. Verifica que el programa esté ejecutándose correctamente. Detalle: " + err.message);
+        showError("No se pudo conectar con el servidor backend: " + err.message);
       }
     });
-    
-    // ── Toast ─────────────────────────────────────────────────────────────────
-    let toastTimer = null;
-    function showToast(msg, type = 'success') {
-      toastEl.textContent = (type === 'success' ? '✓ ' : '⚠ ') + msg;
-      toastEl.className   = 'toast' + (type === 'error' ? ' error' : '');
-      void toastEl.offsetWidth;
-      toastEl.classList.add('show');
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => { toastEl.classList.remove('show'); }, 4000);
-    }
 
-    // ── Download ──────────────────────────────────────────────────────────────
-    function _btnDownloadFeedback() {
-      btnDownload.style.background = '#16a34a';
-      btnDownload.innerHTML = '<i data-lucide="check-circle-2" style="width:16px;height:16px;"></i> ¡Guardado!';
-      lucide.createIcons();
-      setTimeout(() => {
-        btnDownload.style.background = '';
-        btnDownload.innerHTML = '<i data-lucide="download" style="width:16px;height:16px;"></i> Descargar XML';
+    // Conversion Step 2: Generate XML
+    document.getElementById('btn-generate-xml').addEventListener('click', async () => {
+      const { questions, answer_key } = collectEditorData();
+      const payload = {
+        filename: currentUploadMetadata.filename,
+        category: currentUploadMetadata.category,
+        total_points: currentUploadMetadata.total_points,
+        questions,
+        answer_key
+      };
+
+      showPanel('progress');
+      document.getElementById('progress-subtitle').textContent = 'Construyendo estructura Moodle XML...';
+      document.getElementById('progress-bar-fill').style.width = '60%';
+
+      try {
+        const res = await fetch('/api/generate_xml', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        stopProgress(res.ok);
+        if (!res.ok) {
+          let errMsg = `Error (${res.status})`;
+          try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
+          showError(errMsg);
+          return;
+        }
+
+        const statsHeader = res.headers.get('X-Question-Stats');
+        if (statsHeader) updateSuccessStats(JSON.parse(statsHeader));
+
+        const disposition = res.headers.get('Content-Disposition');
+        let filename = 'examen_moodle.xml';
+        if (disposition && disposition.includes('filename=')) {
+          const match = disposition.match(/filename="(.+)"/);
+          if (match) filename = match[1];
+        }
+
+        const blob = await res.blob();
+        downloadBlob = blob;
+        downloadFilename = filename;
+
+        document.getElementById('gemini-notice').style.display = currentParseResult.was_reformatted ? 'block' : 'none';
+        showPanel('success');
+
+        if (window.pywebview && window.pywebview.api) {
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const b64 = reader.result.split(',')[1];
+            await window.pywebview.api.save_xml_file(downloadFilename, b64);
+          };
+          reader.readAsDataURL(blob);
+        }
+      } catch (err) {
+        stopProgress(false);
+        showError("Error de comunicación: " + err.message);
+      }
+    });
+
+    // History Logic
+    const modalHistory = document.getElementById('modal-history');
+    document.getElementById('btn-history').addEventListener('click', async () => {
+      modalHistory.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      const list = document.getElementById('history-list');
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-text-muted);">Cargando historial de conversiones...</div>';
+
+      try {
+        const res = await fetch('/api/history');
+        if (!res.ok) throw new Error('Error al consultar servidor');
+        const data = await res.json();
+        if (data.length === 0) {
+          list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-text-muted);">No hay conversiones guardadas aún.</div>';
+          return;
+        }
+        list.innerHTML = data.map(item => `
+          <div style="padding:14px 16px;border-bottom:1px solid var(--color-border-subtle);display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <strong style="display:block;font-size:14px;color:var(--color-text);">${item.filename}</strong>
+              <span style="font-size:12px;color:var(--color-text-muted);">${item.category} &bull; ${item.total_points} pts &bull; ${new Date(item.created_at).toLocaleString()}</span>
+            </div>
+            <button class="btn btn-ghost" onclick="downloadHistory(${item.id}, '${item.filename.replace(/'/g, "\\'")}')" style="padding:6px 12px;font-size:12.5px;">
+              <i data-lucide="download" style="width:14px;height:14px;"></i> Descargar XML
+            </button>
+          </div>
+        `).join('');
         lucide.createIcons();
-      }, 2500);
+      } catch (err) {
+        list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-error);">Error al cargar el historial</div>';
+      }
+    });
+
+    function closeHistory() {
+      modalHistory.classList.remove('open');
+      document.body.style.overflow = '';
     }
 
-    btnDownload.addEventListener('click', async () => {
+    async function downloadHistory(id, originalFilename) {
+      try {
+        const res = await fetch(`/api/history/${id}/download`);
+        if (!res.ok) throw new Error('Falló descarga');
+        const blob = await res.blob();
+        const stem = originalFilename.split('.').slice(0, -1).join('.') || originalFilename;
+        const outName = stem + '.xml';
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = outName;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('XML descargado exitosamente');
+      } catch (err) {
+        showToast("Error descargando historial: " + err.message, 'error');
+      }
+    }
+
+    // Dropzone Events
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) handleFileSelected(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFileSelected(fileInput.files[0]); });
+    btnRemoveFile.addEventListener('click', e => { e.stopPropagation(); clearFile(); });
+
+    function handleFileSelected(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['pdf', 'txt'].includes(ext)) {
+        showPanel('error');
+        document.getElementById('error-message').textContent = `Formato no soportado ".${ext}". Selecciona un archivo .pdf o .txt.`;
+        return;
+      }
+      showFilePreview(file);
+    }
+
+    // Error Handler
+    function showError(msg) {
+      showPanel('error');
+      const errorMessage = document.getElementById('error-message');
+      const ocrHint = document.getElementById('error-ocr-hint');
+      errorMessage.innerHTML = '';
+
+      let textContent = '';
+      if (typeof msg === 'object' && msg !== null && msg.errors) {
+        const p = document.createElement('p');
+        p.style.fontWeight = '700';
+        p.textContent = msg.message || 'Se detectaron errores en la estructura del examen:';
+        errorMessage.appendChild(p);
+        const ul = document.createElement('ul');
+        ul.style.paddingLeft = '18px';
+        ul.style.marginTop = '6px';
+        msg.errors.forEach(err => {
+          const li = document.createElement('li');
+          li.textContent = err;
+          ul.appendChild(li);
+          textContent += ' ' + err;
+        });
+        errorMessage.appendChild(ul);
+      } else {
+        errorMessage.textContent = String(msg);
+        textContent = String(msg);
+      }
+
+      const isOcr = /escaneado|texto legible|sin texto|ocr/i.test(textContent);
+      ocrHint.style.display = isOcr ? 'block' : 'none';
+      if (isOcr) lucide.createIcons();
+    }
+
+    // Progress Simulation
+    let progressInterval;
+    function startProgress() {
+      const pSubtitle = document.getElementById('progress-subtitle');
+      const pFill = document.getElementById('progress-bar-fill');
+      let elapsed = 0;
+      const sequence = [
+        { time: 0,  text: 'Extrayendo texto del examen...' },
+        { time: 3,  text: 'Analizando la estructura y preguntas...' },
+        { time: 7,  text: 'Aplicando prefiltro de consistencia IA...' },
+        { time: 14, text: 'Construyendo modelo de datos de preguntas...' }
+      ];
+      pFill.style.width = '0%';
+      pSubtitle.textContent = sequence[0].text;
+      progressInterval = setInterval(() => {
+        elapsed += 1;
+        let pct = Math.min(elapsed * 7, 92);
+        pFill.style.width = `${pct}%`;
+        const stage = sequence.slice().reverse().find(s => elapsed >= s.time);
+        if (stage && pSubtitle.textContent !== stage.text) {
+          pSubtitle.textContent = stage.text;
+        }
+      }, 1000);
+    }
+    function stopProgress(success) {
+      clearInterval(progressInterval);
+      if (success) document.getElementById('progress-bar-fill').style.width = '100%';
+    }
+
+    // Download XML Event
+    document.getElementById('btn-download').addEventListener('click', async () => {
       if (!downloadBlob) return;
 
       if (window.pywebview && window.pywebview.api) {
         const reader = new FileReader();
         reader.onloadend = async () => {
           const b64 = reader.result.split(',')[1];
-          try {
-            const result = await window.pywebview.api.save_xml_file(downloadFilename, b64);
-            if (result && result.saved) {
-              _btnDownloadFeedback();
-              const shortPath = result.path.length > 60 ? '...' + result.path.slice(-57) : result.path;
-              showToast('Guardado en: ' + shortPath, 'success');
-            } else if (result && result.error) {
-              showToast('Error al guardar: ' + result.error, 'error');
-            }
-          } catch (e) {
-            showToast('Error inesperado al guardar: ' + (e.message || e.toString()), 'error');
+          const res = await window.pywebview.api.save_xml_file(downloadFilename, b64);
+          if (res && res.saved) {
+            showToast('Archivo guardado en tu equipo');
           }
         };
         reader.readAsDataURL(downloadBlob);
@@ -1467,16 +1885,28 @@ Ahora convierte el examen adjunto a este formato.</pre>
       }
 
       const url = URL.createObjectURL(downloadBlob);
-      const a   = document.createElement('a');
-      a.href = url; a.download = downloadFilename; a.click();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = downloadFilename;
+      a.click();
       URL.revokeObjectURL(url);
-      _btnDownloadFeedback();
-      showToast('¡Archivo descargado!', 'success');
+      showToast('Descarga iniciada exitosamente');
     });
 
-    // ── Reset ─────────────────────────────────────────────────────────────────
-    btnResetOk.addEventListener('click',  resetAll);
-    btnResetErr.addEventListener('click', resetAll);
+    // Toast Function
+    let toastTimer;
+    function showToast(msg, type = 'success') {
+      toastEl.textContent = (type === 'success' ? '✓ ' : '⚠ ') + msg;
+      toastEl.className = 'toast' + (type === 'error' ? ' error' : '');
+      void toastEl.offsetWidth;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toastEl.classList.remove('show'); }, 3500);
+    }
+
+    // Reset Handlers
+    document.getElementById('btn-reset-success').addEventListener('click', resetAll);
+    document.getElementById('btn-reset-error').addEventListener('click', resetAll);
   </script>
 </body>
 </html>

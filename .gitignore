@@ -16,6 +16,7 @@ dist/
 # Archivos temporales y de prueba
 backend/test_output.txt
 *.xml
+*.db
 
 # Variables de entorno
 .env
