@@ -647,7 +647,10 @@
     .filter-chip {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
+      flex: 1 1 0;
+      min-width: fit-content;
       padding: 6px 13px;
       font-size: 12.5px;
       font-weight: 700;
@@ -659,6 +662,19 @@
       transition: all 0.2s;
     }
     .filter-chip:hover { border-color: var(--color-border-glow); color: var(--color-text); }
+
+    /* Estado inactivo: cada chip ya lleva el color de su tipo (mismo tono
+       que el botón "+ Añadir" y el type-badge de las tarjetas), no solo al
+       seleccionarlo — así el filtro se lee como parte del mismo lenguaje
+       visual de colores por tipo, en vez de una lista de píldoras grises. */
+    .filter-chip[data-filter="all"]         { background: var(--color-accent-glow); border-color: var(--color-border-glow); color: var(--color-accent); }
+    .filter-chip[data-filter="multichoice"] { background: var(--color-mc-bg); border-color: var(--color-mc-border); color: var(--color-mc); }
+    .filter-chip[data-filter="truefalse"]   { background: var(--color-tf-bg); border-color: var(--color-tf-border); color: var(--color-tf); }
+    .filter-chip[data-filter="matching"]    { background: var(--color-mt-bg); border-color: var(--color-mt-border); color: var(--color-mt); }
+    .filter-chip[data-filter="cloze"]       { background: var(--color-cl-bg); border-color: var(--color-cl-border); color: var(--color-cl); }
+
+    /* Estado activo: mismo color pero sólido, con texto blanco — distingue
+       claramente cuál filtro está aplicado ahora mismo. */
     .filter-chip.active { color: #ffffff; border-color: transparent; }
     .filter-chip.active[data-filter="all"]        { background: var(--color-primary); }
     .filter-chip.active[data-filter="multichoice"] { background: var(--color-mc); }
@@ -1603,6 +1619,16 @@ Ahora convierte el examen adjunto a este formato.</pre>
       }
     }
 
+    // Despliega/oculta los 4 botones de tipo bajo "Añadir nueva pregunta".
+    // No hace falta volver a ocultarlos tras elegir un tipo: addNewQuestion()
+    // termina llamando a renderEditor(), que reconstruye este bloque desde
+    // cero ya colapsado.
+    function toggleAddQuestionMenu() {
+      const el = document.getElementById('add-question-types');
+      if (!el) return;
+      el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+    }
+
     function addNewQuestion(type) {
       syncParseResultFromDOM();
       const existingCards = document.querySelectorAll('.editor-card');
@@ -1988,15 +2014,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const container = document.getElementById('editor-questions-container');
       container.innerHTML = '';
 
-      // Filtro por tipo de pregunta: cuenta cada tipo y arma los chips.
-      // Vive en un contenedor con id propio para poder refrescar solo los
-      // conteos (refreshFilterChips) cuando se borra/añade una pregunta,
-      // sin tener que re-renderizar las demás tarjetas y perder ediciones
-      // en curso del usuario.
-      let filterHtml = `<div id="filter-chips-bar" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>`;
-
-      // Acciones principales (Aprobar y Generar / Cancelar): van arriba, justo
-      // debajo del filtro, para que sean accesibles sin tener que bajar hasta
+      // Acciones principales (Aprobar y Generar / Cancelar): van arriba, antes
+      // de todo lo demás, para que sean accesibles sin tener que bajar hasta
       // el final de la lista de preguntas (con exámenes largos, de 100+
       // preguntas, el usuario antes tenía que hacer scroll completo).
       const actionsHtml = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
@@ -2009,17 +2028,34 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </button>
       </div>`;
 
-      // Toolbar for adding new questions
-      const toolbarHtml = `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;background:var(--color-surface-hover);padding:12px 16px;border-radius:var(--radius-md);border:1px solid var(--color-border-subtle);">
-        <span style="font-size:13px;font-weight:700;color:var(--color-text-muted);"><i data-lucide="plus-circle" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i> Añadir nueva pregunta:</span>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      // Barra de filtro: propia tarjeta de ancho completo. Los chips llevan
+      // flex:1 (ver CSS .filter-chip) para repartirse todo el ancho entre
+      // ellos, sin dejar espacio vacío a la derecha. El contenedor conserva
+      // su id propio para poder refrescar solo los conteos
+      // (refreshFilterChips) al borrar/añadir una pregunta, sin re-renderizar
+      // toda la tarjeta ni perder ediciones en curso.
+      const filterHtml = `<div style="background:var(--color-surface-hover);border:1px solid var(--color-border-subtle);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:12px;font-weight:700;color:var(--color-text-subtle);text-transform:uppercase;letter-spacing:0.4px;flex-shrink:0;">Filtrar:</span>
+        <div id="filter-chips-bar" style="display:flex;align-items:stretch;flex-wrap:wrap;gap:8px;flex:1;"></div>
+      </div>`;
+
+      // "Añadir nueva pregunta" arranca colapsado en un solo botón — al
+      // hacerle clic se despliegan los 4 tipos; al elegir uno se agrega la
+      // pregunta y (como addNewQuestion() llama a renderEditor() al final)
+      // este bloque se reconstruye desde cero, así que vuelve a su estado
+      // colapsado automáticamente sin código extra.
+      const addQuestionHtml = `<div style="background:var(--color-surface-hover);border:1px solid var(--color-border-subtle);border-radius:var(--radius-md);padding:10px 16px;margin-bottom:18px;">
+        <button type="button" class="btn btn-ghost" style="width:100%;justify-content:flex-start;" onclick="toggleAddQuestionMenu()">
+          <i data-lucide="plus-circle" style="width:16px;height:16px;"></i> Añadir nueva pregunta
+        </button>
+        <div id="add-question-types" style="display:none;gap:8px;flex-wrap:wrap;margin-top:10px;">
           <button type="button" class="btn btn-ghost" onclick="addNewQuestion('multichoice')" style="padding:6px 12px;font-size:12.5px;color:var(--color-mc);">+ Múltiple</button>
           <button type="button" class="btn btn-ghost" onclick="addNewQuestion('truefalse')" style="padding:6px 12px;font-size:12.5px;color:var(--color-tf);">+ Cierto/Falso</button>
           <button type="button" class="btn btn-ghost" onclick="addNewQuestion('cloze')" style="padding:6px 12px;font-size:12.5px;color:var(--color-cl);">+ Completar</button>
           <button type="button" class="btn btn-ghost" onclick="addNewQuestion('matching')" style="padding:6px 12px;font-size:12.5px;color:var(--color-mt);">+ Emparejamiento</button>
         </div>
       </div>`;
-      container.innerHTML = filterHtml + actionsHtml + toolbarHtml;
+      container.innerHTML = actionsHtml + filterHtml + addQuestionHtml;
 
       data.questions.forEach((q, i) => {
         const keyInfo = data.answer_key[q.num] || { answer: '' };
@@ -2142,8 +2178,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       }
 
       const typeLabels = { multichoice: 'Múltiple', truefalse: 'Cierto/Falso', matching: 'Emparejar', cloze: 'Completar' };
-      let html = `<span style="font-size:12px;font-weight:700;color:var(--color-text-subtle);text-transform:uppercase;letter-spacing:0.4px;">Filtrar:</span>
-        <button type="button" class="filter-chip${activeFilter === 'all' ? ' active' : ''}" data-filter="all" onclick="filterQuestionsByType('all')">Todas <span class="count">(${cards.length})</span></button>`;
+      let html = `<button type="button" class="filter-chip${activeFilter === 'all' ? ' active' : ''}" data-filter="all" onclick="filterQuestionsByType('all')">Todas <span class="count">(${cards.length})</span></button>`;
       Object.entries(typeCounts).forEach(([type, count]) => {
         if (count === 0) return;
         html += `<button type="button" class="filter-chip${activeFilter === type ? ' active' : ''}" data-filter="${type}" onclick="filterQuestionsByType('${type}')">${typeLabels[type]} <span class="count">(${count})</span></button>`;
