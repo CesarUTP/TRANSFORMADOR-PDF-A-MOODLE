@@ -11,7 +11,13 @@ Corre como una app de escritorio nativa (Windows/macOS, vía `pywebview`) — no
 - **4 tipos de pregunta Moodle**: opción múltiple, verdadero/falso, emparejamiento y completar (Cloze).
 - **Respuestas múltiples**: tanto en opción múltiple como en cada espacio de una pregunta Cloze, se puede marcar más de una opción como correcta a la vez.
 - **Prefiltro de IA**: si el examen no viene en el formato esperado (numeración distinta, respuestas marcadas con ✓, claves de emparejamiento sueltas, etc.), Gemini lo normaliza automáticamente antes de procesarlo — sin inventar ni resolver ninguna respuesta que no esté indicada en el original.
-- **Editor de revisión**: antes de generar el XML final, se pueden inspeccionar y editar todas las preguntas (incluye filtros por tipo, checkboxes para respuestas múltiples, y un constructor visual para preguntas Cloze).
+- **Validación de que el archivo sea realmente una prueba**: antes de convertir nada, el sistema evalúa si el documento tiene preguntas y una clave de respuestas reales. Si le suben una presentación, un manual, un artículo o cualquier otro documento que no sea una evaluación, lo rechaza con un mensaje claro en vez de inventar preguntas a partir de su contenido.
+- **Editor de revisión interactivo**: antes de generar el XML final, se pueden inspeccionar y editar todas las preguntas.
+  - Filtro por tipo (opción múltiple, V/F, emparejar, completar), con conteo en vivo y color propio por tipo.
+  - Menú de "Añadir nueva pregunta" colapsable: se despliega en un clic y vuelve a cerrarse solo al elegir un tipo.
+  - Botones de acción (**Aprobar y Generar XML** / **Cancelar**) fijos arriba del todo — accesibles sin bajar por exámenes de 100+ preguntas — en verde y rojo respectivamente, por convención de color.
+  - Checkboxes para respuestas múltiples y un constructor visual para preguntas Cloze (sin escribir la sintaxis de corchetes a mano).
+- **Resumen visual del resultado**: al terminar, una tarjeta por cada tipo de pregunta *presente* en el examen (no se muestran tipos con 0 preguntas) y una gráfica de pastel con la distribución de los puntos totales por tipo.
 - **Historial de conversiones**: cada examen convertido queda guardado localmente y se puede volver a descargar.
 - **100% local**: el procesamiento del documento ocurre en tu equipo. La IA solo recibe el texto ya extraído, únicamente para normalizar su estructura.
 
@@ -178,7 +184,7 @@ Sube el archivo (`.pdf` o `.txt`), lo pasa por el prefiltro de Gemini si hace fa
 | `file` | `File` | Archivo `.pdf` o `.txt` |
 
 **Respuesta exitosa (200):** `{ filename, questions, answer_key, was_reformatted }`
-**Respuesta de error (422):** `{"detail": {"message": "...", "errors": [...]}}`
+**Respuesta de error (422):** `{"detail": {"message": "...", "errors": [...]}}` — incluye, entre otros casos, cuando el documento no parece ser una prueba/examen real.
 
 ### `POST /api/generate_xml`
 
@@ -229,10 +235,9 @@ PDF/TXT → Extracción de texto → [PREFILTRO GEMINI] → Parser → Validador
 |------|--------|
 | El documento **ya tiene** el formato estándar | Gemini retorna el texto sin cambios significativos |
 | El documento **no tiene** el formato estándar | Gemini reformatea **solo la estructura**, conservando preguntas y respuestas tal cual están |
+| El documento **no es una prueba real** (presentación, manual, artículo, apuntes, etc.) | Gemini responde con un centinela interno (`NO_ES_UNA_PRUEBA`); el backend lo detecta y responde `422` sin generar ninguna pregunta |
 | Una pregunta **no tiene respuesta marcada** en el original | Se marca `SIN_RESPUESTA` — el sistema bloquea el XML en vez de adivinar |
 | La API de Gemini **no está disponible** | Reintenta 3 veces (10s de espera entre intentos) antes de devolver error |
-
-Cuando Gemini normalizó el documento, la interfaz muestra un aviso informando al usuario.
 
 ---
 
