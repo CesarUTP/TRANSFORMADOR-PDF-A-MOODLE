@@ -50,6 +50,16 @@
          blanco cumpla WCAG AA (>=4.5:1) en cualquier punto del degradado. */
       --color-cta-gradient: linear-gradient(135deg, #075985 0%, #0369a1 50%, #4338ca 100%);
 
+      /* Variantes CTA para acciones positivas/negativas (aprobar y generar,
+         cancelar) — mismo criterio de contraste que --color-cta-gradient:
+         se mantienen igual de oscuras en modo claro y oscuro, porque lo que
+         importa es el contraste del texto blanco contra el botón, no el
+         fondo de la página. */
+      --color-cta-success-gradient: linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%);
+      --color-cta-danger-gradient:  linear-gradient(135deg, #7f1d2e 0%, #be123c 50%, #f43f5e 100%);
+      --shadow-glow-success: 0 0 30px rgba(16, 185, 129, 0.3);
+      --shadow-glow-danger:  0 0 30px rgba(244, 63, 94, 0.3);
+
       --color-success:        #10b981;
       --color-success-bg:     rgba(16, 185, 129, 0.12);
       --color-success-solid:  #0c855d;
@@ -365,6 +375,38 @@
       cursor: not-allowed;
       box-shadow: none;
       transform: none;
+    }
+
+    /* Verde para acciones que avanzan/confirman (procesar examen, aprobar y
+       generar XML) — refuerza por color que es la acción positiva a tomar. */
+    .btn-success {
+      background: var(--color-cta-success-gradient);
+      color: #ffffff;
+      box-shadow: var(--shadow-glow-success);
+    }
+    .btn-success:hover:not(:disabled) {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+    }
+    .btn-success:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* Rojo para la acción destructiva/de salida (cancelar) — por psicología
+       del color, contrasta con el verde de la acción de confirmar. */
+    .btn-danger {
+      background: var(--color-cta-danger-gradient);
+      color: #ffffff;
+      box-shadow: var(--shadow-glow-danger);
+    }
+    .btn-danger:hover:not(:disabled) {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(244, 63, 94, 0.35);
     }
 
     .btn-ghost {
@@ -911,7 +953,7 @@
       </div>
 
       <!-- Action Button -->
-      <button id="btn-convert" class="btn btn-primary" style="width:100%;margin-top:20px;padding:16px;font-size:16px;" disabled>
+      <button id="btn-convert" class="btn btn-success" style="width:100%;margin-top:20px;padding:16px;font-size:16px;" disabled>
         <i data-lucide="zap" style="width:20px;height:20px;"></i>
         Procesar y Convertir Examen
       </button>
@@ -946,16 +988,6 @@
       </div>
 
       <div id="editor-questions-container" style="display:flex;flex-direction:column;gap:18px;"></div>
-
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;">
-        <button id="btn-generate-xml" class="btn btn-primary" style="flex:2;">
-          <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
-          Aprobar y Generar Moodle XML
-        </button>
-        <button onclick="resetAll()" class="btn btn-ghost" style="flex:1;">
-          Cancelar
-        </button>
-      </div>
     </section>
 
     <!-- ── PANEL 4: SUCCESS ── -->
@@ -1963,6 +1995,20 @@ Ahora convierte el examen adjunto a este formato.</pre>
       // en curso del usuario.
       let filterHtml = `<div id="filter-chips-bar" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>`;
 
+      // Acciones principales (Aprobar y Generar / Cancelar): van arriba, justo
+      // debajo del filtro, para que sean accesibles sin tener que bajar hasta
+      // el final de la lista de preguntas (con exámenes largos, de 100+
+      // preguntas, el usuario antes tenía que hacer scroll completo).
+      const actionsHtml = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+        <button type="button" id="btn-generate-xml" class="btn btn-success" style="flex:2;" onclick="generateXml()">
+          <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
+          Aprobar y Generar Moodle XML
+        </button>
+        <button type="button" class="btn btn-danger" style="flex:1;" onclick="resetAll()">
+          Cancelar
+        </button>
+      </div>`;
+
       // Toolbar for adding new questions
       const toolbarHtml = `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;background:var(--color-surface-hover);padding:12px 16px;border-radius:var(--radius-md);border:1px solid var(--color-border-subtle);">
         <span style="font-size:13px;font-weight:700;color:var(--color-text-muted);"><i data-lucide="plus-circle" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i> Añadir nueva pregunta:</span>
@@ -1973,7 +2019,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <button type="button" class="btn btn-ghost" onclick="addNewQuestion('matching')" style="padding:6px 12px;font-size:12.5px;color:var(--color-mt);">+ Emparejamiento</button>
         </div>
       </div>`;
-      container.innerHTML = filterHtml + toolbarHtml;
+      container.innerHTML = filterHtml + actionsHtml + toolbarHtml;
 
       data.questions.forEach((q, i) => {
         const keyInfo = data.answer_key[q.num] || { answer: '' };
@@ -2290,7 +2336,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
     });
 
     // Conversion Step 2: Generate XML
-    document.getElementById('btn-generate-xml').addEventListener('click', async () => {
+    // Función nombrada (en vez de addEventListener) porque el botón vive
+    // dentro de editor-questions-container, cuyo innerHTML se reconstruye
+    // por completo en cada renderEditor() — un listener adjunto al nodo
+    // anterior se perdería con cada re-render.
+    async function generateXml() {
       const { questions, answer_key } = collectEditorData();
       const payload = {
         filename: currentUploadMetadata.filename,
@@ -2342,7 +2392,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         stopProgress(false);
         showError("Error de comunicación: " + err.message, 'editor');
       }
-    });
+    }
 
     // History Logic
     const modalHistory = document.getElementById('modal-history');
