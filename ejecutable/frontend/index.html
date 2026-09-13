@@ -686,7 +686,11 @@
     /* ── STATS CARDS ─────────────────────────────────────────────────────── */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      /* auto-fit (no auto-fill) para que, con menos de 4 tipos presentes en
+         el examen, las tarjetas restantes se repartan el ancho completo en
+         vez de dejar columnas vacías — nunca se genera una tarjeta para un
+         tipo con 0 preguntas (ver updateSuccessStats). */
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 12px;
       margin-bottom: 20px;
     }
@@ -1020,37 +1024,21 @@
           </div>
         </div>
 
-        <!-- Stats grid -->
-        <div class="stats-grid" id="stats-grid">
-          <div class="stat-card" style="border-top:3px solid var(--color-mc);">
-            <div class="stat-num" id="stat-mc" style="color:var(--color-mc);">—</div>
-            <div class="stat-label">Múltiple</div>
-            <div id="grade-mc" class="stat-grade" style="color:var(--color-mc);"></div>
-          </div>
-          <div class="stat-card" style="border-top:3px solid var(--color-tf);">
-            <div class="stat-num" id="stat-tf" style="color:var(--color-tf);">—</div>
-            <div class="stat-label">V / F</div>
-            <div id="grade-tf" class="stat-grade" style="color:var(--color-tf);"></div>
-          </div>
-          <div class="stat-card" style="border-top:3px solid var(--color-mt);">
-            <div class="stat-num" id="stat-mt" style="color:var(--color-mt);">—</div>
-            <div class="stat-label">Emparejar</div>
-            <div id="grade-mt" class="stat-grade" style="color:var(--color-mt);"></div>
-          </div>
-          <div class="stat-card" style="border-top:3px solid var(--color-cl);">
-            <div class="stat-num" id="stat-cl" style="color:var(--color-cl);">—</div>
-            <div class="stat-label">Completar</div>
-            <div id="grade-cl" class="stat-grade" style="color:var(--color-cl);"></div>
-          </div>
-        </div>
+        <!-- Stats grid: se rellena en updateSuccessStats() — solo aparece una
+             tarjeta por tipo si el examen realmente tiene preguntas de ese
+             tipo (ej. si no hubo preguntas de completar, esa tarjeta no se
+             genera en absoluto). -->
+        <div class="stats-grid" id="stats-grid"></div>
 
-        <!-- Points summary -->
-        <div id="points-summary" style="display:none;background:var(--color-accent-glow);border:1px solid var(--color-border-glow);border-radius:var(--radius-md);padding:12px 18px;margin-bottom:20px;font-size:13.5px;color:var(--color-text);text-align:center;">
-        </div>
-
-        <!-- Gemini notice -->
-        <div id="gemini-notice" style="display:none;background:var(--color-warning-bg);border:1px solid rgba(245,158,11,0.3);border-radius:var(--radius-md);padding:12px 18px;margin-bottom:20px;font-size:13.5px;color:var(--color-warning);line-height:1.5;">
-          ⚡ El documento original no tenía el formato esperado, así que se usó IA para normalizar su estructura antes de procesarlo, sin alterar el contenido de tus preguntas.
+        <!-- Points pie chart: distribución de los puntos totales por tipo de
+             pregunta (subtotal = preguntas del tipo × pts/pregunta), no solo
+             el conteo de preguntas. Se rellena en updateSuccessStats(). -->
+        <div id="points-chart-card" style="display:none;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:20px;margin-bottom:20px;">
+          <p style="font-size:12px;font-weight:700;color:var(--color-text-subtle);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:16px;">Distribución de puntos por tipo</p>
+          <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap;justify-content:center;">
+            <svg id="points-pie-svg" viewBox="0 0 200 200" style="width:180px;height:180px;flex-shrink:0;"></svg>
+            <div id="points-pie-legend" style="display:grid;grid-template-columns:auto auto auto;align-items:center;column-gap:10px;row-gap:10px;"></div>
+          </div>
         </div>
 
         <!-- Action buttons -->
@@ -2304,27 +2292,148 @@ Ahora convierte el examen adjunto a este formato.</pre>
     }
 
     // Stats Updater
+    const QUESTION_TYPE_DEFS = [
+      { key: 'multichoice', label: 'Múltiple',      colorVar: 'var(--color-mc)', bgVar: 'var(--color-mc-bg)', borderVar: 'var(--color-mc-border)' },
+      { key: 'truefalse',   label: 'Cierto/Falso',  colorVar: 'var(--color-tf)', bgVar: 'var(--color-tf-bg)', borderVar: 'var(--color-tf-border)' },
+      { key: 'matching',    label: 'Emparejar',     colorVar: 'var(--color-mt)', bgVar: 'var(--color-mt-bg)', borderVar: 'var(--color-mt-border)' },
+      { key: 'cloze',       label: 'Completar',     colorVar: 'var(--color-cl)', bgVar: 'var(--color-cl-bg)', borderVar: 'var(--color-cl-border)' },
+    ];
+
     function updateSuccessStats(stats) {
       const g = stats.grades || {};
       const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '') + ' pts';
-      const total = (stats.multichoice || 0) + (stats.truefalse || 0) + (stats.matching || 0) + (stats.cloze || 0);
+      const counts = {
+        multichoice: stats.multichoice || 0,
+        truefalse:   stats.truefalse   || 0,
+        matching:    stats.matching    || 0,
+        cloze:       stats.cloze       || 0,
+      };
+      const total = counts.multichoice + counts.truefalse + counts.matching + counts.cloze;
 
       document.getElementById('success-subtitle').textContent = `${total} pregunta${total !== 1 ? 's' : ''} extraída${total !== 1 ? 's' : ''} • ${downloadFilename}`;
-      document.getElementById('stat-mc').textContent = stats.multichoice || 0;
-      document.getElementById('stat-tf').textContent = stats.truefalse   || 0;
-      document.getElementById('stat-mt').textContent = stats.matching    || 0;
-      document.getElementById('stat-cl').textContent = stats.cloze       || 0;
 
-      if (g.multichoice !== undefined) {
-        document.getElementById('grade-mc').textContent = fmt(g.multichoice) + '/preg';
-        document.getElementById('grade-tf').textContent = fmt(g.truefalse)   + '/preg';
-        document.getElementById('grade-mt').textContent = fmt(g.matching)    + '/preg';
-        document.getElementById('grade-cl').textContent = fmt(g.cloze)       + '/preg';
-        
-        const summary = document.getElementById('points-summary');
-        summary.textContent = `Estos ${stats.total_points} pts en total ya quedaron repartidos arriba entre las ${total} preguntas — las de emparejar y completar valen un poco más por ser más laboriosas.`;
-        summary.style.display = 'block';
-      }
+      // Solo entra a la lista (tarjeta + porción del pastel) el tipo que
+      // realmente tiene preguntas en este examen — si no hubo, por ejemplo,
+      // preguntas de completar, ese tipo simplemente no aparece en ningún
+      // lado, en vez de mostrar una tarjeta en 0.
+      const items = QUESTION_TYPE_DEFS
+        .map(t => ({ ...t, count: counts[t.key], gradePerQ: g[t.key] || 0 }))
+        .filter(t => t.count > 0)
+        .map(t => ({ ...t, subtotal: t.count * t.gradePerQ }));
+
+      // El subtotal de puntos por tipo ya no se repite aquí — se ve en la
+      // gráfica de distribución de abajo; estas tarjetas se quedan con el
+      // dato que le es propio (cuántas preguntas y cuánto vale cada una).
+      document.getElementById('stats-grid').innerHTML = items.map(item => `
+        <div class="stat-card" style="border-top:3px solid ${item.colorVar};">
+          <div class="stat-num" style="color:${item.colorVar};">${item.count}</div>
+          <div class="stat-label">${item.label}</div>
+          ${item.gradePerQ ? `<div class="stat-grade" style="color:${item.colorVar};">${fmt(item.gradePerQ)}/preg</div>` : ''}
+        </div>
+      `).join('');
+
+      renderPointsPie(items);
+    }
+
+    // ── Gráfica de pastel: puntos totales por tipo ─────────────────────────
+    // Cada porción representa el SUBTOTAL de puntos del tipo (preguntas del
+    // tipo × pts/pregunta), no el conteo de preguntas — un tipo con pocas
+    // preguntas pero pts/pregunta alto (emparejar, completar) puede pesar
+    // más de lo que su cantidad sugiere.
+    function getCssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function hexToRgb(hex) {
+      const clean = hex.replace('#', '');
+      const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+      const num = parseInt(full, 16);
+      return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+    }
+
+    // Luminancia relativa (WCAG) para elegir texto blanco o negro legible
+    // encima de cada porción coloreada, sin importar el tono ni el tema.
+    function textColorOnFill(hex) {
+      const { r, g, b } = hexToRgb(hex);
+      const [rs, gs, bs] = [r, g, b].map(v => {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      const luminance = 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+      return luminance > 0.5 ? '#0f172a' : '#ffffff';
+    }
+
+    function polarToCartesian(cx, cy, r, angleDeg) {
+      const rad = (angleDeg - 90) * Math.PI / 180;
+      return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+    }
+
+    function describeArcSlice(cx, cy, r, startAngle, endAngle) {
+      const start = polarToCartesian(cx, cy, r, endAngle);
+      const end = polarToCartesian(cx, cy, r, startAngle);
+      const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+      return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`;
+    }
+
+    function renderPointsPie(items) {
+      const card = document.getElementById('points-chart-card');
+      const svg = document.getElementById('points-pie-svg');
+      const legend = document.getElementById('points-pie-legend');
+
+      // Con 0 o 1 tipo presente un pastel no aporta nada (1 sola porción es
+      // siempre el 100%) — se oculta la tarjeta entera en vez de mostrar un
+      // círculo trivial.
+      if (items.length < 2) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+
+      const grandTotal = items.reduce((sum, i) => sum + i.subtotal, 0) || 1;
+      const cx = 100, cy = 100, r = 90;
+      const gapDeg = 1.5; // separador angular entre porciones (spacer, no borde)
+      const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '') + ' pts';
+
+      let cursor = 0;
+      let svgHtml = '';
+      let legendHtml = '';
+
+      items.forEach(item => {
+        const pct = item.subtotal / grandTotal * 100;
+        const sweep = pct / 100 * 360;
+        const start = cursor + gapDeg / 2;
+        const end = Math.max(cursor + sweep - gapDeg / 2, start);
+        cursor += sweep;
+
+        const colorHex = getCssVar(item.colorVar.slice(4, -1)); // "var(--x)" -> "--x"
+        const path = describeArcSlice(cx, cy, r, start, end);
+        svgHtml += `<path d="${path}" fill="${item.colorVar}">
+          <title>${item.label}: ${item.count} pregunta${item.count !== 1 ? 's' : ''} · ${fmt(item.subtotal)} (${pct.toFixed(1)}%)</title>
+        </path>`;
+
+        // Etiqueta directa solo si la porción es lo bastante ancha para que
+        // el texto quepa cómodo (evita amontonar números en porciones finas).
+        if (pct >= 8) {
+          const mid = start + (end - start) / 2;
+          const pos = polarToCartesian(cx, cy, r * 0.65, mid);
+          svgHtml += `<text x="${pos.x}" y="${pos.y}" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="800" fill="${textColorOnFill(colorHex)}">${pct.toFixed(0)}%</text>`;
+        }
+
+        // El porcentaje ya se ve en la propia porción del pastel — aquí solo
+        // hace falta el subtotal en puntos, en una píldora con el mismo
+        // color del tipo (tenue, como el type-badge de las tarjetas de
+        // pregunta) para reforzar la identidad visual sin repetir el dato.
+        // Los 3 elementos son hijos directos del grid de #points-pie-legend
+        // (swatch / etiqueta / píldora), no un <div> por fila — así CSS
+        // Grid alinea cada columna (etiqueta, píldora) al ancho de su
+        // contenido más largo automáticamente, sin medir nada por JS y sin
+        // el hueco irregular que dejaba una fila flex de ancho variable.
+        legendHtml += `
+          <span style="width:12px;height:12px;border-radius:3px;background:${item.colorVar};"></span>
+          <span style="font-size:13px;font-weight:600;color:var(--color-text);white-space:nowrap;">${item.label}</span>
+          <span style="font-size:12px;font-weight:700;color:${item.colorVar};background:${item.bgVar};border:1px solid ${item.borderVar};border-radius:var(--radius-sm);padding:3px 10px;white-space:nowrap;text-align:center;">${fmt(item.subtotal)}</span>
+        `;
+      });
+
+      svg.innerHTML = svgHtml;
+      legend.innerHTML = legendHtml;
     }
 
     // Conversion Step 1: Parse
@@ -2418,7 +2527,6 @@ Ahora convierte el examen adjunto a este formato.</pre>
         downloadBlob = blob;
         downloadFilename = filename;
 
-        document.getElementById('gemini-notice').style.display = currentParseResult.was_reformatted ? 'block' : 'none';
         showPanel('success');
         // El guardado nativo se dispara solo una vez, cuando el usuario
         // presiona "Descargar Moodle XML" — no automáticamente aquí, para
