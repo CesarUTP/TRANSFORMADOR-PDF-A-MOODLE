@@ -7,17 +7,47 @@ Convierte exámenes en PDF o TXT al **Moodle XML Question Format** con un backen
 ## Estructura del proyecto
 
 ```
-pdf-to-moodle/
+PDF A MOODLE/
+├── iniciar.command       ← Doble clic para abrir la app en macOS
+├── iniciar.bat           ← Doble clic para abrir la app en Windows
+├── launcher.py           ← Punto de entrada de la app de escritorio (splash + pywebview)
+├── build.py              ← Empaqueta la app como ejecutable (PyInstaller)
+├── README.md
+│
 ├── backend/
-│   ├── main.py          ← API FastAPI (endpoints)
-│   ├── extractor.py     ← Extracción de texto (.pdf / .txt)
-│   ├── formatter.py     ← Prefiltro Gemini (normalización de estructura)
-│   ├── parser.py        ← Parseo dinámico de preguntas y clave de respuestas
-│   ├── xml_builder.py   ← Generación del XML Moodle
-│   ├── models.py        ← Modelos Pydantic
-│   └── requirements.txt ← Dependencias Python
-└── frontend/
-    └── index.html       ← Interfaz web (HTML + Vanilla JS + Tailwind CSS)
+│   ├── main.py           ← API FastAPI (endpoints)
+│   ├── config.py         ← Configuración centralizada + prompt del sistema (IA)
+│   ├── extractor.py      ← Extracción de texto (.pdf / .txt)
+│   ├── formatter.py      ← Prefiltro Gemini (normalización de estructura)
+│   ├── parser.py         ← Parseo dinámico de preguntas y clave de respuestas
+│   ├── validator.py      ← Validación de preguntas contra el spec Moodle XML
+│   ├── xml_builder.py    ← Generación del XML Moodle
+│   ├── database.py       ← Historial de conversiones (SQLite)
+│   ├── models.py         ← Modelos Pydantic
+│   ├── requirements.txt  ← Dependencias Python
+│   └── venv/             ← Entorno virtual (no versionado)
+│
+├── frontend/
+│   └── index.html        ← Interfaz web (HTML + Vanilla JS)
+│
+├── assets/
+│   └── Icon.ico          ← Ícono del ejecutable empaquetado
+│
+├── data/
+│   └── exams_history.db  ← Base de datos del historial (se crea sola en el primer uso)
+│
+├── docs/
+│   └── Formato Moodle XML.txt  ← Referencia del spec Moodle XML usado por el validador
+│
+├── samples/              ← Exámenes de ejemplo para probar la app manualmente
+│   ├── Parcial_Historia_Geografia.pdf
+│   └── parcial n.1.pdf
+│
+└── dev/                  ← Scripts y datos usados solo en desarrollo/pruebas
+    ├── create_exam_pdf.py
+    ├── list_models.py
+    ├── run_test.py
+    └── test_webview.py
 ```
 
 ---

@@ -1,27 +1,32 @@
-# Entorno virtual
+# Entornos virtuales y dependencias
 backend/venv/
-
-# Caché de Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
 
-# Build / distribución
+# Datos en tiempo de ejecución (historial de conversiones del usuario)
+data/*.db
+
+# Builds
 build/
 dist/
 *.spec
-*.egg-info/
 
-# Archivos temporales y de prueba
-backend/test_output.txt
-*.xml
-*.db
+# Archivos de sistema
+.DS_Store
 
-# Variables de entorno
-.env
-.env.*
-
-# IDEs
+# Configuración local del editor / herramientas de IA (no compartida)
+.claude/
 .vscode/
 .idea/
+
+# Ejecutable empaquetado (se genera en Windows, no se versiona)
+ejecutable/build_venv/
+ejecutable/build/
+ejecutable/dist/
+ejecutable/Output/
+
+# Salidas de scripts de desarrollo (dev/)
+dev/*.pdf
+dev/resultado_test.txt
+dev/test_output.txt
+dev/api_resp.json

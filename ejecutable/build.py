@@ -1,17 +1,15 @@
 """
-build.py — Construye ConvertidorMoodle.exe con PyInstaller.
+build.py — Construye ConvertidorMoodle.exe con PyInstaller (Windows).
 
-Ejecutar desde la carpeta pdf-to-moodle con:
-    .\\backend\\venv\\Scripts\\python build.py
+No se corre a mano: lo invoca build_windows.bat después de crear el
+entorno virtual de compilación (build_venv) e instalar las dependencias.
 """
 import subprocess
 import sys
 import os
 
-VENV_PYINSTALLER = os.path.join(
-    os.path.dirname(__file__),
-    "backend", "venv", "Scripts", "pyinstaller.exe"
-)
+HERE = os.path.dirname(os.path.abspath(__file__))
+VENV_PYINSTALLER = os.path.join(HERE, "build_venv", "Scripts", "pyinstaller.exe")
 
 cmd = [
     VENV_PYINSTALLER,
@@ -61,11 +59,11 @@ cmd = [
 print("Construyendo ConvertidorMoodle.exe ...")
 print("(Esto puede tardar 3-5 minutos)\n")
 
-result = subprocess.run(cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
+result = subprocess.run(cmd, cwd=HERE)
 
 if result.returncode == 0:
     print("\n[OK] Build exitoso.")
-    print("  El ejecutable esta en: dist\\ConvertidorMoodle.exe")
+    print("  El ejecutable esta en: dist\\ConvertidorMoodle\\")
 else:
     print("\n[ERROR] Build fallido. Revisa los mensajes de arriba.")
     sys.exit(1)

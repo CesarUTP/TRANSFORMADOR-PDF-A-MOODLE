@@ -1,0 +1,47 @@
+CONVERSOR A MOODLE XML — Generar el instalador de Windows
+============================================================
+
+Esta carpeta es autosuficiente: trae una copia limpia de todo lo
+necesario para generar el instalador de Windows de la app, sin
+depender del resto del entorno de desarrollo. A propósito NO incluye
+los exámenes de ejemplo, la documentación interna, el historial de
+conversiones, ni los scripts de prueba — nada de eso lo necesita un
+usuario final.
+
+IMPORTANTE — por qué esto no viene ya compilado
+------------------------------------------------
+Un .exe de Windows solo puede compilarse EN Windows: PyInstaller no
+genera ejecutables de otro sistema operativo distinto al que lo corre.
+Por eso esta carpeta trae los scripts listos para correr allá, en vez
+de un .exe ya armado.
+
+Requisitos en la PC con Windows (una sola vez)
+------------------------------------------------
+1. Python 3.10 o superior — https://www.python.org/downloads/
+   Al instalarlo, marca la casilla "Add Python to PATH".
+2. Inno Setup 6 (gratis) — https://jrsoftware.org/isdl.php
+   Instálalo con las opciones por defecto.
+
+Pasos
+------------------------------------------------
+1. Copia esta carpeta completa ("ejecutable") a la PC con Windows.
+2. Haz doble clic en "build_windows.bat".
+3. Espera a que termine — compila primero el programa y luego el
+   instalador. La primera vez puede tardar varios minutos.
+4. El instalador final queda en:
+       Output\ConversorMoodleXML_Setup.exe
+
+Ese único archivo es el que compartes con quien vaya a probar la app.
+Al abrirlo, instala "Conversor a Moodle XML" como cualquier programa
+de Windows: queda en el Menú Inicio, puede crear acceso directo en el
+Escritorio, tiene su propio ícono, y se desinstala desde "Agregar o
+quitar programas" — quien lo instale NO necesita tener Python ni nada
+más instalado.
+
+Nota sobre la clave de Gemini
+------------------------------------------------
+El ejecutable incluye la misma clave de API de Gemini que usas en
+desarrollo (sigue pendiente moverla a configuración, como ya
+habíamos hablado). Si vas a compartir este instalador con alguien
+fuera de tu control directo, ten en cuenta que esa clave queda
+embebida dentro del .exe.
