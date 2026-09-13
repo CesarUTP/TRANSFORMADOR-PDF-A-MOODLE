@@ -26,6 +26,7 @@ from config import (
     GEMINI_MAX_RETRIES,
     GEMINI_RETRY_WAIT_SECONDS,
     SYSTEM_PROMPT,
+    NOT_AN_EXAM_SENTINEL,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,11 +66,35 @@ def verify_and_format(raw_text: str) -> tuple[str, bool]:
                 len(result_text), result_text[:400]
             )
 
+            # Gemini responde con este centinela cuando el documento no es una
+            # prueba real (ver PASO 0 del SYSTEM_PROMPT) — se detecta por un
+            # texto corto que contiene el centinela para no dar falsos
+            # positivos si por alguna razón apareciera dentro de un examen
+            # legítimo (muchísimo más largo).
+            if len(result_text) < 200 and NOT_AN_EXAM_SENTINEL in result_text:
+                logger.info("Gemini prefiltro: el documento no parece ser una prueba/examen.")
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "message": "El archivo no parece ser una prueba o examen:",
+                        "errors": [
+                            "No se detectaron preguntas y respuestas reales, destinadas a evaluar, en el documento.",
+                            "Verifica que subiste el archivo correcto (no una presentación, un manual, un artículo, etc.).",
+                        ],
+                    },
+                )
+
             # Consideramos que hubo reformateo si el texto cambió de forma significativa
             was_reformatted = result_text.strip() != raw_text.strip()
 
             return (result_text, was_reformatted)
 
+        except HTTPException:
+            # Ya es un error nuestro con status/detail bien formados (ej. el
+            # rechazo de "documento no es una prueba") — no es un fallo
+            # transitorio de Gemini, así que no debe reintentarse ni
+            # convertirse en un 503 genérico por el "except Exception" de abajo.
+            raise
         except _NON_RETRYABLE_ERRORS as exc:
             logger.error(
                 "Gemini prefiltro: error no recuperable (%s). No se reintenta. Detalle: %s",

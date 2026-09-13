@@ -17,6 +17,13 @@ GEMINI_MODEL_NAME: str = "gemini-3.1-flash-lite"
 GEMINI_MAX_RETRIES: int = 3
 GEMINI_RETRY_WAIT_SECONDS: int = 10
 
+# Texto exacto que el prompt le pide a Gemini devolver cuando el documento
+# subido no es una prueba/examen (ej. una presentación, un manual, un
+# artículo). formatter.py lo detecta para rechazar el archivo con un 422
+# en vez de dejar que se generen preguntas inventadas a partir de contenido
+# que nunca fue diseñado como evaluación.
+NOT_AN_EXAM_SENTINEL: str = "NO_ES_UNA_PRUEBA"
+
 # ── Servidor ────────────────────────────────────────────────────────────────
 SERVER_HOST: str = "127.0.0.1"
 SERVER_PORT: int = 8000
@@ -65,8 +72,36 @@ MIN_MATCHING_PAIRS: int = 2
 MIN_CLOZE_OPTIONS: int = 1
 
 # ── Prompt del Sistema para Gemini ──────────────────────────────────────────
-SYSTEM_PROMPT = """
-Eres un conversor experto de exámenes universitarios. Recibirás el texto de un examen en CUALQUIER formato y debes convertirlo SIEMPRE al formato estándar exacto que se describe aquí. No importa cómo esté organizado el original.
+SYSTEM_PROMPT = f"""
+Eres un conversor experto de exámenes universitarios. Recibirás el texto de un documento y, SOLO SI es realmente una prueba/examen, debes convertirlo SIEMPRE al formato estándar exacto que se describe aquí. No importa cómo esté organizado el original.
+
+══════════════════════════════════════════════════════
+PASO 0 — VERIFICA QUE SEA REALMENTE UNA PRUEBA (HAZLO SIEMPRE PRIMERO)
+══════════════════════════════════════════════════════
+Antes de convertir nada, evalúa si el documento recibido es realmente una
+prueba, examen, cuestionario o guía de preguntas destinada a evaluar a
+alguien — aunque venga desordenado, sin ese título, o mezclado con otro
+contenido.
+
+NO es una prueba: una presentación de diapositivas, un artículo, un
+manual, un contrato, un correo, un informe, una tabla de datos, código
+fuente, apuntes de clase, o cualquier documento que no tenga preguntas
+reales ya formuladas con la intención de ser respondidas y evaluadas —
+aunque mencione de pasada la palabra "pregunta" o "respuesta", aunque
+tenga listas o viñetas numeradas, o aunque a partir de su contenido se
+te ocurran preguntas de repaso posibles. NUNCA inventes preguntas a
+partir de contenido que no las traía ya planteadas como tales en el
+original (ej. jamás conviertas los títulos o viñetas de una diapositiva
+en "preguntas").
+
+Si el documento NO es una prueba según este criterio, ignora todas las
+reglas de abajo y responde ÚNICAMENTE con este texto exacto, sin
+comillas, sin explicaciones adicionales, sin markdown:
+
+{NOT_AN_EXAM_SENTINEL}
+
+Si SÍ es una prueba (aunque le falten partes, esté mal formateada, o
+tenga errores de tipeo), continúa normalmente con las reglas de abajo.
 
 ══════════════════════════════════════════════════════
 FORMATO DE SALIDA OBLIGATORIO — SIGUE ESTO AL PIE DE LA LETRA
