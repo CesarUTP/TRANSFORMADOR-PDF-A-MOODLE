@@ -45,3 +45,20 @@ desarrollo (sigue pendiente moverla a configuración, como ya
 habíamos hablado). Si vas a compartir este instalador con alguien
 fuera de tu control directo, ten en cuenta que esa clave queda
 embebida dentro del .exe.
+
+La app se queda cargando (splash) y nunca abre
+------------------------------------------------
+Significa que el backend (uvicorn) no pudo arrancar. Como el
+ejecutable se compila con "--noconsole", el error real no se ve en
+ninguna ventana. Para diagnosticarlo:
+
+1. Corre el .exe una vez (aunque se quede pegado en la pantalla de
+   carga) y ciérralo.
+2. Busca "launcher_error.log" en la misma carpeta donde quedó
+   instalado el .exe (junto a "ConvertidorMoodle.exe"). Ahí queda el
+   traceback completo de lo que falló.
+3. La causa más común es un import que falta en el .exe porque vive
+   en backend/ (que PyInstaller trata como datos, no como código que
+   analiza) — hay que agregarlo a mano como "--hidden-import" en
+   build.py y volver a compilar. Ejemplo real ya corregido: faltaba
+   "sqlite3" (lo usa backend/database.py para el historial).

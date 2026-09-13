@@ -240,6 +240,27 @@ Cuando Gemini normalizó el documento, la interfaz muestra un aviso informando a
 
 ---
 
+## Solución de problemas
+
+### El instalador de Windows se queda pegado en la pantalla de carga
+
+El `.exe` compilado con PyInstaller usa `--noconsole`, así que si el
+backend (uvicorn) falla al arrancar, la app no muestra ningún error —
+simplemente se queda en la splash para siempre. Desde esta versión,
+`launcher.py` escribe cualquier fallo del backend en un archivo
+`launcher_error.log`, creado junto al `.exe` (dentro de la carpeta
+donde quedó instalada la app). Si te pasa, revisa ese archivo primero.
+
+La causa más común: un módulo que usa `backend/` (fastapi, uvicorn,
+sqlite3, etc.) no quedó incluido en el `.exe`. Como PyInstaller trata
+la carpeta `backend/` como datos copiados tal cual (vía `--add-data`)
+y no como código que analiza, no detecta automáticamente sus imports
+— hay que declararlos a mano con `--hidden-import` en
+[`ejecutable/build.py`](ejecutable/build.py) y volver a compilar. Ver
+[`ejecutable/LEEME_WINDOWS.txt`](ejecutable/LEEME_WINDOWS.txt) para más detalle.
+
+---
+
 ## Créditos
 
 Desarrollado por **César González** y **Vicente Urriola**.

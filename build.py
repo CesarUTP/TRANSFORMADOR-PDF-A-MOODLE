@@ -56,6 +56,10 @@ cmd = [
     "--hidden-import", "multipart",
     "--hidden-import", "email.mime.text",
     "--hidden-import", "email.mime.multipart",
+    # ── database.py usa sqlite3; al vivir en backend/ (agregado como datos,
+    # no como código analizado por PyInstaller) su import nunca se detecta
+    # automáticamente y hay que declararlo a mano ──────────────────────────
+    "--hidden-import", "sqlite3",
 ]
 
 print("Construyendo ConvertidorMoodle.exe ...")
