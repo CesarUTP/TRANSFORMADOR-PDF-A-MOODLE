@@ -46,7 +46,11 @@ def verify_and_format(raw_text: str) -> tuple[str, bool]:
         (texto_para_parser, fue_reformateado)
         - En caso de error de API → lanza HTTPException 503 tras 3 intentos.
     """
-    genai.configure(api_key=GEMINI_API_KEY)
+    # transport="rest" en vez del gRPC por defecto: en algunas redes
+    # (proxies corporativos/universitarios, ciertas configuraciones de
+    # Windows) el protocolo HTTP/2 de gRPC negocia la conexión mucho más
+    # lento que REST plano sobre HTTPS — mismo resultado, sin el retraso.
+    genai.configure(api_key=GEMINI_API_KEY, transport="rest")
     model = genai.GenerativeModel(
         model_name=GEMINI_MODEL_NAME,
         system_instruction=SYSTEM_PROMPT,
