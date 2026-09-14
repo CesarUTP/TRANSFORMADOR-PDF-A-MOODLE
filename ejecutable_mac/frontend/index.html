@@ -1415,6 +1415,38 @@ Ahora convierte el examen adjunto a este formato.</pre>
     </div>
   </div>
 
+  <!-- ════════════════ DISCLAIMER: PDF CON IMÁGENES (CASO ESPECIAL) ════════════════ -->
+  <div id="modal-disclaimer" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
+    <div class="modal-box" style="max-width:480px;">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:18px;font-weight:800;color:var(--color-warning);" id="disclaimer-title">
+          <i data-lucide="alert-triangle" style="width:20px;height:20px;"></i>
+          Tu documento tiene imágenes incrustadas
+        </div>
+        <button id="btn-close-disclaimer" class="btn btn-ghost" style="padding:6px 10px;" aria-label="Cerrar aviso">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="padding:18px 24px;">
+        <p style="font-size:13.5px;line-height:1.7;color:var(--color-text);margin-bottom:12px;">
+          Detectamos <strong>imágenes incrustadas</strong> en tu PDF — por ejemplo código en captura de pantalla. El sistema puede leer ese tipo de contenido con IA, pero <strong>no es 100% fiable</strong>: es posible que alguna transcripción no se capture correctamente.
+        </p>
+        <p style="font-size:13.5px;line-height:1.7;color:var(--color-text-muted);margin-bottom:0;">
+          Se recomienda ir a la <strong style="color:var(--color-text);">Guía → Prompt IA</strong> y normalizar el documento con tu IA de preferencia antes de subirlo, para mejorar el resultado. Aun así, puedes continuar directamente: siempre podrás revisar y corregir cada pregunta en el editor antes de descargar.
+        </p>
+      </div>
+      <div style="display:flex;gap:10px;padding:16px 24px 24px;">
+        <button id="btn-disclaimer-guide" class="btn btn-ghost" style="flex:1;">
+          <i data-lucide="book-open" style="width:16px;height:16px;"></i>
+          Ir a la guía
+        </button>
+        <button id="btn-disclaimer-continue" class="btn btn-primary" style="flex:1;">
+          Continuar de todos modos
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ════════════════════════════ SCRIPT LOGIC ════════════════════════════ -->
   <script>
     // Init Lucide Icons
@@ -1518,6 +1550,12 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // perderlo todo por, por ejemplo, olvidar marcar una casilla en una sola
     // pregunta sería devastador para la experiencia.
     let errorReturnPanel = 'upload';
+    // Huella del último archivo para el que el usuario ya confirmó el
+    // disclaimer de "contenido especial" (imágenes incrustadas) — evita
+    // volver a preguntarle si hace clic en Convertir más de una vez sin
+    // cambiar de archivo. Se resetea a null en clearFile()/showFilePreview().
+    let disclaimerAcknowledgedFor = null;
+    let pendingConversionPoints = null;
 
     // DOM Elements
     const dropZone = document.getElementById('drop-zone');
@@ -1547,6 +1585,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
     }
     function showFilePreview(file) {
       selectedFile = file;
+      disclaimerAcknowledgedFor = null;
       fileNameEl.textContent = file.name;
       fileSizeEl.textContent = formatBytes(file.size);
       const isPdf = file.name.toLowerCase().endsWith('.pdf');
@@ -1592,17 +1631,20 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // ediciones en curso a su texto original sin editar.
     function syncParseResultFromDOM() {
       const existingCards = document.querySelectorAll('.editor-card');
-      // skipped_questions/completeness_notice no viven en el DOM (son solo
-      // informativos, de la respuesta original de /api/parse) — collectEditorData()
-      // no los conoce, así que se preservan del estado anterior para que el
-      // aviso no desaparezca solo por haber añadido o borrado una pregunta.
+      // skipped_questions/completeness_notice/color_marks_notice no viven en
+      // el DOM (son solo informativos, de la respuesta original de
+      // /api/parse) — collectEditorData() no los conoce, así que se
+      // preservan del estado anterior para que el aviso no desaparezca solo
+      // por haber añadido o borrado una pregunta.
       const prevSkipped = currentParseResult ? currentParseResult.skipped_questions : undefined;
       const prevNotice = currentParseResult ? currentParseResult.completeness_notice : undefined;
+      const prevColorNotice = currentParseResult ? currentParseResult.color_marks_notice : undefined;
       currentParseResult = existingCards.length > 0
         ? collectEditorData()
         : { questions: [], answer_key: {} };
       if (prevSkipped) currentParseResult.skipped_questions = prevSkipped;
       if (prevNotice) currentParseResult.completeness_notice = prevNotice;
+      if (prevColorNotice) currentParseResult.color_marks_notice = prevColorNotice;
     }
 
     function deleteQuestionCard(btn) {
@@ -2059,6 +2101,18 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </div>`;
       }
 
+      // Aviso informativo (no de advertencia): el documento usa color para
+      // marcar respuestas. El sistema ya sabe interpretarlo, así que esto NO
+      // bloquea ni pregunta nada — solo recomienda una revisión manual por
+      // si la IA se equivocó identificando alguna marca.
+      let colorNoticeHtml = '';
+      if (data.color_marks_notice) {
+        colorNoticeHtml = `<div style="background:var(--color-cl-bg);border:1px solid var(--color-cl-border);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;">
+          <i data-lucide="info" style="width:16px;height:16px;color:var(--color-cl);flex-shrink:0;margin-top:1px;"></i>
+          <p style="margin:0;font-size:13px;color:var(--color-text-muted);line-height:1.5;">${esc_html(data.color_marks_notice)}</p>
+        </div>`;
+      }
+
       // Barra de filtro: propia tarjeta de ancho completo. Los chips llevan
       // flex:1 (ver CSS .filter-chip) para repartirse todo el ancho entre
       // ellos, sin dejar espacio vacío a la derecha. El contenedor conserva
@@ -2086,7 +2140,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <button type="button" class="btn btn-ghost" onclick="addNewQuestion('matching')" style="padding:6px 12px;font-size:12.5px;color:var(--color-mt);">+ Emparejamiento</button>
         </div>
       </div>`;
-      container.innerHTML = actionsHtml + skippedHtml + filterHtml + addQuestionHtml;
+      container.innerHTML = actionsHtml + skippedHtml + colorNoticeHtml + filterHtml + addQuestionHtml;
 
       data.questions.forEach((q, i) => {
         const keyInfo = data.answer_key[q.num] || { answer: '' };
@@ -2490,16 +2544,34 @@ Ahora convierte el examen adjunto a este formato.</pre>
       legend.innerHTML = legendHtml;
     }
 
-    // Conversion Step 1: Parse
-    btnConvert.addEventListener('click', async () => {
-      if (!selectedFile) return;
-      const ptsVal = parseFloat(pointsInput.value);
-      if (isNaN(ptsVal) || ptsVal <= 0) {
-        pointsError.style.display = 'block';
-        return;
-      }
-      pointsError.style.display = 'none';
+    // Disclaimer: PDF con imágenes incrustadas (caso especial no 100% fiable)
+    const modalDisclaimer = document.getElementById('modal-disclaimer');
+    function fileFingerprint(file) {
+      return file ? `${file.name}_${file.size}_${file.lastModified}` : null;
+    }
+    function openDisclaimer() {
+      modalDisclaimer.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      lucide.createIcons();
+    }
+    function closeDisclaimer() {
+      modalDisclaimer.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.getElementById('btn-close-disclaimer').addEventListener('click', closeDisclaimer);
+    modalDisclaimer.addEventListener('click', e => { if (e.target === modalDisclaimer) closeDisclaimer(); });
+    document.getElementById('btn-disclaimer-guide').addEventListener('click', () => {
+      closeDisclaimer();
+      openHelp('prompt');
+    });
+    document.getElementById('btn-disclaimer-continue').addEventListener('click', () => {
+      disclaimerAcknowledgedFor = fileFingerprint(selectedFile);
+      closeDisclaimer();
+      runConversion(pendingConversionPoints);
+    });
 
+    // Conversion Step 1: Parse
+    async function runConversion(ptsVal) {
       showPanel('progress');
       startProgress();
 
@@ -2531,6 +2603,45 @@ Ahora convierte el examen adjunto a este formato.</pre>
         stopProgress(false);
         showError("No se pudo conectar con el servidor backend: " + err.message);
       }
+    }
+
+    btnConvert.addEventListener('click', async () => {
+      if (!selectedFile) return;
+      const ptsVal = parseFloat(pointsInput.value);
+      if (isNaN(ptsVal) || ptsVal <= 0) {
+        pointsError.style.display = 'block';
+        return;
+      }
+      pointsError.style.display = 'none';
+
+      // Aviso previo de "caso especial" (imágenes incrustadas: código en
+      // captura, marcas de respuesta solo por color) — solo para PDF, y
+      // solo si el usuario no lo confirmó ya para este mismo archivo. Se
+      // muestra ANTES de arrancar el procesamiento pesado para que el
+      // usuario decida si prefiere normalizar el documento con el Prompt IA
+      // de la guía antes de continuar.
+      const fp = fileFingerprint(selectedFile);
+      if (selectedFile.name.toLowerCase().endsWith('.pdf') && disclaimerAcknowledgedFor !== fp) {
+        try {
+          const checkForm = new FormData();
+          checkForm.append('file', selectedFile);
+          const checkRes = await fetch('/api/check_special_cases', { method: 'POST', body: checkForm });
+          if (checkRes.ok) {
+            const checkData = await checkRes.json();
+            if (checkData.has_special_images) {
+              pendingConversionPoints = ptsVal;
+              openDisclaimer();
+              return;
+            }
+          }
+        } catch (_) {
+          // Si el chequeo previo falla (p. ej. sin conexión momentánea), no
+          // bloqueamos la conversión por esto: se omite el aviso y se
+          // procede directo, igual que antes de que existiera este chequeo.
+        }
+      }
+
+      await runConversion(ptsVal);
     });
 
     // Conversion Step 2: Generate XML

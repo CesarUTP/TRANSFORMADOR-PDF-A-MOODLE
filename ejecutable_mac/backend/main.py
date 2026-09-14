@@ -19,7 +19,12 @@ from fastapi.staticfiles import StaticFiles
 from lxml import etree
 
 from config import DEFAULT_CATEGORY, DEFAULT_TOTAL_POINTS
-from extractor import extract_text_and_images_from_pdf, extract_text_from_txt
+from extractor import (
+    extract_text_and_images_from_pdf,
+    extract_text_from_txt,
+    pdf_has_embedded_images,
+    pdf_has_colored_text,
+)
 from formatter import verify_and_format
 from parser import parse_answer_key, build_questions
 from validator import (
@@ -72,6 +77,33 @@ async def serve_index():
     return FileResponse(str(index))
 
 
+@app.post("/api/check_special_cases")
+async def api_check_special_cases(
+    file: UploadFile = File(...),
+):
+    """
+    Chequeo previo y barato (no llama a Gemini) para avisarle al usuario,
+    ANTES de arrancar el procesamiento real, si el PDF trae imágenes
+    incrustadas — caso especial (código en captura, marcas de color) que el
+    prefiltro de IA no garantiza transcribir al 100%. El frontend usa esto
+    para mostrar un disclaimer y dejar que el usuario decida cómo proceder.
+    """
+    filename = file.filename or "upload"
+    suffix = Path(filename).suffix.lower()
+
+    if suffix != ".pdf":
+        return {"has_special_images": False}
+
+    raw_bytes = await file.read()
+    try:
+        has_images = await run_in_threadpool(pdf_has_embedded_images, raw_bytes)
+    except Exception as exc:
+        logger.warning("No se pudo chequear imágenes en '%s': %s", filename, exc)
+        return {"has_special_images": False}
+
+    return {"has_special_images": has_images}
+
+
 @app.post("/api/parse")
 async def api_parse(
     file: UploadFile = File(...),
@@ -112,6 +144,24 @@ async def api_parse(
             status_code=422,
             detail="El archivo no contiene texto legible. Si es un PDF escaneado, se requiere OCR (no soportado).",
         )
+
+    # ── 2.1 Aviso informativo (no bloqueante): respuestas marcadas por color ──
+    # No es un "caso especial" — el sistema ya sabe interpretarlas — pero se
+    # le recomienda al usuario revisarlas a mano por si la IA se equivocó.
+    color_marks_notice = None
+    if suffix == ".pdf":
+        try:
+            has_colored_text = await run_in_threadpool(pdf_has_colored_text, raw_bytes)
+            if has_colored_text:
+                color_marks_notice = (
+                    "El documento original parece usar color para marcar respuestas "
+                    "(por ejemplo texto en rojo). El sistema ya sabe interpretar esta marca, "
+                    "pero no es 100% infalible — se recomienda revisar manualmente las "
+                    "respuestas marcadas como correctas antes de aprobar, por si hubo algún "
+                    "error de normalización."
+                )
+        except Exception as exc:
+            logger.warning("No se pudo chequear texto de color en '%s': %s", filename, exc)
 
     # ── 2.5 Local Pre-validation ────────────────────────────────────────
     try:
@@ -220,6 +270,7 @@ async def api_parse(
         "was_reformatted": was_reformatted,
         "skipped_questions": skipped_questions,
         "completeness_notice": completeness_notice,
+        "color_marks_notice": color_marks_notice,
     }
 
 # ── Modelos Pydantic para Generación de XML ────────────────────────────────

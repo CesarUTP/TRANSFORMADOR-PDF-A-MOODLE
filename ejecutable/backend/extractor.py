@@ -51,6 +51,48 @@ def extract_text_and_images_from_pdf(file_bytes: bytes) -> tuple[str, List[Image
     return full_text, images
 
 
+def pdf_has_embedded_images(file_bytes: bytes) -> bool:
+    """
+    Chequeo rápido (sin renderizar nada) de si el PDF trae al menos una
+    página con imagen incrustada — señal de un "caso especial" (código en
+    captura, marcas de respuesta solo por color, etc.) que el prefiltro de
+    IA puede no transcribir con 100% de fiabilidad. Se usa para avisarle al
+    usuario ANTES de arrancar el procesamiento pesado, no después.
+    """
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        for page in pdf.pages:
+            if page.images:
+                return True
+    return False
+
+
+def pdf_has_colored_text(file_bytes: bytes) -> bool:
+    """
+    Chequeo rápido de si el PDF usa texto de color no-gris (ej. respuestas
+    marcadas en rojo u otro color) en vez de imágenes incrustadas. A
+    diferencia de pdf_has_embedded_images(), esto NO es un "caso especial"
+    para el usuario — el sistema ya sabe interpretar este tipo de marca
+    (REGLA 8 del prompt) — solo sirve para mostrar después una recomendación
+    de revisar manualmente las respuestas, por si la IA se equivocó al
+    identificar alguna marca.
+    """
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        for page in pdf.pages:
+            for ch in page.chars:
+                color = ch.get("non_stroking_color")
+                if not isinstance(color, (tuple, list)) or len(color) != 3:
+                    # Escala de grises (un solo valor), CMYK u otro formato
+                    # inesperado: no es una marca de color reconocible.
+                    continue
+                r, g, b = color
+                # Un tono "de color" se aleja de la diagonal gris (r≈g≈b);
+                # un umbral pequeño evita falsos positivos por antialiasing
+                # o negros/grises ligeramente impuros.
+                if max(abs(r - g), abs(g - b), abs(r - b)) > 0.15:
+                    return True
+    return False
+
+
 def extract_text_from_txt(file_bytes: bytes) -> str:
     """Decode a text file from raw bytes (UTF-8 with fallback to latin-1)."""
     try:
