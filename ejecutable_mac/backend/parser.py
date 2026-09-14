@@ -235,6 +235,17 @@ def build_questions(full_text: str, answer_key: Dict[int, dict]) -> List[dict]:
     """
     questions: List[dict] = []
 
+    # Pista concreta de qué le faltó a cada tipo, para que el mensaje de
+    # error le diga algo útil al usuario en vez de solo "no coincide con
+    # el formato esperado" — ver REGLA de abajo en partition_questions,
+    # que usa esto para el resumen de preguntas omitidas.
+    _MISSING_STRUCTURE_HINT = {
+        "multichoice": "no se encontraron opciones marcadas con letras (A., B., C...).",
+        "truefalse": "no se pudo interpretar el enunciado.",
+        "matching": "faltan las columnas 'Columna A:' y 'Columna B:' con sus elementos.",
+        "cloze": "no se encontró ningún espacio en blanco con el formato [A: opción1 / opción2].",
+    }
+
     for num in sorted(answer_key.keys()):
         qtype = answer_key[num]["type"]
         q_text = extract_question_text(full_text, num)
@@ -243,7 +254,7 @@ def build_questions(full_text: str, answer_key: Dict[int, dict]) -> List[dict]:
                 "num": num,
                 "type": qtype,
                 "data": {},
-                "error": f"No se pudo extraer el texto de la Pregunta {num} en el cuerpo del documento."
+                "error": f"No se pudo extraer el texto de la Pregunta {num} en el cuerpo del documento.",
             })
             continue
 
@@ -258,11 +269,19 @@ def build_questions(full_text: str, answer_key: Dict[int, dict]) -> List[dict]:
             parsed = parse_cloze(q_text)
 
         if not parsed:
+            hint = _MISSING_STRUCTURE_HINT.get(qtype, "no coincide con el formato esperado.")
             questions.append({
                 "num": num,
                 "type": qtype,
                 "data": {},
-                "error": f"La estructura de la Pregunta {num} no coincide con el formato esperado para '{qtype}'."
+                # raw_text: aunque no se pudo estructurar la pregunta, se
+                # conserva el texto tal cual se extrajo, para que el
+                # resumen de "preguntas omitidas" pueda mostrarle al
+                # usuario DE QUÉ pregunta se trata (identificarla solo por
+                # número no alcanza — la IA puede renumerar distinto al
+                # documento original).
+                "raw_text": q_text,
+                "error": f"No se pudo interpretar como {qtype}: {hint}",
             })
         else:
             questions.append({"num": num, "type": qtype, "data": parsed})

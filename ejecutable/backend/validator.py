@@ -156,12 +156,18 @@ def partition_questions(
     for q in questions:
         num = q["num"]
         if "error" in q:
-            skipped.append({"num": num, "type": q.get("type", "?"), "reasons": [q["error"]]})
+            skipped.append({
+                "num": num, "type": q.get("type", "?"),
+                "reasons": [q["error"]], "preview": _extract_preview(q),
+            })
             continue
 
         errors = _collect_question_errors(num, q["type"], q["data"], answer_key.get(num, {}))
         if errors:
-            skipped.append({"num": num, "type": q["type"], "reasons": errors})
+            skipped.append({
+                "num": num, "type": q["type"],
+                "reasons": errors, "preview": _extract_preview(q),
+            })
         else:
             valid.append(q)
 
@@ -170,6 +176,23 @@ def partition_questions(
         len(valid), len(skipped),
     )
     return valid, skipped
+
+
+def _extract_preview(q: Dict[str, Any], max_len: int = 160) -> str:
+    """
+    Fragmento del enunciado real de una pregunta omitida, para mostrarlo
+    en el resumen — identificar una pregunta SOLO por su número no
+    alcanza: la IA renumera todo de forma secuencial y limpia (ver REGLA 7
+    del SYSTEM_PROMPT), así que ese número no necesariamente coincide con
+    el que tenía la pregunta en el documento original y puede confundir
+    más de lo que ayuda.
+    """
+    data = q.get("data") or {}
+    text = data.get("stem") or data.get("text") or q.get("raw_text") or ""
+    text = " ".join(text.split())  # colapsa saltos de línea/espacios repetidos
+    if len(text) > max_len:
+        text = text[:max_len].rstrip() + "…"
+    return text
 
 
 # ── Validadores por tipo ────────────────────────────────────────────────────

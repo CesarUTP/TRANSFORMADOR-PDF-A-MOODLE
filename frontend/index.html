@@ -2033,15 +2033,29 @@ Ahora convierte el examen adjunto a este formato.</pre>
       let skippedHtml = '';
       const skipped = data.skipped_questions || [];
       if (skipped.length > 0 || data.completeness_notice) {
+        // El enunciado (preview) va primero y en negrita — es lo único que
+        // de verdad permite ubicar la pregunta en el documento original.
+        // El número que asignó la IA se muestra aparte y aclarado como tal,
+        // porque no necesariamente coincide con la numeración del PDF
+        // original (la IA renumera todo limpio y secuencial).
+        const skippedItems = skipped.map(sq => `
+          <div style="padding:10px 0;border-top:1px solid var(--color-border-subtle);">
+            <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:var(--color-text);line-height:1.5;">
+              ${sq.preview ? esc_html(sq.preview) : `<em>(sin texto identificable — tipo ${esc_html(sq.type)})</em>`}
+            </p>
+            <p style="margin:0;font-size:12px;color:var(--color-text-muted);line-height:1.5;">
+              <span style="opacity:0.75;">#${sq.num} según la IA, no del documento original ·</span>
+              ${esc_html(sq.reasons[0] || 'no se pudo procesar')}
+            </p>
+          </div>`).join('');
+
         skippedHtml = `<div style="background:var(--color-warning-bg);border:1px solid var(--color-warning);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:18px;">
-          <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:var(--color-warning);margin-bottom:${skipped.length > 0 || data.completeness_notice ? '8px' : '0'};">
+          <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:var(--color-warning);">
             <i data-lucide="alert-triangle" style="width:16px;height:16px;"></i>
             ${skipped.length > 0 ? `${skipped.length} pregunta${skipped.length !== 1 ? 's' : ''} no se ${skipped.length !== 1 ? 'procesaron' : 'procesó'}` : 'Aviso'}
           </div>
-          ${skipped.length > 0 ? `<ul style="margin:0 0 ${data.completeness_notice ? '10px' : '0'} 18px;padding:0;font-size:13px;color:var(--color-text-muted);line-height:1.6;">
-            ${skipped.map(sq => `<li><strong>Pregunta ${sq.num}</strong> (${sq.type}): ${esc_html(sq.reasons[0] || 'no se pudo procesar')}</li>`).join('')}
-          </ul>` : ''}
-          ${data.completeness_notice ? `<p style="margin:0;font-size:13px;color:var(--color-text-muted);line-height:1.5;">${esc_html(data.completeness_notice)}</p>` : ''}
+          ${skipped.length > 0 ? `<div style="margin-top:4px;">${skippedItems}</div>` : ''}
+          ${data.completeness_notice ? `<p style="margin:${skipped.length > 0 ? '10px' : '8px'} 0 0;font-size:13px;color:var(--color-text-muted);line-height:1.5;">${esc_html(data.completeness_notice)}</p>` : ''}
         </div>`;
       }
 
