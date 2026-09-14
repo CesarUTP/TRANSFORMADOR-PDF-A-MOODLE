@@ -43,7 +43,10 @@ def extract_text_and_images_from_pdf(file_bytes: bytes) -> tuple[str, List[Image
             if text:
                 full_text += text + "\n"
             if page.images and len(images) < MAX_IMAGE_PAGES:
-                rendered = page.to_image(resolution=150)
+                # 200 DPI en vez de 150: el color de las marcas de respuesta
+                # se distingue mejor a esta resolución, sin disparar
+                # demasiado el tamaño de la imagen.
+                rendered = page.to_image(resolution=200)
                 images.append(rendered.original)
     return full_text, images
 

@@ -17,6 +17,24 @@ GEMINI_MODEL_NAME: str = "gemini-3.1-flash-lite"
 GEMINI_MAX_RETRIES: int = 3
 GEMINI_RETRY_WAIT_SECONDS: int = 10
 
+# temperature=0: la respuesta se genera de forma lo más determinista posible
+# (menos "creatividad"/aleatoriedad en el muestreo). Para una tarea de
+# transcripción/estructuración como esta no queremos variedad — queremos
+# que el mismo documento produzca siempre el mismo resultado. Reduce (no
+# elimina del todo) la inconsistencia observada entre corridas idénticas,
+# sobre todo leyendo color en imágenes.
+GEMINI_TEMPERATURE: float = 0.0
+
+# Reintento de CALIDAD (distinto del reintento por error de la API más
+# abajo): a veces Gemini responde sin ningún error técnico pero con
+# demasiadas preguntas marcadas SIN_RESPUESTA de golpe — señal de que esa
+# corrida en particular "leyó mal" el documento (más notorio detectando
+# color en imágenes). Si la proporción de SIN_RESPUESTA supera este
+# umbral, se reintenta la llamada hasta GEMINI_MAX_QUALITY_ATTEMPTS veces
+# y se usa el mejor resultado, en vez de quedarse con el primero que salió mal.
+GEMINI_SIN_RESPUESTA_THRESHOLD: float = 0.35
+GEMINI_MAX_QUALITY_ATTEMPTS: int = 3
+
 # Texto exacto que el prompt le pide a Gemini devolver cuando el documento
 # subido no es una prueba/examen (ej. una presentación, un manual, un
 # artículo). formatter.py lo detecta para rechazar el archivo con un 422
