@@ -164,6 +164,17 @@ def parse_matching(q_text: str) -> Optional[dict]:
     (e.g. "Columna A (Situaciones de trabajo):") in case the upstream
     normalization step doesn't strip it to the bare "Columna A:" form.
     """
+    # El prefiltro de IA marca así una pregunta que originalmente era una
+    # tabla/cuadro (ej. una fila por evento, una columna marcada por fila)
+    # y que convirtió a emparejamiento por su cuenta (ver REGLA 10 del
+    # SYSTEM_PROMPT) — se guarda la marca para que el usuario la vea
+    # resaltada en el editor y la revise con más cuidado antes de aceptarla.
+    from_table = False
+    table_marker_match = re.match(r'\s*\[TABLA_CONVERTIDA\]\s*\n?', q_text)
+    if table_marker_match:
+        from_table = True
+        q_text = q_text[table_marker_match.end():]
+
     col_a_header = re.search(r'Columna A[^:\n]*:', q_text)
     stem = ""
     if col_a_header and col_a_header.start() > 0:
@@ -200,7 +211,10 @@ def parse_matching(q_text: str) -> Optional[dict]:
     if not col_a_items or not col_b_items:
         return None
 
-    return {"stem": stem, "col_a": col_a_items, "col_b": col_b_items}
+    result = {"stem": stem, "col_a": col_a_items, "col_b": col_b_items}
+    if from_table:
+        result["from_table"] = True
+    return result
 
 
 def parse_cloze(q_text: str) -> Optional[dict]:

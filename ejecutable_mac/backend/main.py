@@ -19,10 +19,15 @@ from fastapi.staticfiles import StaticFiles
 from lxml import etree
 
 from config import DEFAULT_CATEGORY, DEFAULT_TOTAL_POINTS
-from extractor import extract_text_from_pdf, extract_text_from_txt
+from extractor import extract_text_and_images_from_pdf, extract_text_from_txt
 from formatter import verify_and_format
 from parser import parse_answer_key, build_questions
-from validator import validate_questions, generate_warnings_report, pre_validate_raw_text
+from validator import (
+    validate_questions,
+    partition_questions,
+    pre_validate_raw_text,
+    estimate_question_count,
+)
 from xml_builder import build_xml, compute_grades
 from database import init_db, save_conversion, get_history_list, get_xml_content
 from pydantic import BaseModel
@@ -81,14 +86,18 @@ async def api_parse(
             detail=f"Formato no soportado '{suffix}'. Solo se aceptan archivos .pdf o .txt.",
         )
 
-    # ── 2. Extract text ─────────────────────────────────────────────────
+    # ── 2. Extract text (+ imágenes de páginas con contenido visual) ─────
     raw_bytes = await file.read()
+    page_images: list = []
 
     try:
         if suffix == ".pdf":
-            # extract_text_from_pdf es síncrona y puede tardar en PDFs grandes;
-            # se ejecuta en threadpool para no bloquear el event loop de FastAPI.
-            full_text = await run_in_threadpool(extract_text_from_pdf, raw_bytes)
+            # Síncrono y puede tardar en PDFs grandes/con imágenes; se
+            # ejecuta en threadpool para no bloquear el event loop de
+            # FastAPI. Las imágenes son solo de páginas que de verdad
+            # tienen una incrustada (código en captura, texto marcado por
+            # color) — no se renderiza el documento completo.
+            full_text, page_images = await run_in_threadpool(extract_text_and_images_from_pdf, raw_bytes)
         else:
             full_text = extract_text_from_txt(raw_bytes)
     except Exception as exc:
@@ -119,12 +128,18 @@ async def api_parse(
     # Extraer la clave de respuestas original antes del reformateo para evitar pérdida de preguntas
     original_answer_key = parse_answer_key(full_text)
 
+    # Techo aproximado de cuántas preguntas parece tener el documento
+    # ORIGINAL (antes de la IA) — solo para poder avisar más abajo si el
+    # prefiltro terminó devolviendo bastantes menos de las esperadas.
+    estimated_question_count = estimate_question_count(full_text)
+
     # ── 3. Gemini prefiltro: normalizar estructura ──────────────────────
     # verify_and_format es síncrona y puede bloquear varios segundos (llamada
-    # HTTP a Gemini) o hasta 30s en reintentos con time.sleep(); se ejecuta en
-    # threadpool para que el event loop de FastAPI siga sirviendo otras
-    # peticiones (p. ej. /api/history) mientras tanto.
-    reformatted_text, was_reformatted = await run_in_threadpool(verify_and_format, full_text)
+    # HTTP a Gemini, más aún si hay imágenes — se ha visto hasta ~2 min) o
+    # hasta 30s en reintentos con time.sleep(); se ejecuta en threadpool
+    # para que el event loop de FastAPI siga sirviendo otras peticiones
+    # (p. ej. /api/history) mientras tanto.
+    reformatted_text, was_reformatted = await run_in_threadpool(verify_and_format, full_text, page_images)
 
     # ── 4. Parse answer key del texto reformateado ──────────────────────
     answer_key = parse_answer_key(reformatted_text)
@@ -159,34 +174,52 @@ async def api_parse(
             }
         )
 
-    # ── 6. Validate questions (Modo Estricto) ───────────────────────────
-    validation = validate_questions(questions, effective_answer_key, strict=True)
+    # ── 6. Modo Tolerante: separar preguntas válidas de las que hay que
+    # omitir (ej. de respuesta abierta, sin ninguna opción/respuesta que la
+    # IA pudiera identificar) en vez de bloquear TODA la conversión por una
+    # sola pregunta problemática — el usuario revisa lo válido en el editor
+    # de siempre, y ve un resumen de lo que se omitió y por qué.
+    valid_questions, skipped_questions = partition_questions(questions, effective_answer_key)
 
-    if not validation.is_valid:
+    if not valid_questions:
         raise HTTPException(
             status_code=422,
             detail={
-                "message": "Se detectaron errores de validación antes de generar el XML:",
-                "errors": validation.errors
+                "message": "No se pudo procesar ninguna pregunta del examen:",
+                "errors": [r for sq in skipped_questions for r in sq["reasons"]] or [
+                    "Ninguna pregunta del documento coincidió con un tipo soportado (opción múltiple, verdadero/falso, emparejamiento o completar)."
+                ],
             }
         )
 
-    # Si hay warnings (futuro Modo Tolerante), los registramos
-    if validation.warnings:
-        report = generate_warnings_report(validation)
-        logger.warning(
-            "Validación con %d warning(s):\n%s",
-            len(validation.warnings), report,
+    # Aviso suave (no bloqueante) si el documento parecía tener bastantes
+    # más preguntas de las que se terminaron procesando + omitiendo — señal
+    # de que el prefiltro de IA pudo haberse saltado contenido sin avisar.
+    processed_total = len(valid_questions) + len(skipped_questions)
+    completeness_notice = None
+    if estimated_question_count >= 3 and processed_total < estimated_question_count * 0.6:
+        completeness_notice = (
+            f"El documento original parecía tener alrededor de {estimated_question_count} "
+            f"preguntas, pero solo se identificaron {processed_total}. Puede que algunas se "
+            f"hayan pasado por alto — revisa el documento original para confirmar que no falte nada."
         )
 
-    # Convert integer keys back to strings for JSON serialization if needed
-    # (JSON strictly uses string keys, so answer_key will have string keys in JS)
-    
+    # La clave de respuestas que se manda de vuelta se recorta a solo las
+    # preguntas válidas: /api/generate_xml vuelve a validar más adelante
+    # cruzando questions contra answer_key uno a uno, y con las entradas de
+    # las preguntas omitidas todavía ahí (pero sin su pregunta correspondiente
+    # en la lista) esa validación las marca como "falta el enunciado" —
+    # bloqueando por error justo lo que el modo tolerante ya había filtrado.
+    valid_nums = {q["num"] for q in valid_questions}
+    trimmed_answer_key = {num: info for num, info in effective_answer_key.items() if num in valid_nums}
+
     return {
         "filename": filename,
-        "questions": questions,
-        "answer_key": effective_answer_key,
+        "questions": valid_questions,
+        "answer_key": trimmed_answer_key,
         "was_reformatted": was_reformatted,
+        "skipped_questions": skipped_questions,
+        "completeness_notice": completeness_notice,
     }
 
 # ── Modelos Pydantic para Generación de XML ────────────────────────────────

@@ -1592,9 +1592,17 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // ediciones en curso a su texto original sin editar.
     function syncParseResultFromDOM() {
       const existingCards = document.querySelectorAll('.editor-card');
+      // skipped_questions/completeness_notice no viven en el DOM (son solo
+      // informativos, de la respuesta original de /api/parse) — collectEditorData()
+      // no los conoce, así que se preservan del estado anterior para que el
+      // aviso no desaparezca solo por haber añadido o borrado una pregunta.
+      const prevSkipped = currentParseResult ? currentParseResult.skipped_questions : undefined;
+      const prevNotice = currentParseResult ? currentParseResult.completeness_notice : undefined;
       currentParseResult = existingCards.length > 0
         ? collectEditorData()
         : { questions: [], answer_key: {} };
+      if (prevSkipped) currentParseResult.skipped_questions = prevSkipped;
+      if (prevNotice) currentParseResult.completeness_notice = prevNotice;
     }
 
     function deleteQuestionCard(btn) {
@@ -2016,6 +2024,27 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </button>
       </div>`;
 
+      // Aviso de preguntas que el sistema NO pudo procesar (ej. de
+      // respuesta abierta/no autocalificable, o sin ninguna respuesta que
+      // la IA pudiera identificar) — en vez de bloquear toda la
+      // conversión por una sola pregunta problemática, esas se excluyen y
+      // se avisan aquí, con su motivo, para que el usuario decida si hace
+      // falta revisarlas a mano en el examen original.
+      let skippedHtml = '';
+      const skipped = data.skipped_questions || [];
+      if (skipped.length > 0 || data.completeness_notice) {
+        skippedHtml = `<div style="background:var(--color-warning-bg);border:1px solid var(--color-warning);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:18px;">
+          <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:var(--color-warning);margin-bottom:${skipped.length > 0 || data.completeness_notice ? '8px' : '0'};">
+            <i data-lucide="alert-triangle" style="width:16px;height:16px;"></i>
+            ${skipped.length > 0 ? `${skipped.length} pregunta${skipped.length !== 1 ? 's' : ''} no se ${skipped.length !== 1 ? 'procesaron' : 'procesó'}` : 'Aviso'}
+          </div>
+          ${skipped.length > 0 ? `<ul style="margin:0 0 ${data.completeness_notice ? '10px' : '0'} 18px;padding:0;font-size:13px;color:var(--color-text-muted);line-height:1.6;">
+            ${skipped.map(sq => `<li><strong>Pregunta ${sq.num}</strong> (${sq.type}): ${esc_html(sq.reasons[0] || 'no se pudo procesar')}</li>`).join('')}
+          </ul>` : ''}
+          ${data.completeness_notice ? `<p style="margin:0;font-size:13px;color:var(--color-text-muted);line-height:1.5;">${esc_html(data.completeness_notice)}</p>` : ''}
+        </div>`;
+      }
+
       // Barra de filtro: propia tarjeta de ancho completo. Los chips llevan
       // flex:1 (ver CSS .filter-chip) para repartirse todo el ancho entre
       // ellos, sin dejar espacio vacío a la derecha. El contenedor conserva
@@ -2043,7 +2072,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <button type="button" class="btn btn-ghost" onclick="addNewQuestion('matching')" style="padding:6px 12px;font-size:12.5px;color:var(--color-mt);">+ Emparejamiento</button>
         </div>
       </div>`;
-      container.innerHTML = actionsHtml + filterHtml + addQuestionHtml;
+      container.innerHTML = actionsHtml + skippedHtml + filterHtml + addQuestionHtml;
 
       data.questions.forEach((q, i) => {
         const keyInfo = data.answer_key[q.num] || { answer: '' };
@@ -2051,6 +2080,9 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <strong style="color:var(--color-accent);font-size:15px;font-family:var(--font-heading);">Pregunta ${q.num}</strong>
             <div style="display:flex;align-items:center;gap:10px;">
+              ${q.data.from_table ? `<span class="type-badge" style="background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);" title="El sistema detectó una tabla/cuadro en el documento original y la convirtió automáticamente a esta pregunta de emparejamiento — revísala con cuidado antes de aprobar.">
+                <i data-lucide="table-2" style="width:12px;height:12px;vertical-align:-2px;"></i> convertida de tabla
+              </span>` : ''}
               <span class="type-badge ${q.type}">${q.type}</span>
               <button type="button" class="btn btn-ghost" onclick="deleteQuestionCard(this)" style="padding:4px 8px;color:var(--color-error);font-size:12px;" title="Eliminar esta pregunta">
                 <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
@@ -2310,7 +2342,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
       };
       const total = counts.multichoice + counts.truefalse + counts.matching + counts.cloze;
 
-      document.getElementById('success-subtitle').textContent = `${total} pregunta${total !== 1 ? 's' : ''} extraída${total !== 1 ? 's' : ''} • ${downloadFilename}`;
+      // Balance final: si el modo tolerante omitió alguna pregunta (ver
+      // renderEditor), se refleja aquí también, no solo en el editor — es
+      // el resumen que el usuario se lleva de toda la conversión.
+      const skippedCount = (currentParseResult && currentParseResult.skipped_questions)
+        ? currentParseResult.skipped_questions.length : 0;
+      const skippedNote = skippedCount > 0
+        ? ` · ${skippedCount} omitida${skippedCount !== 1 ? 's' : ''}`
+        : '';
+      document.getElementById('success-subtitle').textContent = `${total} pregunta${total !== 1 ? 's' : ''} extraída${total !== 1 ? 's' : ''}${skippedNote} • ${downloadFilename}`;
 
       // Solo entra a la lista (tarjeta + porción del pastel) el tipo que
       // realmente tiene preguntas en este examen — si no hubo, por ejemplo,

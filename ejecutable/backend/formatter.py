@@ -9,8 +9,9 @@ Flujo:
 import re
 import time
 import logging
-from typing import Optional
+from typing import Optional, List
 from fastapi import HTTPException
+from PIL import Image
 import google.generativeai as genai
 from google.api_core.exceptions import (
     NotFound,
@@ -38,9 +39,16 @@ _NON_RETRYABLE_ERRORS = (NotFound, InvalidArgument, PermissionDenied, Unauthenti
 
 
 
-def verify_and_format(raw_text: str) -> tuple[str, bool]:
+def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = None) -> tuple[str, bool]:
     """
-    Pasa el texto por Gemini para normalizar estructura.
+    Pasa el texto (y, si el documento es un PDF con imágenes incrustadas,
+    esas páginas como imagen) por Gemini para normalizar estructura.
+
+    page_images permite que Gemini vea código mostrado como captura de
+    pantalla y respuestas marcadas solo por color de texto — contenido
+    invisible para la extracción de texto plano (ver REGLA 8/9 del
+    SYSTEM_PROMPT). Sigue funcionando igual que antes si se omite (.txt,
+    o un PDF sin imágenes incrustadas).
 
     Returns:
         (texto_para_parser, fue_reformateado)
@@ -59,10 +67,18 @@ def verify_and_format(raw_text: str) -> tuple[str, bool]:
     max_retries = GEMINI_MAX_RETRIES
     wait_time = GEMINI_RETRY_WAIT_SECONDS
 
+    # Con imágenes, la petición a Gemini puede tardar bastante más que una
+    # de solo texto (se ha visto hasta ~2 minutos en pruebas reales) — es
+    # normal, no es que esté colgado.
+    content = [raw_text, *page_images] if page_images else raw_text
+
     for attempt in range(1, max_retries + 1):
         try:
-            logger.info("Gemini prefiltro: enviando texto (%d chars)... Intento %d/%d", len(raw_text), attempt, max_retries)
-            response = model.generate_content(raw_text)
+            logger.info(
+                "Gemini prefiltro: enviando texto (%d chars) + %d imagen(es)... Intento %d/%d",
+                len(raw_text), len(page_images or []), attempt, max_retries,
+            )
+            response = model.generate_content(content)
             result_text = response.text.strip()
 
             logger.info(

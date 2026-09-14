@@ -61,6 +61,12 @@ cmd = [
     # no como código analizado por PyInstaller) su import nunca se detecta
     # automáticamente y hay que declararlo a mano ──────────────────────────
     "--hidden-import", "sqlite3",
+    # ── extractor.py renderiza páginas de PDF como imagen (PIL/Pillow vía
+    # pypdfium2, para que Gemini pueda leer código en capturas de pantalla
+    # y respuestas marcadas solo por color) — mismo problema que sqlite3:
+    # al vivir en backend/ como datos, no se detecta solo ──────────────────
+    "--collect-all", "PIL",
+    "--hidden-import", "pypdfium2",
 ]
 
 print("Construyendo ConvertidorMoodle.app ...")

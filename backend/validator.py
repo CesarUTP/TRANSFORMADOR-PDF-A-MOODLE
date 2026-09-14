@@ -81,53 +81,95 @@ def validate_questions(
     for q in questions:
         if "error" in q:
             continue
-
-        num = q["num"]
-        qtype = q["type"]
-        data = q["data"]
-        key_info = answer_key.get(num, {})
-        correct_answer = key_info.get("answer", "")
-
-        # ── Validación universal: ¿existe en la clave de respuestas? ────────
-        if not key_info:
-            target.append(
-                f"Error: falta la respuesta en la clave para el ítem Pregunta {num}."
-            )
-            continue  # sin clave no podemos validar más
-
-        # ── Validación universal: ¿tiene respuesta correcta especificada? ──
-        if not correct_answer.strip() or correct_answer.strip().upper() == "SIN_RESPUESTA":
-            target.append(
-                f"Error: la Pregunta {num} ({qtype}) no tiene una respuesta correcta especificada en el examen."
-            )
-            continue
-
-        # ── Validación universal: campos obligatorios según tipo ────────────
-        required = REQUIRED_FIELDS.get(qtype, [])
-        for field_name in required:
-            if field_name not in data or not data[field_name]:
-                target.append(
-                    f"Error: falta '{field_name}' en el ítem Pregunta {num} ({qtype})."
-                )
-
-        # ── Validaciones específicas por tipo ───────────────────────────────
-        if qtype == "multichoice":
-            _validate_multichoice(num, data, correct_answer, target)
-
-        elif qtype == "truefalse":
-            _validate_truefalse(num, data, correct_answer, target)
-
-        elif qtype == "matching":
-            _validate_matching(num, data, correct_answer, key_info.get("pairs", {}), target)
-
-        elif qtype == "cloze":
-            _validate_cloze(num, data, correct_answer, target)
+        target.extend(_collect_question_errors(q["num"], q["type"], q["data"], answer_key.get(q["num"], {})))
 
     logger.info(
         "Validación completada: %d errores, %d warnings.",
         len(result.errors), len(result.warnings),
     )
     return result
+
+
+def _collect_question_errors(
+    num: int,
+    qtype: str,
+    data: Dict[str, Any],
+    key_info: Dict[str, Any],
+) -> List[str]:
+    """
+    Corre todas las validaciones de UNA sola pregunta (clave presente,
+    respuesta especificada, campos obligatorios, reglas por tipo) y
+    devuelve la lista de errores encontrados (vacía si la pregunta está
+    bien). Reutilizada tanto por validate_questions (todo-o-nada, para
+    /api/generate_xml) como por partition_questions (pregunta por
+    pregunta, para /api/parse — ver Modo Tolerante más abajo).
+    """
+    errors: List[str] = []
+    correct_answer = key_info.get("answer", "")
+
+    if not key_info:
+        errors.append(f"Error: falta la respuesta en la clave para el ítem Pregunta {num}.")
+        return errors
+
+    if not correct_answer.strip() or correct_answer.strip().upper() == "SIN_RESPUESTA":
+        errors.append(f"Error: la Pregunta {num} ({qtype}) no tiene una respuesta correcta especificada en el examen.")
+        return errors
+
+    required = REQUIRED_FIELDS.get(qtype, [])
+    for field_name in required:
+        if field_name not in data or not data[field_name]:
+            errors.append(f"Error: falta '{field_name}' en el ítem Pregunta {num} ({qtype}).")
+
+    if qtype == "multichoice":
+        _validate_multichoice(num, data, correct_answer, errors)
+    elif qtype == "truefalse":
+        _validate_truefalse(num, data, correct_answer, errors)
+    elif qtype == "matching":
+        _validate_matching(num, data, correct_answer, key_info.get("pairs", {}), errors)
+    elif qtype == "cloze":
+        _validate_cloze(num, data, correct_answer, errors)
+
+    return errors
+
+
+# ── Modo Tolerante ───────────────────────────────────────────────────────────
+
+def partition_questions(
+    questions: List[Dict[str, Any]],
+    answer_key: Dict[int, Dict[str, Any]],
+) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    Separa las preguntas parseadas en (válidas, omitidas) en vez de
+    bloquear la conversión completa por una sola pregunta problemática —
+    ej. una pregunta de respuesta abierta que el prefiltro de IA no pudo
+    encajar en ninguno de los 4 tipos soportados, o una que perdió su
+    respuesta correcta en el proceso. El usuario revisa lo válido en el
+    editor de siempre, y ve un resumen de lo que se omitió y por qué.
+
+    Returns:
+        (preguntas_validas, preguntas_omitidas) — cada omitida es
+        {"num": int, "type": str, "reasons": List[str]}.
+    """
+    valid: List[Dict[str, Any]] = []
+    skipped: List[Dict[str, Any]] = []
+
+    for q in questions:
+        num = q["num"]
+        if "error" in q:
+            skipped.append({"num": num, "type": q.get("type", "?"), "reasons": [q["error"]]})
+            continue
+
+        errors = _collect_question_errors(num, q["type"], q["data"], answer_key.get(num, {}))
+        if errors:
+            skipped.append({"num": num, "type": q["type"], "reasons": errors})
+        else:
+            valid.append(q)
+
+    logger.info(
+        "Modo tolerante: %d pregunta(s) válida(s), %d omitida(s).",
+        len(valid), len(skipped),
+    )
+    return valid, skipped
 
 
 # ── Validadores por tipo ────────────────────────────────────────────────────
@@ -426,3 +468,21 @@ def pre_validate_raw_text(text: str) -> None:
 
     if not has_answers:
         raise ValueError("No se encontraron indicios de la sección de respuestas en el documento (ej. 'RESPUESTAS').")
+
+
+def estimate_question_count(raw_text: str) -> int:
+    """
+    Cuenta aproximada (por encima, no exacta) de cuántas preguntas parece
+    tener el documento ORIGINAL, antes de pasarlo por el prefiltro de IA —
+    cada línea numerada ("1.", "2)", etc.) cuenta como candidato, aunque
+    algunas terminen siendo opciones de respuesta y no preguntas reales
+    (por eso es un techo, no un número exacto).
+
+    Sirve solo para detectar si el prefiltro de IA se saltó contenido real
+    sin avisar (un riesgo real y ya observado: en documentos largos con
+    numeración desordenada, el modelo puede procesar bastante menos
+    preguntas de las que el documento realmente tiene) — no para bloquear
+    nada, solo para poder mostrarle un aviso al usuario.
+    """
+    matches = re.findall(r'(?:^|\n)\s*\d{1,3}\s*[.\)]\s', raw_text)
+    return len(matches)
