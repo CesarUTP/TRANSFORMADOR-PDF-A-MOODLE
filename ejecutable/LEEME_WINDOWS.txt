@@ -19,7 +19,7 @@ Requisitos en la PC con Windows (una sola vez)
 ------------------------------------------------
 1. Python 3.10 o superior — https://www.python.org/downloads/
    Al instalarlo, marca la casilla "Add Python to PATH".
-2. Inno Setup 6 (gratis) — https://jrsoftware.org/isdl.php
+2. Inno Setup (gratis, cualquier versión) — https://jrsoftware.org/isdl.php
    Instálalo con las opciones por defecto.
 
 Pasos

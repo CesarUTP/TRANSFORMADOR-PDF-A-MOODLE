@@ -46,11 +46,25 @@ if errorlevel 1 (
 )
 
 echo [4/4] Generando el instalador con Inno Setup...
-set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
-if not exist "%ISCC%" set "ISCC=%ProgramFiles%\Inno Setup 6\ISCC.exe"
-if not exist "%ISCC%" (
+set "ISCC="
+
+REM Se busca primero en el registro de Windows (funciona sin importar la
+REM version de Inno Setup instalada: 6, 7, la que sea) y solo si eso falla
+REM se prueban rutas fijas conocidas como respaldo.
+for /f "tokens=2,*" %%A in ('reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\ISCC.exe" /ve 2^>nul ^| findstr /i "REG_SZ"') do set "ISCC=%%B"
+if not defined ISCC (
+    for /f "tokens=2,*" %%A in ('reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\ISCC.exe" /ve 2^>nul ^| findstr /i "REG_SZ"') do set "ISCC=%%B"
+)
+if not defined ISCC (
+    for %%V in (7 6 8 9) do (
+        if not defined ISCC if exist "%ProgramFiles(x86)%\Inno Setup %%V\ISCC.exe" set "ISCC=%ProgramFiles(x86)%\Inno Setup %%V\ISCC.exe"
+        if not defined ISCC if exist "%ProgramFiles%\Inno Setup %%V\ISCC.exe" set "ISCC=%ProgramFiles%\Inno Setup %%V\ISCC.exe"
+    )
+)
+
+if not defined ISCC (
     echo.
-    echo [ERROR] No se encontro Inno Setup 6.
+    echo [ERROR] No se encontro Inno Setup instalado.
     echo Descargalo gratis desde https://jrsoftware.org/isdl.php e instalalo
     echo con las opciones por defecto, luego vuelve a correr este script.
     echo.
@@ -58,6 +72,7 @@ if not exist "%ISCC%" (
     exit /b 1
 )
 
+echo Usando Inno Setup: %ISCC%
 "%ISCC%" installer.iss
 if errorlevel 1 (
     echo.
