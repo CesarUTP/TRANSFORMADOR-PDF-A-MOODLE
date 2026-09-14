@@ -1,0 +1,66 @@
+CONVERSOR A MOODLE XML — Generar la app de macOS
+============================================================
+
+Esta carpeta es autosuficiente: trae una copia limpia de todo lo
+necesario para generar la app de macOS, sin depender del resto del
+entorno de desarrollo. A propósito NO incluye los exámenes de
+ejemplo, la documentación interna, el historial de conversiones, ni
+los scripts de prueba — nada de eso lo necesita un usuario final.
+
+Requisitos en la Mac (una sola vez)
+------------------------------------------------
+1. Python 3.10 o superior — https://www.python.org/downloads/
+   (macOS suele traer python3 de por sí; si `python3 --version`
+   funciona en la Terminal, ya está.)
+2. Xcode Command Line Tools (para compilar pyobjc/pywebview):
+       xcode-select --install
+
+Pasos
+------------------------------------------------
+1. Doble clic en "build_mac.sh" (o corre `./build_mac.sh` desde
+   Terminal si el Finder no lo deja ejecutar directo).
+2. Espera a que termine — crea un entorno virtual de compilación,
+   instala dependencias, compila la app con PyInstaller y arma el
+   instalador .dmg. La primera vez puede tardar varios minutos.
+3. El instalador final queda en:
+       dist/ConversorMoodleXML.dmg
+
+Ese único archivo es el que compartes con quien vaya a probar la
+app. Al abrirlo, aparece una ventana con "ConvertidorMoodle.app" y
+un acceso directo a la carpeta Aplicaciones — arrastrando el ícono
+ahí queda "instalada" como cualquier app de Mac.
+
+Nota sobre la clave de Gemini
+------------------------------------------------
+El ejecutable incluye la misma clave de API de Gemini que usas en
+desarrollo (sigue pendiente moverla a configuración). Si vas a
+compartir este instalador con alguien fuera de tu control directo,
+ten en cuenta que esa clave queda embebida dentro de la app.
+
+"Apple no puede verificar que esta app esté libre de malware"
+------------------------------------------------
+Como la app no está firmada con una cuenta de Apple Developer
+($99/año) ni notarizada, macOS (Gatekeeper) le muestra este aviso a
+CUALQUIERA que la abra por primera vez — no es un error de
+compilación. Dos formas de abrirla igual:
+
+  a) Clic derecho (o Ctrl+clic) sobre la app → "Abrir" → confirmar
+     en el diálogo. Solo hace falta la primera vez.
+
+  b) Por Terminal, quitarle el atributo de cuarentena:
+       xattr -cr /Applications/ConvertidorMoodle.app
+     (o la ruta donde haya quedado la app)
+
+La app se queda cargando (splash) y nunca abre
+------------------------------------------------
+Significa que el backend (uvicorn) no pudo arrancar. Revisa
+"launcher_error.log", creado junto al ejecutable real dentro del
+bundle:
+    ConvertidorMoodle.app/Contents/MacOS/launcher_error.log
+
+La causa más común: un módulo que usa `backend/` (fastapi, uvicorn,
+sqlite3, etc.) no quedó incluido en la app. Como PyInstaller trata
+la carpeta `backend/` como datos copiados tal cual (vía `--add-data`)
+y no como código que analiza, no detecta automáticamente sus imports
+— hay que declararlos a mano con `--hidden-import` en
+ejecutable_mac/build.py y volver a compilar.

@@ -13,7 +13,43 @@ import os
 import base64
 import threading
 import time
+import traceback
 import urllib.request
+
+# ── Log de arranque (para depurar fallos silenciosos del backend) ──────────
+def _app_data_dir() -> str:
+    """
+    Carpeta de datos de la app para el ejecutable empaquetado — SIEMPRE
+    escribible por el usuario actual. La carpeta del propio ejecutable
+    (ej. "C:\\Program Files\\..." en Windows tras instalarlo) normalmente
+    NO lo es para un usuario sin privilegios de administrador: escribir el
+    log de errores (o la base de datos) ahí fallaba en silencio, dejando
+    al usuario sin ninguna pista real de por qué la app no arrancaba.
+    """
+    app_name = "ConversorMoodleXML"
+    if sys.platform == "win32":
+        base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    elif sys.platform == "darwin":
+        base = os.path.expanduser("~/Library/Application Support")
+    else:
+        base = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+    path = os.path.join(base, app_name)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+if getattr(sys, "frozen", False):
+    LOG_PATH = os.path.join(_app_data_dir(), "launcher_error.log")
+else:
+    LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "launcher_error.log")
+
+
+def _log(msg: str) -> None:
+    try:
+        with open(LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+    except Exception:
+        pass
 
 # ── Rutas del bundle ────────────────────────────────────────────────────────
 if getattr(sys, "frozen", False):
@@ -274,8 +310,12 @@ SPLASH_HTML = """<!DOCTYPE html>
 
 # ── Server helpers ──────────────────────────────────────────────────────────
 def _run_server():
-    import uvicorn
-    uvicorn.run("main:app", host=HOST, port=PORT, log_level="critical")
+    try:
+        _log(f"Iniciando uvicorn en {HOST}:{PORT} (BACKEND_DIR={BACKEND_DIR})")
+        import uvicorn
+        uvicorn.run("main:app", host=HOST, port=PORT, log_level="critical")
+    except Exception:
+        _log("EXCEPCION en _run_server:\n" + traceback.format_exc())
 
 
 def _wait_for_server(timeout: int = 30) -> bool:
@@ -309,20 +349,31 @@ def main():
     api._set_window(window)
 
     def _start_backend():
-        start_time = time.time()
-        threading.Thread(target=_run_server, daemon=True).start()
-        server_ready = _wait_for_server()
+        try:
+            start_time = time.time()
+            threading.Thread(target=_run_server, daemon=True).start()
+            server_ready = _wait_for_server()
 
-        # Completa el tiempo restante hasta el mínimo antes de navegar, para
-        # que la splash dure siempre lo mismo (nunca menos) sin importar si
-        # el servidor respondió en 200ms o en 4 segundos.
-        elapsed = time.time() - start_time
-        remaining = MIN_SPLASH_SECONDS - elapsed
-        if remaining > 0:
-            time.sleep(remaining)
+            # Completa el tiempo restante hasta el mínimo antes de navegar, para
+            # que la splash dure siempre lo mismo (nunca menos) sin importar si
+            # el servidor respondió en 200ms o en 4 segundos.
+            elapsed = time.time() - start_time
+            remaining = MIN_SPLASH_SECONDS - elapsed
+            if remaining > 0:
+                time.sleep(remaining)
 
-        if server_ready:
-            window.load_url(URL)
+            if server_ready:
+                window.load_url(URL)
+            else:
+                _log("El backend no respondio dentro del timeout.")
+                window.load_html(
+                    "<body style='background:#090d16;color:#f8fafc;"
+                    "font-family:sans-serif;padding:40px'>"
+                    "<h2>No se pudo iniciar el servidor</h2>"
+                    f"<p>Revisa el log: {LOG_PATH}</p></body>"
+                )
+        except Exception:
+            _log("EXCEPCION en _start_backend:\n" + traceback.format_exc())
 
     webview.start(func=_start_backend)
     sys.exit(0)

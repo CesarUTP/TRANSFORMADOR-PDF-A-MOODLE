@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import sys
 import logging
@@ -7,9 +8,32 @@ from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
+
+def _app_data_dir() -> Path:
+    """
+    Carpeta de datos de la app para el ejecutable empaquetado.
+
+    La carpeta del propio ejecutable (ej. "C:\\Program Files\\..." en
+    Windows tras instalarlo con el instalador) NO es escribible por un
+    usuario sin privilegios de administrador — intentar crear ahí la base
+    de datos lanza PermissionError, el backend nunca termina de arrancar,
+    y el usuario solo ve una pantalla de "no se pudo iniciar el servidor".
+    Se usa en su lugar la carpeta de datos de aplicación estándar de cada
+    sistema operativo, que siempre es escribible por el usuario actual.
+    """
+    app_name = "ConversorMoodleXML"
+    if sys.platform == "win32":
+        base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    elif sys.platform == "darwin":
+        base = os.path.expanduser("~/Library/Application Support")
+    else:
+        base = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+    return Path(base) / app_name
+
+
 def get_db_path() -> Path:
     if getattr(sys, "frozen", False):
-        base_dir = Path(sys.executable).parent
+        base_dir = _app_data_dir()
     else:
         base_dir = Path(__file__).parent.parent
     data_dir = base_dir / "data"

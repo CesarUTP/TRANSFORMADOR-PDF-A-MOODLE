@@ -19,11 +19,15 @@ dist/
 .vscode/
 .idea/
 
-# Ejecutable empaquetado (se genera en Windows, no se versiona)
+# Ejecutable empaquetado (se genera en Windows/macOS, no se versiona)
 ejecutable/build_venv/
 ejecutable/build/
 ejecutable/dist/
 ejecutable/Output/
+ejecutable_mac/build_venv/
+
+# Log de arranque del ejecutable (se genera solo, para depurar)
+launcher_error.log
 
 # Salidas de scripts de desarrollo (dev/)
 dev/*.pdf

@@ -1,0 +1,2750 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversor a Moodle XML</title>
+  <meta name="description"
+    content="Plataforma de ingeniería de evaluación académica para convertir pruebas, quices y exámenes (PDF o TXT) al formato Moodle XML con validación estructural e IA." />
+
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons (versión fija: "@latest" puede romper la UI sin aviso si Lucide publica un cambio incompatible) -->
+  <script src="https://unpkg.com/lucide@1.44.0/dist/umd/lucide.min.js"></script>
+
+  <style>
+    /* ── DESIGN SYSTEM & TOKENS (Impeccable & Design Tokens) ──────────────── */
+    :root {
+      /* Color Palette — Dark Mode Default (Rich Deep Slate & Electric Cyan) */
+      --color-bg:             #090d16;
+      --color-bg-alt:         #0f172a;
+      --color-surface:        #131c31;
+      --color-surface-hover:  #1e293b;
+      --color-surface-card:   rgba(19, 28, 49, 0.75);
+      --color-surface-modal:  rgba(15, 23, 42, 0.88);
+      --color-dropzone-bg:    rgba(19, 28, 49, 0.25);
+      --color-tabstrip-bg:    rgba(0, 0, 0, 0.1);
+      --color-border:         rgba(255, 255, 255, 0.12);
+      --color-border-subtle:  rgba(255, 255, 255, 0.06);
+      --color-border-glow:    rgba(56, 189, 248, 0.35);
+
+      --color-text:           #f8fafc;
+      --color-text-muted:     #94a3b8;
+      --color-text-subtle:    #8593a7;
+
+      --color-primary:        #0369a1;
+      --color-primary-hover:  #0284c7;
+      --color-primary-glow:   rgba(2, 132, 199, 0.25);
+
+      --color-accent:         #38bdf8;
+      --color-accent-gradient: linear-gradient(135deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
+      --color-accent-glow:   rgba(56, 189, 248, 0.2);
+
+      /* Gradiente dedicado para botones con texto blanco encima: a diferencia
+         de --color-accent-gradient (decorativo, para logo/marca), este se
+         mantiene lo bastante oscuro en todo su recorrido para que el texto
+         blanco cumpla WCAG AA (>=4.5:1) en cualquier punto del degradado. */
+      --color-cta-gradient: linear-gradient(135deg, #075985 0%, #0369a1 50%, #4338ca 100%);
+
+      /* Variantes CTA para acciones positivas/negativas (aprobar y generar,
+         cancelar) — mismo criterio de contraste que --color-cta-gradient:
+         se mantienen igual de oscuras en modo claro y oscuro, porque lo que
+         importa es el contraste del texto blanco contra el botón, no el
+         fondo de la página. */
+      --color-cta-success-gradient: linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%);
+      --color-cta-danger-gradient:  linear-gradient(135deg, #7f1d2e 0%, #be123c 50%, #f43f5e 100%);
+      --shadow-glow-success: 0 0 30px rgba(16, 185, 129, 0.3);
+      --shadow-glow-danger:  0 0 30px rgba(244, 63, 94, 0.3);
+
+      --color-success:        #10b981;
+      --color-success-bg:     rgba(16, 185, 129, 0.12);
+      --color-success-solid:  #0c855d;
+      --color-warning:        #f59e0b;
+      --color-warning-bg:     rgba(245, 158, 11, 0.12);
+      --color-error:          #f43f5e;
+      --color-error-bg:       rgba(244, 63, 94, 0.12);
+      --color-error-solid:    #e80d33;
+
+      --color-mc:             #38bdf8;
+      --color-mc-bg:          rgba(56, 189, 248, 0.15);
+      --color-mc-border:      rgba(56, 189, 248, 0.3);
+      --color-tf:             #34d399;
+      --color-tf-bg:          rgba(52, 211, 153, 0.15);
+      --color-tf-border:      rgba(52, 211, 153, 0.3);
+      --color-mt:             #fbbf24;
+      --color-mt-bg:          rgba(251, 191, 36, 0.15);
+      --color-mt-border:      rgba(251, 191, 36, 0.3);
+      --color-cl:             #a78bfa;
+      --color-cl-bg:          rgba(167, 139, 250, 0.15);
+      --color-cl-border:      rgba(167, 139, 250, 0.3);
+
+      /* Radii */
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --radius-full: 9999px;
+
+      /* Shadows */
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.45);
+      --shadow-glow: 0 0 30px rgba(56, 189, 248, 0.25);
+
+      /* Typography */
+      --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-heading: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    [data-theme="light"] {
+      --color-bg:             #f1f5f9;
+      --color-bg-alt:         #e2e8f0;
+      --color-surface:        #ffffff;
+      --color-surface-hover:  #f8fafc;
+      --color-surface-card:   rgba(255, 255, 255, 0.85);
+      --color-surface-modal:  rgba(255, 255, 255, 0.94);
+      --color-dropzone-bg:    rgba(2, 132, 199, 0.05);
+      --color-tabstrip-bg:    rgba(15, 23, 42, 0.03);
+      --color-border:         #cbd5e1;
+      --color-border-subtle:  #e2e8f0;
+      --color-border-glow:    rgba(2, 132, 199, 0.3);
+      
+      --color-text:           #0f172a;
+      --color-text-muted:     #475569;
+      --color-text-subtle:    #606f85;
+
+      --color-primary:        #0369a1;
+      --color-primary-hover:  #0284c7;
+      --color-primary-glow:   rgba(2, 132, 199, 0.15);
+
+      --color-accent:         #0273ae;
+      --color-accent-gradient: linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #4f46e5 100%);
+      --color-accent-glow:   rgba(2, 132, 199, 0.15);
+
+      --color-success:        #047d58;
+      --color-success-bg:     #ecfdf5;
+      --color-success-solid:  #047d58;
+      --color-warning:        #ac5f05;
+      --color-warning-bg:     #fffbeb;
+      --color-error:          #d31b44;
+      --color-error-bg:       #fff1f2;
+      --color-error-solid:    #d31b44;
+
+      --color-mc:             #0270a9;
+      --color-mc-bg:          rgba(2, 132, 199, 0.12);
+      --color-mc-border:      rgba(2, 132, 199, 0.3);
+      --color-tf:             #047854;
+      --color-tf-bg:          rgba(5, 150, 105, 0.12);
+      --color-tf-border:      rgba(5, 150, 105, 0.3);
+      --color-mt:             #a25904;
+      --color-mt-bg:          rgba(217, 119, 6, 0.12);
+      --color-mt-border:      rgba(217, 119, 6, 0.3);
+      --color-cl:             #7c3aed;
+      --color-cl-bg:          rgba(124, 58, 237, 0.12);
+      --color-cl-border:      rgba(124, 58, 237, 0.3);
+
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+      --shadow-glow: 0 0 25px rgba(2, 132, 199, 0.18);
+    }
+
+    /* ── BASE STYLES & RESET ─────────────────────────────────────────────── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: var(--color-bg);
+      background-image: 
+        radial-gradient(at 0% 0%, var(--color-primary-glow) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, var(--color-accent-glow) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--color-text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      line-height: 1.6;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Focus visible for accessibility (WCAG AA) */
+    :focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 3px;
+      border-radius: var(--radius-sm);
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--color-text-subtle); }
+
+    /* ── KEYFRAMES & ANIMATIONS (Emil Design Eng) ────────────────────────── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleUp {
+      from { opacity: 0; transform: scale(0.96); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes spinSlow {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulseRing {
+      0%   { transform: scale(0.95); box-shadow: 0 0 0 0 var(--color-accent-glow); }
+      70%  { transform: scale(1); box-shadow: 0 0 0 16px rgba(56, 189, 248, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+    }
+
+    .animate-fadeIn { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .animate-scaleUp { animation: scaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    /* ── CONTAINER & CARDS ───────────────────────────────────────────────── */
+    .app-header {
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-surface-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: border-color 0.3s;
+    }
+    .header-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo-badge {
+      width: 44px;
+      height: 44px;
+      background: var(--color-accent-gradient);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-glow);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .logo-badge:hover { transform: scale(1.05) rotate(-3deg); }
+
+    .brand-title {
+      font-family: var(--font-heading);
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      background: var(--color-accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-sub {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .main-wrapper {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 36px 24px 80px;
+    }
+
+    /* ── STEPPER (UI-UX Pro Max Flow) ────────────────────────────────────── */
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      background: var(--color-surface-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 12px 20px;
+      backdrop-filter: blur(12px);
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-text-subtle);
+      transition: color 0.25s;
+    }
+    .step-item.active {
+      color: var(--color-accent);
+    }
+    .step-item.completed {
+      color: var(--color-success);
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      background: var(--color-surface-hover);
+      border: 1.5px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      transition: all 0.25s;
+    }
+    .step-item.active .step-num {
+      background: var(--color-primary);
+      border-color: var(--color-accent);
+      color: #ffffff;
+      box-shadow: 0 0 12px var(--color-primary-glow);
+    }
+    .step-item.completed .step-num {
+      background: var(--color-success-solid);
+      border-color: var(--color-success-solid);
+      color: #ffffff;
+    }
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--color-border);
+      margin: 0 12px;
+      border-radius: 2px;
+      transition: background 0.25s;
+    }
+    .step-line.active {
+      background: var(--color-accent);
+    }
+
+    /* ── CARD COMPONENTS ─────────────────────────────────────────────────── */
+    .glass-card {
+      background: var(--color-surface-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .glass-card:hover {
+      border-color: var(--color-border-glow);
+    }
+
+    /* ── BUTTONS ─────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 22px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      text-decoration: none;
+      letter-spacing: -0.1px;
+    }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+
+    .btn-primary {
+      background: var(--color-cta-gradient);
+      color: #ffffff;
+      box-shadow: var(--shadow-glow);
+    }
+    .btn-primary:hover:not(:disabled) {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--color-primary-glow);
+    }
+    .btn-primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* Verde para acciones que avanzan/confirman (procesar examen, aprobar y
+       generar XML) — refuerza por color que es la acción positiva a tomar. */
+    .btn-success {
+      background: var(--color-cta-success-gradient);
+      color: #ffffff;
+      box-shadow: var(--shadow-glow-success);
+    }
+    .btn-success:hover:not(:disabled) {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+    }
+    .btn-success:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* Rojo para la acción destructiva/de salida (cancelar) — por psicología
+       del color, contrasta con el verde de la acción de confirmar. */
+    .btn-danger {
+      background: var(--color-cta-danger-gradient);
+      color: #ffffff;
+      box-shadow: var(--shadow-glow-danger);
+    }
+    .btn-danger:hover:not(:disabled) {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(244, 63, 94, 0.35);
+    }
+
+    .btn-ghost {
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      color: var(--color-text);
+    }
+    .btn-ghost:hover:not(:disabled) {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+      background: var(--color-surface-hover);
+    }
+
+    .btn-icon-text {
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      background: var(--color-surface-hover);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-icon-text:hover {
+      color: var(--color-text);
+      border-color: var(--color-border-glow);
+      background: var(--color-surface);
+    }
+
+    /* Punto focal: la Guía es el primer lugar donde un usuario nuevo
+       encuentra ayuda, así que se destaca del resto de la navegación
+       (que es neutra) en vez de mezclarse con ella. */
+    .btn-icon-text.btn-guide {
+      background: var(--color-cta-gradient);
+      border-color: transparent;
+      color: #ffffff;
+      box-shadow: 0 2px 10px var(--color-primary-glow);
+    }
+    .btn-icon-text.btn-guide:hover {
+      color: #ffffff;
+      border-color: transparent;
+      filter: brightness(1.12);
+    }
+
+    /* ── DROPZONE ────────────────────────────────────────────────────────── */
+    #drop-zone {
+      border: 2px dashed var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--color-dropzone-bg);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #drop-zone.drag-over, #drop-zone:hover {
+      border-color: var(--color-accent);
+      background: var(--color-accent-glow);
+      transform: scale(1.01);
+    }
+    .drop-icon-wrapper {
+      width: 72px;
+      height: 72px;
+      background: var(--color-accent-glow);
+      border: 1px solid var(--color-border-glow);
+      border-radius: var(--radius-xl);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      animation: pulseRing 3s infinite;
+    }
+
+    /* ── FILE PREVIEW ────────────────────────────────────────────────────── */
+    #file-preview {
+      background: var(--color-accent-glow);
+      border: 1.5px solid var(--color-border-glow);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    /* ── FORM CONTROLS ───────────────────────────────────────────────────── */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+    }
+    .form-input {
+      background: var(--color-bg);
+      border: 1.5px solid var(--color-border);
+      color: var(--color-text);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 14.5px;
+      font-family: inherit;
+      width: 100%;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .form-input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px var(--color-accent-glow);
+    }
+
+    /* ── EDITOR CARDS (Interactive Question Editor) ──────────────────────── */
+    .editor-card {
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+    .editor-card:hover {
+      border-color: var(--color-border-glow);
+    }
+    .editor-card textarea, .editor-card input {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      width: 100%;
+      font-family: inherit;
+      font-size: 13.5px;
+      margin-top: 6px;
+      outline: none;
+    }
+    /* Sin arrastre manual (podía estirarse hasta romper el layout de la
+       tarjeta) — en su lugar, autoJustarTextarea() la hace crecer con el
+       contenido para que el enunciado siempre se vea completo. */
+    .editor-card textarea {
+      resize: none;
+      overflow: hidden;
+    }
+    .editor-card textarea:focus, .editor-card input:focus {
+      border-color: var(--color-accent);
+    }
+    .type-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .type-badge.multichoice { background: var(--color-mc-bg); color: var(--color-mc); border: 1px solid var(--color-mc-border); }
+    .type-badge.truefalse   { background: var(--color-tf-bg); color: var(--color-tf); border: 1px solid var(--color-tf-border); }
+    .type-badge.matching    { background: var(--color-mt-bg); color: var(--color-mt); border: 1px solid var(--color-mt-border); }
+    .type-badge.cloze       { background: var(--color-cl-bg); color: var(--color-cl); border: 1px solid var(--color-cl-border); }
+
+    /* ── CLOZE BUILDER (editor de "completar" sin sintaxis de corchetes) ──── */
+    .cloze-preview {
+      background: var(--color-bg);
+      border: 1px dashed var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--color-text-muted);
+      margin-bottom: 12px;
+      line-height: 1.8;
+    }
+    .cloze-preview .blank-tag {
+      display: inline-block;
+      background: var(--color-cl-bg);
+      color: var(--color-cl);
+      border: 1px solid var(--color-cl-border);
+      border-radius: var(--radius-sm);
+      padding: 1px 8px;
+      font-weight: 700;
+      margin: 2px 2px;
+    }
+    .cloze-text-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .cloze-text-row .cloze-text-input { flex: 1; margin-top: 0; }
+    .cloze-insert-btn {
+      flex-shrink: 0;
+      background: var(--color-surface-hover);
+      border: 1px dashed var(--color-border);
+      color: var(--color-text-subtle);
+      border-radius: var(--radius-sm);
+      padding: 9px 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .cloze-insert-btn:hover { color: var(--color-cl); border-color: var(--color-cl-border); background: var(--color-cl-bg); }
+    .cloze-blank-card {
+      background: var(--color-cl-bg);
+      border: 1px solid var(--color-cl-border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .cloze-blank-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .cloze-blank-header strong { color: var(--color-cl); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .cloze-option-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .cloze-option-row input[type="text"] { flex: 1; margin-top: 0; }
+    .cloze-option-row input[type="radio"],
+    .cloze-option-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--color-cl); cursor: pointer; }
+    .cloze-multi-toggle {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      margin-bottom: 10px;
+      user-select: none;
+    }
+    .cloze-multi-toggle input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--color-cl); cursor: pointer; }
+
+    /* ── SELECCIÓN MÚLTIPLE: casilla de "correcta" por opción ────────────── */
+    .mc-option-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+    .mc-option-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--color-mc); cursor: pointer; }
+    .mc-option-row .mc-option-letter { font-weight: 800; color: var(--color-mc); width: 16px; flex-shrink: 0; }
+    .mc-option-row .q-opt { flex: 1; margin-top: 0; }
+
+    /* ── FILTER CHIPS (Revisar Preguntas) ────────────────────────────────── */
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 1 1 0;
+      min-width: fit-content;
+      padding: 6px 13px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border-radius: var(--radius-full);
+      border: 1.5px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-chip:hover { border-color: var(--color-border-glow); color: var(--color-text); }
+
+    /* Estado inactivo: cada chip ya lleva el color de su tipo (mismo tono
+       que el botón "+ Añadir" y el type-badge de las tarjetas), no solo al
+       seleccionarlo — así el filtro se lee como parte del mismo lenguaje
+       visual de colores por tipo, en vez de una lista de píldoras grises. */
+    .filter-chip[data-filter="all"]         { background: var(--color-accent-glow); border-color: var(--color-border-glow); color: var(--color-accent); }
+    .filter-chip[data-filter="multichoice"] { background: var(--color-mc-bg); border-color: var(--color-mc-border); color: var(--color-mc); }
+    .filter-chip[data-filter="truefalse"]   { background: var(--color-tf-bg); border-color: var(--color-tf-border); color: var(--color-tf); }
+    .filter-chip[data-filter="matching"]    { background: var(--color-mt-bg); border-color: var(--color-mt-border); color: var(--color-mt); }
+    .filter-chip[data-filter="cloze"]       { background: var(--color-cl-bg); border-color: var(--color-cl-border); color: var(--color-cl); }
+
+    /* Estado activo: mismo color pero sólido, con texto blanco — distingue
+       claramente cuál filtro está aplicado ahora mismo. */
+    .filter-chip.active { color: #ffffff; border-color: transparent; }
+    .filter-chip.active[data-filter="all"]        { background: var(--color-primary); }
+    .filter-chip.active[data-filter="multichoice"] { background: var(--color-mc); }
+    .filter-chip.active[data-filter="truefalse"]   { background: var(--color-tf); }
+    .filter-chip.active[data-filter="matching"]    { background: var(--color-mt); }
+    .filter-chip.active[data-filter="cloze"]       { background: var(--color-cl); }
+    .filter-chip .count { opacity: 0.75; font-weight: 600; }
+
+    /* ── STATS CARDS ─────────────────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      /* auto-fit (no auto-fill) para que, con menos de 4 tipos presentes en
+         el examen, las tarjetas restantes se repartan el ancho completo en
+         vez de dejar columnas vacías — nunca se genera una tarjeta para un
+         tipo con 0 preguntas (ver updateSuccessStats). */
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 16px 12px;
+      text-align: center;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .stat-card:hover { transform: translateY(-3px); }
+    .stat-card .stat-num {
+      font-family: var(--font-heading);
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-card .stat-label {
+      font-size: 11.5px;
+      color: var(--color-text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .stat-card .stat-grade {
+      font-size: 11px;
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    /* ── MODALS (Help & History) ──────────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--color-surface-modal);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 720px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(20px) scale(0.96);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s;
+    }
+    .modal-backdrop.open .modal-box { transform: translateY(0) scale(1); }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .modal-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-tabstrip-bg);
+    }
+    .modal-tab {
+      padding: 12px 18px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-tab.active {
+      color: var(--color-accent);
+      border-bottom-color: var(--color-accent);
+    }
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeInUp 0.25s ease; }
+
+    /* ── CODE BLOCKS ─────────────────────────────────────────────────────── */
+    .code-block {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.7;
+      color: var(--color-text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-x: auto;
+    }
+
+    /* ── TOAST ───────────────────────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px) scale(0.96);
+      background: var(--color-success-solid);
+      color: #ffffff;
+      padding: 12px 22px;
+      border-radius: var(--radius-full);
+      font-size: 13.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      max-width: min(90vw, 440px);
+      box-shadow: var(--shadow-lg);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+      opacity: 0;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    .toast.show  { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+    .toast.error { background: var(--color-error-solid); }
+    .toast.info  { background: var(--color-primary); }
+    .toast i     { flex-shrink: 0; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .main-wrapper { padding: 20px 16px 60px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .stepper { padding: 10px 12px; }
+      .step-item span { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ════════════════════════════ HEADER ════════════════════════════ -->
+  <header class="app-header" role="banner">
+    <div class="header-inner">
+      <!-- Logo + Branding -->
+      <div class="logo-container">
+        <div class="logo-badge" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Conversor a Moodle XML</h1>
+          <p class="brand-sub">Convierte tus pruebas, cuestionarios y exámenes en un archivo XML listo para importar en Moodle.</p>
+        </div>
+      </div>
+
+      <!-- Action Navigation -->
+      <nav style="display:flex; align-items:center; gap:8px;" aria-label="Navegación principal">
+        <button id="btn-history" class="btn-icon-text" aria-label="Abrir historial de conversiones" title="Historial">
+          <i data-lucide="clock" style="width:16px;height:16px;"></i>
+          <span>Historial</span>
+        </button>
+        <button id="btn-help" class="btn-icon-text btn-guide" aria-label="Abrir guía de uso" title="Guía">
+          <i data-lucide="book-open" style="width:16px;height:16px;"></i>
+          <span>Guía</span>
+        </button>
+        <button id="theme-toggle-btn" class="btn-icon-text" aria-label="Cambiar tema claro u oscuro" title="Modo Claro/Oscuro" style="padding:8px 10px;">
+          <i data-lucide="sun" id="icon-sun" style="width:16px;height:16px;"></i>
+          <i data-lucide="moon" id="icon-moon" style="width:16px;height:16px;display:none;"></i>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ════════════════════════════ MAIN CONTENT ════════════════════════════ -->
+  <main class="main-wrapper" role="main">
+
+    <!-- Stepper Indicator -->
+    <div class="stepper" aria-label="Pasos del proceso">
+      <div class="step-item active" id="step-1-indicator">
+        <div class="step-num">1</div>
+        <span>Cargar y Configurar</span>
+      </div>
+      <div class="step-line" id="step-line-1"></div>
+      <div class="step-item" id="step-2-indicator">
+        <div class="step-num">2</div>
+        <span>Revisar Preguntas</span>
+      </div>
+      <div class="step-line" id="step-line-2"></div>
+      <div class="step-item" id="step-3-indicator">
+        <div class="step-num">3</div>
+        <span>Descargar XML</span>
+      </div>
+    </div>
+
+    <!-- ── PANEL 1: UPLOAD & CONFIGURATION ── -->
+    <section id="panel-upload" class="animate-fadeIn" aria-labelledby="upload-heading">
+      <h2 id="upload-heading" class="sr-only" style="display:none;">Zona de Carga de Archivos</h2>
+
+      <!-- Drop Zone -->
+      <div id="drop-zone" role="button" tabindex="0" aria-label="Zona interactiva de carga de archivos PDF o TXT">
+        <input type="file" id="file-input" accept=".pdf,.txt" style="display:none;" />
+        <div class="drop-icon-wrapper">
+          <i data-lucide="upload-cloud" style="width:34px;height:34px;color:var(--color-accent);"></i>
+        </div>
+        <p style="font-family:var(--font-heading);font-size:19px;font-weight:800;margin-bottom:6px;">Arrastra tu examen aquí</p>
+        <p style="font-size:14px;color:var(--color-text-muted);margin-bottom:20px;">o haz clic para explorar en tu computadora</p>
+        <div style="display:flex;justify-content:center;gap:8px;">
+          <span style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:4px 14px;font-size:12px;font-weight:700;color:var(--color-accent);">.PDF</span>
+          <span style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:4px 14px;font-size:12px;font-weight:700;color:var(--color-accent);">.TXT</span>
+        </div>
+      </div>
+
+      <!-- Selected File Preview -->
+      <div id="file-preview" style="display:none;" class="animate-scaleUp">
+        <div style="width:44px;height:44px;background:var(--color-primary);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i id="file-icon" data-lucide="file-text" style="width:20px;height:20px;color:#fff;"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <p id="file-name" style="font-weight:700;font-size:14.5px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></p>
+          <p id="file-size" style="font-size:12.5px;color:var(--color-text-muted);margin:0;"></p>
+        </div>
+        <button id="btn-remove-file" class="btn btn-ghost" style="padding:6px 10px;" aria-label="Remover archivo seleccionado">
+          <i data-lucide="x" style="width:16px;height:16px;"></i>
+        </button>
+      </div>
+
+      <!-- Config Card -->
+      <div class="glass-card" style="margin-top:24px;padding:24px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <!-- Category -->
+          <div class="form-group">
+            <label class="field-label" for="category-input">
+              <i data-lucide="folder" style="width:14px;height:14px;color:var(--color-accent);"></i>
+              Categoría Moodle
+            </label>
+            <input id="category-input" class="form-input" type="text" placeholder="ej: Parcial-Historia-2026" value="mis-preguntas" />
+          </div>
+
+          <!-- Total Points -->
+          <div class="form-group">
+            <label class="field-label" for="points-input">
+              <i data-lucide="award" style="width:14px;height:14px;color:var(--color-accent);"></i>
+              Puntaje Total del Examen
+            </label>
+            <div style="position:relative;">
+              <input id="points-input" class="form-input" type="number" min="1" step="0.5" value="100" style="padding-right:50px;" />
+              <span style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--color-text-muted);font-weight:800;">pts</span>
+            </div>
+          </div>
+        </div>
+
+        <p id="points-error" style="font-size:12.5px;color:var(--color-error);margin-top:10px;display:none;">⚠ Ingresa un valor numérico mayor a 0.</p>
+        
+        <div style="margin-top:16px;padding:10px 14px;background:var(--color-surface);border-radius:var(--radius-sm);border:1px solid var(--color-border-subtle);font-size:12.5px;color:var(--color-text-muted);display:flex;align-items:center;gap:8px;">
+          <i data-lucide="info" style="width:15px;height:15px;color:var(--color-accent);flex-shrink:0;"></i>
+          <span>No repartas los puntos tú mismo: escribe el total del examen y el sistema lo divide entre todas las preguntas, dando un poco más de valor a las de emparejar y completar por ser más laboriosas.</span>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <button id="btn-convert" class="btn btn-success" style="width:100%;margin-top:20px;padding:16px;font-size:16px;" disabled>
+        <i data-lucide="zap" style="width:20px;height:20px;"></i>
+        Procesar y Convertir Examen
+      </button>
+
+      <!-- Privacy Banner -->
+      <div style="margin-top:16px;text-align:center;font-size:12.5px;color:var(--color-text-subtle);display:flex;align-items:center;justify-content:center;gap:6px;">
+        <i data-lucide="shield-check" style="width:15px;height:15px;color:var(--color-success);"></i>
+        <span>Tu archivo nunca sale de tu equipo. Solo el texto extraído se envía a un servicio de IA para normalizar su formato antes de procesarlo.</span>
+      </div>
+    </section>
+
+    <!-- ── PANEL 2: PROGRESS ── -->
+    <section id="panel-progress" style="display:none;" class="glass-card animate-fadeIn" aria-live="polite">
+      <div style="padding:60px 32px;text-align:center;">
+        <div style="width:72px;height:72px;background:var(--color-accent-glow);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;position:relative;">
+          <i data-lucide="loader-2" id="spinner-icon" style="width:36px;height:36px;color:var(--color-accent);animation:spinSlow 1.2s linear infinite;"></i>
+        </div>
+        <h3 id="progress-title" style="font-family:var(--font-heading);font-size:22px;font-weight:800;margin-bottom:8px;">Procesando documento…</h3>
+        <p id="progress-subtitle" style="font-size:14.5px;color:var(--color-text-muted);margin-bottom:32px;">Extrayendo texto del examen...</p>
+        
+        <div style="height:8px;background:var(--color-bg);border-radius:var(--radius-full);overflow:hidden;max-width:480px;margin:0 auto;border:1px solid var(--color-border-subtle);">
+          <div id="progress-bar-fill" style="height:100%;width:0%;background:var(--color-accent-gradient);border-radius:var(--radius-full);transition:width 0.4s ease-out;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PANEL 3: INTERACTIVE QUESTION EDITOR ── -->
+    <section id="panel-editor" style="display:none;" class="animate-fadeIn">
+      <div style="margin-bottom:20px;">
+        <h2 style="font-family:var(--font-heading);font-size:20px;font-weight:800;">Revisión de Preguntas Parseadas</h2>
+        <p style="font-size:13.5px;color:var(--color-text-muted);margin-top:4px;">Inspecciona y edita cualquier pregunta antes de generar el paquete Moodle XML.</p>
+      </div>
+
+      <div id="editor-questions-container" style="display:flex;flex-direction:column;gap:18px;"></div>
+    </section>
+
+    <!-- ── PANEL 4: SUCCESS ── -->
+    <section id="panel-success" style="display:none;" class="glass-card animate-fadeIn">
+      <div style="padding:32px;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;">
+          <div style="width:54px;height:54px;background:var(--color-success-bg);border:1px solid rgba(16,185,129,0.3);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i data-lucide="check" style="width:28px;height:28px;color:var(--color-success);"></i>
+          </div>
+          <div>
+            <h2 style="font-family:var(--font-heading);font-size:22px;font-weight:800;margin:0;">¡Conversión Completada con Éxito!</h2>
+            <p id="success-subtitle" style="font-size:14px;color:var(--color-text-muted);margin-top:2px;"></p>
+          </div>
+        </div>
+
+        <!-- Stats grid: se rellena en updateSuccessStats() — solo aparece una
+             tarjeta por tipo si el examen realmente tiene preguntas de ese
+             tipo (ej. si no hubo preguntas de completar, esa tarjeta no se
+             genera en absoluto). -->
+        <div class="stats-grid" id="stats-grid"></div>
+
+        <!-- Points pie chart: distribución de los puntos totales por tipo de
+             pregunta (subtotal = preguntas del tipo × pts/pregunta), no solo
+             el conteo de preguntas. Se rellena en updateSuccessStats(). -->
+        <div id="points-chart-card" style="display:none;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:20px;margin-bottom:20px;">
+          <p style="font-size:12px;font-weight:700;color:var(--color-text-subtle);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:16px;">Distribución de puntos por tipo</p>
+          <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap;justify-content:center;">
+            <svg id="points-pie-svg" viewBox="0 0 200 200" style="width:180px;height:180px;flex-shrink:0;"></svg>
+            <div id="points-pie-legend" style="display:grid;grid-template-columns:auto auto auto;align-items:center;column-gap:10px;row-gap:10px;"></div>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button id="btn-download" class="btn btn-primary" style="flex:1;padding:14px;">
+            <i data-lucide="download" style="width:18px;height:18px;"></i>
+            Descargar Moodle XML
+          </button>
+          <button id="btn-reset-success" class="btn btn-ghost" style="flex:1;padding:14px;">
+            <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+            Convertir Otro Examen
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PANEL 5: ERROR ── -->
+    <section id="panel-error" style="display:none;" class="glass-card animate-fadeIn">
+      <div style="padding:28px;">
+        <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;">
+          <div style="width:48px;height:48px;background:var(--color-error-bg);border:1px solid rgba(244,63,94,0.3);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i data-lucide="alert-triangle" style="width:24px;height:24px;color:var(--color-error);"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <h3 style="font-family:var(--font-heading);font-size:19px;font-weight:800;color:var(--color-error);margin:0 0 6px;">Error en el Procesamiento</h3>
+            <div id="error-message" style="font-size:14px;color:var(--color-text-muted);line-height:1.65;"></div>
+          </div>
+        </div>
+
+        <!-- OCR Hint -->
+        <div id="error-ocr-hint" style="display:none;background:var(--color-cl-bg);border:1px solid var(--color-cl-border);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:20px;">
+          <p style="font-size:13.5px;font-weight:700;color:var(--color-cl);margin:0 0 6px;display:flex;align-items:center;gap:6px;">
+            <i data-lucide="bot" style="width:16px;height:16px;"></i> ¿Tu archivo PDF es una imagen o documento escaneado?
+          </p>
+          <p style="font-size:13px;color:var(--color-text-muted);margin:0;">
+            Los PDFs escaneados requieren OCR. Puedes usar nuestro
+            <button onclick="openHelp('prompt')" style="background:none;border:none;padding:0;cursor:pointer;font-family:inherit;font-weight:800;color:var(--color-cl);text-decoration:underline;">
+              Prompt IA Profesional
+            </button>
+            para convertirlo en 10 segundos con tu IA de preferencia.
+          </p>
+        </div>
+
+        <button id="btn-reset-error" class="btn btn-ghost" style="width:100%;">
+          <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+          Intentar Nuevamente
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- ════════════════════════════ HELP MODAL ════════════════════════════ -->
+  <div id="modal-help" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:18px;font-weight:800;" id="modal-title">
+          <i data-lucide="book-open" style="width:20px;height:20px;color:var(--color-accent);"></i>
+          Guía del Sistema
+        </div>
+        <button id="btn-close-modal" class="btn btn-ghost" style="padding:6px 10px;" aria-label="Cerrar ventana de guía">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="about">
+          <i data-lucide="target" style="width:15px;height:15px;"></i>
+          ¿Qué es esto?
+        </button>
+        <button class="modal-tab" data-tab="format">
+          <i data-lucide="file-code" style="width:15px;height:15px;"></i>
+          Formato del Examen
+        </button>
+        <button class="modal-tab" data-tab="prompt">
+          <i data-lucide="bot" style="width:15px;height:15px;"></i>
+          Prompt IA
+        </button>
+        <button class="modal-tab" data-tab="moodle">
+          <i data-lucide="graduation-cap" style="width:15px;height:15px;"></i>
+          Importar a Moodle
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Tab 0: About / Purpose -->
+        <div class="tab-panel active" id="modal-panel-about">
+          <div style="display:flex;flex-direction:column;gap:16px;">
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">¿Para qué fue creado este sistema?</p>
+              <p style="font-size:14px;line-height:1.7;color:var(--color-text);">
+                Moodle no permite pegar un examen en formato "normal" y ya está: cada pregunta debe cargarse a mano en el banco de preguntas, o construirse a mano en un XML con una sintaxis estricta y poco intuitiva. Hacerlo manualmente para un examen de 30-40 preguntas —especialmente con emparejamientos y respuestas de completar— es lento y fácil de arruinar con un error de tipeo.
+              </p>
+              <p style="font-size:14px;line-height:1.7;color:var(--color-text);margin-top:10px;">
+                Este sistema toma tu examen tal como ya lo tienes (PDF o TXT), lo interpreta con ayuda de IA, y genera directamente el archivo <strong>Moodle XML</strong> listo para importar en <em>Banco de preguntas → Importar</em>. Lo que antes tomaba horas de carga manual, aquí toma segundos.
+              </p>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">¿Qué acepta?</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="check-circle-2" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Úsalo para pruebas parciales, quices o evaluaciones formativas</strong> de colegio, universidad o cualquier otro nivel, siempre que ya contengan preguntas de <strong style="color:var(--color-text);">selección múltiple, cierto/falso, emparejamiento o completar</strong> con su clave de respuestas — los 4 tipos que el sistema reconoce.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="x-circle" style="width:16px;height:16px;color:var(--color-error);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">No subas presentaciones de diapositivas, listas de vocabulario, apuntes de clase</strong> ni ningún documento que no esté organizado como preguntas con respuesta. El sistema no inventa preguntas: solo transcribe las que ya existen en tu documento, así que si no las hay, el resultado no será el esperado.</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">¿Por qué usarlo en vez de cargar a mano?</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="shield-check" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Validación estricta antes de generar el XML.</strong> El sistema verifica que cada pregunta cumpla el formato que Moodle espera —incluyendo que cada par de un emparejamiento corresponda realmente a la respuesta correcta, no solo que "la cantidad cuadre"— y te avisa con un error claro si algo no cierra, en vez de dejarte importar un examen roto sin saberlo.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="sparkles" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Prefiltro con IA.</strong> No necesitas que tu examen esté perfectamente formateado: un modelo de IA normaliza la estructura del texto antes de procesarlo, así que puedes partir de un documento casi cualquiera y aun así obtener un resultado limpio.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="edit-3" style="width:16px;height:16px;color:var(--color-mt);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Revisión antes de descargar.</strong> Nunca genera el XML a ciegas: siempre puedes inspeccionar y corregir cada pregunta detectada antes de aprobar la conversión final.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="lock" style="width:16px;height:16px;color:var(--color-cl);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Procesamiento local.</strong> Tu examen se procesa en tu propio equipo; solo el texto extraído se envía a la IA para normalizar la estructura, nunca el archivo original.</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Tab 1: Format -->
+        <div class="tab-panel" id="modal-panel-format">
+          <p style="font-size:13.5px;color:var(--color-text-muted);margin-bottom:16px;">
+            El examen debe estructurarse con preguntas numeradas (<code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">Pregunta N:</code>) y finalizar con la sección obligatoria <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">RESPUESTAS</code>.
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
+              <span class="type-badge multichoice">1. Selección Múltiple</span>
+              <div class="code-block" style="margin-top:8px;">Pregunta 1:
+¿Cuál es la función principal de un compilador?
+A. Ejecutar código línea por línea
+B. Traducir código fuente a lenguaje máquina
+C. Gestionar la memoria RAM del sistema
+D. Diseñar interfaces gráficas de usuario</div>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">No estás limitado a 4 opciones: si tu pregunta tiene 5 o 6, agrega <code style="background:var(--color-bg);padding:1px 5px;border-radius:4px;">E.</code>, <code style="background:var(--color-bg);padding:1px 5px;border-radius:4px;">F.</code>, etc. — el sistema las reconoce todas. Tampoco tiene que ser una sola respuesta correcta: si la pregunta dice "selecciona todas las que correspondan", el sistema lo detecta automáticamente por cuántas respuestas listes en RESPUESTAS.</p>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
+              <span class="type-badge truefalse">2. Cierto / Falso</span>
+              <div class="code-block" style="margin-top:8px;">Pregunta 2:
+Afirmación: La arquitectura REST utiliza el protocolo HTTP para comunicarse.</div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
+              <span class="type-badge matching">3. Emparejamiento</span>
+              <div class="code-block" style="margin-top:8px;">Pregunta 3:
+Relaciona los patrones de diseño con su categoría.
+
+Columna A:
+1. Singleton
+2. Observer
+3. Adapter
+
+Columna B:
+a. Creacional
+b. Comportamiento
+c. Estructural</div>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">La Columna A (números) y la Columna B (letras) son independientes entre sí: la letra correcta para cada número se indica únicamente en <strong>RESPUESTAS</strong>, no por su posición en la lista. Un elemento "3" puede corresponder perfectamente a la letra "a" si esa es la pareja real.</p>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
+              <span class="type-badge cloze">4. Completar Espacios (Cloze)</span>
+              <div class="code-block" style="margin-top:8px;">Pregunta 4:
+En Python, la palabra clave para definir una función es [A: def / function / void] y para las clases es [B: class / struct / type].</div>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Cada espacio admite <strong>una</strong> respuesta correcta (el caso más común, el estudiante ve un desplegable) o <strong>varias a la vez</strong> si la pregunta pide "selecciona todas las que correspondan" (el estudiante ve casillas de verificación) — se indica en RESPUESTAS, no en la pregunta.</p>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border-glow);border-radius:var(--radius-md);padding:14px;">
+              <span style="font-size:11px;font-weight:800;color:var(--color-accent);text-transform:uppercase;letter-spacing:0.5px;">Sección RESPUESTAS (Al final del archivo)</span>
+              <div class="code-block" style="margin-top:8px;">RESPUESTAS
+Nº Tipo Respuesta correcta
+1 múltiple Traducir código fuente a lenguaje máquina
+2 ciertofalso Verdadero
+3 emparejamiento 1-a; 2-b; 3-c
+4 completar A. def; B. class</div>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">
+                Para <strong>emparejamiento</strong>, cada par es "número-letra" (el número de la Columna A y la letra de la Columna B que le corresponde), separados por punto y coma. No hace falta que sigan un orden alfabético: una clave como <code style="background:var(--color-bg);padding:1px 5px;border-radius:4px;">1-c; 2-a; 3-b</code> es perfectamente válida y se procesa exactamente igual de bien.
+              </p>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:6px;">
+                Para <strong>completar</strong> con varios espacios, sepáralos con punto y coma como en el ejemplo ("A. ...; B. ..."). Si un espacio (o una pregunta de <strong>selección múltiple</strong>) acepta varias respuestas correctas a la vez, sepáralas con <code style="background:var(--color-bg);padding:1px 5px;border-radius:4px;">" | "</code>, por ejemplo <code style="background:var(--color-bg);padding:1px 5px;border-radius:4px;">A. opción1 | opción3</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: AI Prompt -->
+        <div class="tab-panel" id="modal-panel-prompt">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <p style="font-size:13.5px;color:var(--color-text-muted);">
+              Copia este prompt y pégalo en tu IA de preferencia junto con tu examen (PDF o imagen). Guarda su respuesta como un archivo .txt y súbelo en el Paso 1.
+            </p>
+            <button id="btn-copy-prompt" class="btn btn-ghost" style="padding:8px 14px;font-size:13px;">
+              <i data-lucide="copy" id="copy-icon" style="width:14px;height:14px;"></i>
+              <span id="copy-label">Copiar Prompt</span>
+            </button>
+          </div>
+
+          <pre id="ai-prompt-text" class="code-block" style="max-height:420px;">Tengo adjunta una evaluación (examen, prueba o quiz). Necesito que la conviertas al siguiente formato de texto plano para poder procesarla con un programa. Sigue estas reglas EXACTAMENTE. Eres un TRANSCRIPTOR, no un solucionador de exámenes: nunca inventes ni deduzcas una respuesta que no esté marcada explícitamente en el original (con ✓, círculo, negrita, subrayado o una clave de respuestas ya incluida).
+
+── CUERPO DEL EXAMEN ─────────────────────────────────────────
+
+Cada pregunta debe comenzar con:
+  Pregunta N:
+(donde N es el número correlativo, empezando en 1)
+
+TIPO 1 – Selección múltiple:
+Pregunta 1:
+Enunciado de la pregunta
+A. Primera opción
+B. Segunda opción
+C. Tercera opción
+D. Cuarta opción
+(si el examen original tiene 5 o 6 opciones, consérvalas todas: sigue con E. F. — nunca elimines opciones para forzar que sean exactamente 4)
+(si la pregunta acepta MÁS DE UNA respuesta correcta a la vez — "selecciona todas las que correspondan" — eso se indica en RESPUESTAS, no aquí en el cuerpo)
+
+TIPO 2 – Cierto o Falso:
+Pregunta 2:
+Afirmación: Escribe aquí el enunciado que puede ser verdadero o falso.
+
+TIPO 3 – Emparejamiento:
+Pregunta 3:
+Instrucción de la pregunta.
+
+Columna A:
+1. Primer concepto
+2. Segundo concepto
+3. Tercer concepto
+
+Columna B:
+a. Definición o pareja de alguno de los conceptos
+b. Definición o pareja de alguno de los conceptos
+c. Definición o pareja de alguno de los conceptos
+(el número y la letra son solo identificadores de lista — NO asumas que 1 va con a, 2 con b, etc. La pareja real de cada número se indica aparte, en RESPUESTAS)
+
+TIPO 4 – Completar (cloze):
+Pregunta 4:
+El enunciado con espacios en blanco se escribe así: el concepto de [A: opción correcta / opción incorrecta 1 / opción incorrecta 2] es fundamental para [B: otra respuesta correcta / distractor 1 / distractor 2].
+(el orden de las opciones dentro de los corchetes no importa — la correcta se identifica por su texto en RESPUESTAS, no por ir primero)
+(cada espacio puede aceptar una sola respuesta correcta, o varias a la vez si dice "selecciona todas las que correspondan" — eso también se indica en RESPUESTAS)
+
+── SECCIÓN RESPUESTAS (siempre al final) ─────────────────────
+
+RESPUESTAS
+Nº  Tipo          Respuesta correcta
+1   múltiple      Escribe aquí el texto EXACTO de la opción correcta (cópialo tal cual de las opciones)
+2   ciertofalso   Verdadero   ← o Falso
+3   emparejamiento 1-c; 2-a; 3-b
+4   completar     A. opción correcta del espacio A; B. opción correcta del espacio B
+
+Ejemplo real de cómo debe verse un emparejamiento completo (nota que el orden NO es alfabético — así es exactamente como debe ir si esa es la correspondencia real del examen original):
+
+  Columna A:
+  1. Perro
+  2. Gato
+  3. Vaca
+
+  Columna B:
+  a. Felino
+  b. Bovino
+  c. Canino
+
+  RESPUESTAS → ...  3   emparejamiento   1-c; 2-a; 3-b
+  (1-Perro es Canino=c, 2-Gato es Felino=a, 3-Vaca es Bovino=b)
+
+── REGLAS IMPORTANTES ────────────────────────────────────────
+- El orden de las preguntas debe ser: primero todas las de selección múltiple, luego cierto/falso, luego emparejamiento, luego completar.
+- En la sección RESPUESTAS usa EXACTAMENTE las palabras: múltiple, ciertofalso, emparejamiento, completar.
+- Para ciertofalso escribe "Verdadero" o "Falso" (con mayúscula inicial).
+- Para múltiple copia el texto íntegro de la opción correcta tal como aparece en la pregunta (nunca solo la letra). Si la pregunta acepta MÁS DE UNA respuesta correcta a la vez, escribe el texto completo de cada una separado por " | " (ej. "Opción B | Opción D"). Si es una sola (el caso más común), escribe solo esa, sin "|".
+- Para emparejamiento escribe SOLO pares "número-letra" separados por "; " (ej. "1-c; 2-a; 3-b") — NUNCA reescribas el texto de las columnas en esta línea, y NUNCA asumas que el orden es 1-a, 2-b, 3-c: usa la correspondencia real marcada en el examen original, sea cual sea el orden.
+- Si el examen original ya trae la clave en formato "1-c, 2-a, 3-b" o similar, transcríbela tal cual, sin reinterpretarla.
+- Para completar, documenta CADA espacio por separado con el formato "Letra. respuesta"; si hay varios espacios, sepáralos con "; " (ej. "A. respuesta1; B. respuesta2") — no solo el primero. Si un espacio acepta varias respuestas correctas a la vez, sepáralas con " | " dentro de esa misma letra (ej. "A. opción1 | opción3").
+- Si una pregunta no tiene respuesta marcada en el original, escribe "SIN_RESPUESTA" en su lugar — nunca la resuelvas tú.
+- No agregues numeración extra, bullets, ni markdown. Solo texto plano.
+- Mantén tildes y caracteres especiales del español (á, é, í, ó, ú, ñ).
+
+Ahora convierte el examen adjunto a este formato.</pre>
+        </div>
+
+        <!-- Tab 3: Import into Moodle -->
+        <div class="tab-panel" id="modal-panel-moodle">
+          <p style="font-size:13.5px;color:var(--color-text-muted);margin-bottom:16px;">
+            Ya tienes tu archivo <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">.xml</code> descargado. Así lo subes a Moodle:
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</span>
+              <div>
+                <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Crea el cuestionario en tu curso</p>
+                <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Dentro de tu curso, activa la edición y agrega una actividad de tipo <strong>Cuestionario</strong> (esto crea el "parcial" o examen donde irán las preguntas). Ponle un nombre y guarda.</p>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</span>
+              <div>
+                <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Entra al Banco de preguntas</p>
+                <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Desde el menú del curso (o desde el cuestionario que acabas de crear), busca la opción <strong>Banco de preguntas</strong>.</p>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</span>
+              <div>
+                <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Importa el archivo</p>
+                <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Dentro del Banco de preguntas, ve a la pestaña <strong>Importar</strong>. Elige el formato <strong>"Formato XML de Moodle"</strong>, selecciona tu archivo .xml y presiona Importar. Moodle te mostrará cuántas preguntas se cargaron correctamente.</p>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</span>
+              <div>
+                <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Añade las preguntas al cuestionario</p>
+                <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Las preguntas importadas quedan guardadas en el banco, pero todavía no están dentro del examen. Abre tu cuestionario, entra a "Editar cuestionario" y usa la opción para <strong>agregar preguntas desde el banco</strong> — selecciona las que acabas de importar.</p>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border-glow);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-success-solid);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">5</span>
+              <div>
+                <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Termina de configurar y publica</p>
+                <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Ajusta lo que falte del cuestionario: fecha y hora de apertura/cierre, tiempo límite, intentos permitidos y cómo se calcula la nota. Guarda los cambios y el examen queda listo para tus estudiantes.</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;padding:10px 14px;background:var(--color-mc-bg);border:1px solid var(--color-mc-border);border-radius:var(--radius-sm);font-size:12.5px;color:var(--color-text-muted);display:flex;align-items:center;gap:8px;">
+            <i data-lucide="info" style="width:15px;height:15px;color:var(--color-mc);flex-shrink:0;"></i>
+            <span>Los nombres exactos de los menús pueden variar levemente según la versión de Moodle de tu institución, pero estos 5 pasos son siempre los mismos.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════ HISTORY MODAL ════════════════════════════ -->
+  <div id="modal-history" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="history-title">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:18px;font-weight:800;" id="history-title">
+          <i data-lucide="clock" style="width:20px;height:20px;color:var(--color-accent);"></i>
+          Historial de Exámenes Convertidos
+        </div>
+        <button id="btn-close-history" class="btn btn-ghost" style="padding:6px 10px;" aria-label="Cerrar historial" onclick="closeHistory()">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="history-list" style="padding:16px 24px;">
+        <!-- Dynamically rendered -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════ SCRIPT LOGIC ════════════════════════════ -->
+  <script>
+    // Init Lucide Icons
+    lucide.createIcons();
+
+    // Theme Toggle
+    function applyTheme(dark) {
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      document.getElementById('icon-sun').style.display  = dark ? 'none'  : 'block';
+      document.getElementById('icon-moon').style.display = dark ? 'block' : 'none';
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+    (function initTheme() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(saved === 'dark' || (!saved && prefersDark));
+    })();
+    document.getElementById('theme-toggle-btn').addEventListener('click', () => {
+      applyTheme(document.documentElement.getAttribute('data-theme') !== 'dark');
+    });
+
+    // Stepper Manager
+    function updateStepper(step) {
+      const s1 = document.getElementById('step-1-indicator');
+      const s2 = document.getElementById('step-2-indicator');
+      const s3 = document.getElementById('step-3-indicator');
+      const l1 = document.getElementById('step-line-1');
+      const l2 = document.getElementById('step-line-2');
+
+      s1.className = 'step-item ' + (step === 1 ? 'active' : step > 1 ? 'completed' : '');
+      s2.className = 'step-item ' + (step === 2 ? 'active' : step > 2 ? 'completed' : '');
+      s3.className = 'step-item ' + (step === 3 ? 'active' : '');
+
+      l1.className = 'step-line ' + (step >= 2 ? 'active' : '');
+      l2.className = 'step-line ' + (step >= 3 ? 'active' : '');
+    }
+
+    // Modal Help
+    const modalHelp = document.getElementById('modal-help');
+    const modalTabs = document.querySelectorAll('.modal-tab');
+    const modalPanels = {
+      about: document.getElementById('modal-panel-about'),
+      format: document.getElementById('modal-panel-format'),
+      prompt: document.getElementById('modal-panel-prompt'),
+      moodle: document.getElementById('modal-panel-moodle'),
+    };
+
+    function openHelp(tabId) {
+      modalHelp.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      if (tabId) switchTab(tabId);
+      lucide.createIcons();
+    }
+    function closeHelp() {
+      modalHelp.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    function switchTab(tabId) {
+      modalTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
+      Object.entries(modalPanels).forEach(([id, panel]) => panel.classList.toggle('active', id === tabId));
+    }
+
+    document.getElementById('btn-help').addEventListener('click', () => openHelp('about'));
+    document.getElementById('btn-close-modal').addEventListener('click', closeHelp);
+    modalHelp.addEventListener('click', e => { if (e.target === modalHelp) closeHelp(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
+    modalTabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+
+    // Copy Prompt
+    const btnCopyPrompt = document.getElementById('btn-copy-prompt');
+    const copyLabel = document.getElementById('copy-label');
+    const copyIcon = document.getElementById('copy-icon');
+    const aiPromptText = document.getElementById('ai-prompt-text');
+
+    btnCopyPrompt.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(aiPromptText.textContent);
+        copyLabel.textContent = '¡Copiado Exitosamente!';
+        copyIcon.setAttribute('data-lucide', 'check');
+        lucide.createIcons();
+        setTimeout(() => {
+          copyLabel.textContent = 'Copiar Prompt';
+          copyIcon.setAttribute('data-lucide', 'copy');
+          lucide.createIcons();
+        }, 2500);
+      } catch (_) {
+        showToast('Selecciona el texto manualmente', 'error');
+      }
+    });
+
+    // State Variables
+    let selectedFile = null;
+    let downloadBlob = null;
+    let downloadFilename = '';
+    let currentParseResult = null;
+    let currentUploadMetadata = null;
+    // Qué panel debe restaurar el botón "Intentar Nuevamente" de la pantalla
+    // de error: 'upload' si el error ocurrió leyendo el archivo (nada que
+    // conservar todavía), o 'editor' si ocurrió al generar el XML — en ese
+    // caso el usuario ya invirtió tiempo corrigiendo preguntas a mano y
+    // perderlo todo por, por ejemplo, olvidar marcar una casilla en una sola
+    // pregunta sería devastador para la experiencia.
+    let errorReturnPanel = 'upload';
+
+    // DOM Elements
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const filePreview = document.getElementById('file-preview');
+    const fileNameEl = document.getElementById('file-name');
+    const fileSizeEl = document.getElementById('file-size');
+    const fileIconEl = document.getElementById('file-icon');
+    const btnRemoveFile = document.getElementById('btn-remove-file');
+    const categoryInput = document.getElementById('category-input');
+    const pointsInput = document.getElementById('points-input');
+    const pointsError = document.getElementById('points-error');
+    const btnConvert = document.getElementById('btn-convert');
+    
+    const panelUpload = document.getElementById('panel-upload');
+    const panelProgress = document.getElementById('panel-progress');
+    const panelEditor = document.getElementById('panel-editor');
+    const panelSuccess = document.getElementById('panel-success');
+    const panelError = document.getElementById('panel-error');
+    const toastEl = document.getElementById('toast');
+
+    // File Helpers
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+    function showFilePreview(file) {
+      selectedFile = file;
+      fileNameEl.textContent = file.name;
+      fileSizeEl.textContent = formatBytes(file.size);
+      const isPdf = file.name.toLowerCase().endsWith('.pdf');
+      fileIconEl.setAttribute('data-lucide', isPdf ? 'file-text' : 'file');
+      lucide.createIcons();
+      filePreview.style.display = 'flex';
+      btnConvert.disabled = false;
+    }
+    function clearFile() {
+      selectedFile = null;
+      fileInput.value = '';
+      filePreview.style.display = 'none';
+      btnConvert.disabled = true;
+    }
+
+    // Panel Manager
+    function showPanel(name) {
+      panelUpload.style.display   = name === 'upload'   ? 'block' : 'none';
+      panelProgress.style.display = name === 'progress' ? 'block' : 'none';
+      panelEditor.style.display   = name === 'editor'   ? 'block' : 'none';
+      panelSuccess.style.display  = name === 'success'  ? 'block' : 'none';
+      panelError.style.display    = name === 'error'    ? 'block' : 'none';
+
+      if (name === 'upload') updateStepper(1);
+      else if (name === 'editor') updateStepper(2);
+      else if (name === 'success') updateStepper(3);
+    }
+    function resetAll() {
+      clearFile();
+      downloadBlob = null;
+      downloadFilename = '';
+      errorReturnPanel = 'upload';
+      showPanel('upload');
+    }
+
+    // currentParseResult es la única fuente de datos que usa renderEditor()
+    // para redibujar TODAS las tarjetas de golpe (al añadir una pregunta, o
+    // tras un reintento de generación fallido). Como nada más lo actualiza
+    // mientras el usuario edita o borra tarjetas a mano, hay que resincronizarlo
+    // con lo que de verdad hay en el DOM justo antes de cada re-render — si no,
+    // un renderEditor() puede "resucitar" preguntas que ya se habían borrado
+    // (currentParseResult seguía teniendo la lista vieja completa) o revertir
+    // ediciones en curso a su texto original sin editar.
+    function syncParseResultFromDOM() {
+      const existingCards = document.querySelectorAll('.editor-card');
+      currentParseResult = existingCards.length > 0
+        ? collectEditorData()
+        : { questions: [], answer_key: {} };
+    }
+
+    function deleteQuestionCard(btn) {
+      const card = btn.closest('.editor-card');
+      if (card) {
+        card.remove();
+        syncParseResultFromDOM();
+        refreshFilterChips();
+        showToast('Pregunta eliminada de la lista', 'info');
+      }
+    }
+
+    // Despliega/oculta los 4 botones de tipo bajo "Añadir nueva pregunta".
+    // No hace falta volver a ocultarlos tras elegir un tipo: addNewQuestion()
+    // termina llamando a renderEditor(), que reconstruye este bloque desde
+    // cero ya colapsado.
+    function toggleAddQuestionMenu() {
+      const el = document.getElementById('add-question-types');
+      if (!el) return;
+      el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    function addNewQuestion(type) {
+      syncParseResultFromDOM();
+      const existingCards = document.querySelectorAll('.editor-card');
+      const nextNum = existingCards.length + 1;
+
+      let newQ = { num: nextNum, type: type, data: {} };
+      let defaultAns = '';
+
+      if (type === 'multichoice') {
+        newQ.data = {
+          stem: 'Escribe aquí el enunciado de la nueva pregunta de selección múltiple.',
+          options: { A: 'Primera opción', B: 'Segunda opción', C: 'Tercera opción', D: 'Cuarta opción' }
+        };
+        defaultAns = 'Primera opción';
+      } else if (type === 'truefalse') {
+        newQ.data = { stem: 'Afirmación: Escribe aquí la afirmación para verdadero o falso.' };
+        defaultAns = 'Verdadero';
+      } else if (type === 'cloze') {
+        newQ.data = { text: 'El concepto principal de [A: opción1 / opción2 / opción3] es clave.' };
+        defaultAns = 'A. opción1';
+      } else if (type === 'matching') {
+        newQ.data = {
+          stem: 'Relaciona cada concepto de la Columna A con su pareja en la Columna B.',
+          col_a: { '1': 'Primer concepto', '2': 'Segundo concepto' },
+          col_b: { 'a': 'Primera pareja', 'b': 'Segunda pareja' }
+        };
+        defaultAns = '1. Primer concepto → Primera pareja; 2. Segundo concepto → Segunda pareja';
+      }
+
+      currentParseResult.questions.push(newQ);
+      currentParseResult.answer_key[nextNum] = { type: type, answer: defaultAns };
+
+      renderEditor(currentParseResult);
+      lucide.createIcons();
+      showToast(`Pregunta ${nextNum} (${type}) añadida exitosamente`);
+      
+      setTimeout(() => {
+        const container = document.getElementById('editor-questions-container');
+        container.scrollTop = container.scrollHeight;
+      }, 100);
+    }
+
+    // ── Cloze builder ────────────────────────────────────────────────────
+    // Edita preguntas "completar" como bloques de texto + tarjetas de
+    // espacio-en-blanco (opciones + radio para marcar la correcta) en vez
+    // de exponer la sintaxis [A: opción1 / opción2] directamente. El texto
+    // con corchetes que el backend necesita se reconstruye automáticamente
+    // a partir de estas piezas — el usuario nunca tiene que escribirlo.
+
+    function esc_html(s) {
+      const div = document.createElement('div');
+      div.textContent = s == null ? '' : String(s);
+      return div.innerHTML;
+    }
+
+    // Convierte el texto crudo "[A: opt1 / opt2]" (+ la respuesta guardada
+    // en la clave) en una lista ordenada de segmentos {type:'text', value}
+    // y {type:'blank', options, correctIndices, multi}. Un espacio "multi"
+    // permite marcar más de una opción como correcta (Moodle MULTIRESPONSE_S,
+    // casillas) en vez de una sola (MULTICHOICE_S, opción única).
+    function parseClozeSegments(text, keyAnswer) {
+      const keyMap = {}; // letra -> [respuestas correctas...]
+      if (keyAnswer) {
+        const keySlotRegex = /([A-Za-z])[\.:]\s*([^;\n]+)/g;
+        let km;
+        while ((km = keySlotRegex.exec(keyAnswer)) !== null) {
+          const parts = km[2].split('|').map(s => s.trim()).filter(Boolean);
+          if (parts.length) keyMap[km[1].toUpperCase()] = parts;
+        }
+      }
+
+      const segments = [];
+      const bracketRegex = /\[([A-Za-z]):\s*([^\]]+)\]/g;
+      let last = 0, match;
+      while ((match = bracketRegex.exec(text || '')) !== null) {
+        if (match.index > last) segments.push({ type: 'text', value: text.slice(last, match.index) });
+        const letter = match[1].toUpperCase();
+        const options = match[2].split('/').map(s => s.trim()).filter(Boolean);
+        if (options.length === 0) options.push('', '');
+
+        const wantedList = keyMap[letter] || [];
+        let correctIndices = [];
+        wantedList.forEach(wanted => {
+          const idx = options.findIndex(o => o.toLowerCase() === wanted.toLowerCase());
+          if (idx >= 0 && !correctIndices.includes(idx)) correctIndices.push(idx);
+        });
+        if (correctIndices.length === 0) correctIndices = [0];
+        segments.push({ type: 'blank', options, correctIndices, multi: correctIndices.length > 1 });
+        last = bracketRegex.lastIndex;
+      }
+      if (last < (text || '').length || segments.length === 0) {
+        segments.push({ type: 'text', value: (text || '').slice(last) });
+      }
+      return segments;
+    }
+
+    function renderClozeBuilder(qIdx, segments) {
+      let html = `<div class="cloze-builder" id="cloze-builder-${qIdx}">`;
+      html += `<div class="cloze-preview"></div>`;
+      let blankNum = 0;
+      segments.forEach((seg) => {
+        if (seg.type === 'text') {
+          html += `<div class="cloze-text-row">
+            <input type="text" class="form-input cloze-text-input" value="${seg.value.replace(/"/g, '&quot;')}" placeholder="Texto de la pregunta…" />
+            <button type="button" class="cloze-insert-btn" onclick="clozeInsertBlank(this)" title="Inserta un espacio en blanco donde esté el cursor">+ Espacio en blanco</button>
+          </div>`;
+        } else {
+          const groupName = `cloze-correct-${qIdx}-${blankNum++}`;
+          const inputType = seg.multi ? 'checkbox' : 'radio';
+          html += `<div class="cloze-blank-card">
+            <div class="cloze-blank-header">
+              <strong><i data-lucide="circle-dot" style="width:12px;height:12px;vertical-align:-2px;"></i> Espacio en blanco — marca la opción correcta</strong>
+              <button type="button" class="btn btn-ghost" style="padding:4px 8px;color:var(--color-error);font-size:11px;" onclick="clozeRemoveBlank(this)" title="Quitar este espacio">
+                <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+              </button>
+            </div>
+            <label class="cloze-multi-toggle">
+              <input type="checkbox" class="cloze-multi-checkbox" ${seg.multi ? 'checked' : ''} onchange="clozeToggleMulti(this)" />
+              Permitir varias respuestas correctas en este espacio
+            </label>
+            <div class="cloze-options">`;
+          seg.options.forEach((opt, oi) => {
+            const isChecked = seg.correctIndices.includes(oi);
+            html += `<div class="cloze-option-row">
+              <input type="${inputType}" name="${groupName}" ${isChecked ? 'checked' : ''} title="Marcar como respuesta correcta" />
+              <input type="text" class="form-input cloze-option-input" value="${opt.replace(/"/g, '&quot;')}" placeholder="Opción ${oi + 1}" />
+              <button type="button" class="btn btn-ghost" style="padding:4px 8px;color:var(--color-error);" onclick="clozeRemoveOption(this)" title="Quitar esta opción">
+                <i data-lucide="x" style="width:13px;height:13px;"></i>
+              </button>
+            </div>`;
+          });
+          html += `</div>
+            <button type="button" class="btn btn-ghost" style="margin-top:8px;padding:5px 10px;font-size:11.5px;color:var(--color-cl);" onclick="clozeAddOption(this)">+ Agregar opción</button>
+          </div>`;
+        }
+      });
+      html += `</div>`;
+      return html;
+    }
+
+    function clozeGetBuilder(el) { return el.closest('.cloze-builder'); }
+
+    function clozeSegmentIndexOf(builderEl, el) {
+      const list = Array.from(builderEl.querySelectorAll(':scope > .cloze-text-row, :scope > .cloze-blank-card'));
+      return list.indexOf(el);
+    }
+
+    // Lee el estado actual (ya editado por el usuario) directamente del DOM.
+    function readClozeSegmentsFromDOM(builderEl) {
+      const segments = [];
+      builderEl.querySelectorAll(':scope > .cloze-text-row, :scope > .cloze-blank-card').forEach(el => {
+        if (el.classList.contains('cloze-text-row')) {
+          segments.push({ type: 'text', value: el.querySelector('.cloze-text-input').value });
+        } else {
+          const multi = !!el.querySelector('.cloze-multi-checkbox')?.checked;
+          const options = [];
+          const correctIndices = [];
+          el.querySelectorAll('.cloze-option-row').forEach((row, idx) => {
+            options.push(row.querySelector('.cloze-option-input').value);
+            const marker = row.querySelector('input[type="radio"], input[type="checkbox"]');
+            if (marker && marker.checked) correctIndices.push(idx);
+          });
+          segments.push({ type: 'blank', options, correctIndices, multi });
+        }
+      });
+      return segments;
+    }
+
+    function clozeUpdatePreview(builderEl) {
+      const preview = builderEl.querySelector('.cloze-preview');
+      if (!preview) return;
+      const segments = readClozeSegmentsFromDOM(builderEl);
+      let html = '';
+      segments.forEach(seg => {
+        if (seg.type === 'text') {
+          html += esc_html(seg.value);
+        } else {
+          const correctTexts = seg.correctIndices.map(i => seg.options[i]).filter(t => t && t.trim());
+          const label = correctTexts.length ? correctTexts.map(esc_html).join(' + ') : '(elige una opción)';
+          html += `<span class="blank-tag">${label} ${seg.multi ? '☑' : '▾'}</span>`;
+        }
+      });
+      preview.innerHTML = html.trim() ? html : '<em>Escribe el enunciado de la pregunta…</em>';
+    }
+
+    // Cambia un espacio de "una sola respuesta correcta" (radio) a "varias"
+    // (casillas) o viceversa. Al volver a "una sola" se conserva únicamente
+    // la primera opción que estuviera marcada, para no dejar el estado ambiguo.
+    function clozeToggleMulti(checkbox) {
+      const builderEl = clozeGetBuilder(checkbox);
+      const card = checkbox.closest('.cloze-blank-card');
+      const segments = readClozeSegmentsFromDOM(builderEl);
+      const idx = clozeSegmentIndexOf(builderEl, card);
+      const seg = segments[idx];
+      seg.multi = checkbox.checked;
+      if (!seg.multi && seg.correctIndices.length > 1) {
+        seg.correctIndices = [seg.correctIndices[0]];
+      }
+      clozeRerender(builderEl, segments);
+    }
+
+    function initClozeBuilder(builderEl) {
+      if (builderEl.dataset.bound) { clozeUpdatePreview(builderEl); return; }
+      builderEl.addEventListener('input', () => clozeUpdatePreview(builderEl));
+      builderEl.addEventListener('change', () => clozeUpdatePreview(builderEl));
+      builderEl.dataset.bound = '1';
+      clozeUpdatePreview(builderEl);
+    }
+
+    function clozeRerender(builderEl, segments) {
+      const qIdx = builderEl.id.replace('cloze-builder-', '');
+      const temp = document.createElement('div');
+      temp.innerHTML = renderClozeBuilder(qIdx, segments);
+      const newBuilderEl = temp.firstElementChild;
+      builderEl.replaceWith(newBuilderEl);
+      lucide.createIcons();
+      initClozeBuilder(newBuilderEl);
+    }
+
+    function clozeInsertBlank(btn) {
+      const builderEl = clozeGetBuilder(btn);
+      const row = btn.closest('.cloze-text-row');
+      const input = row.querySelector('.cloze-text-input');
+      const pos = input.selectionStart != null ? input.selectionStart : input.value.length;
+      const before = input.value.slice(0, pos);
+      const after = input.value.slice(pos);
+      const segments = readClozeSegmentsFromDOM(builderEl);
+      const idx = clozeSegmentIndexOf(builderEl, row);
+      segments[idx] = { type: 'text', value: before };
+      segments.splice(idx + 1, 0,
+        { type: 'blank', options: ['Opción correcta', 'Opción incorrecta'], correctIndices: [0], multi: false },
+        { type: 'text', value: after }
+      );
+      clozeRerender(builderEl, segments);
+    }
+
+    function clozeRemoveBlank(btn) {
+      const builderEl = clozeGetBuilder(btn);
+      const card = btn.closest('.cloze-blank-card');
+      const segments = readClozeSegmentsFromDOM(builderEl);
+      const idx = clozeSegmentIndexOf(builderEl, card);
+      const prev = segments[idx - 1], next = segments[idx + 1];
+      if (prev && prev.type === 'text' && next && next.type === 'text') {
+        prev.value = prev.value + next.value;
+        segments.splice(idx, 2);
+      } else {
+        segments.splice(idx, 1);
+      }
+      if (segments.length === 0) segments.push({ type: 'text', value: '' });
+      clozeRerender(builderEl, segments);
+    }
+
+    function clozeAddOption(btn) {
+      const builderEl = clozeGetBuilder(btn);
+      const card = btn.closest('.cloze-blank-card');
+      const segments = readClozeSegmentsFromDOM(builderEl);
+      const idx = clozeSegmentIndexOf(builderEl, card);
+      segments[idx].options.push('');
+      clozeRerender(builderEl, segments);
+    }
+
+    function clozeRemoveOption(btn) {
+      const builderEl = clozeGetBuilder(btn);
+      const card = btn.closest('.cloze-blank-card');
+      const row = btn.closest('.cloze-option-row');
+      const segments = readClozeSegmentsFromDOM(builderEl);
+      const idx = clozeSegmentIndexOf(builderEl, card);
+      if (segments[idx].options.length <= 2) {
+        showToast('Cada espacio necesita al menos 2 opciones', 'info');
+        return;
+      }
+      const optIdx = Array.from(card.querySelectorAll('.cloze-option-row')).indexOf(row);
+      const seg = segments[idx];
+      seg.options.splice(optIdx, 1);
+      seg.correctIndices = seg.correctIndices
+        .filter(i => i !== optIdx)
+        .map(i => (i > optIdx ? i - 1 : i));
+      if (seg.correctIndices.length === 0) seg.correctIndices = [0];
+      clozeRerender(builderEl, segments);
+    }
+
+    // Reconstruye el texto "[A: opt1 / opt2]" y la clave de respuesta que
+    // el backend espera, a partir del estado actual del builder. Varias
+    // respuestas correctas para un mismo espacio se unen con " | " — eso
+    // es lo que hace que el backend elija MULTIRESPONSE_S en vez de
+    // MULTICHOICE_S al generar el XML.
+    function clozeBuildTextAndAnswer(builderEl) {
+      const segments = readClozeSegmentsFromDOM(builderEl);
+      let text = '';
+      let letterCode = 65; // 'A'
+      const answerParts = [];
+      segments.forEach(seg => {
+        if (seg.type === 'text') {
+          text += seg.value;
+        } else {
+          const letter = String.fromCharCode(letterCode++);
+          const rawOpts = seg.options.map(o => o.trim());
+          const rawCorrectTexts = seg.correctIndices.map(i => rawOpts[i]).filter(Boolean);
+          // Las opciones vacías (filas agregadas y nunca completadas) se
+          // omiten para no dejar una alternativa en blanco en el desplegable
+          // final que vería el estudiante en Moodle.
+          const opts = rawOpts.filter(o => o.length > 0);
+          let correctTexts = rawCorrectTexts.filter(t => opts.includes(t));
+          if (correctTexts.length === 0 && opts.length > 0) correctTexts = [opts[0]];
+          text += `[${letter}: ${opts.join(' / ')}]`;
+          answerParts.push(`${letter}. ${correctTexts.join(' | ')}`);
+        }
+      });
+      return { text, answer: answerParts.join('; ') };
+    }
+
+    // Helper to extract Matching pairs from question and key info
+    function getMatchingPairs(q, keyInfo) {
+      const pairs = [];
+      const colA = (q.data && q.data.col_a) || {};
+      const colB = (q.data && q.data.col_b) || {};
+      const aKeys = Object.keys(colA).sort((a, b) => parseInt(a) - parseInt(b));
+
+      // Priority 1: use the real número→letra answer key (keyInfo.pairs), so each
+      // Columna A item is shown paired with its ACTUAL correct Columna B item —
+      // not just whatever happens to share the same position (1st with 1st, etc.),
+      // which is wrong whenever the correct order isn't literally 1-a, 2-b, 3-c...
+      const pairsMap = (keyInfo && keyInfo.pairs) || {};
+      if (Object.keys(pairsMap).length > 0) {
+        aKeys.forEach(aKey => {
+          const letter = String(pairsMap[aKey] || '').toLowerCase();
+          const left = colA[aKey] || '';
+          const right = letter && colB[letter] !== undefined ? colB[letter] : '';
+          if (left || right) pairs.push({ left, right });
+        });
+      }
+
+      // Fallback 1: legacy arrow-text key format "1. Item → Pareja"
+      if (pairs.length === 0) {
+        const rawKey = (keyInfo && keyInfo.answer) || '';
+        const regex = /\d+\.\s*([^→;\n]+?)\s*→\s*([^;\n]+)/g;
+        let match;
+        while ((match = regex.exec(rawKey)) !== null) {
+          pairs.push({ left: match[1].trim(), right: match[2].trim() });
+        }
+      }
+
+      // Fallback 2: no reliable key at all — assume sequential 1-a, 2-b, 3-c order
+      // (better than showing nothing, but may not reflect the real correct answer).
+      if (pairs.length === 0 && aKeys.length > 0) {
+        const bKeys = Object.keys(colB).sort();
+        aKeys.forEach((aKey, idx) => {
+          const left = colA[aKey] || '';
+          const bKey = bKeys[idx];
+          const right = bKey ? colB[bKey] : '';
+          if (left || right) pairs.push({ left, right });
+        });
+      }
+
+      if (pairs.length === 0) {
+        pairs.push({ left: '', right: '' });
+      }
+      return pairs;
+    }
+
+    function addMatchingPairRow(qIdx) {
+      const container = document.getElementById(`matching-pairs-list-${qIdx}`);
+      if (!container) return;
+      const pairIdx = container.querySelectorAll('.matching-pair-row').length + 1;
+      const div = document.createElement('div');
+      div.className = 'matching-pair-row';
+      div.style.cssText = 'display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px;align-items:center;background:var(--color-surface);padding:8px 10px;border-radius:var(--radius-md);border:1px solid var(--color-border-subtle);margin-top:6px;';
+      div.innerHTML = `
+        <input class="pair-left form-input" value="" placeholder="Concepto (Columna A ${pairIdx})" />
+        <span style="color:var(--color-accent);font-weight:bold;font-size:16px;">→</span>
+        <input class="pair-right form-input" value="" placeholder="Pareja Correcta (Columna B ${pairIdx})" />
+        <button type="button" class="btn btn-ghost" onclick="this.closest('.matching-pair-row').remove()" style="padding:6px 10px;color:var(--color-error);" title="Eliminar pareja">
+          <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
+        </button>
+      `;
+      container.appendChild(div);
+      lucide.createIcons();
+    }
+
+    // Interactive Question Editor Renderer
+    function renderEditor(data) {
+      currentParseResult = data;
+      const container = document.getElementById('editor-questions-container');
+      container.innerHTML = '';
+
+      // Acciones principales (Aprobar y Generar / Cancelar): van arriba, antes
+      // de todo lo demás, para que sean accesibles sin tener que bajar hasta
+      // el final de la lista de preguntas (con exámenes largos, de 100+
+      // preguntas, el usuario antes tenía que hacer scroll completo).
+      const actionsHtml = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+        <button type="button" id="btn-generate-xml" class="btn btn-success" style="flex:2;" onclick="generateXml()">
+          <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
+          Aprobar y Generar Moodle XML
+        </button>
+        <button type="button" class="btn btn-danger" style="flex:1;" onclick="resetAll()">
+          Cancelar
+        </button>
+      </div>`;
+
+      // Barra de filtro: propia tarjeta de ancho completo. Los chips llevan
+      // flex:1 (ver CSS .filter-chip) para repartirse todo el ancho entre
+      // ellos, sin dejar espacio vacío a la derecha. El contenedor conserva
+      // su id propio para poder refrescar solo los conteos
+      // (refreshFilterChips) al borrar/añadir una pregunta, sin re-renderizar
+      // toda la tarjeta ni perder ediciones en curso.
+      const filterHtml = `<div style="background:var(--color-surface-hover);border:1px solid var(--color-border-subtle);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:12px;font-weight:700;color:var(--color-text-subtle);text-transform:uppercase;letter-spacing:0.4px;flex-shrink:0;">Filtrar:</span>
+        <div id="filter-chips-bar" style="display:flex;align-items:stretch;flex-wrap:wrap;gap:8px;flex:1;"></div>
+      </div>`;
+
+      // "Añadir nueva pregunta" arranca colapsado en un solo botón — al
+      // hacerle clic se despliegan los 4 tipos; al elegir uno se agrega la
+      // pregunta y (como addNewQuestion() llama a renderEditor() al final)
+      // este bloque se reconstruye desde cero, así que vuelve a su estado
+      // colapsado automáticamente sin código extra.
+      const addQuestionHtml = `<div style="background:var(--color-surface-hover);border:1px solid var(--color-border-subtle);border-radius:var(--radius-md);padding:10px 16px;margin-bottom:18px;">
+        <button type="button" class="btn btn-ghost" style="width:100%;justify-content:flex-start;" onclick="toggleAddQuestionMenu()">
+          <i data-lucide="plus-circle" style="width:16px;height:16px;"></i> Añadir nueva pregunta
+        </button>
+        <div id="add-question-types" style="display:none;gap:8px;flex-wrap:wrap;margin-top:10px;">
+          <button type="button" class="btn btn-ghost" onclick="addNewQuestion('multichoice')" style="padding:6px 12px;font-size:12.5px;color:var(--color-mc);">+ Múltiple</button>
+          <button type="button" class="btn btn-ghost" onclick="addNewQuestion('truefalse')" style="padding:6px 12px;font-size:12.5px;color:var(--color-tf);">+ Cierto/Falso</button>
+          <button type="button" class="btn btn-ghost" onclick="addNewQuestion('cloze')" style="padding:6px 12px;font-size:12.5px;color:var(--color-cl);">+ Completar</button>
+          <button type="button" class="btn btn-ghost" onclick="addNewQuestion('matching')" style="padding:6px 12px;font-size:12.5px;color:var(--color-mt);">+ Emparejamiento</button>
+        </div>
+      </div>`;
+      container.innerHTML = actionsHtml + filterHtml + addQuestionHtml;
+
+      data.questions.forEach((q, i) => {
+        const keyInfo = data.answer_key[q.num] || { answer: '' };
+        let html = `<div class="editor-card" data-idx="${i}" data-qnum="${q.num}" data-qtype="${q.type}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <strong style="color:var(--color-accent);font-size:15px;font-family:var(--font-heading);">Pregunta ${q.num}</strong>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="type-badge ${q.type}">${q.type}</span>
+              <button type="button" class="btn btn-ghost" onclick="deleteQuestionCard(this)" style="padding:4px 8px;color:var(--color-error);font-size:12px;" title="Eliminar esta pregunta">
+                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+              </button>
+            </div>
+          </div>`;
+
+        if (q.type === 'multichoice' || q.type === 'truefalse' || q.type === 'matching') {
+          html += `<div><label class="field-label">Enunciado de la Pregunta</label><textarea class="q-stem" rows="2">${q.data.stem || ''}</textarea></div>`;
+        }
+
+        if (q.type === 'multichoice') {
+          const optEntries = Object.entries(q.data.options || {});
+          const answerTargets = (keyInfo.answer || '').split('|').map(s => s.trim().toLowerCase()).filter(Boolean);
+          const isOptCorrect = (letter, optText) => {
+            const optClean = optText.trim().toLowerCase();
+            return answerTargets.some(t => t === letter.toLowerCase() || t === optClean || t.includes(optClean) || optClean.includes(t));
+          };
+          html += `<div style="margin-top:12px;">
+            <label class="field-label" style="color:var(--color-success);">
+              <i data-lucide="check-circle-2" style="width:14px;height:14px;color:var(--color-success);"></i>
+              Opciones — marca la(s) correcta(s)
+            </label>
+            <p style="font-size:11.5px;color:var(--color-text-subtle);margin:2px 0 4px;">Marca solo una si tiene una única respuesta correcta, o varias si es de "selecciona todas las que correspondan".</p>`;
+          optEntries.forEach(([letter, optText]) => {
+            const checked = isOptCorrect(letter, optText);
+            html += `<div class="mc-option-row">
+              <input type="checkbox" class="q-opt-correct" data-letter="${letter}" ${checked ? 'checked' : ''} title="Marcar como respuesta correcta" />
+              <span class="mc-option-letter">${letter}</span>
+              <input class="form-input q-opt" data-letter="${letter}" value="${optText.replace(/"/g, '&quot;')}" />
+            </div>`;
+          });
+          html += `</div>`;
+
+        } else if (q.type === 'truefalse') {
+          html += `<div style="margin-top:14px;"><label class="field-label" style="color:var(--color-success);">Respuesta Correcta (Verdadero / Falso)</label>
+            <select class="q-ans form-input" style="border-color:var(--color-success);">
+              <option value="Verdadero" ${keyInfo.answer.toLowerCase() === 'verdadero' ? 'selected' : ''}>Verdadero</option>
+              <option value="Falso" ${keyInfo.answer.toLowerCase() === 'falso' ? 'selected' : ''}>Falso</option>
+            </select>
+          </div>`;
+
+        } else if (q.type === 'cloze') {
+          html += `<div><label class="field-label">Enunciado con espacios en blanco</label>
+            <p style="font-size:12px;color:var(--color-text-subtle);margin:4px 0 8px;">Escribe la pregunta como texto normal. Donde falte una palabra, pulsa <strong>"+ Espacio en blanco"</strong> y luego escribe las opciones, marcando cuál es la correcta. Si un espacio admite más de una respuesta válida a la vez, activa "Permitir varias respuestas correctas" dentro de esa tarjeta.</p>
+          </div>`;
+          const segments = parseClozeSegments(q.data.text || '', keyInfo.answer);
+          html += renderClozeBuilder(i, segments);
+
+        } else if (q.type === 'matching') {
+          const pairs = getMatchingPairs(q, keyInfo);
+          html += `<div style="margin-top:14px;background:var(--color-bg);padding:14px;border-radius:var(--radius-md);border:1px solid var(--color-border);">
+            <label class="field-label" style="color:var(--color-success);margin-bottom:10px;">
+              <i data-lucide="link-2" style="width:14px;height:14px;color:var(--color-success);"></i>
+              Parejas de Emparejamiento (Concepto Columna A → Pareja Columna B)
+            </label>
+            <div id="matching-pairs-list-${i}" style="display:flex;flex-direction:column;gap:8px;">`;
+
+          pairs.forEach((p, pIdx) => {
+            html += `<div class="matching-pair-row" style="display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px;align-items:center;background:var(--color-surface);padding:8px 10px;border-radius:var(--radius-md);border:1px solid var(--color-border-subtle);">
+              <input class="pair-left form-input" value="${p.left.replace(/"/g, '&quot;')}" placeholder="Concepto (Columna A)" />
+              <span style="color:var(--color-accent);font-weight:bold;font-size:16px;">→</span>
+              <input class="pair-right form-input" value="${p.right.replace(/"/g, '&quot;')}" placeholder="Pareja Correcta (Columna B)" />
+              <button type="button" class="btn btn-ghost" onclick="this.closest('.matching-pair-row').remove()" style="padding:6px 10px;color:var(--color-error);" title="Eliminar pareja">
+                <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
+              </button>
+            </div>`;
+          });
+
+          html += `</div>
+            <button type="button" class="btn btn-ghost" onclick="addMatchingPairRow(${i})" style="margin-top:10px;padding:8px 14px;font-size:12.5px;color:var(--color-accent);width:100%;">
+              <i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar Nueva Pareja
+            </button>
+          </div>`;
+        }
+
+        html += `</div>`;
+        container.innerHTML += html;
+      });
+
+      // El enunciado siempre debe verse completo, sin recortarse ni
+      // requerir que el usuario arrastre el borde del cuadro de texto.
+      container.querySelectorAll('.editor-card textarea').forEach(autoGrowTextarea);
+      container.querySelectorAll('.cloze-builder').forEach(initClozeBuilder);
+      refreshFilterChips();
+      lucide.createIcons();
+    }
+
+    // Reconstruye los chips "Filtrar:" contando las tarjetas que de verdad
+    // quedan en el DOM en este momento. Se llama tras cualquier cambio en la
+    // cantidad de preguntas (borrar, añadir) para que "Todas (N)" y los
+    // conteos por tipo nunca queden desincronizados de lo que se ve en
+    // pantalla — mostrar un número viejo ahí hace pensar al usuario que su
+    // edición no se guardó de verdad.
+    function refreshFilterChips() {
+      const bar = document.getElementById('filter-chips-bar');
+      if (!bar) return;
+
+      const activeChip = bar.querySelector('.filter-chip.active');
+      let activeFilter = activeChip ? activeChip.dataset.filter : 'all';
+
+      const cards = document.querySelectorAll('.editor-card');
+      const typeCounts = { multichoice: 0, truefalse: 0, matching: 0, cloze: 0 };
+      cards.forEach(card => {
+        const t = card.dataset.qtype;
+        if (t in typeCounts) typeCounts[t]++;
+      });
+
+      // Si el tipo que estaba filtrado ya no tiene preguntas (se borró la
+      // última de ese tipo), no tiene sentido dejar ese filtro activo.
+      if (activeFilter !== 'all' && typeCounts[activeFilter] === 0) {
+        activeFilter = 'all';
+      }
+
+      const typeLabels = { multichoice: 'Múltiple', truefalse: 'Cierto/Falso', matching: 'Emparejar', cloze: 'Completar' };
+      let html = `<button type="button" class="filter-chip${activeFilter === 'all' ? ' active' : ''}" data-filter="all" onclick="filterQuestionsByType('all')">Todas <span class="count">(${cards.length})</span></button>`;
+      Object.entries(typeCounts).forEach(([type, count]) => {
+        if (count === 0) return;
+        html += `<button type="button" class="filter-chip${activeFilter === type ? ' active' : ''}" data-filter="${type}" onclick="filterQuestionsByType('${type}')">${typeLabels[type]} <span class="count">(${count})</span></button>`;
+      });
+      bar.innerHTML = html;
+
+      filterQuestionsByType(activeFilter);
+    }
+
+    // Hace crecer un <textarea> verticalmente para mostrar todo su
+    // contenido sin barra de scroll interna ni redimensionado manual.
+    function autoGrowTextarea(el) {
+      el.style.height = 'auto';
+      el.style.height = (el.scrollHeight + 2) + 'px';
+      if (!el.dataset.autoGrowBound) {
+        el.addEventListener('input', () => {
+          el.style.height = 'auto';
+          el.style.height = (el.scrollHeight + 2) + 'px';
+        });
+        el.dataset.autoGrowBound = '1';
+      }
+    }
+
+    // Filtra las tarjetas visibles del editor por tipo de pregunta (o
+    // "all" para verlas todas). Es solo un filtro visual: las preguntas
+    // ocultas siguen incluidas al generar el XML.
+    function filterQuestionsByType(type) {
+      document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.filter === type);
+      });
+      document.querySelectorAll('.editor-card').forEach(card => {
+        card.style.display = (type === 'all' || card.dataset.qtype === type) ? '' : 'none';
+      });
+    }
+
+    function collectEditorData() {
+      const qs = [];
+      const ak = {};
+      const cards = document.querySelectorAll('.editor-card');
+      
+      cards.forEach((card, newIndex) => {
+        const qNum = newIndex + 1; // Re-index questions cleanly 1, 2, 3...
+        const idxAttr = card.getAttribute('data-idx');
+        const originalQ = (currentParseResult && currentParseResult.questions && idxAttr !== null && currentParseResult.questions[parseInt(idxAttr)]) 
+                          ? currentParseResult.questions[parseInt(idxAttr)] 
+                          : { num: qNum, type: 'multichoice', data: {} };
+                          
+        const newQ = JSON.parse(JSON.stringify(originalQ));
+        newQ.num = qNum; // Update question number if additions/deletions happened
+
+        // Detect type from card badge
+        const badgeEl = card.querySelector('.type-badge');
+        if (badgeEl) {
+          const typeClass = Array.from(badgeEl.classList).find(c => ['multichoice', 'truefalse', 'cloze', 'matching'].includes(c));
+          if (typeClass) newQ.type = typeClass;
+        }
+
+        if (newQ.type === 'multichoice' || newQ.type === 'truefalse' || newQ.type === 'matching') {
+          const stemEl = card.querySelector('.q-stem');
+          if (stemEl) newQ.data.stem = stemEl.value;
+        }
+
+        if (newQ.type === 'multichoice') {
+          const optEls = card.querySelectorAll('.q-opt');
+          newQ.data.options = newQ.data.options || {};
+          optEls.forEach(optEl => {
+            newQ.data.options[optEl.getAttribute('data-letter')] = optEl.value;
+          });
+          // Puede haber más de una casilla marcada ("selecciona todas las
+          // que correspondan") — se unen con " | " para que el backend
+          // sepa que son varias respuestas correctas, no solo una.
+          const correctTexts = [];
+          card.querySelectorAll('.q-opt-correct').forEach(cb => {
+            if (cb.checked) {
+              const letter = cb.getAttribute('data-letter');
+              correctTexts.push(newQ.data.options[letter] || '');
+            }
+          });
+          ak[qNum] = { type: newQ.type, answer: correctTexts.filter(Boolean).join(' | ') };
+
+        } else if (newQ.type === 'truefalse') {
+          const ansEl = card.querySelector('.q-ans');
+          ak[qNum] = { type: newQ.type, answer: ansEl ? ansEl.value : 'Verdadero' };
+
+        } else if (newQ.type === 'cloze') {
+          const builderEl = card.querySelector('.cloze-builder');
+          if (builderEl) {
+            const { text, answer } = clozeBuildTextAndAnswer(builderEl);
+            newQ.data.text = text;
+            ak[qNum] = { type: newQ.type, answer };
+          } else {
+            ak[qNum] = { type: newQ.type, answer: '' };
+          }
+
+        } else if (newQ.type === 'matching') {
+          const pairRows = card.querySelectorAll('.matching-pair-row');
+          const colA = {};
+          const colB = {};
+          const pairsMap = {};
+          const keyPairs = [];
+
+          pairRows.forEach((row, pIdx) => {
+            const leftVal = row.querySelector('.pair-left').value.trim();
+            const rightVal = row.querySelector('.pair-right').value.trim();
+            if (leftVal || rightVal) {
+              const numKey = String(pIdx + 1);
+              const letterKey = String.fromCharCode(97 + pIdx);
+              colA[numKey] = leftVal;
+              colB[letterKey] = rightVal;
+              pairsMap[numKey] = letterKey;
+              keyPairs.push(`${numKey}-${letterKey}`);
+            }
+          });
+
+          newQ.data.col_a = colA;
+          newQ.data.col_b = colB;
+          ak[qNum] = { type: newQ.type, answer: keyPairs.join('; '), pairs: pairsMap };
+        }
+
+        qs.push(newQ);
+      });
+      return { questions: qs, answer_key: ak };
+    }
+
+    // Stats Updater
+    const QUESTION_TYPE_DEFS = [
+      { key: 'multichoice', label: 'Múltiple',      colorVar: 'var(--color-mc)', bgVar: 'var(--color-mc-bg)', borderVar: 'var(--color-mc-border)' },
+      { key: 'truefalse',   label: 'Cierto/Falso',  colorVar: 'var(--color-tf)', bgVar: 'var(--color-tf-bg)', borderVar: 'var(--color-tf-border)' },
+      { key: 'matching',    label: 'Emparejar',     colorVar: 'var(--color-mt)', bgVar: 'var(--color-mt-bg)', borderVar: 'var(--color-mt-border)' },
+      { key: 'cloze',       label: 'Completar',     colorVar: 'var(--color-cl)', bgVar: 'var(--color-cl-bg)', borderVar: 'var(--color-cl-border)' },
+    ];
+
+    function updateSuccessStats(stats) {
+      const g = stats.grades || {};
+      const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '') + ' pts';
+      const counts = {
+        multichoice: stats.multichoice || 0,
+        truefalse:   stats.truefalse   || 0,
+        matching:    stats.matching    || 0,
+        cloze:       stats.cloze       || 0,
+      };
+      const total = counts.multichoice + counts.truefalse + counts.matching + counts.cloze;
+
+      document.getElementById('success-subtitle').textContent = `${total} pregunta${total !== 1 ? 's' : ''} extraída${total !== 1 ? 's' : ''} • ${downloadFilename}`;
+
+      // Solo entra a la lista (tarjeta + porción del pastel) el tipo que
+      // realmente tiene preguntas en este examen — si no hubo, por ejemplo,
+      // preguntas de completar, ese tipo simplemente no aparece en ningún
+      // lado, en vez de mostrar una tarjeta en 0.
+      const items = QUESTION_TYPE_DEFS
+        .map(t => ({ ...t, count: counts[t.key], gradePerQ: g[t.key] || 0 }))
+        .filter(t => t.count > 0)
+        .map(t => ({ ...t, subtotal: t.count * t.gradePerQ }));
+
+      // El subtotal de puntos por tipo ya no se repite aquí — se ve en la
+      // gráfica de distribución de abajo; estas tarjetas se quedan con el
+      // dato que le es propio (cuántas preguntas y cuánto vale cada una).
+      document.getElementById('stats-grid').innerHTML = items.map(item => `
+        <div class="stat-card" style="border-top:3px solid ${item.colorVar};">
+          <div class="stat-num" style="color:${item.colorVar};">${item.count}</div>
+          <div class="stat-label">${item.label}</div>
+          ${item.gradePerQ ? `<div class="stat-grade" style="color:${item.colorVar};">${fmt(item.gradePerQ)}/preg</div>` : ''}
+        </div>
+      `).join('');
+
+      renderPointsPie(items);
+    }
+
+    // ── Gráfica de pastel: puntos totales por tipo ─────────────────────────
+    // Cada porción representa el SUBTOTAL de puntos del tipo (preguntas del
+    // tipo × pts/pregunta), no el conteo de preguntas — un tipo con pocas
+    // preguntas pero pts/pregunta alto (emparejar, completar) puede pesar
+    // más de lo que su cantidad sugiere.
+    function getCssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function hexToRgb(hex) {
+      const clean = hex.replace('#', '');
+      const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+      const num = parseInt(full, 16);
+      return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+    }
+
+    // Luminancia relativa (WCAG) para elegir texto blanco o negro legible
+    // encima de cada porción coloreada, sin importar el tono ni el tema.
+    function textColorOnFill(hex) {
+      const { r, g, b } = hexToRgb(hex);
+      const [rs, gs, bs] = [r, g, b].map(v => {
+        v /= 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      const luminance = 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+      return luminance > 0.5 ? '#0f172a' : '#ffffff';
+    }
+
+    function polarToCartesian(cx, cy, r, angleDeg) {
+      const rad = (angleDeg - 90) * Math.PI / 180;
+      return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+    }
+
+    function describeArcSlice(cx, cy, r, startAngle, endAngle) {
+      const start = polarToCartesian(cx, cy, r, endAngle);
+      const end = polarToCartesian(cx, cy, r, startAngle);
+      const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+      return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`;
+    }
+
+    function renderPointsPie(items) {
+      const card = document.getElementById('points-chart-card');
+      const svg = document.getElementById('points-pie-svg');
+      const legend = document.getElementById('points-pie-legend');
+
+      // Con 0 o 1 tipo presente un pastel no aporta nada (1 sola porción es
+      // siempre el 100%) — se oculta la tarjeta entera en vez de mostrar un
+      // círculo trivial.
+      if (items.length < 2) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+
+      const grandTotal = items.reduce((sum, i) => sum + i.subtotal, 0) || 1;
+      const cx = 100, cy = 100, r = 90;
+      const gapDeg = 1.5; // separador angular entre porciones (spacer, no borde)
+      const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '') + ' pts';
+
+      let cursor = 0;
+      let svgHtml = '';
+      let legendHtml = '';
+
+      items.forEach(item => {
+        const pct = item.subtotal / grandTotal * 100;
+        const sweep = pct / 100 * 360;
+        const start = cursor + gapDeg / 2;
+        const end = Math.max(cursor + sweep - gapDeg / 2, start);
+        cursor += sweep;
+
+        const colorHex = getCssVar(item.colorVar.slice(4, -1)); // "var(--x)" -> "--x"
+        const path = describeArcSlice(cx, cy, r, start, end);
+        svgHtml += `<path d="${path}" fill="${item.colorVar}">
+          <title>${item.label}: ${item.count} pregunta${item.count !== 1 ? 's' : ''} · ${fmt(item.subtotal)} (${pct.toFixed(1)}%)</title>
+        </path>`;
+
+        // Etiqueta directa solo si la porción es lo bastante ancha para que
+        // el texto quepa cómodo (evita amontonar números en porciones finas).
+        if (pct >= 8) {
+          const mid = start + (end - start) / 2;
+          const pos = polarToCartesian(cx, cy, r * 0.65, mid);
+          svgHtml += `<text x="${pos.x}" y="${pos.y}" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="800" fill="${textColorOnFill(colorHex)}">${pct.toFixed(0)}%</text>`;
+        }
+
+        // El porcentaje ya se ve en la propia porción del pastel — aquí solo
+        // hace falta el subtotal en puntos, en una píldora con el mismo
+        // color del tipo (tenue, como el type-badge de las tarjetas de
+        // pregunta) para reforzar la identidad visual sin repetir el dato.
+        // Los 3 elementos son hijos directos del grid de #points-pie-legend
+        // (swatch / etiqueta / píldora), no un <div> por fila — así CSS
+        // Grid alinea cada columna (etiqueta, píldora) al ancho de su
+        // contenido más largo automáticamente, sin medir nada por JS y sin
+        // el hueco irregular que dejaba una fila flex de ancho variable.
+        legendHtml += `
+          <span style="width:12px;height:12px;border-radius:3px;background:${item.colorVar};"></span>
+          <span style="font-size:13px;font-weight:600;color:var(--color-text);white-space:nowrap;">${item.label}</span>
+          <span style="font-size:12px;font-weight:700;color:${item.colorVar};background:${item.bgVar};border:1px solid ${item.borderVar};border-radius:var(--radius-sm);padding:3px 10px;white-space:nowrap;text-align:center;">${fmt(item.subtotal)}</span>
+        `;
+      });
+
+      svg.innerHTML = svgHtml;
+      legend.innerHTML = legendHtml;
+    }
+
+    // Conversion Step 1: Parse
+    btnConvert.addEventListener('click', async () => {
+      if (!selectedFile) return;
+      const ptsVal = parseFloat(pointsInput.value);
+      if (isNaN(ptsVal) || ptsVal <= 0) {
+        pointsError.style.display = 'block';
+        return;
+      }
+      pointsError.style.display = 'none';
+
+      showPanel('progress');
+      startProgress();
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        const res = await fetch('/api/parse', { method: 'POST', body: formData });
+        stopProgress(res.ok);
+
+        if (!res.ok) {
+          let errMsg = `Error del servidor (${res.status})`;
+          try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
+          showError(errMsg);
+          return;
+        }
+
+        const parsedData = await res.json();
+        currentUploadMetadata = {
+          filename: selectedFile.name,
+          category: categoryInput.value.trim() || 'mis-preguntas',
+          total_points: ptsVal
+        };
+
+        showPanel('editor');
+        renderEditor(parsedData);
+        lucide.createIcons();
+      } catch (err) {
+        stopProgress(false);
+        showError("No se pudo conectar con el servidor backend: " + err.message);
+      }
+    });
+
+    // Conversion Step 2: Generate XML
+    // Función nombrada (en vez de addEventListener) porque el botón vive
+    // dentro de editor-questions-container, cuyo innerHTML se reconstruye
+    // por completo en cada renderEditor() — un listener adjunto al nodo
+    // anterior se perdería con cada re-render.
+    async function generateXml() {
+      const { questions, answer_key } = collectEditorData();
+      const payload = {
+        filename: currentUploadMetadata.filename,
+        category: currentUploadMetadata.category,
+        total_points: currentUploadMetadata.total_points,
+        questions,
+        answer_key
+      };
+
+      showPanel('progress');
+      document.getElementById('progress-subtitle').textContent = 'Construyendo estructura Moodle XML...';
+      document.getElementById('progress-bar-fill').style.width = '60%';
+
+      try {
+        const res = await fetch('/api/generate_xml', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        stopProgress(res.ok);
+        if (!res.ok) {
+          let errMsg = `Error (${res.status})`;
+          try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
+          showError(errMsg, 'editor');
+          return;
+        }
+
+        const statsHeader = res.headers.get('X-Question-Stats');
+        if (statsHeader) updateSuccessStats(JSON.parse(statsHeader));
+
+        const disposition = res.headers.get('Content-Disposition');
+        let filename = 'examen_moodle.xml';
+        if (disposition && disposition.includes('filename=')) {
+          const match = disposition.match(/filename="(.+)"/);
+          if (match) filename = match[1];
+        }
+
+        const blob = await res.blob();
+        downloadBlob = blob;
+        downloadFilename = filename;
+
+        showPanel('success');
+        // El guardado nativo se dispara solo una vez, cuando el usuario
+        // presiona "Descargar Moodle XML" — no automáticamente aquí, para
+        // no pedirle guardar el mismo archivo dos veces seguidas.
+      } catch (err) {
+        stopProgress(false);
+        showError("Error de comunicación: " + err.message, 'editor');
+      }
+    }
+
+    // History Logic
+    const modalHistory = document.getElementById('modal-history');
+    document.getElementById('btn-history').addEventListener('click', async () => {
+      modalHistory.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      const list = document.getElementById('history-list');
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-text-muted);">Cargando historial de conversiones...</div>';
+
+      try {
+        const res = await fetch('/api/history');
+        if (!res.ok) throw new Error('Error al consultar servidor');
+        const data = await res.json();
+        if (data.length === 0) {
+          list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-text-muted);">No hay conversiones guardadas aún.</div>';
+          return;
+        }
+        list.innerHTML = data.map(item => `
+          <div style="padding:14px 16px;border-bottom:1px solid var(--color-border-subtle);display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <strong style="display:block;font-size:14px;color:var(--color-text);">${item.filename}</strong>
+              <span style="font-size:12px;color:var(--color-text-muted);">${item.category} &bull; ${item.total_points} pts &bull; ${new Date(item.created_at).toLocaleString()}</span>
+            </div>
+            <button class="btn btn-ghost" onclick="downloadHistory(${item.id}, '${item.filename.replace(/'/g, "\\'")}')" style="padding:6px 12px;font-size:12.5px;">
+              <i data-lucide="download" style="width:14px;height:14px;"></i> Descargar XML
+            </button>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      } catch (err) {
+        list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-error);">Error al cargar el historial</div>';
+      }
+    });
+
+    function closeHistory() {
+      modalHistory.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    async function downloadHistory(id, originalFilename) {
+      try {
+        const res = await fetch(`/api/history/${id}/download`);
+        if (!res.ok) throw new Error('Falló descarga');
+        const blob = await res.blob();
+        const stem = originalFilename.split('.').slice(0, -1).join('.') || originalFilename;
+        const outName = stem + '.xml';
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = outName;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('XML descargado exitosamente');
+      } catch (err) {
+        showToast("Error descargando historial: " + err.message, 'error');
+      }
+    }
+
+    // Dropzone Events
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) handleFileSelected(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFileSelected(fileInput.files[0]); });
+    btnRemoveFile.addEventListener('click', e => { e.stopPropagation(); clearFile(); });
+
+    function handleFileSelected(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['pdf', 'txt'].includes(ext)) {
+        showError(`Formato no soportado ".${ext}". Selecciona un archivo .pdf o .txt.`);
+        return;
+      }
+      showFilePreview(file);
+    }
+
+    // Error Handler
+    function showError(msg, returnTo = 'upload') {
+      errorReturnPanel = returnTo;
+      showPanel('error');
+      const errorMessage = document.getElementById('error-message');
+      const ocrHint = document.getElementById('error-ocr-hint');
+      errorMessage.innerHTML = '';
+
+      let textContent = '';
+      if (typeof msg === 'object' && msg !== null && msg.errors) {
+        const p = document.createElement('p');
+        p.style.fontWeight = '700';
+        p.textContent = msg.message || 'Se detectaron errores en la estructura del examen:';
+        errorMessage.appendChild(p);
+        const ul = document.createElement('ul');
+        ul.style.paddingLeft = '18px';
+        ul.style.marginTop = '6px';
+        msg.errors.forEach(err => {
+          const li = document.createElement('li');
+          li.textContent = err;
+          ul.appendChild(li);
+          textContent += ' ' + err;
+        });
+        errorMessage.appendChild(ul);
+      } else {
+        errorMessage.textContent = String(msg);
+        textContent = String(msg);
+      }
+
+      const isOcr = /escaneado|texto legible|sin texto|ocr/i.test(textContent);
+      ocrHint.style.display = isOcr ? 'block' : 'none';
+      if (isOcr) lucide.createIcons();
+    }
+
+    // Progress Simulation
+    let progressInterval;
+    function startProgress() {
+      const pSubtitle = document.getElementById('progress-subtitle');
+      const pFill = document.getElementById('progress-bar-fill');
+      let elapsed = 0;
+      const sequence = [
+        { time: 0,  text: 'Extrayendo texto del examen...' },
+        { time: 3,  text: 'Analizando la estructura y preguntas...' },
+        { time: 7,  text: 'Aplicando prefiltro de consistencia IA...' },
+        { time: 14, text: 'Construyendo modelo de datos de preguntas...' }
+      ];
+      pFill.style.width = '0%';
+      pSubtitle.textContent = sequence[0].text;
+      progressInterval = setInterval(() => {
+        elapsed += 1;
+        let pct = Math.min(elapsed * 7, 92);
+        pFill.style.width = `${pct}%`;
+        const stage = sequence.slice().reverse().find(s => elapsed >= s.time);
+        if (stage && pSubtitle.textContent !== stage.text) {
+          pSubtitle.textContent = stage.text;
+        }
+      }, 1000);
+    }
+    function stopProgress(success) {
+      clearInterval(progressInterval);
+      if (success) document.getElementById('progress-bar-fill').style.width = '100%';
+    }
+
+    // Download XML Event
+    document.getElementById('btn-download').addEventListener('click', async () => {
+      if (!downloadBlob) return;
+
+      if (window.pywebview && window.pywebview.api) {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const b64 = reader.result.split(',')[1];
+          const res = await window.pywebview.api.save_xml_file(downloadFilename, b64);
+          if (res && res.saved) {
+            showToast('Archivo guardado en tu equipo');
+          }
+        };
+        reader.readAsDataURL(downloadBlob);
+        return;
+      }
+
+      const url = URL.createObjectURL(downloadBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = downloadFilename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Descarga iniciada exitosamente');
+    });
+
+    // Toast Function
+    const TOAST_ICONS = { success: 'check-circle', error: 'alert-circle', info: 'info' };
+    let toastTimer;
+    let toastSwapTimer;
+    function showToast(msg, type = 'success') {
+      const paint = () => {
+        toastEl.innerHTML = `<i data-lucide="${TOAST_ICONS[type] || 'check-circle'}" style="width:16px;height:16px;"></i><span>${msg}</span>`;
+        toastEl.className = 'toast' + (type === 'error' ? ' error' : type === 'info' ? ' info' : '');
+        lucide.createIcons();
+        void toastEl.offsetWidth;
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toastEl.classList.remove('show'); }, 3500);
+      };
+
+      clearTimeout(toastSwapTimer);
+      if (toastEl.classList.contains('show')) {
+        // Ya hay un toast visible: se desvanece brevemente antes de mostrar
+        // el nuevo mensaje, en vez de reemplazar el texto de golpe.
+        toastEl.classList.remove('show');
+        clearTimeout(toastTimer);
+        toastSwapTimer = setTimeout(paint, 200);
+      } else {
+        paint();
+      }
+    }
+
+    // Reset Handlers
+    document.getElementById('btn-reset-success').addEventListener('click', resetAll);
+    document.getElementById('btn-reset-error').addEventListener('click', () => {
+      if (errorReturnPanel === 'editor') {
+        // El error vino de generar el XML, no de leer el archivo: el usuario
+        // ya editó preguntas a mano y ese trabajo sigue intacto en el DOM del
+        // panel 2, así que se vuelve ahí en vez de reiniciar todo el flujo.
+        showPanel('editor');
+      } else {
+        resetAll();
+      }
+    });
+  </script>
+</body>
+</html>
