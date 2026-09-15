@@ -1,0 +1,68 @@
+Examen de Prueba - Cultura General y Matemática Básica
+
+Pregunta 1:
+¿Cuál es la capital de Francia?
+A. Londres
+B. Madrid
+C. París
+D. Roma
+
+Pregunta 2:
+Afirmación: El agua hierve a 100°C a nivel del mar.
+
+Pregunta 3:
+Explica brevemente qué es la fotosíntesis y por qué es importante para los ecosistemas.
+
+Pregunta 4:
+¿Cómo se llama el proceso mediante el cual las plantas convierten la luz solar en energía química?
+
+Pregunta 5:
+¿Cuánto es 15 multiplicado por 4?
+
+Pregunta 6:
+Describe con tus propias palabras las causas principales de la Revolución Francesa y su impacto en Europa.
+
+Pregunta 7:
+¿Cuál es el término que se usa para describir un número que solo es divisible por 1 y por sí mismo?
+
+Pregunta 8:
+Calcula el área de un rectángulo de 8 cm de base por 5 cm de altura.
+
+Pregunta 9:
+Analiza el impacto de la inteligencia artificial en el mercado laboral actual, dando al menos dos ejemplos concretos.
+
+Pregunta 10:
+¿Cuál es el resultado de la raíz cuadrada de 144?
+
+Pregunta 11:
+¿Cómo se le llama a la capital de Japón?
+
+Pregunta 12:
+Relaciona los siguientes países con su capital.
+
+Columna A:
+1. Francia
+2. Japón
+3. Egipto
+
+Columna B:
+a. Tokio
+b. El Cairo
+c. París
+
+Pregunta 13:
+¿Cuánto es el doble de 21?
+
+RESPUESTAS
+Nº  Tipo          Respuesta correcta
+1   multichoice   París
+2   truefalse     Verdadero
+3   essay         (respuesta abierta, se califica manualmente)
+4   respuestacorta   Fotosíntesis
+5   numerico      60
+6   ensayo        (respuesta abierta, se califica manualmente)
+7   respuestacorta   Número primo
+8   numerico      40
+9   ensayo        (respuesta abierta, se califica manualmente)
+10  numerico      doce
+12  emparejamiento   1-c; 2-a; 3-b

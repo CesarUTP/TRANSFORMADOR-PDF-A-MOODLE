@@ -23,7 +23,9 @@ from config import (
     MIN_MULTICHOICE_OPTIONS,
     MIN_MATCHING_PAIRS,
     MIN_CLOZE_OPTIONS,
+    TRANSCRIPTION_FAILED_MARKER,
 )
+from answer_matching import is_truncated_answer_match
 
 logger = logging.getLogger(__name__)
 
@@ -107,13 +109,33 @@ def _collect_question_errors(
     errors: List[str] = []
     correct_answer = key_info.get("answer", "")
 
+    # Marca explícita de REGLA 11: la IA vio una imagen que necesitaba para
+    # esta pregunta pero no pudo leerla con confianza (borrosa, cortada,
+    # ilegible) — se revisa ANTES que cualquier otra cosa porque, a
+    # diferencia de "no tiene respuesta especificada" (que suena a que el
+    # documento original no marcó nada), este es un motivo distinto y más
+    # accionable: hay que ir a revisar esa imagen a mano.
+    stem_or_text = data.get("stem") or data.get("text") or ""
+    if TRANSCRIPTION_FAILED_MARKER in stem_or_text:
+        errors.append(
+            f"Error: la Pregunta {num} ({qtype}) contiene una imagen que la IA no "
+            f"pudo transcribir con confianza (borrosa, cortada o ilegible). Revisa "
+            f"el documento original y complétala manualmente si quieres incluirla."
+        )
+        return errors
+
     if not key_info:
         errors.append(f"Error: falta la respuesta en la clave para el ítem Pregunta {num}.")
         return errors
 
-    if not correct_answer.strip() or correct_answer.strip().upper() == "SIN_RESPUESTA":
-        errors.append(f"Error: la Pregunta {num} ({qtype}) no tiene una respuesta correcta especificada en el examen.")
-        return errors
+    # essay (ensayo) se califica manualmente en Moodle — nunca tiene una
+    # "respuesta correcta" que validar, así que se salta por completo el
+    # chequeo universal de abajo, sin importar qué texto (o ninguno) haya
+    # quedado en la clave para esta pregunta.
+    if qtype != "essay":
+        if not correct_answer.strip() or correct_answer.strip().upper() == "SIN_RESPUESTA":
+            errors.append(f"Error: la Pregunta {num} ({qtype}) no tiene una respuesta correcta especificada en el examen.")
+            return errors
 
     required = REQUIRED_FIELDS.get(qtype, [])
     for field_name in required:
@@ -128,11 +150,42 @@ def _collect_question_errors(
         _validate_matching(num, data, correct_answer, key_info.get("pairs", {}), errors)
     elif qtype == "cloze":
         _validate_cloze(num, data, correct_answer, errors)
+    elif qtype == "numerical":
+        _validate_numerical(num, correct_answer, errors)
 
     return errors
 
 
 # ── Modo Tolerante ───────────────────────────────────────────────────────────
+
+# Patrones de errores que son ÚNICAMENTE sobre la respuesta correcta (falta,
+# no coincide, no es válida) — no sobre el enunciado, las opciones o las
+# columnas, que ya se parsearon bien si la pregunta llegó hasta aquí sin
+# "error" de estructura. Cuando TODOS los errores de una pregunta calzan con
+# alguno de estos patrones, el frontend puede ofrecer "añadirla con lo que
+# ya se extrajo" en vez de obligar al usuario a reconstruirla desde cero —
+# solo falta que marque/escriba la respuesta correcta.
+_ANSWER_ONLY_PATTERNS = [
+    r"no tiene una respuesta correcta especificada",
+    r"falta la respuesta en la clave",
+    r"no coincide con ninguna de las opciones disponibles",
+    r"respuesta '.*' inválida.*Verdadero.*Falso",
+    r"no es un número válido",
+    r"no se encontró una clave de respuestas 'número-letra' válida",
+    r"se encontraron solo \d+ par\(es\) en la clave",
+    r"el número de pares en la clave .* no coincide con los elementos en la Columna A",
+    r"referencia el elemento '.*' de la Columna A, que no existe",
+    r"referencia la letra '.*' de la Columna B, que no existe",
+    r"no se encontró la respuesta correcta del espacio",
+    r"el espacio \[.*\] en la Pregunta \d+ \(cloze\) no tiene una respuesta correcta especificada",
+]
+
+
+def _is_answer_only_issue(errors: List[str]) -> bool:
+    return bool(errors) and all(
+        any(re.search(p, e) for p in _ANSWER_ONLY_PATTERNS) for e in errors
+    )
+
 
 def partition_questions(
     questions: List[Dict[str, Any]],
@@ -164,10 +217,17 @@ def partition_questions(
 
         errors = _collect_question_errors(num, q["type"], q["data"], answer_key.get(num, {}))
         if errors:
-            skipped.append({
+            entry = {
                 "num": num, "type": q["type"],
                 "reasons": errors, "preview": _extract_preview(q),
-            })
+            }
+            # Si el enunciado/opciones/columnas ya se parsearon bien y lo
+            # único que falla es la respuesta, se manda esa data completa
+            # para que el usuario pueda "rescatar" la pregunta en el editor
+            # con un clic, en vez de reconstruirla desde cero a mano.
+            if _is_answer_only_issue(errors):
+                entry["recoverable_data"] = q["data"]
+            skipped.append(entry)
         else:
             valid.append(q)
 
@@ -189,6 +249,7 @@ def _extract_preview(q: Dict[str, Any], max_len: int = 160) -> str:
     """
     data = q.get("data") or {}
     text = data.get("stem") or data.get("text") or q.get("raw_text") or ""
+    text = text.replace(TRANSCRIPTION_FAILED_MARKER, "").strip()
     text = " ".join(text.split())  # colapsa saltos de línea/espacios repetidos
     if len(text) > max_len:
         text = text[:max_len].rstrip() + "…"
@@ -222,6 +283,17 @@ def _validate_multichoice(
             f"se requieren al menos {MIN_MULTICHOICE_OPTIONS}."
         )
 
+    # Regla: ninguna opción puede quedar con texto vacío (ej. "A. \nB. algo"
+    # — una letra sin contenido después, típico de un corte al copiar el
+    # documento) — el conteo de arriba no lo detecta porque la letra sí
+    # cuenta como opción, solo que sin texto.
+    for letter, opt_text in options.items():
+        if not opt_text.strip():
+            target.append(
+                f"Error: la opción '{letter}' de la Pregunta {num} "
+                f"(multichoice) no tiene texto."
+            )
+
     # Regla: cada respuesta correcta listada debe coincidir con alguna opción
     if correct_answer and options:
         targets = [t.strip() for t in correct_answer.split('|') if t.strip()]
@@ -230,6 +302,16 @@ def _validate_multichoice(
                 one_target.lower() in opt.lower() or opt.lower() in one_target.lower()
                 for opt in options.values()
             )
+            if not found:
+                # Antes de rechazarla, revisa si es un caso de respuesta
+                # cortada a mitad de palabra (ver is_truncated_answer_match)
+                # — solo se acepta si coincide con EXACTAMENTE una opción,
+                # para no arriesgar una coincidencia ambigua.
+                prefix_matches = [
+                    opt for opt in options.values()
+                    if is_truncated_answer_match(one_target.lower(), opt.lower())
+                ]
+                found = len(prefix_matches) == 1
             if not found:
                 target.append(
                     f"Error: la respuesta correcta '{one_target[:60]}' no coincide "
@@ -306,6 +388,23 @@ def _validate_matching(
             f"Error: Columna B tiene solo {len(col_b)} elemento(s) en "
             f"Pregunta {num}. Se requieren al menos {MIN_MATCHING_PAIRS}."
         )
+
+    # Regla: ningún elemento de las columnas puede quedar con texto vacío
+    # (ej. "3.\n4. algo" — un número/letra sin contenido después) — el
+    # conteo de arriba no lo detecta porque el número/letra sí cuenta como
+    # elemento, solo que sin texto.
+    for a_num, item_text in col_a.items():
+        if not item_text.strip():
+            target.append(
+                f"Error: el elemento '{a_num}' de la Columna A en la "
+                f"Pregunta {num} (matching) no tiene texto."
+            )
+    for letter, item_text in col_b.items():
+        if not item_text.strip():
+            target.append(
+                f"Error: el elemento '{letter}' de la Columna B en la "
+                f"Pregunta {num} (matching) no tiene texto."
+            )
 
     if pairs:
         # Verificar si el número de pares coincide con la Columna A
@@ -424,6 +523,27 @@ def _validate_cloze(
             target.append(
                 f"Error: el espacio [{slot_letter}] en la Pregunta {num} (cloze) no tiene una respuesta correcta especificada."
             )
+
+
+def _validate_numerical(
+    num: int,
+    correct_answer: str,
+    target: List[str],
+) -> None:
+    """
+    Valida pregunta numerical contra el spec Moodle XML:
+    - La respuesta debe poder interpretarse como un número (Moodle exige un
+      valor numérico real en el <answer>, no texto libre ni un número
+      escrito con palabras).
+    """
+    normalized = correct_answer.strip().replace(',', '.')
+    try:
+        float(normalized)
+    except ValueError:
+        target.append(
+            f"Error: la respuesta '{correct_answer[:60]}' de la Pregunta {num} "
+            f"(numerical) no es un número válido."
+        )
 
 
 # ── Generador de reporte de warnings ────────────────────────────────────────

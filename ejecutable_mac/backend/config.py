@@ -42,6 +42,12 @@ GEMINI_MAX_QUALITY_ATTEMPTS: int = 3
 # que nunca fue diseñado como evaluación.
 NOT_AN_EXAM_SENTINEL: str = "NO_ES_UNA_PRUEBA"
 
+# Marca (REGLA 11) que Gemini agrega al enunciado de una pregunta cuando
+# recibió una imagen necesaria para responderla pero no pudo leerla con
+# confianza (borrosa, cortada, ilegible) — validator.py la detecta para dar
+# un motivo de "omitida" más específico que el genérico "sin respuesta".
+TRANSCRIPTION_FAILED_MARKER: str = "[TRANSCRIPCION_FALLIDA]"
+
 # ── Servidor ────────────────────────────────────────────────────────────────
 SERVER_HOST: str = "127.0.0.1"
 SERVER_PORT: int = 8000
@@ -54,10 +60,13 @@ DEFAULT_TOTAL_POINTS: float = 100.0
 # Estos pesos determinan cuánto vale cada tipo respecto a los demás.
 # Fórmula:  grade_tipo = (peso_tipo / Σ(peso_i × cantidad_i)) × total_puntos
 TYPE_WEIGHTS: dict[str, int] = {
-    "truefalse":   1,
-    "multichoice": 2,
-    "matching":    3,
-    "cloze":       3,
+    "truefalse":    1,
+    "shortanswer":  1,
+    "numerical":    1,
+    "multichoice":  2,
+    "matching":     3,
+    "cloze":        3,
+    "essay":        3,
 }
 
 # ── Parámetros XML Moodle ──────────────────────────────────────────────────
@@ -78,10 +87,13 @@ VALID_QUESTION_TYPES: set[str] = {
 # Ref: "Formato Moodle XML.txt" — cada pregunta REQUIERE <name> y <questiontext>.
 # Los campos adicionales por tipo se listan a continuación.
 REQUIRED_FIELDS: dict[str, list[str]] = {
-    "multichoice": ["stem", "options"],       # al menos 2 <answer>, con fraction
-    "truefalse":   ["stem"],                  # exactamente 2 <answer> (true/false)
-    "matching":    ["col_a", "col_b"],         # al menos 2 <subquestion>
-    "cloze":       ["text"],                   # questiontext con sintaxis {N:TYPE:...}
+    "multichoice":  ["stem", "options"],       # al menos 2 <answer>, con fraction
+    "truefalse":    ["stem"],                  # exactamente 2 <answer> (true/false)
+    "matching":     ["stem", "col_a", "col_b"], # enunciado + al menos 2 <subquestion>
+    "cloze":        ["text"],                   # questiontext con sintaxis {N:TYPE:...}
+    "essay":        ["stem"],                   # sin respuesta que validar — califica el docente en Moodle
+    "shortanswer":  ["stem"],                   # <answer> con el texto corto esperado
+    "numerical":    ["stem"],                   # <answer> con un valor numérico
 }
 
 # ── Restricciones de estructura Moodle XML ─────────────────────────────────
@@ -154,14 +166,26 @@ c. Descripción del elemento 3
 Pregunta 4:
 Enunciado con el espacio así: [A: opción_correcta / opción2 / opción3] y puede tener más espacios: [B: opción_correcta / opción2 / opción3]
 
+Pregunta 5:
+Instrucción abierta que pide explicar, describir, analizar o dar una opinión (sin opciones, sin respuesta única — se califica manualmente)
+
+Pregunta 6:
+Enunciado que espera una palabra, término o frase corta como respuesta
+
+Pregunta 7:
+Enunciado cuya respuesta es un número (un cálculo, una cantidad)
+
 [AL FINAL — sección de respuestas, con este encabezado exacto]
 
 RESPUESTAS
-Nº  Tipo         Respuesta correcta
-1   multichoice  Texto exacto de la opción correcta (o varias separadas por " | " si acepta más de una)
-2   truefalse    Verdadero
-3   matching     1-a; 2-b; 3-c
-4   cloze        A. opción_correcta; B. opción_correcta
+Nº  Tipo          Respuesta correcta
+1   multichoice   Texto exacto de la opción correcta (o varias separadas por " | " si acepta más de una)
+2   truefalse     Verdadero
+3   matching      1-a; 2-b; 3-c
+4   cloze         A. opción_correcta; B. opción_correcta
+5   essay         (deja una nota breve como "respuesta abierta" — nunca inventes ni resuelvas)
+6   shortanswer   Texto exacto de la respuesta corta esperada
+7   numerical     Solo el número (ej. "60"), nunca escrito en palabras ni con unidades
 
 ══════════════════════════════════════════════════════
 REGLAS DE CONVERSIÓN — LEE CADA UNA CON CUIDADO
@@ -223,6 +247,20 @@ REGLA 9 — CÓDIGO MOSTRADO COMO IMAGEN (cuando recibas imágenes del documento
 REGLA 10 — TABLAS/CUADROS DE UNA SOLA MARCA POR FILA (CONVERTIBLES A EMPAREJAMIENTO):
 - Si encuentras una tabla donde cada fila tiene una descripción y varias columnas de categorías, con UNA sola celda marcada (x/X) por fila indicando a qué columna pertenece esa fila, conviértela a una pregunta de emparejamiento: Columna A = las descripciones de cada fila, Columna B = los nombres de columna que tengan al menos una marca, y la clave es cada fila emparejada con el nombre de su columna marcada.
 - Conviértela usando el formato normal de REGLA 2 (emparejamiento). Al principio del enunciado de esa pregunta, antes de "Columna A:", agrega la línea exacta "[TABLA_CONVERTIDA]" (sin nada más en esa línea) para que el sistema sepa que se originó de una tabla.
+
+REGLA 11 — TRANSCRIPCIÓN DE IMAGEN NO LOGRADA (cuando recibas imágenes del documento):
+- Si genuinamente no puedes leer con confianza el contenido de una imagen que una pregunta necesita (código, texto o marca de color borrosos, cortados, de muy baja resolución, o ilegibles por cualquier motivo), NO inventes ni adivines ese contenido bajo ninguna circunstancia.
+- En ese caso, agrega la línea exacta "{TRANSCRIPTION_FAILED_MARKER}" al inicio del enunciado de esa pregunta, y usa "SIN_RESPUESTA" en RESPUESTAS para esa pregunta — aunque creas ver algo parecido a una marca, si no la puedes leer con confianza no es fiable adivinar.
+
+REGLA 12 — ENSAYO, RESPUESTA CORTA Y NUMÉRICA (se ven igual que cierto/falso: solo un enunciado, sin opciones ni columnas):
+- Estos 3 tipos, junto con cierto/falso, comparten la misma forma en el cuerpo (un enunciado sin decoración). Lo que los distingue es LA INTENCIÓN de la pregunta — usa este criterio, sin dudar más de lo necesario:
+  * truefalse: una AFIRMACIÓN (no una pregunta) que se puede juzgar como verdadera o falsa.
+  * essay: una INSTRUCCIÓN ABIERTA que pide explicar, describir, analizar, opinar o desarrollar una idea con varias oraciones ("Explica...", "Describe...", "Analiza...", "Da tu opinión sobre...", "Desarrolla..."). No tiene una única respuesta correcta posible.
+  * shortanswer: una PREGUNTA cuya respuesta completa es una sola palabra, término o frase corta (ej. "¿Cómo se llama...?", "¿Cuál es el término para...?").
+  * numerical: una PREGUNTA cuya respuesta es puramente un número (un cálculo, una cantidad, un resultado).
+- essay NUNCA tiene una respuesta correcta que resolver — en RESPUESTAS deja una nota breve como "respuesta abierta, se califica manualmente" y NUNCA la marques como SIN_RESPUESTA (SIN_RESPUESTA es para cuando a un tipo autocalificable le falta la marca; essay simplemente no tiene ni necesita una).
+- Para numerical, en RESPUESTAS escribe SOLO el número tal como está en el original (ej. "60"). Si el original lo escribió en palabras ("sesenta") o con una unidad, transcríbelo exactamente como aparece — NO lo conviertas ni inventes un valor.
+- Ante la duda genuina entre truefalse/essay/shortanswer/numerical para una pregunta puntual, prioriza la lectura más natural de la intención del enunciado — no fuerces una pregunta a encajar en un tipo que no le queda.
 
 Responde ÚNICAMENTE con el texto convertido. Sin explicaciones ni markdown.
 """

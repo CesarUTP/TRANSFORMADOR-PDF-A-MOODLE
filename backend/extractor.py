@@ -51,6 +51,26 @@ def extract_text_and_images_from_pdf(file_bytes: bytes) -> tuple[str, List[Image
     return full_text, images
 
 
+def render_all_pages_as_images(file_bytes: bytes) -> List[Image.Image]:
+    """
+    Renderiza CADA página del PDF como imagen (a diferencia de
+    extract_text_and_images_from_pdf, que solo renderiza páginas con
+    imágenes incrustadas) — usado por la acción explícita "Normalizar con
+    IA", donde el usuario ya aceptó pagar el costo/tiempo extra de que
+    Gemini lea el documento completo visualmente. Cubre tanto el PDF
+    escaneado (sin ninguna capa de texto) como el que sí tiene texto pero
+    con contenido visual disperso que el modo normal no capturó del todo.
+    """
+    images: List[Image.Image] = []
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        for page in pdf.pages:
+            if len(images) >= MAX_IMAGE_PAGES:
+                break
+            rendered = page.to_image(resolution=200)
+            images.append(rendered.original)
+    return images
+
+
 def pdf_has_embedded_images(file_bytes: bytes) -> bool:
     """
     Chequeo rápido (sin renderizar nada) de si el PDF trae al menos una
@@ -66,31 +86,52 @@ def pdf_has_embedded_images(file_bytes: bytes) -> bool:
     return False
 
 
-def pdf_has_colored_text(file_bytes: bytes) -> bool:
+def _char_has_color(ch: dict) -> bool:
+    if not ch.get("text", "").strip():
+        # Un espacio en blanco coloreado es invisible para el lector (no
+        # tiene glifo que pintar) — un artefacto común de encabezados/pies
+        # de página o hipervínculos que "heredan" el color de un elemento
+        # vecino. Contarlo como marca de color daba falsos positivos en
+        # documentos completamente en blanco y negro.
+        return False
+    color = ch.get("non_stroking_color")
+    if not isinstance(color, (tuple, list)) or len(color) != 3:
+        # Escala de grises (un solo valor), CMYK u otro formato inesperado:
+        # no es una marca de color reconocible.
+        return False
+    r, g, b = color
+    # Un tono "de color" se aleja de la diagonal gris (r≈g≈b); un umbral
+    # pequeño evita falsos positivos por antialiasing o negros/grises
+    # ligeramente impuros.
+    return max(abs(r - g), abs(g - b), abs(r - b)) > 0.15
+
+
+def get_colored_text_pages(file_bytes: bytes) -> List[str]:
     """
-    Chequeo rápido de si el PDF usa texto de color no-gris (ej. respuestas
-    marcadas en rojo u otro color) en vez de imágenes incrustadas. A
-    diferencia de pdf_has_embedded_images(), esto NO es un "caso especial"
-    para el usuario — el sistema ya sabe interpretar este tipo de marca
-    (REGLA 8 del prompt) — solo sirve para mostrar después una recomendación
-    de revisar manualmente las respuestas, por si la IA se equivocó al
-    identificar alguna marca.
+    Devuelve el texto completo de cada página del PDF que use texto de
+    color no-gris (ej. respuestas marcadas en rojo u otro color). Sirve
+    para luego ubicar, por coincidencia de texto, cuáles preguntas
+    concretas viven en una página con esa marca — y así señalarlas
+    individualmente en vez de un aviso genérico para todo el documento.
     """
+    pages_text: List[str] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
-            for ch in page.chars:
-                color = ch.get("non_stroking_color")
-                if not isinstance(color, (tuple, list)) or len(color) != 3:
-                    # Escala de grises (un solo valor), CMYK u otro formato
-                    # inesperado: no es una marca de color reconocible.
-                    continue
-                r, g, b = color
-                # Un tono "de color" se aleja de la diagonal gris (r≈g≈b);
-                # un umbral pequeño evita falsos positivos por antialiasing
-                # o negros/grises ligeramente impuros.
-                if max(abs(r - g), abs(g - b), abs(r - b)) > 0.15:
-                    return True
-    return False
+            if any(_char_has_color(ch) for ch in page.chars):
+                pages_text.append(page.extract_text() or "")
+    return pages_text
+
+
+def pdf_has_colored_text(file_bytes: bytes) -> bool:
+    """
+    Chequeo rápido de si el PDF usa texto de color no-gris en vez de
+    imágenes incrustadas. A diferencia de pdf_has_embedded_images(), esto
+    NO es un "caso especial" para el usuario — el sistema ya sabe
+    interpretar este tipo de marca (REGLA 8 del prompt) — solo sirve para
+    mostrar después una recomendación de revisar manualmente las
+    respuestas, por si la IA se equivocó al identificar alguna marca.
+    """
+    return bool(get_colored_text_pages(file_bytes))
 
 
 def extract_text_from_txt(file_bytes: bytes) -> str:

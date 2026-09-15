@@ -81,6 +81,15 @@
       --color-cl:             #a78bfa;
       --color-cl-bg:          rgba(167, 139, 250, 0.15);
       --color-cl-border:      rgba(167, 139, 250, 0.3);
+      --color-es:             #f472b6;
+      --color-es-bg:          rgba(244, 114, 182, 0.15);
+      --color-es-border:      rgba(244, 114, 182, 0.3);
+      --color-sa:             #2dd4bf;
+      --color-sa-bg:          rgba(45, 212, 191, 0.15);
+      --color-sa-border:      rgba(45, 212, 191, 0.3);
+      --color-nu:             #fb923c;
+      --color-nu-bg:          rgba(251, 146, 60, 0.15);
+      --color-nu-border:      rgba(251, 146, 60, 0.3);
 
       /* Radii */
       --radius-sm: 8px;
@@ -147,6 +156,15 @@
       --color-cl:             #7c3aed;
       --color-cl-bg:          rgba(124, 58, 237, 0.12);
       --color-cl-border:      rgba(124, 58, 237, 0.3);
+      --color-es:             #be185d;
+      --color-es-bg:          rgba(190, 24, 93, 0.12);
+      --color-es-border:      rgba(190, 24, 93, 0.3);
+      --color-sa:             #0f766e;
+      --color-sa-bg:          rgba(15, 118, 110, 0.12);
+      --color-sa-border:      rgba(15, 118, 110, 0.3);
+      --color-nu:             #c2410c;
+      --color-nu-bg:          rgba(194, 65, 12, 0.12);
+      --color-nu-border:      rgba(194, 65, 12, 0.3);
 
       --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
       --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
@@ -573,6 +591,9 @@
     .type-badge.truefalse   { background: var(--color-tf-bg); color: var(--color-tf); border: 1px solid var(--color-tf-border); }
     .type-badge.matching    { background: var(--color-mt-bg); color: var(--color-mt); border: 1px solid var(--color-mt-border); }
     .type-badge.cloze       { background: var(--color-cl-bg); color: var(--color-cl); border: 1px solid var(--color-cl-border); }
+    .type-badge.essay       { background: var(--color-es-bg); color: var(--color-es); border: 1px solid var(--color-es-border); }
+    .type-badge.shortanswer { background: var(--color-sa-bg); color: var(--color-sa); border: 1px solid var(--color-sa-border); }
+    .type-badge.numerical   { background: var(--color-nu-bg); color: var(--color-nu); border: 1px solid var(--color-nu-border); }
 
     /* ── CLOZE BUILDER (editor de "completar" sin sintaxis de corchetes) ──── */
     .cloze-preview {
@@ -623,7 +644,7 @@
     .cloze-option-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
     .cloze-option-row input[type="text"] { flex: 1; margin-top: 0; }
     .cloze-option-row input[type="radio"],
-    .cloze-option-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--color-cl); cursor: pointer; }
+    .cloze-option-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--color-success); cursor: pointer; }
     .cloze-multi-toggle {
       display: flex;
       align-items: center;
@@ -639,7 +660,7 @@
 
     /* ── SELECCIÓN MÚLTIPLE: casilla de "correcta" por opción ────────────── */
     .mc-option-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-    .mc-option-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--color-mc); cursor: pointer; }
+    .mc-option-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--color-success); cursor: pointer; }
     .mc-option-row .mc-option-letter { font-weight: 800; color: var(--color-mc); width: 16px; flex-shrink: 0; }
     .mc-option-row .q-opt { flex: 1; margin-top: 0; }
 
@@ -672,6 +693,9 @@
     .filter-chip[data-filter="truefalse"]   { background: var(--color-tf-bg); border-color: var(--color-tf-border); color: var(--color-tf); }
     .filter-chip[data-filter="matching"]    { background: var(--color-mt-bg); border-color: var(--color-mt-border); color: var(--color-mt); }
     .filter-chip[data-filter="cloze"]       { background: var(--color-cl-bg); border-color: var(--color-cl-border); color: var(--color-cl); }
+    .filter-chip[data-filter="essay"]       { background: var(--color-es-bg); border-color: var(--color-es-border); color: var(--color-es); }
+    .filter-chip[data-filter="shortanswer"] { background: var(--color-sa-bg); border-color: var(--color-sa-border); color: var(--color-sa); }
+    .filter-chip[data-filter="numerical"]   { background: var(--color-nu-bg); border-color: var(--color-nu-border); color: var(--color-nu); }
 
     /* Estado activo: mismo color pero sólido, con texto blanco — distingue
        claramente cuál filtro está aplicado ahora mismo. */
@@ -681,6 +705,9 @@
     .filter-chip.active[data-filter="truefalse"]   { background: var(--color-tf); }
     .filter-chip.active[data-filter="matching"]    { background: var(--color-mt); }
     .filter-chip.active[data-filter="cloze"]       { background: var(--color-cl); }
+    .filter-chip.active[data-filter="essay"]       { background: var(--color-es); }
+    .filter-chip.active[data-filter="shortanswer"] { background: var(--color-sa); }
+    .filter-chip.active[data-filter="numerical"]   { background: var(--color-nu); }
     .filter-chip .count { opacity: 0.75; font-weight: 600; }
 
     /* ── STATS CARDS ─────────────────────────────────────────────────────── */
@@ -997,6 +1024,11 @@
         <div style="height:8px;background:var(--color-bg);border-radius:var(--radius-full);overflow:hidden;max-width:480px;margin:0 auto;border:1px solid var(--color-border-subtle);">
           <div id="progress-bar-fill" style="height:100%;width:0%;background:var(--color-accent-gradient);border-radius:var(--radius-full);transition:width 0.4s ease-out;"></div>
         </div>
+
+        <div id="progress-timer-row" style="display:flex;justify-content:center;gap:18px;margin-top:14px;font-size:12.5px;color:var(--color-text-subtle);">
+          <span><i data-lucide="clock" style="width:13px;height:13px;vertical-align:-2px;"></i> <span id="progress-elapsed">0:00</span> transcurrido</span>
+          <span id="progress-eta-wrap">· ~<span id="progress-eta">--:--</span> restante estimado</span>
+        </div>
       </div>
     </section>
 
@@ -1073,12 +1105,19 @@
           <p style="font-size:13.5px;font-weight:700;color:var(--color-cl);margin:0 0 6px;display:flex;align-items:center;gap:6px;">
             <i data-lucide="bot" style="width:16px;height:16px;"></i> ¿Tu archivo PDF es una imagen o documento escaneado?
           </p>
-          <p style="font-size:13px;color:var(--color-text-muted);margin:0;">
-            Los PDFs escaneados requieren OCR. Puedes usar nuestro
+          <p style="font-size:13px;color:var(--color-text-muted);margin:0 0 10px;">
+            Los PDFs escaneados no tienen texto que extraer directamente, pero el sistema puede leerlos igual con IA.
+          </p>
+          <button id="btn-error-normalize" class="btn btn-primary" style="width:100%;margin-bottom:8px;">
+            <i data-lucide="sparkles" style="width:16px;height:16px;"></i>
+            Normalizar con IA
+          </button>
+          <p style="font-size:12px;color:var(--color-text-subtle);margin:0;text-align:center;">
+            o usa nuestro
             <button onclick="openHelp('prompt')" style="background:none;border:none;padding:0;cursor:pointer;font-family:inherit;font-weight:800;color:var(--color-cl);text-decoration:underline;">
               Prompt IA Profesional
             </button>
-            para convertirlo en 10 segundos con tu IA de preferencia.
+            con tu propia IA de preferencia.
           </p>
         </div>
 
@@ -1228,6 +1267,27 @@ En Python, la palabra clave para definir una función es [A: def / function / vo
               <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Cada espacio admite <strong>una</strong> respuesta correcta (el caso más común, el estudiante ve un desplegable) o <strong>varias a la vez</strong> si la pregunta pide "selecciona todas las que correspondan" (el estudiante ve casillas de verificación) — se indica en RESPUESTAS, no en la pregunta.</p>
             </div>
 
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
+              <span class="type-badge essay">5. Ensayo</span>
+              <div class="code-block" style="margin-top:8px;">Pregunta 5:
+Explica con tus propias palabras las causas principales de la Revolución Francesa.</div>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Pregunta de respuesta abierta — el estudiante escribe libremente y <strong>el docente la califica manualmente en Moodle</strong>, no se autocalifica. Úsala para preguntas de desarrollo, análisis u opinión que el sistema no podría corregir por sí solo.</p>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
+              <span class="type-badge shortanswer">6. Respuesta Corta</span>
+              <div class="code-block" style="margin-top:8px;">Pregunta 6:
+¿Cómo se llama el proceso mediante el cual las plantas convierten la luz solar en energía?</div>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas que esperan una sola palabra o frase corta como respuesta. Moodle la calificará automáticamente comparando el texto, sin distinguir mayúsculas de minúsculas y aceptando también la respuesta sin tildes. Sin embargo, no cubre otras variaciones de redacción ni una tilde ubicada incorrectamente. Le recomendamos considerar estas limitaciones antes de utilizar este tipo de pregunta — si la respuesta esperada admite más variantes, use Ensayo en su lugar.</p>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
+              <span class="type-badge numerical">7. Numérica</span>
+              <div class="code-block" style="margin-top:8px;">Pregunta 7:
+¿Cuánto es 15 multiplicado por 4?</div>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas cuya respuesta es un número. En RESPUESTAS debe ir el valor numérico tal cual (ej. "60"), no escrito en palabras ni con unidades — si tu examen ya lo escribe así, tradúcelo al procesar.</p>
+            </div>
+
             <div style="background:var(--color-surface);border:1px solid var(--color-border-glow);border-radius:var(--radius-md);padding:14px;">
               <span style="font-size:11px;font-weight:800;color:var(--color-accent);text-transform:uppercase;letter-spacing:0.5px;">Sección RESPUESTAS (Al final del archivo)</span>
               <div class="code-block" style="margin-top:8px;">RESPUESTAS
@@ -1235,7 +1295,10 @@ Nº Tipo Respuesta correcta
 1 múltiple Traducir código fuente a lenguaje máquina
 2 ciertofalso Verdadero
 3 emparejamiento 1-a; 2-b; 3-c
-4 completar A. def; B. class</div>
+4 completar A. def; B. class
+5 ensayo (respuesta abierta, se califica manualmente)
+6 respuestacorta Fotosíntesis
+7 numerico 60</div>
               <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">
                 Para <strong>emparejamiento</strong>, cada par es "número-letra" (el número de la Columna A y la letra de la Columna B que le corresponde), separados por punto y coma. No hace falta que sigan un orden alfabético: una clave como <code style="background:var(--color-bg);padding:1px 5px;border-radius:4px;">1-c; 2-a; 3-b</code> es perfectamente válida y se procesa exactamente igual de bien.
               </p>
@@ -1301,14 +1364,31 @@ El enunciado con espacios en blanco se escribe así: el concepto de [A: opción 
 (el orden de las opciones dentro de los corchetes no importa — la correcta se identifica por su texto en RESPUESTAS, no por ir primero)
 (cada espacio puede aceptar una sola respuesta correcta, o varias a la vez si dice "selecciona todas las que correspondan" — eso también se indica en RESPUESTAS)
 
+TIPO 5 – Ensayo (respuesta abierta, se califica manualmente en Moodle):
+Pregunta 5:
+Una instrucción abierta que pide explicar, describir, analizar u opinar ("Explica...", "Describe...", "Analiza...", "Da tu opinión sobre..."). Nunca tiene una única respuesta correcta.
+
+TIPO 6 – Respuesta corta:
+Pregunta 6:
+Una pregunta cuya respuesta completa es una sola palabra, término o frase corta (ej. "¿Cómo se llama...?").
+
+TIPO 7 – Numérica:
+Pregunta 7:
+Una pregunta cuya respuesta es puramente un número (un cálculo, una cantidad).
+
+(Cierto/Falso, Ensayo, Respuesta corta y Numérica se ven igual en el cuerpo — solo un enunciado sin decoración. Lo que los distingue es la intención: una AFIRMACIÓN a juzgar es cierto/falso; una instrucción abierta multi-oración es ensayo; una pregunta que espera una palabra es respuesta corta; una pregunta que espera un número es numérica.)
+
 ── SECCIÓN RESPUESTAS (siempre al final) ─────────────────────
 
 RESPUESTAS
-Nº  Tipo          Respuesta correcta
-1   múltiple      Escribe aquí el texto EXACTO de la opción correcta (cópialo tal cual de las opciones)
-2   ciertofalso   Verdadero   ← o Falso
-3   emparejamiento 1-c; 2-a; 3-b
-4   completar     A. opción correcta del espacio A; B. opción correcta del espacio B
+Nº  Tipo            Respuesta correcta
+1   múltiple        Escribe aquí el texto EXACTO de la opción correcta (cópialo tal cual de las opciones)
+2   ciertofalso     Verdadero   ← o Falso
+3   emparejamiento  1-c; 2-a; 3-b
+4   completar       A. opción correcta del espacio A; B. opción correcta del espacio B
+5   ensayo          (deja una nota breve como "respuesta abierta" — nunca inventes ni resuelvas)
+6   respuestacorta  Texto exacto de la respuesta corta esperada
+7   numerico        Solo el número (ej. "60"), nunca escrito en palabras ni con unidades
 
 Ejemplo real de cómo debe verse un emparejamiento completo (nota que el orden NO es alfabético — así es exactamente como debe ir si esa es la correspondencia real del examen original):
 
@@ -1326,14 +1406,16 @@ Ejemplo real de cómo debe verse un emparejamiento completo (nota que el orden N
   (1-Perro es Canino=c, 2-Gato es Felino=a, 3-Vaca es Bovino=b)
 
 ── REGLAS IMPORTANTES ────────────────────────────────────────
-- El orden de las preguntas debe ser: primero todas las de selección múltiple, luego cierto/falso, luego emparejamiento, luego completar.
-- En la sección RESPUESTAS usa EXACTAMENTE las palabras: múltiple, ciertofalso, emparejamiento, completar.
+- Las preguntas deben salir en el MISMO ORDEN en que aparecen en el documento original (de principio a fin) — nunca las agrupes por tipo ni las reordenes.
+- En la sección RESPUESTAS usa EXACTAMENTE las palabras: múltiple, ciertofalso, emparejamiento, completar, ensayo, respuestacorta, numerico.
 - Para ciertofalso escribe "Verdadero" o "Falso" (con mayúscula inicial).
 - Para múltiple copia el texto íntegro de la opción correcta tal como aparece en la pregunta (nunca solo la letra). Si la pregunta acepta MÁS DE UNA respuesta correcta a la vez, escribe el texto completo de cada una separado por " | " (ej. "Opción B | Opción D"). Si es una sola (el caso más común), escribe solo esa, sin "|".
 - Para emparejamiento escribe SOLO pares "número-letra" separados por "; " (ej. "1-c; 2-a; 3-b") — NUNCA reescribas el texto de las columnas en esta línea, y NUNCA asumas que el orden es 1-a, 2-b, 3-c: usa la correspondencia real marcada en el examen original, sea cual sea el orden.
 - Si el examen original ya trae la clave en formato "1-c, 2-a, 3-b" o similar, transcríbela tal cual, sin reinterpretarla.
 - Para completar, documenta CADA espacio por separado con el formato "Letra. respuesta"; si hay varios espacios, sepáralos con "; " (ej. "A. respuesta1; B. respuesta2") — no solo el primero. Si un espacio acepta varias respuestas correctas a la vez, sepáralas con " | " dentro de esa misma letra (ej. "A. opción1 | opción3").
-- Si una pregunta no tiene respuesta marcada en el original, escribe "SIN_RESPUESTA" en su lugar — nunca la resuelvas tú.
+- Para ensayo, NUNCA resuelvas la pregunta ni escribas "SIN_RESPUESTA" — deja una nota breve tipo "respuesta abierta, se califica manualmente" en RESPUESTAS.
+- Para numerico, escribe SOLO el número tal como está en el original (ej. "60"). Si el original lo escribió en palabras o con una unidad, transcríbelo exactamente como aparece, sin convertirlo ni inventar un valor.
+- Si una pregunta (que no sea ensayo) no tiene respuesta marcada en el original, escribe "SIN_RESPUESTA" en su lugar — nunca la resuelvas tú.
 - No agregues numeración extra, bullets, ni markdown. Solo texto plano.
 - Mantén tildes y caracteres especiales del español (á, é, í, ó, ú, ñ).
 
@@ -1428,20 +1510,16 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </button>
       </div>
       <div class="modal-body" style="padding:18px 24px;">
-        <p style="font-size:13.5px;line-height:1.7;color:var(--color-text);margin-bottom:12px;">
-          Detectamos <strong>imágenes incrustadas</strong> en tu PDF — por ejemplo código en captura de pantalla. El sistema puede leer ese tipo de contenido con IA, pero <strong>no es 100% fiable</strong>: es posible que alguna transcripción no se capture correctamente.
-        </p>
-        <p style="font-size:13.5px;line-height:1.7;color:var(--color-text-muted);margin-bottom:0;">
-          Se recomienda ir a la <strong style="color:var(--color-text);">Guía → Prompt IA</strong> y normalizar el documento con tu IA de preferencia antes de subirlo, para mejorar el resultado. Aun así, puedes continuar directamente: siempre podrás revisar y corregir cada pregunta en el editor antes de descargar.
+        <p style="font-size:13.5px;line-height:1.7;color:var(--color-text);margin-bottom:0;">
+          Detectamos <strong>imágenes incrustadas</strong> en tu PDF. El sistema las leerá automáticamente con IA, pero <strong>no es 100% fiable</strong>: es posible que alguna marca o transcripción no se detecte correctamente. Revisa cada pregunta en el editor antes de aprobar la conversión.
         </p>
       </div>
       <div style="display:flex;gap:10px;padding:16px 24px 24px;">
-        <button id="btn-disclaimer-guide" class="btn btn-ghost" style="flex:1;">
-          <i data-lucide="book-open" style="width:16px;height:16px;"></i>
-          Ir a la guía
-        </button>
         <button id="btn-disclaimer-continue" class="btn btn-primary" style="flex:1;">
-          Continuar de todos modos
+          Continuar
+        </button>
+        <button id="btn-disclaimer-cancel" class="btn btn-ghost" style="flex:1;">
+          Cancelar
         </button>
       </div>
     </div>
@@ -1694,6 +1772,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
           col_b: { 'a': 'Primera pareja', 'b': 'Segunda pareja' }
         };
         defaultAns = '1. Primer concepto → Primera pareja; 2. Segundo concepto → Segunda pareja';
+      } else if (type === 'essay') {
+        newQ.data = { stem: 'Escribe aquí la instrucción de la pregunta de ensayo (respuesta abierta).' };
+        defaultAns = '';
+      } else if (type === 'shortanswer') {
+        newQ.data = { stem: 'Escribe aquí el enunciado de la pregunta de respuesta corta.' };
+        defaultAns = 'Respuesta corta';
+      } else if (type === 'numerical') {
+        newQ.data = { stem: 'Escribe aquí el enunciado de la pregunta numérica.' };
+        defaultAns = '0';
       }
 
       currentParseResult.questions.push(newQ);
@@ -1702,10 +1789,46 @@ Ahora convierte el examen adjunto a este formato.</pre>
       renderEditor(currentParseResult);
       lucide.createIcons();
       showToast(`Pregunta ${nextNum} (${type}) añadida exitosamente`);
-      
+
       setTimeout(() => {
         const container = document.getElementById('editor-questions-container');
         container.scrollTop = container.scrollHeight;
+      }, 100);
+    }
+
+    // "Rescata" una pregunta omitida cuyo único problema era la respuesta
+    // (el backend ya confirmó que el enunciado/opciones/columnas se
+    // parsearon bien — ver recoverable_data en validator.py) — la añade al
+    // editor con todo eso ya prellenado, para que el usuario solo tenga que
+    // marcar/escribir la respuesta correcta en vez de reconstruirla desde 0.
+    function recoverSkippedQuestion(skippedIdx) {
+      syncParseResultFromDOM();
+      const sq = (currentParseResult.skipped_questions || [])[skippedIdx];
+      if (!sq || !sq.recoverable_data) return;
+
+      const existingCards = document.querySelectorAll('.editor-card');
+      const nextNum = existingCards.length + 1;
+      const newQ = { num: nextNum, type: sq.type, data: JSON.parse(JSON.stringify(sq.recoverable_data)) };
+
+      // Respuesta en blanco por tipo — el usuario la completa a mano. Para
+      // truefalse se deja "Verdadero" preseleccionado (el <select> siempre
+      // necesita un valor), igual que hace "Añadir nueva pregunta"; el resto
+      // arranca vacío para que sea evidente que falta completarlo.
+      const blankAnswer = sq.type === 'truefalse' ? 'Verdadero' : '';
+      currentParseResult.answer_key[nextNum] = sq.type === 'matching'
+        ? { type: sq.type, answer: '', pairs: {} }
+        : { type: sq.type, answer: blankAnswer };
+
+      currentParseResult.questions.push(newQ);
+      currentParseResult.skipped_questions.splice(skippedIdx, 1);
+
+      renderEditor(currentParseResult);
+      lucide.createIcons();
+      showToast(`Pregunta ${nextNum} añadida — completa la respuesta correcta`, 'info');
+
+      setTimeout(() => {
+        const card = document.querySelector(`.editor-card[data-qnum="${nextNum}"]`);
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
     }
 
@@ -1720,6 +1843,50 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const div = document.createElement('div');
       div.textContent = s == null ? '' : String(s);
       return div.innerHTML;
+    }
+
+    // Traduce el motivo técnico que devuelve el validador (pensado para el
+    // panel de errores estricto, tipo log) a una frase en lenguaje llano
+    // para el resumen de preguntas omitidas — reconoce los patrones más
+    // comunes y da una explicación breve; si no reconoce el patrón, al
+    // menos le quita el prefijo "Error:" para que no se vea tan crudo.
+    function humanizeSkipReason(reason) {
+      reason = reason || '';
+      if (/no pudo transcribir con confianza/.test(reason)) {
+        return 'Esta pregunta incluye una imagen que no se pudo leer con claridad (borrosa, cortada o de baja calidad).';
+      }
+      if (/no tiene una respuesta correcta especificada/.test(reason) || /no se encontró la respuesta correcta del espacio/.test(reason)) {
+        return 'No se encontró ninguna respuesta marcada para esta pregunta en el documento original.';
+      }
+      if (/no es un número válido/.test(reason)) {
+        const m = reason.match(/respuesta '([^']*)'/);
+        return `La respuesta indicada${m ? ` ("${m[1]}")` : ''} no es un número — revisa que esté escrita como número en el documento original.`;
+      }
+      if (/no coincide con ninguna de las opciones/.test(reason)) {
+        return 'La respuesta marcada no coincide con ninguna de las opciones de esta pregunta — puede haber un error de transcripción.';
+      }
+      if (/inválida.*Verdadero.*Falso/.test(reason)) {
+        return 'La respuesta de esta pregunta no quedó clara como "Verdadero" o "Falso".';
+      }
+      if (/falta '(stem)'/.test(reason) || /no se pudo interpretar el enunciado/.test(reason)) {
+        return 'No se encontró el enunciado de esta pregunta.';
+      }
+      if (/falta '(options)'/.test(reason) || /opciones marcadas con letras/.test(reason) || /falta opciones válidas/.test(reason)) {
+        return 'No se encontraron opciones de respuesta válidas para esta pregunta.';
+      }
+      if (/la opción '.*' de la Pregunta \d+ \(multichoice\) no tiene texto/.test(reason)) {
+        return 'Una de las opciones de esta pregunta quedó sin texto.';
+      }
+      if (/no se encontró ningún espacio en blanco/.test(reason) || /no se detectaron espacios/.test(reason) || /etiqueta Moodle vacía/.test(reason) || /espacio \[.*\] está vacío/.test(reason) || /formato inválido en espacio/.test(reason)) {
+        return 'Hay un problema con uno de los espacios en blanco de esta pregunta de completar.';
+      }
+      if (/columna|matching|par\(es\)|elemento/i.test(reason)) {
+        return 'Hay un problema con las columnas o las parejas de este emparejamiento — revisa que coincidan con el documento original.';
+      }
+      if (/no se encontró su enunciado en el documento/.test(reason)) {
+        return 'Esta pregunta aparece en la clave de respuestas, pero no se encontró su enunciado en el documento.';
+      }
+      return reason.replace(/^Error:\s*/i, '');
     }
 
     // Convierte el texto crudo "[A: opt1 / opt2]" (+ la respuesta guardada
@@ -2080,23 +2247,32 @@ Ahora convierte el examen adjunto a este formato.</pre>
         // El número que asignó la IA se muestra aparte y aclarado como tal,
         // porque no necesariamente coincide con la numeración del PDF
         // original (la IA renumera todo limpio y secuencial).
-        const skippedItems = skipped.map(sq => `
+        const skippedItems = skipped.map((sq, sIdx) => `
           <div style="padding:10px 0;border-top:1px solid var(--color-border-subtle);">
             <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:var(--color-text);line-height:1.5;">
               ${sq.preview ? esc_html(sq.preview) : `<em>(sin texto identificable — tipo ${esc_html(sq.type)})</em>`}
             </p>
             <p style="margin:0;font-size:12px;color:var(--color-text-muted);line-height:1.5;">
-              <span style="opacity:0.75;">#${sq.num} según la IA, no del documento original ·</span>
-              ${esc_html(sq.reasons[0] || 'no se pudo procesar')}
+              ${esc_html(humanizeSkipReason(sq.reasons[0]))}
             </p>
+            <p style="margin:2px 0 0;font-size:11px;color:var(--color-text-subtle);opacity:0.75;">
+              Ubicada como pregunta #${sq.num} — este número es del sistema, puede no coincidir con el del documento original.
+            </p>
+            ${sq.recoverable_data ? `<button type="button" class="btn btn-ghost" onclick="recoverSkippedQuestion(${sIdx})" style="margin-top:8px;padding:6px 12px;font-size:12px;color:var(--color-warning);border-color:var(--color-warning);">
+              <i data-lucide="wand-2" style="width:13px;height:13px;"></i> Añadir con lo ya extraído — solo falta la respuesta
+            </button>` : ''}
           </div>`).join('');
 
         skippedHtml = `<div style="background:var(--color-warning-bg);border:1px solid var(--color-warning);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:18px;">
           <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:var(--color-warning);">
             <i data-lucide="alert-triangle" style="width:16px;height:16px;"></i>
-            ${skipped.length > 0 ? `${skipped.length} pregunta${skipped.length !== 1 ? 's' : ''} no se ${skipped.length !== 1 ? 'procesaron' : 'procesó'}` : 'Aviso'}
+            ${skipped.length > 0 ? `${skipped.length} pregunta${skipped.length !== 1 ? 's' : ''} no se pud${skipped.length !== 1 ? 'ieron' : 'o'} incluir` : 'Aviso'}
           </div>
           ${skipped.length > 0 ? `<div style="margin-top:4px;">${skippedItems}</div>` : ''}
+          ${skipped.length > 0 ? `<p style="margin:10px 0 0;padding-top:10px;border-top:1px solid var(--color-border-subtle);font-size:12px;color:var(--color-text-muted);line-height:1.5;">
+            <i data-lucide="lightbulb" style="width:13px;height:13px;vertical-align:-2px;"></i>
+            Para incluirlas: corrige lo que falte en el documento original y vuelve a convertirlo, o agrégalas manualmente con "Añadir nueva pregunta" más abajo.
+          </p>` : ''}
           ${data.completeness_notice ? `<p style="margin:${skipped.length > 0 ? '10px' : '8px'} 0 0;font-size:13px;color:var(--color-text-muted);line-height:1.5;">${esc_html(data.completeness_notice)}</p>` : ''}
         </div>`;
       }
@@ -2119,9 +2295,12 @@ Ahora convierte el examen adjunto a este formato.</pre>
       // su id propio para poder refrescar solo los conteos
       // (refreshFilterChips) al borrar/añadir una pregunta, sin re-renderizar
       // toda la tarjeta ni perder ediciones en curso.
-      const filterHtml = `<div style="background:var(--color-surface-hover);border:1px solid var(--color-border-subtle);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;gap:10px;">
-        <span style="font-size:12px;font-weight:700;color:var(--color-text-subtle);text-transform:uppercase;letter-spacing:0.4px;flex-shrink:0;">Filtrar:</span>
-        <div id="filter-chips-bar" style="display:flex;align-items:stretch;flex-wrap:wrap;gap:8px;flex:1;"></div>
+      const filterHtml = `<div style="background:var(--color-surface-hover);border:1px solid var(--color-border-subtle);border-radius:var(--radius-md);padding:10px 16px;margin-bottom:18px;">
+        <button type="button" class="btn btn-ghost" style="width:100%;justify-content:flex-start;" onclick="toggleFilterMenu()">
+          <i data-lucide="filter" style="width:16px;height:16px;"></i>
+          Filtrar: <strong id="filter-current-label" style="margin-left:4px;">Todas</strong>
+        </button>
+        <div id="filter-chips-bar" style="display:none;align-items:stretch;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
       </div>`;
 
       // "Añadir nueva pregunta" arranca colapsado en un solo botón — al
@@ -2134,10 +2313,13 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <i data-lucide="plus-circle" style="width:16px;height:16px;"></i> Añadir nueva pregunta
         </button>
         <div id="add-question-types" style="display:none;gap:8px;flex-wrap:wrap;margin-top:10px;">
-          <button type="button" class="btn btn-ghost" onclick="addNewQuestion('multichoice')" style="padding:6px 12px;font-size:12.5px;color:var(--color-mc);">+ Múltiple</button>
-          <button type="button" class="btn btn-ghost" onclick="addNewQuestion('truefalse')" style="padding:6px 12px;font-size:12.5px;color:var(--color-tf);">+ Cierto/Falso</button>
-          <button type="button" class="btn btn-ghost" onclick="addNewQuestion('cloze')" style="padding:6px 12px;font-size:12.5px;color:var(--color-cl);">+ Completar</button>
-          <button type="button" class="btn btn-ghost" onclick="addNewQuestion('matching')" style="padding:6px 12px;font-size:12.5px;color:var(--color-mt);">+ Emparejamiento</button>
+          <button type="button" class="filter-chip" data-filter="multichoice" onclick="addNewQuestion('multichoice')">+ Múltiple</button>
+          <button type="button" class="filter-chip" data-filter="truefalse" onclick="addNewQuestion('truefalse')">+ Cierto/Falso</button>
+          <button type="button" class="filter-chip" data-filter="cloze" onclick="addNewQuestion('cloze')">+ Completar</button>
+          <button type="button" class="filter-chip" data-filter="matching" onclick="addNewQuestion('matching')">+ Emparejamiento</button>
+          <button type="button" class="filter-chip" data-filter="essay" onclick="addNewQuestion('essay')">+ Ensayo</button>
+          <button type="button" class="filter-chip" data-filter="shortanswer" onclick="addNewQuestion('shortanswer')">+ Respuesta Corta</button>
+          <button type="button" class="filter-chip" data-filter="numerical" onclick="addNewQuestion('numerical')">+ Numérica</button>
         </div>
       </div>`;
       container.innerHTML = actionsHtml + skippedHtml + colorNoticeHtml + filterHtml + addQuestionHtml;
@@ -2151,14 +2333,21 @@ Ahora convierte el examen adjunto a este formato.</pre>
               ${q.data.from_table ? `<span class="type-badge" style="background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);" title="El sistema detectó una tabla/cuadro en el documento original y la convirtió automáticamente a esta pregunta de emparejamiento — revísala con cuidado antes de aprobar.">
                 <i data-lucide="table-2" style="width:12px;height:12px;vertical-align:-2px;"></i> convertida de tabla
               </span>` : ''}
+              ${q.data.color_review_hint ? `<span class="type-badge" style="background:var(--color-cl-bg);color:var(--color-cl);border:1px solid var(--color-cl-border);" title="Esta pregunta viene de una página con respuestas marcadas por color — revisa que la IA haya identificado todas las opciones correctas, especialmente si hay más de una marcada.">
+                <i data-lucide="palette" style="width:12px;height:12px;vertical-align:-2px;"></i> revisar marca de color
+              </span>` : ''}
               <span class="type-badge ${q.type}">${q.type}</span>
               <button type="button" class="btn btn-ghost" onclick="deleteQuestionCard(this)" style="padding:4px 8px;color:var(--color-error);font-size:12px;" title="Eliminar esta pregunta">
                 <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
               </button>
             </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;background:var(--color-warning-bg);border-left:3px solid var(--color-warning);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:12px;">
+            <i data-lucide="shield-alert" style="width:14px;height:14px;color:var(--color-warning);flex-shrink:0;margin-top:1px;"></i>
+            <p style="margin:0;font-size:11.5px;color:var(--color-text-muted);line-height:1.5;">Importante: revise esta pregunta de forma individual y confirme que no se hayan producido errores durante el proceso de normalización. De encontrarlos, corríjalos considerándolos como posibles errores de transcripción o respuestas faltantes.</p>
           </div>`;
 
-        if (q.type === 'multichoice' || q.type === 'truefalse' || q.type === 'matching') {
+        if (q.type === 'multichoice' || q.type === 'truefalse' || q.type === 'matching' || q.type === 'essay' || q.type === 'shortanswer' || q.type === 'numerical') {
           html += `<div><label class="field-label">Enunciado de la Pregunta</label><textarea class="q-stem" rows="2">${q.data.stem || ''}</textarea></div>`;
         }
 
@@ -2225,6 +2414,23 @@ Ahora convierte el examen adjunto a este formato.</pre>
               <i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar Nueva Pareja
             </button>
           </div>`;
+
+        } else if (q.type === 'essay') {
+          html += `<div style="margin-top:10px;background:var(--color-es-bg);border:1px solid var(--color-es-border);border-radius:var(--radius-md);padding:10px 14px;display:flex;gap:8px;align-items:flex-start;">
+            <i data-lucide="pencil-line" style="width:15px;height:15px;color:var(--color-es);flex-shrink:0;margin-top:2px;"></i>
+            <p style="font-size:12.5px;color:var(--color-text-muted);margin:0;">Pregunta de respuesta abierta — el estudiante escribe libremente y el docente la califica manualmente en Moodle. No necesita una respuesta correcta aquí.</p>
+          </div>`;
+
+        } else if (q.type === 'shortanswer') {
+          html += `<div style="margin-top:14px;"><label class="field-label" style="color:var(--color-success);">Respuesta Correcta (palabra o frase corta)</label>
+            <input class="q-sa-answer form-input" style="border-color:var(--color-success);" value="${(keyInfo.answer || '').replace(/"/g, '&quot;')}" placeholder="Escribe la respuesta correcta" />
+            <p style="font-size:11.5px;color:var(--color-text-subtle);margin:4px 0 0;">Moodle calificará esta respuesta sin distinguir mayúsculas de minúsculas, y el sistema añadirá automáticamente una variante sin tildes si la respuesta las lleva. Tenga en cuenta que una tilde ubicada incorrectamente sí se considerará una respuesta incorrecta. Le recomendamos considerar estas limitaciones antes de utilizar este tipo de pregunta.</p>
+          </div>`;
+
+        } else if (q.type === 'numerical') {
+          html += `<div style="margin-top:14px;"><label class="field-label" style="color:var(--color-success);">Respuesta Correcta (número)</label>
+            <input class="q-nu-answer form-input" type="number" step="any" style="border-color:var(--color-success);" value="${(keyInfo.answer || '').replace(/"/g, '&quot;')}" placeholder="Escribe el número correcto" />
+          </div>`;
         }
 
         html += `</div>`;
@@ -2253,7 +2459,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       let activeFilter = activeChip ? activeChip.dataset.filter : 'all';
 
       const cards = document.querySelectorAll('.editor-card');
-      const typeCounts = { multichoice: 0, truefalse: 0, matching: 0, cloze: 0 };
+      const typeCounts = { multichoice: 0, truefalse: 0, matching: 0, cloze: 0, essay: 0, shortanswer: 0, numerical: 0 };
       cards.forEach(card => {
         const t = card.dataset.qtype;
         if (t in typeCounts) typeCounts[t]++;
@@ -2265,15 +2471,32 @@ Ahora convierte el examen adjunto a este formato.</pre>
         activeFilter = 'all';
       }
 
-      const typeLabels = { multichoice: 'Múltiple', truefalse: 'Cierto/Falso', matching: 'Emparejar', cloze: 'Completar' };
-      let html = `<button type="button" class="filter-chip${activeFilter === 'all' ? ' active' : ''}" data-filter="all" onclick="filterQuestionsByType('all')">Todas <span class="count">(${cards.length})</span></button>`;
+      const typeLabels = { multichoice: 'Múltiple', truefalse: 'Cierto/Falso', matching: 'Emparejar', cloze: 'Completar', essay: 'Ensayo', shortanswer: 'Resp. Corta', numerical: 'Numérica' };
+      let html = `<button type="button" class="filter-chip${activeFilter === 'all' ? ' active' : ''}" data-filter="all" onclick="selectFilter('all')">Todas <span class="count">(${cards.length})</span></button>`;
       Object.entries(typeCounts).forEach(([type, count]) => {
         if (count === 0) return;
-        html += `<button type="button" class="filter-chip${activeFilter === type ? ' active' : ''}" data-filter="${type}" onclick="filterQuestionsByType('${type}')">${typeLabels[type]} <span class="count">(${count})</span></button>`;
+        html += `<button type="button" class="filter-chip${activeFilter === type ? ' active' : ''}" data-filter="${type}" onclick="selectFilter('${type}')">${typeLabels[type]} <span class="count">(${count})</span></button>`;
       });
       bar.innerHTML = html;
 
       filterQuestionsByType(activeFilter);
+    }
+
+    // Igual que toggleAddQuestionMenu() — el bloque "Filtrar" arranca
+    // colapsado mostrando solo el filtro activo; un clic despliega los
+    // chips por tipo debajo.
+    function toggleFilterMenu() {
+      const el = document.getElementById('filter-chips-bar');
+      if (!el) return;
+      el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    // Onclick de cada chip: aplica el filtro y colapsa el menú de vuelta,
+    // como al elegir una opción de un desplegable.
+    function selectFilter(type) {
+      filterQuestionsByType(type);
+      const bar = document.getElementById('filter-chips-bar');
+      if (bar) bar.style.display = 'none';
     }
 
     // Hace crecer un <textarea> verticalmente para mostrar todo su
@@ -2294,12 +2517,24 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // "all" para verlas todas). Es solo un filtro visual: las preguntas
     // ocultas siguen incluidas al generar el XML.
     function filterQuestionsByType(type) {
-      document.querySelectorAll('.filter-chip').forEach(chip => {
-        chip.classList.toggle('active', chip.dataset.filter === type);
-      });
+      // Acotado a #filter-chips-bar: los botones de "Añadir nueva pregunta"
+      // reutilizan la misma clase .filter-chip (mismo estilo visual por
+      // tipo) pero no son parte del filtro — sin este scope, filtrar por un
+      // tipo los marcaría como "activos" por error.
+      const chipsBar = document.getElementById('filter-chips-bar');
+      if (chipsBar) {
+        chipsBar.querySelectorAll('.filter-chip').forEach(chip => {
+          chip.classList.toggle('active', chip.dataset.filter === type);
+        });
+      }
       document.querySelectorAll('.editor-card').forEach(card => {
         card.style.display = (type === 'all' || card.dataset.qtype === type) ? '' : 'none';
       });
+      // El botón colapsado muestra el filtro activo (ej. "Ensayo (3)") sin
+      // necesidad de desplegar la lista completa de chips.
+      const activeChipEl = chipsBar && chipsBar.querySelector(`.filter-chip[data-filter="${type}"]`);
+      const labelEl = document.getElementById('filter-current-label');
+      if (labelEl && activeChipEl) labelEl.textContent = activeChipEl.textContent;
     }
 
     function collectEditorData() {
@@ -2320,11 +2555,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
         // Detect type from card badge
         const badgeEl = card.querySelector('.type-badge');
         if (badgeEl) {
-          const typeClass = Array.from(badgeEl.classList).find(c => ['multichoice', 'truefalse', 'cloze', 'matching'].includes(c));
+          const typeClass = Array.from(badgeEl.classList).find(c => ['multichoice', 'truefalse', 'cloze', 'matching', 'essay', 'shortanswer', 'numerical'].includes(c));
           if (typeClass) newQ.type = typeClass;
         }
 
-        if (newQ.type === 'multichoice' || newQ.type === 'truefalse' || newQ.type === 'matching') {
+        if (newQ.type === 'multichoice' || newQ.type === 'truefalse' || newQ.type === 'matching' || newQ.type === 'essay' || newQ.type === 'shortanswer' || newQ.type === 'numerical') {
           const stemEl = card.querySelector('.q-stem');
           if (stemEl) newQ.data.stem = stemEl.value;
         }
@@ -2384,6 +2619,18 @@ Ahora convierte el examen adjunto a este formato.</pre>
           newQ.data.col_a = colA;
           newQ.data.col_b = colB;
           ak[qNum] = { type: newQ.type, answer: keyPairs.join('; '), pairs: pairsMap };
+
+        } else if (newQ.type === 'essay') {
+          // Sin respuesta que guardar — se califica manualmente en Moodle.
+          ak[qNum] = { type: newQ.type, answer: '' };
+
+        } else if (newQ.type === 'shortanswer') {
+          const ansEl = card.querySelector('.q-sa-answer');
+          ak[qNum] = { type: newQ.type, answer: ansEl ? ansEl.value.trim() : '' };
+
+        } else if (newQ.type === 'numerical') {
+          const ansEl = card.querySelector('.q-nu-answer');
+          ak[qNum] = { type: newQ.type, answer: ansEl ? ansEl.value.trim() : '' };
         }
 
         qs.push(newQ);
@@ -2397,6 +2644,9 @@ Ahora convierte el examen adjunto a este formato.</pre>
       { key: 'truefalse',   label: 'Cierto/Falso',  colorVar: 'var(--color-tf)', bgVar: 'var(--color-tf-bg)', borderVar: 'var(--color-tf-border)' },
       { key: 'matching',    label: 'Emparejar',     colorVar: 'var(--color-mt)', bgVar: 'var(--color-mt-bg)', borderVar: 'var(--color-mt-border)' },
       { key: 'cloze',       label: 'Completar',     colorVar: 'var(--color-cl)', bgVar: 'var(--color-cl-bg)', borderVar: 'var(--color-cl-border)' },
+      { key: 'essay',       label: 'Ensayo',        colorVar: 'var(--color-es)', bgVar: 'var(--color-es-bg)', borderVar: 'var(--color-es-border)' },
+      { key: 'shortanswer', label: 'Resp. Corta',   colorVar: 'var(--color-sa)', bgVar: 'var(--color-sa-bg)', borderVar: 'var(--color-sa-border)' },
+      { key: 'numerical',   label: 'Numérica',      colorVar: 'var(--color-nu)', bgVar: 'var(--color-nu-bg)', borderVar: 'var(--color-nu-border)' },
     ];
 
     function updateSuccessStats(stats) {
@@ -2407,8 +2657,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
         truefalse:   stats.truefalse   || 0,
         matching:    stats.matching    || 0,
         cloze:       stats.cloze       || 0,
+        essay:       stats.essay       || 0,
+        shortanswer: stats.shortanswer || 0,
+        numerical:   stats.numerical   || 0,
       };
-      const total = counts.multichoice + counts.truefalse + counts.matching + counts.cloze;
+      const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
       // Balance final: si el modo tolerante omitió alguna pregunta (ver
       // renderEditor), se refleja aquí también, no solo en el editor — es
@@ -2559,21 +2812,36 @@ Ahora convierte el examen adjunto a este formato.</pre>
       document.body.style.overflow = '';
     }
     document.getElementById('btn-close-disclaimer').addEventListener('click', closeDisclaimer);
+    document.getElementById('btn-disclaimer-cancel').addEventListener('click', closeDisclaimer);
     modalDisclaimer.addEventListener('click', e => { if (e.target === modalDisclaimer) closeDisclaimer(); });
-    document.getElementById('btn-disclaimer-guide').addEventListener('click', () => {
-      closeDisclaimer();
-      openHelp('prompt');
-    });
     document.getElementById('btn-disclaimer-continue').addEventListener('click', () => {
       disclaimerAcknowledgedFor = fileFingerprint(selectedFile);
       closeDisclaimer();
-      runConversion(pendingConversionPoints);
+      runConversion(pendingConversionPoints, 'images');
+    });
+    document.getElementById('btn-error-normalize').addEventListener('click', () => {
+      const ptsVal = parseFloat(pointsInput.value) || 100;
+      runNormalizeWithAI(ptsVal);
     });
 
+    // Envía el resultado ya parseado (de /api/parse o /api/normalize_with_ai
+    // — misma forma de respuesta) directo al editor, guardando los metadatos
+    // de la subida para el paso de generar el XML más adelante.
+    function goToEditorWithParsedData(parsedData, ptsVal) {
+      currentUploadMetadata = {
+        filename: selectedFile.name,
+        category: categoryInput.value.trim() || 'mis-preguntas',
+        total_points: ptsVal
+      };
+      showPanel('editor');
+      renderEditor(parsedData);
+      lucide.createIcons();
+    }
+
     // Conversion Step 1: Parse
-    async function runConversion(ptsVal) {
+    async function runConversion(ptsVal, kind = 'text') {
       showPanel('progress');
-      startProgress();
+      startProgress(kind);
 
       const formData = new FormData();
       formData.append('file', selectedFile);
@@ -2589,16 +2857,37 @@ Ahora convierte el examen adjunto a este formato.</pre>
           return;
         }
 
-        const parsedData = await res.json();
-        currentUploadMetadata = {
-          filename: selectedFile.name,
-          category: categoryInput.value.trim() || 'mis-preguntas',
-          total_points: ptsVal
-        };
+        goToEditorWithParsedData(await res.json(), ptsVal);
+      } catch (err) {
+        stopProgress(false);
+        showError("No se pudo conectar con el servidor backend: " + err.message);
+      }
+    }
 
-        showPanel('editor');
-        renderEditor(parsedData);
-        lucide.createIcons();
+    // Alternativa in-app al flujo externo de "copia este prompt y pégalo en
+    // tu IA": renderiza el documento completo y deja que Gemini lo lea
+    // visualmente (ver /api/normalize_with_ai) — tarda más que una
+    // conversión normal porque manda todas las páginas, no solo las que
+    // tienen imágenes detectadas.
+    async function runNormalizeWithAI(ptsVal) {
+      showPanel('progress');
+      startProgress('normalize');
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        const res = await fetch('/api/normalize_with_ai', { method: 'POST', body: formData });
+        stopProgress(res.ok);
+
+        if (!res.ok) {
+          let errMsg = `Error del servidor (${res.status})`;
+          try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
+          showError(errMsg);
+          return;
+        }
+
+        goToEditorWithParsedData(await res.json(), ptsVal);
       } catch (err) {
         stopProgress(false);
         showError("No se pudo conectar con el servidor backend: " + err.message);
@@ -2662,6 +2951,10 @@ Ahora convierte el examen adjunto a este formato.</pre>
       showPanel('progress');
       document.getElementById('progress-subtitle').textContent = 'Construyendo estructura Moodle XML...';
       document.getElementById('progress-bar-fill').style.width = '60%';
+      // Este paso es local (sin llamada a IA) y casi instantáneo — no tiene
+      // sentido mostrar un tiempo transcurrido/estimado que quedó pegado
+      // del paso anterior.
+      document.getElementById('progress-timer-row').style.display = 'none';
 
       try {
         const res = await fetch('/api/generate_xml', {
@@ -2748,13 +3041,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         const stem = originalFilename.split('.').slice(0, -1).join('.') || originalFilename;
         const outName = stem + '.xml';
 
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = outName;
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('XML descargado exitosamente');
+        await saveFileToUser(blob, outName, 'XML descargado exitosamente');
       } catch (err) {
         showToast("Error descargando historial: " + err.message, 'error');
       }
@@ -2816,59 +3103,153 @@ Ahora convierte el examen adjunto a este formato.</pre>
       if (isOcr) lucide.createIcons();
     }
 
-    // Progress Simulation
+    // Progress Simulation + tiempo transcurrido/estimado
+    //
+    // No hay forma de conocer el progreso REAL del backend (es una sola
+    // llamada HTTP bloqueante, sin WebSocket/SSE de por medio) — pero sí
+    // podemos aprender de cuánto ha tardado ESTE mismo navegador en
+    // conversiones anteriores del mismo "tipo" (texto plano, PDF con
+    // imágenes, o normalizar con IA — cada uno tiene un costo muy distinto)
+    // y usar ese promedio como estimado inicial, ajustándolo en vivo si la
+    // corrida actual va más lenta de lo previsto (para que el restante
+    // nunca llegue a 0:00 mientras el servidor sigue trabajando).
+    const TIMING_HISTORY_KEY = 'moodle_conversion_timings_v1';
+    const TIMING_DEFAULTS = { text: 12, images: 40, normalize: 90 };
+    const TIMING_HISTORY_MAX = 5;
+
+    function _loadTimingHistory() {
+      try {
+        return JSON.parse(localStorage.getItem(TIMING_HISTORY_KEY)) || {};
+      } catch (_) {
+        return {};
+      }
+    }
+    function _getEstimatedDuration(kind) {
+      const history = _loadTimingHistory()[kind];
+      if (history && history.length > 0) {
+        return history.reduce((a, b) => a + b, 0) / history.length;
+      }
+      return TIMING_DEFAULTS[kind] || TIMING_DEFAULTS.text;
+    }
+    function _recordDuration(kind, seconds) {
+      try {
+        const all = _loadTimingHistory();
+        const list = all[kind] || [];
+        list.push(seconds);
+        while (list.length > TIMING_HISTORY_MAX) list.shift();
+        all[kind] = list;
+        localStorage.setItem(TIMING_HISTORY_KEY, JSON.stringify(all));
+      } catch (_) {
+        // localStorage no disponible (modo privado, cuota llena, etc.) — no
+        // es crítico, simplemente no se aprende de esta corrida.
+      }
+    }
+    function formatMMSS(totalSeconds) {
+      const s = Math.max(0, Math.round(totalSeconds));
+      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    }
+
     let progressInterval;
-    function startProgress() {
+    let progressStartTime = 0;
+    let progressKind = 'text';
+    let progressEstimatedTotal = TIMING_DEFAULTS.text;
+
+    function startProgress(kind = 'text') {
       const pSubtitle = document.getElementById('progress-subtitle');
       const pFill = document.getElementById('progress-bar-fill');
-      let elapsed = 0;
+      const elapsedEl = document.getElementById('progress-elapsed');
+      const etaEl = document.getElementById('progress-eta');
       const sequence = [
         { time: 0,  text: 'Extrayendo texto del examen...' },
         { time: 3,  text: 'Analizando la estructura y preguntas...' },
         { time: 7,  text: 'Aplicando prefiltro de consistencia IA...' },
         { time: 14, text: 'Construyendo modelo de datos de preguntas...' }
       ];
+
+      progressKind = kind;
+      progressStartTime = Date.now();
+      progressEstimatedTotal = _getEstimatedDuration(kind);
+
+      document.getElementById('progress-timer-row').style.display = 'flex';
       pFill.style.width = '0%';
       pSubtitle.textContent = sequence[0].text;
+      elapsedEl.textContent = '0:00';
+      etaEl.textContent = formatMMSS(progressEstimatedTotal);
+
       progressInterval = setInterval(() => {
-        elapsed += 1;
-        let pct = Math.min(elapsed * 7, 92);
+        const elapsedSec = (Date.now() - progressStartTime) / 1000;
+
+        let pct = Math.min(elapsedSec * 7, 92);
         pFill.style.width = `${pct}%`;
-        const stage = sequence.slice().reverse().find(s => elapsed >= s.time);
+        const stage = sequence.slice().reverse().find(s => elapsedSec >= s.time);
         if (stage && pSubtitle.textContent !== stage.text) {
           pSubtitle.textContent = stage.text;
         }
+
+        // Si ya vamos por el 90% del tiempo estimado y el servidor sigue
+        // trabajando, el estimado era corto — se extiende para que el
+        // restante no se quede pegado en 0:00 mientras se sigue esperando.
+        if (elapsedSec >= progressEstimatedTotal * 0.9) {
+          progressEstimatedTotal = elapsedSec / 0.9;
+        }
+
+        elapsedEl.textContent = formatMMSS(elapsedSec);
+        etaEl.textContent = formatMMSS(Math.max(progressEstimatedTotal - elapsedSec, 1));
       }, 1000);
     }
+
     function stopProgress(success) {
       clearInterval(progressInterval);
-      if (success) document.getElementById('progress-bar-fill').style.width = '100%';
+      if (success) {
+        document.getElementById('progress-bar-fill').style.width = '100%';
+        const finalElapsed = (Date.now() - progressStartTime) / 1000;
+        document.getElementById('progress-elapsed').textContent = formatMMSS(finalElapsed);
+        document.getElementById('progress-eta').textContent = '0:00';
+        // Solo se aprende de corridas EXITOSAS — una que falló a medio
+        // camino (ej. error de red) no refleja cuánto tarda una conversión
+        // real de este tipo, y contaminaría el promedio hacia abajo.
+        _recordDuration(progressKind, finalElapsed);
+      }
     }
 
     // Download XML Event
-    document.getElementById('btn-download').addEventListener('click', async () => {
-      if (!downloadBlob) return;
-
-      if (window.pywebview && window.pywebview.api) {
+    // Guarda un archivo en el equipo del usuario. Dentro de la app empaquetada
+    // (pywebview), el truco de <a download> con un blob: URL no dispara un
+    // diálogo real de "Guardar como" — la ventana nativa simplemente MUESTRA
+    // el contenido en pantalla en vez de descargarlo (el bug reportado con
+    // el historial). Por eso, cuando existe el puente pywebview.api, se usa
+    // save_xml_file() (implementado en Python, sí abre el diálogo nativo);
+    // el truco <a download> queda solo como respaldo para cuando se corre
+    // en un navegador normal (modo desarrollo, sin pywebview).
+    function _readBlobAsBase64(blob) {
+      return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onloadend = async () => {
-          const b64 = reader.result.split(',')[1];
-          const res = await window.pywebview.api.save_xml_file(downloadFilename, b64);
-          if (res && res.saved) {
-            showToast('Archivo guardado en tu equipo');
-          }
-        };
-        reader.readAsDataURL(downloadBlob);
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function saveFileToUser(blob, filename, successMsg) {
+      if (window.pywebview && window.pywebview.api) {
+        const b64 = await _readBlobAsBase64(blob);
+        const res = await window.pywebview.api.save_xml_file(filename, b64);
+        if (res && res.saved) showToast(successMsg);
         return;
       }
 
-      const url = URL.createObjectURL(downloadBlob);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = downloadFilename;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-      showToast('Descarga iniciada exitosamente');
+      showToast(successMsg);
+    }
+
+    document.getElementById('btn-download').addEventListener('click', async () => {
+      if (!downloadBlob) return;
+      await saveFileToUser(downloadBlob, downloadFilename, 'Archivo guardado en tu equipo');
     });
 
     // Toast Function

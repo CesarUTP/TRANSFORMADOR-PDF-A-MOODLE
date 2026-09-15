@@ -53,7 +53,10 @@ def parse_answer_key(full_text: str) -> Dict[int, dict]:
     # Without this, a long answer that happens to wrap onto a second line
     # (e.g. a lengthy multichoice option copied verbatim) would silently
     # truncate to just its first line.
-    _REST = r'([^\n]+(?:\n(?!\d+\s+(?:\w+|múltiple|multiple|ciertofalso|verdaderofalso|emparejamiento|completar)\s+).*)*)'
+    _REST = (
+        r'([^\n]+(?:\n(?!\d+\s+(?:\w+|múltiple|multiple|ciertofalso|verdaderofalso|'
+        r'emparejamiento|completar|ensayo|respuestacorta|numerico|numérico)\s+).*)*)'
+    )
 
     # ── multichoice ──
     mc_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:multichoice|múltiple|multiple)\s+{_REST}', clean_key, re.IGNORECASE)
@@ -90,6 +93,30 @@ def parse_answer_key(full_text: str) -> Dict[int, dict]:
         answer = re.sub(r'\n\s*', ' ', answer_rest).strip()
         answer_key[num] = {"type": "cloze", "answer": answer}
 
+    # ── essay ──
+    # Sin respuesta que validar (se califica manualmente en Moodle) — se
+    # transcribe lo que sea que haya ahí, pero no se le exige ningún
+    # formato particular (a diferencia de los demás tipos).
+    es_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:essay|ensayo)\s+{_REST}', clean_key, re.IGNORECASE)
+    for num_str, answer_rest in es_entries:
+        num = int(num_str)
+        answer = re.sub(r'\n\s*', ' ', answer_rest).strip()
+        answer_key[num] = {"type": "essay", "answer": answer}
+
+    # ── shortanswer ──
+    sa_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:shortanswer|respuestacorta)\s+{_REST}', clean_key, re.IGNORECASE)
+    for num_str, answer_rest in sa_entries:
+        num = int(num_str)
+        answer = re.sub(r'\n\s*', ' ', answer_rest).strip()
+        answer_key[num] = {"type": "shortanswer", "answer": answer}
+
+    # ── numerical ──
+    nu_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:numerical|numerico|numérico)\s+{_REST}', clean_key, re.IGNORECASE)
+    for num_str, answer_rest in nu_entries:
+        num = int(num_str)
+        answer = re.sub(r'\n\s*', ' ', answer_rest).strip()
+        answer_key[num] = {"type": "numerical", "answer": answer}
+
     return answer_key
 
 
@@ -117,6 +144,7 @@ def extract_question_text(text: str, q_num: int) -> Optional[str]:
             break
 
     for pattern in [r'\ntruefalse\n', r'\nmatching\n', r'\ncloze\n',
+                    r'\nessay\n', r'\nshortanswer\n', r'\nnumerical\n',
                     r'\nRESPUESTAS\n', r'\nRESPUESTAS\s']:
         sec_match = re.search(pattern, text[start_pos:])
         if sec_match:
@@ -148,13 +176,41 @@ def parse_multichoice(q_text: str) -> Optional[dict]:
     return {"stem": stem, "options": options}
 
 
-def parse_truefalse(q_text: str) -> Optional[dict]:
-    """Parse a true/false question block."""
+def _parse_plain_stem(q_text: str) -> Optional[dict]:
+    """
+    Parsea un bloque de pregunta "en bruto": solo un enunciado, sin
+    opciones, columnas ni espacios — la misma forma que usan truefalse,
+    essay, shortanswer y numerical en el cuerpo del examen (lo que las
+    distingue entre sí es el TIPO en la clave de respuestas, no la forma
+    del texto en el cuerpo).
+    """
     stem = q_text.strip()
     stem = re.sub(r'^Afirmación:\s*', '', stem).strip()
     stem = re.sub(r'\n+', ' ', stem).strip()
     stem = re.sub(r'\s{2,}', ' ', stem).strip()
+    if not stem:
+        return None
     return {"stem": stem}
+
+
+def parse_truefalse(q_text: str) -> Optional[dict]:
+    """Parse a true/false question block."""
+    return _parse_plain_stem(q_text)
+
+
+def parse_essay(q_text: str) -> Optional[dict]:
+    """Parse an essay (open-ended, manually graded) question block."""
+    return _parse_plain_stem(q_text)
+
+
+def parse_shortanswer(q_text: str) -> Optional[dict]:
+    """Parse a short-answer question block."""
+    return _parse_plain_stem(q_text)
+
+
+def parse_numerical(q_text: str) -> Optional[dict]:
+    """Parse a numerical-answer question block."""
+    return _parse_plain_stem(q_text)
 
 
 def parse_matching(q_text: str) -> Optional[dict]:
@@ -244,6 +300,9 @@ def build_questions(full_text: str, answer_key: Dict[int, dict]) -> List[dict]:
         "truefalse": "no se pudo interpretar el enunciado.",
         "matching": "faltan las columnas 'Columna A:' y 'Columna B:' con sus elementos.",
         "cloze": "no se encontró ningún espacio en blanco con el formato [A: opción1 / opción2].",
+        "essay": "no se encontró el enunciado de la pregunta.",
+        "shortanswer": "no se encontró el enunciado de la pregunta.",
+        "numerical": "no se encontró el enunciado de la pregunta.",
     }
 
     for num in sorted(answer_key.keys()):
@@ -267,6 +326,12 @@ def build_questions(full_text: str, answer_key: Dict[int, dict]) -> List[dict]:
             parsed = parse_matching(q_text)
         elif qtype == "cloze":
             parsed = parse_cloze(q_text)
+        elif qtype == "essay":
+            parsed = parse_essay(q_text)
+        elif qtype == "shortanswer":
+            parsed = parse_shortanswer(q_text)
+        elif qtype == "numerical":
+            parsed = parse_numerical(q_text)
 
         if not parsed:
             hint = _MISSING_STRUCTURE_HINT.get(qtype, "no coincide con el formato esperado.")

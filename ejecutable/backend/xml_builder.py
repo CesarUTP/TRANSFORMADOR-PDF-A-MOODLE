@@ -20,6 +20,7 @@ from config import (
     DEFAULT_MATCHING_STEM,
 )
 from models import QuestionStats
+from answer_matching import is_truncated_answer_match
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,14 @@ def cdata(text: str) -> str:
     return f"<![CDATA[{text}]]>"
 
 
+def strip_accents(s: str) -> str:
+    return (s.replace('á', 'a').replace('é', 'e').replace('í', 'i')
+             .replace('ó', 'o').replace('ú', 'u')
+             .replace('Á', 'A').replace('É', 'E').replace('Í', 'I')
+             .replace('Ó', 'O').replace('Ú', 'U')
+             .replace('ñ', 'n').replace('Ñ', 'N'))
+
+
 def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, dict]) -> str:
     """
     Convert [A: correct_option / option2 / option3] brackets to
@@ -74,12 +83,6 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
     teacher leaves shuffling off, so this is a strict improvement with no
     downside for anyone who doesn't want shuffling.
     """
-    def strip_accents(s: str) -> str:
-        return (s.replace('á', 'a').replace('é', 'e').replace('í', 'i')
-                 .replace('ó', 'o').replace('ú', 'u')
-                 .replace('Á', 'A').replace('É', 'E').replace('Í', 'I')
-                 .replace('Ó', 'O').replace('Ú', 'U')
-                 .replace('ñ', 'n').replace('Ñ', 'N'))
 
     def escape_cloze_syntax(s: str) -> str:
         """Escape Moodle's own Cloze delimiter characters (~ # { } and the
@@ -248,6 +251,19 @@ def build_xml(
                         if ca_clean in opt_clean or opt_clean in ca_clean:
                             match_letter = letter
                             break
+                # Priority 3: mismo salvavidas que validator.py para una
+                # respuesta cortada a mitad de palabra — solo se acepta si
+                # coincide con EXACTAMENTE una opción (evita adivinar entre
+                # varias). Sin esto, una pregunta que pasó validación
+                # gracias a este mismo salvavidas podía llegar aquí y caer
+                # en el default de abajo, marcando la opción equivocada.
+                if match_letter is None:
+                    prefix_matches = [
+                        letter for letter, opt_text in options.items()
+                        if is_truncated_answer_match(ca_clean, opt_text.strip().lower())
+                    ]
+                    if len(prefix_matches) == 1:
+                        match_letter = prefix_matches[0]
                 if match_letter is not None and match_letter not in correct_letters:
                     correct_letters.append(match_letter)
 
@@ -408,6 +424,81 @@ def build_xml(
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('  </question>')
             stats.cloze += 1
+
+        # ── essay ──
+        # Spec: sin respuesta real ni grade que calificar — el docente
+        # califica manualmente en Moodle.
+        elif qtype == "essay":
+            stem = data["stem"]
+
+            xml_parts.append('  <question type="essay">')
+            xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
+            xml_parts.append('    <questiontext format="html">')
+            xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
+            xml_parts.append('    </questiontext>')
+            grade_val = grades.get("essay", 1.0)
+            xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
+            xml_parts.append('    <answer fraction="0">')
+            xml_parts.append('      <text></text>')
+            xml_parts.append('    </answer>')
+            xml_parts.append('  </question>')
+            stats.essay += 1
+
+        # ── shortanswer ──
+        # Spec: <answer> con el texto esperado; <usecase>0</usecase> para no
+        # exigir coincidencia exacta de mayúsculas/minúsculas.
+        elif qtype == "shortanswer":
+            stem = data["stem"]
+
+            xml_parts.append('  <question type="shortanswer">')
+            xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
+            xml_parts.append('    <questiontext format="html">')
+            xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
+            xml_parts.append('    </questiontext>')
+            grade_val = grades.get("shortanswer", 1.0)
+            xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
+            xml_parts.append('    <usecase>0</usecase>')
+            xml_parts.append('    <answer fraction="100">')
+            xml_parts.append(f'      <text>{cdata(esc(correct_answer))}</text>')
+            xml_parts.append(f'      <feedback><text>{cdata(FEEDBACK_CORRECT)}</text></feedback>')
+            xml_parts.append('    </answer>')
+
+            # Moodle NO ignora tildes automáticamente (<usecase> solo afecta
+            # mayúsculas/minúsculas) — un estudiante que escriba la misma
+            # respuesta sin tilde ("fotosintesis") quedaría marcado como
+            # incorrecto frente a "Fotosíntesis". Se agrega la variante sin
+            # tildes como segunda respuesta válida, con el mismo puntaje —
+            # la forma recomendada por la propia documentación de Moodle
+            # para aceptar más de una grafía de la misma respuesta.
+            unaccented = strip_accents(correct_answer)
+            if unaccented != correct_answer:
+                xml_parts.append('    <answer fraction="100">')
+                xml_parts.append(f'      <text>{cdata(esc(unaccented))}</text>')
+                xml_parts.append(f'      <feedback><text>{cdata(FEEDBACK_CORRECT)}</text></feedback>')
+                xml_parts.append('    </answer>')
+
+            xml_parts.append('  </question>')
+            stats.shortanswer += 1
+
+        # ── numerical ──
+        # Spec: <answer> con un valor numérico; <tolerance> (0 = coincidencia exacta).
+        elif qtype == "numerical":
+            stem = data["stem"]
+
+            xml_parts.append('  <question type="numerical">')
+            xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
+            xml_parts.append('    <questiontext format="html">')
+            xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
+            xml_parts.append('    </questiontext>')
+            grade_val = grades.get("numerical", 1.0)
+            xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
+            xml_parts.append('    <answer fraction="100">')
+            xml_parts.append(f'      <text>{esc(correct_answer.strip())}</text>')
+            xml_parts.append('      <tolerance>0</tolerance>')
+            xml_parts.append(f'      <feedback><text>{cdata(FEEDBACK_CORRECT)}</text></feedback>')
+            xml_parts.append('    </answer>')
+            xml_parts.append('  </question>')
+            stats.numerical += 1
 
     xml_parts.append('</quiz>')
     return "\n".join(xml_parts), stats

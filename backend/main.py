@@ -21,9 +21,11 @@ from lxml import etree
 from config import DEFAULT_CATEGORY, DEFAULT_TOTAL_POINTS
 from extractor import (
     extract_text_and_images_from_pdf,
+    extract_text_from_pdf,
     extract_text_from_txt,
     pdf_has_embedded_images,
-    pdf_has_colored_text,
+    get_colored_text_pages,
+    render_all_pages_as_images,
 )
 from formatter import verify_and_format
 from parser import parse_answer_key, build_questions
@@ -104,6 +106,36 @@ async def api_check_special_cases(
     return {"has_special_images": has_images}
 
 
+_COLOR_HINT_MIN_LEN = 20  # evita anclar con un enunciado demasiado corto/genérico
+
+
+def _tag_color_review_hints(valid_questions: List[Dict[str, Any]], colored_pages_text: List[str]) -> None:
+    """
+    Marca in-place cada pregunta multichoice cuya página de origen tenía
+    texto de color, agregando data["color_review_hint"] = True. Se ubica la
+    página de origen por coincidencia del ENUNCIADO (no de las opciones:
+    muchos exámenes reutilizan el mismo set de opciones A/B/C/D en varias
+    preguntas distintas — anclar por opción daba falsos positivos casi
+    universales; el enunciado, en cambio, es prácticamente único por
+    pregunta). Es un heurístico aproximado, no exacto, ya que el prefiltro
+    de IA renumera y reescribe el documento (ver REGLA 7) y no conserva de
+    qué página vino cada pregunta. Sirve solo para dirigir la revisión
+    manual del usuario, no para bloquear nada, así que un falso positivo
+    ocasional no es grave.
+    """
+    normalized_pages = [" ".join(t.split()).lower() for t in colored_pages_text]
+
+    for q in valid_questions:
+        if q.get("type") != "multichoice":
+            continue
+        stem = (q.get("data") or {}).get("stem", "")
+        candidate = " ".join(stem.split()).lower()
+        if len(candidate) < _COLOR_HINT_MIN_LEN:
+            continue
+        if any(candidate in page_text for page_text in normalized_pages):
+            q["data"]["color_review_hint"] = True
+
+
 @app.post("/api/parse")
 async def api_parse(
     file: UploadFile = File(...),
@@ -142,17 +174,22 @@ async def api_parse(
     if not full_text.strip():
         raise HTTPException(
             status_code=422,
-            detail="El archivo no contiene texto legible. Si es un PDF escaneado, se requiere OCR (no soportado).",
+            detail="El archivo no contiene texto legible.",
         )
 
     # ── 2.1 Aviso informativo (no bloqueante): respuestas marcadas por color ──
     # No es un "caso especial" — el sistema ya sabe interpretarlas — pero se
     # le recomienda al usuario revisarlas a mano por si la IA se equivocó.
+    # colored_pages_text también se usa más abajo para marcar INDIVIDUALMENTE
+    # las preguntas cuya página de origen tiene esa marca (ver
+    # _tag_color_review_hints), en vez de un solo aviso genérico para todo
+    # el documento.
     color_marks_notice = None
+    colored_pages_text: list = []
     if suffix == ".pdf":
         try:
-            has_colored_text = await run_in_threadpool(pdf_has_colored_text, raw_bytes)
-            if has_colored_text:
+            colored_pages_text = await run_in_threadpool(get_colored_text_pages, raw_bytes)
+            if colored_pages_text:
                 color_marks_notice = (
                     "El documento original parece usar color para marcar respuestas "
                     "(por ejemplo texto en rojo). El sistema ya sabe interpretar esta marca, "
@@ -175,9 +212,6 @@ async def api_parse(
             }
         )
 
-    # Extraer la clave de respuestas original antes del reformateo para evitar pérdida de preguntas
-    original_answer_key = parse_answer_key(full_text)
-
     # Techo aproximado de cuántas preguntas parece tener el documento
     # ORIGINAL (antes de la IA) — solo para poder avisar más abajo si el
     # prefiltro terminó devolviendo bastantes menos de las esperadas.
@@ -191,7 +225,30 @@ async def api_parse(
     # (p. ej. /api/history) mientras tanto.
     reformatted_text, was_reformatted = await run_in_threadpool(verify_and_format, full_text, page_images)
 
+    return _finalize_parse_response(
+        filename, full_text, reformatted_text, was_reformatted,
+        estimated_question_count, colored_pages_text, color_marks_notice,
+    )
+
+
+def _finalize_parse_response(
+    filename: str,
+    full_text: str,
+    reformatted_text: str,
+    was_reformatted: bool,
+    estimated_question_count: int,
+    colored_pages_text: List[str],
+    color_marks_notice: Any,
+) -> Dict[str, Any]:
+    """
+    Cola común de /api/parse y /api/normalize_with_ai: ambos llegan aquí ya
+    con el texto reformateado por Gemini (por texto normal o por imágenes
+    completas del documento) — de aquí en adelante el procesamiento es
+    idéntico sin importar cómo se obtuvo ese texto, así que se comparte en
+    vez de duplicarlo.
+    """
     # ── 4. Parse answer key del texto reformateado ──────────────────────
+    original_answer_key = parse_answer_key(full_text)
     answer_key = parse_answer_key(reformatted_text)
 
     # Combinar ambas claves para tener la lista completa (origen de verdad de lo que el usuario cargó)
@@ -230,6 +287,13 @@ async def api_parse(
     # sola pregunta problemática — el usuario revisa lo válido en el editor
     # de siempre, y ve un resumen de lo que se omitió y por qué.
     valid_questions, skipped_questions = partition_questions(questions, effective_answer_key)
+
+    # Marca individualmente (no un aviso genérico) las preguntas de opción
+    # múltiple cuya página de origen tiene texto de color — son las
+    # candidatas reales a que la IA se haya saltado una segunda marca en
+    # una pregunta de varias respuestas correctas.
+    if colored_pages_text:
+        _tag_color_review_hints(valid_questions, colored_pages_text)
 
     if not valid_questions:
         raise HTTPException(
@@ -272,6 +336,76 @@ async def api_parse(
         "completeness_notice": completeness_notice,
         "color_marks_notice": color_marks_notice,
     }
+
+
+@app.post("/api/normalize_with_ai")
+async def api_normalize_with_ai(
+    file: UploadFile = File(...),
+):
+    """
+    Alternativa in-app al flujo externo de "copia este prompt y pégalo en
+    tu IA de preferencia" (Guía → Prompt IA): renderiza el documento
+    COMPLETO como imágenes y deja que Gemini lo lea visualmente, sin
+    depender de que el PDF tenga una capa de texto extraíble. Pensado para
+    los 2 casos especiales: PDF con imágenes incrustadas (el usuario elige
+    esto en vez de "Continuar de todos modos") y PDF escaneado sin texto
+    (hoy bloqueado en /api/parse con "se requiere OCR").
+
+    Reutiliza exactamente el mismo verify_and_format() y la misma cola de
+    procesamiento que /api/parse (_finalize_parse_response) — el resultado
+    tiene la misma forma, así que el frontend lo muestra en el mismo editor.
+    """
+    filename = file.filename or "upload"
+    suffix = Path(filename).suffix.lower()
+
+    if suffix != ".pdf":
+        raise HTTPException(
+            status_code=400,
+            detail="Normalizar con IA solo aplica a archivos .pdf (un .txt ya es texto plano).",
+        )
+
+    raw_bytes = await file.read()
+
+    try:
+        full_text = await run_in_threadpool(extract_text_from_pdf, raw_bytes)
+        page_images = await run_in_threadpool(render_all_pages_as_images, raw_bytes)
+        colored_pages_text = await run_in_threadpool(get_colored_text_pages, raw_bytes)
+    except Exception as exc:
+        logger.error("Error extrayendo contenido de '%s' para normalizar: %s", filename, exc)
+        raise HTTPException(
+            status_code=422,
+            detail=f"Error al leer el archivo: {exc}",
+        )
+
+    if not full_text.strip() and not page_images:
+        raise HTTPException(
+            status_code=422,
+            detail="No se pudo extraer ningún contenido (ni texto ni páginas) del archivo.",
+        )
+
+    color_marks_notice = None
+    if colored_pages_text:
+        color_marks_notice = (
+            "El documento original parece usar color para marcar respuestas "
+            "(por ejemplo texto en rojo). El sistema ya sabe interpretar esta marca, "
+            "pero no es 100% infalible — se recomienda revisar manualmente las "
+            "respuestas marcadas como correctas antes de aprobar, por si hubo algún "
+            "error de normalización."
+        )
+
+    # Sin pre_validate_raw_text aquí a propósito: esa validación exige
+    # indicios de "pregunta"/"respuesta" en el TEXTO extraído, pero en el
+    # caso escaneado (la razón de ser de este endpoint) ese texto está
+    # vacío por definición — toda la lectura depende de las imágenes.
+    estimated_question_count = estimate_question_count(full_text)
+
+    reformatted_text, was_reformatted = await run_in_threadpool(verify_and_format, full_text, page_images)
+
+    return _finalize_parse_response(
+        filename, full_text, reformatted_text, was_reformatted,
+        estimated_question_count, colored_pages_text, color_marks_notice,
+    )
+
 
 # ── Modelos Pydantic para Generación de XML ────────────────────────────────
 class GenerateXmlRequest(BaseModel):
