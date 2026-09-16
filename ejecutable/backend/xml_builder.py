@@ -219,6 +219,15 @@ def build_xml(
         correct_answer: str = key_info.get("answer", "")
         name = f"P{num:0{name_width}d}"
 
+        # Puntaje: el docente puede fijar un valor propio por pregunta desde
+        # el editor (ya no todas las preguntas de un tipo valen lo mismo a
+        # la fuerza — necesario sobre todo para Ensayo/Respuesta Corta,
+        # donde el peso "genérico por tipo" no tiene forma de acertar).
+        # Si no llega (payload viejo o pregunta sin tocar), cae al reparto
+        # por peso de tipo de siempre — nunca falta un <defaultgrade>.
+        q_points = q.get("points")
+        grade_val = q_points if isinstance(q_points, (int, float)) and q_points > 0 else grades.get(qtype, 1.0)
+
         # ── multichoice ──
         # Spec: <answer fraction="100"/"0"> for each choice, <single>, <shuffleanswers>
         if qtype == "multichoice":
@@ -281,7 +290,6 @@ def build_xml(
             xml_parts.append('    <questiontext format="html">')
             xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
             xml_parts.append('    </questiontext>')
-            grade_val = grades.get("multichoice", 1.0)
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append(f'    <penalty>{MULTICHOICE_PENALTY}</penalty>')
             xml_parts.append('    <shuffleanswers>1</shuffleanswers>')
@@ -319,7 +327,6 @@ def build_xml(
             xml_parts.append('    <questiontext format="html">')
             xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
             xml_parts.append('    </questiontext>')
-            grade_val = grades.get("truefalse", 1.0)
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
 
             if is_true:
@@ -396,7 +403,6 @@ def build_xml(
             xml_parts.append('    <questiontext format="html">')
             xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
             xml_parts.append('    </questiontext>')
-            grade_val = grades.get("matching", 1.0)
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('    <shuffleanswers>true</shuffleanswers>')
 
@@ -420,7 +426,6 @@ def build_xml(
             xml_parts.append('    <questiontext format="html">')
             xml_parts.append(f'      <text>{cdata(f"<p>{esc(cloze_text)}</p>")}</text>')
             xml_parts.append('    </questiontext>')
-            grade_val = grades.get("cloze", 1.0)
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('  </question>')
             stats.cloze += 1
@@ -436,7 +441,6 @@ def build_xml(
             xml_parts.append('    <questiontext format="html">')
             xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
             xml_parts.append('    </questiontext>')
-            grade_val = grades.get("essay", 1.0)
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('    <answer fraction="0">')
             xml_parts.append('      <text></text>')
@@ -455,7 +459,6 @@ def build_xml(
             xml_parts.append('    <questiontext format="html">')
             xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
             xml_parts.append('    </questiontext>')
-            grade_val = grades.get("shortanswer", 1.0)
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('    <usecase>0</usecase>')
             xml_parts.append('    <answer fraction="100">')
@@ -490,7 +493,6 @@ def build_xml(
             xml_parts.append('    <questiontext format="html">')
             xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
             xml_parts.append('    </questiontext>')
-            grade_val = grades.get("numerical", 1.0)
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('    <answer fraction="100">')
             xml_parts.append(f'      <text>{esc(correct_answer.strip())}</text>')

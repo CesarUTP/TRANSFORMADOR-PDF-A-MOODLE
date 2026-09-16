@@ -467,12 +467,18 @@ async def api_generate_xml(req: GenerateXmlRequest):
         "truefalse":   stats.truefalse,
         "matching":    stats.matching,
         "cloze":       stats.cloze,
+        "essay":       stats.essay,
+        "shortanswer": stats.shortanswer,
+        "numerical":   stats.numerical,
         "total_points": req.total_points,
         "grades": {
             "multichoice": grades.get("multichoice", 1.0),
             "truefalse":   grades.get("truefalse", 1.0),
             "matching":    grades.get("matching", 1.0),
             "cloze":       grades.get("cloze", 1.0),
+            "essay":       grades.get("essay", 1.0),
+            "shortanswer": grades.get("shortanswer", 1.0),
+            "numerical":   grades.get("numerical", 1.0),
         },
     })
 

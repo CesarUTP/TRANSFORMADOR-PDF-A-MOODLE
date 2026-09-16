@@ -235,9 +235,13 @@
     /* ── CONTAINER & CARDS ───────────────────────────────────────────────── */
     .app-header {
       border-bottom: 1px solid var(--color-border);
-      background: var(--color-surface-card);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      /* Opaco a propósito (no el mismo --color-surface-card translúcido de
+         las glass-card): al ser sticky, cualquier contenido con borde
+         propio (el aviso de revisión, la barra de acciones fija de
+         "Revisar Preguntas") queda scrolleando justo debajo y se veía
+         "fantasma" a través del cristal semitransparente. Un header sólido
+         lo tapa por completo. */
+      background: var(--color-bg-alt);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -696,14 +700,14 @@
 
     /* Paneles colapsables (Filtrar / Añadir nueva pregunta): sin esto
        aparecían/desaparecían de golpe con display:none — se sentía roto. */
-    #add-question-types, #filter-chips-bar {
+    #add-question-types, #filter-chips-bar, #points-tool-panel {
       opacity: 0;
       transform: translateY(-6px);
       transition-property: opacity, transform;
       transition-duration: 0.2s;
       transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     }
-    #add-question-types.panel-open, #filter-chips-bar.panel-open {
+    #add-question-types.panel-open, #filter-chips-bar.panel-open, #points-tool-panel.panel-open {
       opacity: 1;
       transform: translateY(0);
     }
@@ -1829,18 +1833,28 @@ Ahora convierte el examen adjunto a este formato.</pre>
       setTimeout(() => { el.style.display = 'none'; }, 200);
     }
 
+    // Los 3 paneles colapsables de la revisión (Filtrar / Añadir nueva
+    // pregunta / Distribuir puntos) son mutuamente excluyentes: abrir uno
+    // cierra los otros. Antes esto estaba hardcodeado de a pares y se iba
+    // a olvidar de actualizar al agregar un tercer panel — un solo helper
+    // que cierra "todos menos el que se está abriendo" escala sin tocar
+    // los demás toggles cuando aparezca un cuarto.
+    const COLLAPSIBLE_PANEL_IDS = ['add-question-types', 'filter-chips-bar', 'points-tool-panel'];
+    function _closeOtherCollapsiblePanels(exceptId) {
+      COLLAPSIBLE_PANEL_IDS.forEach(id => {
+        if (id === exceptId) return;
+        const el = document.getElementById(id);
+        if (el && el.classList.contains('panel-open')) _closeCollapsiblePanel(el);
+      });
+    }
+
     function toggleAddQuestionMenu() {
       const el = document.getElementById('add-question-types');
       if (!el) return;
       if (el.classList.contains('panel-open')) {
         _closeCollapsiblePanel(el);
       } else {
-        // Excluyente con "Filtrar": si ambos quedaran abiertos a la vez se
-        // ven 14 chips casi idénticos apilados uno tras otro (7 de filtro +
-        // 7 de añadir), leyéndose como una sola lista confusa en vez de dos
-        // acciones distintas.
-        const filterBar = document.getElementById('filter-chips-bar');
-        if (filterBar && filterBar.classList.contains('panel-open')) _closeCollapsiblePanel(filterBar);
+        _closeOtherCollapsiblePanels('add-question-types');
         _openCollapsiblePanel(el, 'flex');
       }
     }
@@ -1882,6 +1896,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
         newQ.data = { stem: 'Escribe aquí el enunciado de la pregunta numérica.' };
         defaultAns = '0';
       }
+
+      // Puntaje default para la pregunta nueva: el promedio de lo que ya
+      // vale el resto (o un reparto equitativo si todavía no hay ninguna)
+      // — nunca se recalculan las demás por el simple hecho de agregar una,
+      // para no pisar ediciones manuales previas.
+      const existingPoints = currentParseResult.questions.map(q => Number(q.points) || 0).filter(p => p > 0);
+      newQ.points = existingPoints.length
+        ? Math.round((existingPoints.reduce((a, b) => a + b, 0) / existingPoints.length) * 100) / 100
+        : Math.round((currentUploadMetadata.total_points / (currentParseResult.questions.length + 1)) * 100) / 100;
 
       currentParseResult.questions.push(newQ);
       currentParseResult.answer_key[nextNum] = { type: type, answer: defaultAns };
@@ -2375,7 +2398,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         const skippedItems = skipped.map((sq, sIdx) => `
           <div style="padding:10px 0;border-top:1px solid var(--color-border-subtle);">
             <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:var(--color-text);line-height:1.5;">
-              ${sq.preview ? esc_html(sq.preview) : `<em>(sin texto identificable — tipo ${esc_html(sq.type)})</em>`}
+              ${sq.preview ? esc_html(sq.preview) : `<em>(sin texto identificable — tipo ${esc_html(QUESTION_TYPE_LABEL_MAP[sq.type] || sq.type)})</em>`}
             </p>
             <p style="margin:0;font-size:12px;color:var(--color-text-muted);line-height:1.5;">
               ${esc_html(humanizeSkipReason(sq.reasons[0]))}
@@ -2447,7 +2470,40 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <button type="button" class="filter-chip" data-filter="numerical" onclick="addNewQuestion('numerical')">+ Numérica</button>
         </div>
       </div>`;
-      container.innerHTML = actionsHtml + reviewReminderHtml + skippedHtml + colorNoticeHtml + filterHtml + addQuestionHtml;
+
+      // Panel de distribución rápida de puntos: cada pregunta ya trae un
+      // puntaje editable a mano (ver el input junto al badge de tipo), pero
+      // esto da una forma rápida de rellenar todos de una vez — repartido
+      // parejo, o por peso configurable entre los tipos presentes en el
+      // examen (para, por ejemplo, dar más peso a Ensayo que a
+      // Verdadero/Falso). El contador "X / Y pts" es en vivo y no bloquea
+      // nada: es solo una ayuda para notar un desbalance.
+      const typesPresent = [...new Set(data.questions.map(q => q.type))];
+      const pointsToolHtml = `<div style="background:var(--color-surface-hover);border:1px solid var(--color-border-subtle);border-radius:var(--radius-md);padding:10px 16px;margin-bottom:18px;">
+        <button type="button" class="btn btn-ghost" style="width:100%;justify-content:flex-start;" onclick="togglePointsToolMenu()">
+          <i data-lucide="calculator" style="width:16px;height:16px;"></i>
+          Distribuir puntos — <strong id="points-assigned-label" style="margin-left:2px;">0 / 0 pts</strong>
+        </button>
+        <div id="points-tool-panel" style="display:none;flex-direction:column;gap:12px;margin-top:12px;">
+          <div style="display:flex;gap:8px;">
+            <button type="button" id="points-mode-equal" class="btn btn-ghost" onclick="setPointsToolMode('equal')" style="flex:1;">Equitativo</button>
+            <button type="button" id="points-mode-byType" class="btn btn-primary" onclick="setPointsToolMode('byType')" style="flex:1;">Por tipo</button>
+          </div>
+          <div id="points-weights-editor" style="display:flex;flex-direction:column;gap:8px;">
+            ${typesPresent.map(t => {
+              const def = QUESTION_TYPE_DEFS.find(d => d.key === t) || { label: t, colorVar: 'var(--color-text)' };
+              return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <span style="font-size:13px;color:${def.colorVar};font-weight:700;">${def.label}</span>
+                <input type="number" class="form-input points-weight-input" data-type="${t}" min="0" step="0.5" value="${DEFAULT_TYPE_WEIGHTS[t] || 1}" style="width:70px;padding:6px 8px;font-size:12.5px;text-align:right;" aria-label="Peso relativo de ${def.label}" />
+              </div>`;
+            }).join('')}
+          </div>
+          <button type="button" class="btn btn-primary" style="padding:10px;" onclick="applyPointsDistribution()">Aplicar</button>
+          <p style="margin:0;font-size:11.5px;color:var(--color-text-subtle);">Esto reemplaza los puntos que ya hayas puesto a mano en cada pregunta.</p>
+        </div>
+      </div>`;
+
+      container.innerHTML = actionsHtml + reviewReminderHtml + skippedHtml + colorNoticeHtml + filterHtml + addQuestionHtml + pointsToolHtml;
 
       data.questions.forEach((q, i) => {
         const keyInfo = data.answer_key[q.num] || { answer: '' };
@@ -2461,7 +2517,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
               ${q.data.color_review_hint ? `<span class="type-badge" style="background:var(--color-cl-bg);color:var(--color-cl);border:1px solid var(--color-cl-border);" title="Esta pregunta viene de una página con respuestas marcadas por color — revisa que la IA haya identificado todas las opciones correctas, especialmente si hay más de una marcada.">
                 <i data-lucide="palette" style="width:12px;height:12px;vertical-align:-2px;"></i> revisar marca de color
               </span>` : ''}
-              <span class="type-badge ${q.type}">${q.type}</span>
+              <span class="type-badge ${q.type}">${QUESTION_TYPE_LABEL_MAP[q.type] || q.type}</span>
+              <div style="display:flex;align-items:center;gap:4px;" title="Puntos que vale esta pregunta">
+                <input type="number" class="q-points form-input" step="0.01" min="0" value="${q.points != null ? q.points : ''}" style="width:64px;padding:6px 8px;font-size:12.5px;text-align:right;" aria-label="Puntos de la pregunta ${q.num}" />
+                <span style="font-size:11.5px;color:var(--color-text-subtle);">pts</span>
+              </div>
               <button type="button" class="btn btn-ghost" onclick="deleteQuestionCard(this)" style="padding:4px 8px;color:var(--color-error);font-size:12px;" title="Eliminar esta pregunta">
                 <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
               </button>
@@ -2574,6 +2634,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       container.querySelectorAll('.editor-card textarea').forEach(autoGrowTextarea);
       container.querySelectorAll('.cloze-builder').forEach(initClozeBuilder);
       refreshFilterChips();
+      updatePointsAssignedLabel();
       lucide.createIcons();
     }
 
@@ -2603,7 +2664,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         activeFilter = 'all';
       }
 
-      const typeLabels = { multichoice: 'Múltiple', truefalse: 'Cierto/Falso', matching: 'Emparejar', cloze: 'Completar', essay: 'Ensayo', shortanswer: 'Resp. Corta', numerical: 'Numérica' };
+      const typeLabels = QUESTION_TYPE_LABEL_MAP;
       let html = `<button type="button" class="filter-chip${activeFilter === 'all' ? ' active' : ''}" data-filter="all" onclick="selectFilter('all')">Todas <span class="count">(${cards.length})</span></button>`;
       Object.entries(typeCounts).forEach(([type, count]) => {
         if (count === 0) return;
@@ -2623,10 +2684,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       if (el.classList.contains('panel-open')) {
         _closeCollapsiblePanel(el);
       } else {
-        // Excluyente con "Añadir nueva pregunta" — ver comentario homólogo
-        // en toggleAddQuestionMenu().
-        const addBar = document.getElementById('add-question-types');
-        if (addBar && addBar.classList.contains('panel-open')) _closeCollapsiblePanel(addBar);
+        _closeOtherCollapsiblePanels('filter-chips-bar');
         _openCollapsiblePanel(el, 'flex');
       }
     }
@@ -2708,6 +2766,72 @@ Ahora convierte el examen adjunto a este formato.</pre>
       requestAnimationFrame(() => { updateReviewProgress(); _reviewProgressTicking = false; });
     }, { passive: true });
 
+    // ── Panel "Distribuir puntos" ──────────────────────────────────────────
+    function togglePointsToolMenu() {
+      const el = document.getElementById('points-tool-panel');
+      if (!el) return;
+      if (el.classList.contains('panel-open')) {
+        _closeCollapsiblePanel(el);
+      } else {
+        _closeOtherCollapsiblePanels('points-tool-panel');
+        _openCollapsiblePanel(el, 'flex');
+      }
+    }
+
+    // Cambia entre "Equitativo" (sin configuración) y "Por tipo" (muestra
+    // el peso editable de cada tipo presente) — no aplica nada todavía,
+    // solo decide qué hace el botón "Aplicar".
+    let _pointsToolMode = 'byType';
+    function setPointsToolMode(mode) {
+      _pointsToolMode = mode;
+      const equalBtn = document.getElementById('points-mode-equal');
+      const byTypeBtn = document.getElementById('points-mode-byType');
+      const weightsEditor = document.getElementById('points-weights-editor');
+      if (equalBtn) equalBtn.className = mode === 'equal' ? 'btn btn-primary' : 'btn btn-ghost';
+      if (byTypeBtn) byTypeBtn.className = mode === 'byType' ? 'btn btn-primary' : 'btn btn-ghost';
+      if (equalBtn) equalBtn.style.flex = '1';
+      if (byTypeBtn) byTypeBtn.style.flex = '1';
+      if (weightsEditor) weightsEditor.style.display = (mode === 'byType') ? 'flex' : 'none';
+    }
+
+    // Botón "Aplicar": recalcula el puntaje de TODAS las preguntas visibles
+    // según el modo elegido y vuelve a renderizar — se avisa por toast que
+    // esto reemplaza cualquier valor puesto a mano, ya que no hay forma de
+    // aplicarlo solo a algunas sin resultar confuso.
+    function applyPointsDistribution() {
+      syncParseResultFromDOM();
+      const totalPoints = currentUploadMetadata.total_points;
+      if (_pointsToolMode === 'equal') {
+        autoDistributePoints(currentParseResult.questions, totalPoints, 'equal');
+      } else {
+        const weights = {};
+        document.querySelectorAll('.points-weight-input').forEach(inp => {
+          weights[inp.dataset.type] = parseFloat(inp.value) || 1;
+        });
+        autoDistributePoints(currentParseResult.questions, totalPoints, 'byType', weights);
+      }
+      renderEditor(currentParseResult);
+      lucide.createIcons();
+      showToast('Puntos redistribuidos — revisa cada pregunta antes de generar el XML', 'info');
+    }
+
+    // Contador en vivo "X / Y pts": no bloquea nada, solo ayuda a notar un
+    // desbalance mientras el docente edita puntos a mano. Delegado a nivel
+    // de contenedor para no tener que atar un listener a cada input nuevo
+    // cada vez que se renderiza el editor.
+    function updatePointsAssignedLabel() {
+      const label = document.getElementById('points-assigned-label');
+      if (!label) return;
+      let sum = 0;
+      document.querySelectorAll('.q-points').forEach(inp => { sum += parseFloat(inp.value) || 0; });
+      const total = currentUploadMetadata ? currentUploadMetadata.total_points : 0;
+      const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '');
+      label.textContent = `${fmt(sum)} / ${fmt(total)} pts`;
+    }
+    document.getElementById('editor-questions-container').addEventListener('input', e => {
+      if (e.target.classList.contains('q-points')) updatePointsAssignedLabel();
+    });
+
     function collectEditorData() {
       const qs = [];
       const ak = {};
@@ -2722,6 +2846,12 @@ Ahora convierte el examen adjunto a este formato.</pre>
                           
         const newQ = JSON.parse(JSON.stringify(originalQ));
         newQ.num = qNum; // Update question number if additions/deletions happened
+
+        // Puntaje propio de esta pregunta (editable a mano o por el panel
+        // de "Distribuir puntos") — se manda tal cual al backend, que ya
+        // no decide el puntaje, solo lo usa.
+        const pointsEl = card.querySelector('.q-points');
+        newQ.points = pointsEl ? (parseFloat(pointsEl.value) || 0) : 0;
 
         // Detect type from card badge
         const badgeEl = card.querySelector('.type-badge');
@@ -2809,6 +2939,46 @@ Ahora convierte el examen adjunto a este formato.</pre>
       return { questions: qs, answer_key: ak };
     }
 
+    // Pesos por defecto para "Distribuir puntos → Por tipo". Reflejan los
+    // mismos valores que TYPE_WEIGHTS en backend/config.py (el backend los
+    // usa como red de seguridad si una pregunta llega sin `points`; aquí
+    // son el punto de partida editable que ve el docente en el panel de
+    // distribución — si se cambian en un lado, conviene revisar el otro).
+    const DEFAULT_TYPE_WEIGHTS = {
+      truefalse: 1, shortanswer: 1, numerical: 1,
+      multichoice: 2, matching: 3, cloze: 3, essay: 3,
+    };
+
+    // Recalcula y SOBREESCRIBE el campo `points` de cada pregunta en
+    // `questions` (mutación en el sitio). No hay cálculo oculto: esto es
+    // exactamente lo que corre la primera vez que se parsea un examen
+    // (modo 'byType', para no cambiar el comportamiento de siempre) y lo
+    // que corre de nuevo cuando el docente pulsa "Aplicar" en el panel de
+    // distribución rápida.
+    //   mode 'equal':  total_points repartido en partes iguales entre
+    //                  TODAS las preguntas, sin importar el tipo.
+    //   mode 'byType': misma fórmula que compute_grades() en el backend
+    //                  (unit = total / Σ peso_i·cantidad_i), pero resuelta
+    //                  aquí para poder mostrarla y dejarla editar en vivo.
+    function autoDistributePoints(questions, totalPoints, mode, weights) {
+      if (!questions || !questions.length) return;
+      if (mode === 'equal') {
+        const share = totalPoints / questions.length;
+        questions.forEach(q => { q.points = Math.round(share * 100) / 100; });
+        return;
+      }
+      const w = weights || DEFAULT_TYPE_WEIGHTS;
+      const counts = {};
+      questions.forEach(q => { counts[q.type] = (counts[q.type] || 0) + 1; });
+      let totalWeight = 0;
+      Object.keys(counts).forEach(t => { totalWeight += (w[t] || 1) * counts[t]; });
+      if (totalWeight <= 0) totalWeight = questions.length;
+      const unit = totalPoints / totalWeight;
+      questions.forEach(q => {
+        q.points = Math.round((w[q.type] || 1) * unit * 100) / 100;
+      });
+    }
+
     // Stats Updater
     const QUESTION_TYPE_DEFS = [
       { key: 'multichoice', label: 'Múltiple',      colorVar: 'var(--color-mc)', bgVar: 'var(--color-mc-bg)', borderVar: 'var(--color-mc-border)' },
@@ -2819,19 +2989,28 @@ Ahora convierte el examen adjunto a este formato.</pre>
       { key: 'shortanswer', label: 'Resp. Corta',   colorVar: 'var(--color-sa)', bgVar: 'var(--color-sa-bg)', borderVar: 'var(--color-sa-border)' },
       { key: 'numerical',   label: 'Numérica',      colorVar: 'var(--color-nu)', bgVar: 'var(--color-nu-bg)', borderVar: 'var(--color-nu-border)' },
     ];
+    // Único mapa tipo→etiqueta en español, reusado por el badge de cada
+    // tarjeta y por los chips de filtro — antes el badge de la tarjeta
+    // mostraba la clave interna en inglés (ej. "MULTICHOICE") en vez de
+    // "Múltiple", inconsistente con el resto de la interfaz.
+    const QUESTION_TYPE_LABEL_MAP = Object.fromEntries(QUESTION_TYPE_DEFS.map(t => [t.key, t.label]));
 
-    function updateSuccessStats(stats) {
-      const g = stats.grades || {};
+    // Recibe las preguntas TAL COMO se acaban de enviar a generar el XML
+    // (con su `type` y `points` reales) — ya no depende del header
+    // X-Question-Stats del backend. Antes asumía un único "grade" uniforme
+    // por tipo (`count × gradePerQ`), que dejó de ser cierto en cuanto el
+    // docente puede poner un puntaje distinto a cada pregunta individual;
+    // ahora suma los puntos reales de cada una.
+    function updateSuccessStats(questions) {
       const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '') + ' pts';
-      const counts = {
-        multichoice: stats.multichoice || 0,
-        truefalse:   stats.truefalse   || 0,
-        matching:    stats.matching    || 0,
-        cloze:       stats.cloze       || 0,
-        essay:       stats.essay       || 0,
-        shortanswer: stats.shortanswer || 0,
-        numerical:   stats.numerical   || 0,
-      };
+      const counts = {};
+      const sums = {};
+      QUESTION_TYPE_DEFS.forEach(t => { counts[t.key] = 0; sums[t.key] = 0; });
+      (questions || []).forEach(q => {
+        if (!(q.type in counts)) return;
+        counts[q.type]++;
+        sums[q.type] += Number(q.points) || 0;
+      });
       const total = Object.values(counts).reduce((a, b) => a + b, 0);
 
       // Balance final: si el modo tolerante omitió alguna pregunta (ver
@@ -2872,18 +3051,18 @@ Ahora convierte el examen adjunto a este formato.</pre>
       // preguntas de completar, ese tipo simplemente no aparece en ningún
       // lado, en vez de mostrar una tarjeta en 0.
       const items = QUESTION_TYPE_DEFS
-        .map(t => ({ ...t, count: counts[t.key], gradePerQ: g[t.key] || 0 }))
-        .filter(t => t.count > 0)
-        .map(t => ({ ...t, subtotal: t.count * t.gradePerQ }));
+        .map(t => ({ ...t, count: counts[t.key], subtotal: sums[t.key] || 0 }))
+        .filter(t => t.count > 0);
 
-      // El subtotal de puntos por tipo ya no se repite aquí — se ve en la
-      // gráfica de distribución de abajo; estas tarjetas se quedan con el
-      // dato que le es propio (cuántas preguntas y cuánto vale cada una).
+      // El subtotal ya es la SUMA real de los puntos de cada pregunta de
+      // ese tipo (pueden valer distinto entre sí) — se muestra directo en
+      // la tarjeta en vez de un "X pts/preg" que ya no describe nada si no
+      // son todas iguales.
       document.getElementById('stats-grid').innerHTML = items.map(item => `
         <div class="stat-card" style="border-top:3px solid ${item.colorVar};">
           <div class="stat-num" style="color:${item.colorVar};">${item.count}</div>
           <div class="stat-label">${item.label}</div>
-          ${item.gradePerQ ? `<div class="stat-grade" style="color:${item.colorVar};">${fmt(item.gradePerQ)}/preg</div>` : ''}
+          ${item.subtotal ? `<div class="stat-grade" style="color:${item.colorVar};">${fmt(item.subtotal)}</div>` : ''}
         </div>
       `).join('');
 
@@ -3027,6 +3206,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
         category: categoryInput.value.trim() || 'mis-preguntas',
         total_points: ptsVal
       };
+      // Puntaje inicial por pregunta: mismo reparto por peso de tipo que
+      // usaba el backend hasta ahora, pero ya visible y editable en el
+      // editor — el docente que no toque nada obtiene el mismo resultado
+      // de siempre, sin pasos extra.
+      autoDistributePoints(parsedData.questions, ptsVal, 'byType');
       showPanel('editor');
       renderEditor(parsedData);
       lucide.createIcons();
@@ -3165,8 +3349,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
           return;
         }
 
-        const statsHeader = res.headers.get('X-Question-Stats');
-        if (statsHeader) updateSuccessStats(JSON.parse(statsHeader));
+        // Se usa directamente lo que se acaba de enviar (con el `points`
+        // real de cada pregunta) en vez del header X-Question-Stats del
+        // backend — una sola fuente de verdad, y el resumen final siempre
+        // coincide exactamente con el XML que se generó.
+        updateSuccessStats(questions);
 
         const disposition = res.headers.get('Content-Disposition');
         let filename = 'examen_moodle.xml';
