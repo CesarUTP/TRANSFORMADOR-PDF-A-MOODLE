@@ -589,6 +589,36 @@
       box-shadow: 0 0 0 3px var(--color-accent-glow);
     }
 
+    /* Barra fija de "Aprobar y Generar / Cancelar". Repite EXACTAMENTE la
+       misma pintura que <body> — color de fondo más los dos brillos
+       radiales con background-attachment: fixed, que se posicionan
+       respecto al viewport y por eso calzan pixel a pixel con los del
+       fondo. Antes llevaba un var(--color-bg) plano: como el fondo de la
+       página lleva encima esos brillos, el bloque plano se recortaba
+       contra ellos y se veía un recuadro pegado por encima de la página,
+       sobre todo arriba a la izquierda (donde el brillo es más fuerte).
+       Sigue siendo opaco a propósito: las tarjetas tienen que desaparecer
+       por debajo al hacer scroll, no transparentarse. */
+    .editor-sticky-actions {
+      position: sticky;
+      z-index: 90;
+      padding: 14px 0;
+      margin: 0 0 18px;
+      background-color: var(--color-bg);
+      background-image:
+        radial-gradient(at 0% 0%, var(--color-primary-glow) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, var(--color-accent-glow) 0px, transparent 50%);
+      background-attachment: fixed;
+      /* La línea divisoria solo tiene sentido cuando de verdad hay
+         contenido pasando por debajo; quieta arriba del todo era otro
+         borde más del "recuadro". */
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s ease;
+    }
+    .editor-sticky-actions.is-stuck {
+      border-bottom-color: var(--color-border-subtle);
+    }
+
     /* ── EDITOR CARDS (Interactive Question Editor) ──────────────────────── */
     .editor-card {
       background: var(--color-surface);
@@ -2437,7 +2467,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       // exámenes largos donde de otro modo no hay forma de saber qué tan
       // avanzada va la revisión sin adivinar por el largo de la barra de
       // scroll del navegador. Sin sentido con 1 sola pregunta.
-      const actionsHtml = `<div style="position:sticky;top:${headerH}px;z-index:90;background:var(--color-bg);padding:14px 0;margin:0 0 18px;border-bottom:1px solid var(--color-border-subtle);">
+      const actionsHtml = `<div class="editor-sticky-actions" style="top:${headerH}px;">
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
           <button type="button" id="btn-generate-xml" class="btn btn-success" style="flex:2;" onclick="generateXml()">
             <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
@@ -2854,13 +2884,20 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // filtrar, y en cada scroll (limitado a una vez por frame con
     // requestAnimationFrame para no recalcular en cada pixel).
     function updateReviewProgress() {
+      const stickyBar = document.querySelector('.editor-sticky-actions');
+      // ¿La barra ya está pegada bajo el header (hay contenido pasándole
+      // por debajo) o todavía va con el flujo de la página? Solo en el
+      // primer caso se dibuja la línea que la separa de las tarjetas.
+      if (stickyBar) {
+        const headerBottom = document.querySelector('.app-header')?.getBoundingClientRect().bottom || 0;
+        stickyBar.classList.toggle('is-stuck', stickyBar.getBoundingClientRect().top <= headerBottom + 1);
+      }
       const fill = document.getElementById('review-progress-fill');
       const label = document.getElementById('review-progress-label');
       if (!fill || !label) return;
       const cards = Array.from(document.querySelectorAll('#editor-questions-container .editor-card'))
         .filter(c => c.style.display !== 'none');
       if (!cards.length) return;
-      const stickyBar = document.querySelector('#editor-questions-container > div');
       const threshold = (stickyBar ? stickyBar.getBoundingClientRect().bottom : 0) + 4;
       let current = 1;
       for (let i = 0; i < cards.length; i++) {
