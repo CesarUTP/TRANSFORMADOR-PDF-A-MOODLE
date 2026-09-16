@@ -1840,12 +1840,54 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // que cierra "todos menos el que se está abriendo" escala sin tocar
     // los demás toggles cuando aparezca un cuarto.
     const COLLAPSIBLE_PANEL_IDS = ['add-question-types', 'filter-chips-bar', 'points-tool-panel'];
+
+    // "Desplegar todo" suspende la exclusión mutua: mientras está activo,
+    // abrir uno de los 3 paneles ya NO cierra los otros dos. Se apaga solo
+    // al pulsar "Ocultar todo" (o al volver a activarlo si ya estaban
+    // todos abiertos) — interactuar con un panel individual no lo apaga.
+    let _panelsExpandedMode = false;
     function _closeOtherCollapsiblePanels(exceptId) {
+      if (_panelsExpandedMode) return;
       COLLAPSIBLE_PANEL_IDS.forEach(id => {
         if (id === exceptId) return;
         const el = document.getElementById(id);
         if (el && el.classList.contains('panel-open')) _closeCollapsiblePanel(el);
       });
+    }
+
+    function _allPanelsOpen() {
+      return COLLAPSIBLE_PANEL_IDS.every(id => {
+        const el = document.getElementById(id);
+        return el && el.classList.contains('panel-open');
+      });
+    }
+
+    function _updateToggleAllPanelsLabel() {
+      const label = document.getElementById('toggle-all-panels-label');
+      if (label) label.textContent = _allPanelsOpen() ? 'Ocultar todo' : 'Desplegar todo';
+    }
+
+    // Botón único que expande o colapsa los 3 paneles a la vez. Al
+    // expandir, activa el modo que suspende la exclusión mutua (para que
+    // luego se puedan seguir abriendo/cerrando individualmente sin que se
+    // cierren entre sí); al ocultar todo, lo desactiva de nuevo.
+    function toggleAllPanels() {
+      const allOpen = _allPanelsOpen();
+      if (allOpen) {
+        _panelsExpandedMode = false;
+        COLLAPSIBLE_PANEL_IDS.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) _closeCollapsiblePanel(el);
+        });
+      } else {
+        _panelsExpandedMode = true;
+        COLLAPSIBLE_PANEL_IDS.forEach(id => {
+          const el = document.getElementById(id);
+          if (el && !el.classList.contains('panel-open')) _openCollapsiblePanel(el, 'flex');
+        });
+        updatePointsWeightPreview();
+      }
+      _updateToggleAllPanelsLabel();
     }
 
     function toggleAddQuestionMenu() {
@@ -1857,6 +1899,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         _closeOtherCollapsiblePanels('add-question-types');
         _openCollapsiblePanel(el, 'flex');
       }
+      _updateToggleAllPanelsLabel();
     }
 
     function addNewQuestion(type) {
@@ -2437,6 +2480,16 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </div>`;
       }
 
+      // Botón único para expandir/colapsar los 3 paneles de abajo a la vez
+      // (Filtrar / Añadir / Distribuir puntos) — interactuar con uno ya no
+      // fuerza a cerrar los otros mientras este modo esté activo.
+      const panelsToggleHtml = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+        <button type="button" class="btn btn-ghost" style="padding:6px 12px;font-size:12.5px;" onclick="toggleAllPanels()">
+          <i data-lucide="chevrons-down-up" style="width:14px;height:14px;"></i>
+          <span id="toggle-all-panels-label">Desplegar todo</span>
+        </button>
+      </div>`;
+
       // Barra de filtro: propia tarjeta de ancho completo. Los chips llevan
       // flex:1 (ver CSS .filter-chip) para repartirse todo el ancho entre
       // ellos, sin dejar espacio vacío a la derecha. El contenedor conserva
@@ -2489,12 +2542,16 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <button type="button" id="points-mode-equal" class="btn btn-ghost" onclick="setPointsToolMode('equal')" style="flex:1;">Equitativo</button>
             <button type="button" id="points-mode-byType" class="btn btn-primary" onclick="setPointsToolMode('byType')" style="flex:1;">Por tipo</button>
           </div>
+          <p style="margin:0;font-size:11.5px;color:var(--color-text-subtle);">El peso es relativo entre tipos, no un puntaje directo — a la derecha se ve, en vivo, cuánto le tocaría a cada pregunta de ese tipo con los pesos actuales.</p>
           <div id="points-weights-editor" style="display:flex;flex-direction:column;gap:8px;">
             ${typesPresent.map(t => {
               const def = QUESTION_TYPE_DEFS.find(d => d.key === t) || { label: t, colorVar: 'var(--color-text)' };
               return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                 <span style="font-size:13px;color:${def.colorVar};font-weight:700;">${def.label}</span>
-                <input type="number" class="form-input points-weight-input" data-type="${t}" min="0" step="0.5" value="${DEFAULT_TYPE_WEIGHTS[t] || 1}" style="width:70px;padding:6px 8px;font-size:12.5px;text-align:right;" aria-label="Peso relativo de ${def.label}" />
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span class="points-weight-preview" data-type="${t}" style="font-size:11.5px;color:var(--color-text-subtle);min-width:78px;text-align:right;">—</span>
+                  <input type="number" class="form-input points-weight-input" data-type="${t}" min="0" step="0.5" value="${DEFAULT_TYPE_WEIGHTS[t] || 1}" style="width:70px;padding:6px 8px;font-size:12.5px;text-align:right;" aria-label="Peso relativo de ${def.label}" />
+                </div>
               </div>`;
             }).join('')}
           </div>
@@ -2503,7 +2560,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </div>
       </div>`;
 
-      container.innerHTML = actionsHtml + reviewReminderHtml + skippedHtml + colorNoticeHtml + filterHtml + addQuestionHtml + pointsToolHtml;
+      container.innerHTML = actionsHtml + reviewReminderHtml + skippedHtml + colorNoticeHtml + panelsToggleHtml + filterHtml + addQuestionHtml + pointsToolHtml;
 
       data.questions.forEach((q, i) => {
         const keyInfo = data.answer_key[q.num] || { answer: '' };
@@ -2635,6 +2692,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
       container.querySelectorAll('.cloze-builder').forEach(initClozeBuilder);
       refreshFilterChips();
       updatePointsAssignedLabel();
+      updatePointsWeightPreview();
+      _updateToggleAllPanelsLabel();
       lucide.createIcons();
     }
 
@@ -2687,6 +2746,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         _closeOtherCollapsiblePanels('filter-chips-bar');
         _openCollapsiblePanel(el, 'flex');
       }
+      _updateToggleAllPanelsLabel();
     }
 
     // Onclick de cada chip: aplica el filtro y colapsa el menú de vuelta,
@@ -2775,7 +2835,9 @@ Ahora convierte el examen adjunto a este formato.</pre>
       } else {
         _closeOtherCollapsiblePanels('points-tool-panel');
         _openCollapsiblePanel(el, 'flex');
+        updatePointsWeightPreview();
       }
+      _updateToggleAllPanelsLabel();
     }
 
     // Cambia entre "Equitativo" (sin configuración) y "Por tipo" (muestra
@@ -2799,19 +2861,44 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // esto reemplaza cualquier valor puesto a mano, ya que no hay forma de
     // aplicarlo solo a algunas sin resultar confuso.
     function applyPointsDistribution() {
+      // Los pesos que el docente acaba de escribir viven en inputs que
+      // renderEditor() va a reconstruir desde cero más abajo — hay que
+      // leerlos ANTES de perderlos, y guardarlos para volver a pintarlos
+      // en el panel ya aplicado (si no, el panel se veía "reiniciado" al
+      // pulsar Aplicar, como si no hubiera pasado nada).
+      const mode = _pointsToolMode;
+      const weights = {};
+      document.querySelectorAll('.points-weight-input').forEach(inp => {
+        const v = parseFloat(inp.value);
+        weights[inp.dataset.type] = Number.isFinite(v) && v >= 0 ? v : 1;
+      });
+
       syncParseResultFromDOM();
       const totalPoints = currentUploadMetadata.total_points;
-      if (_pointsToolMode === 'equal') {
+      if (mode === 'equal') {
         autoDistributePoints(currentParseResult.questions, totalPoints, 'equal');
       } else {
-        const weights = {};
-        document.querySelectorAll('.points-weight-input').forEach(inp => {
-          weights[inp.dataset.type] = parseFloat(inp.value) || 1;
-        });
         autoDistributePoints(currentParseResult.questions, totalPoints, 'byType', weights);
       }
       renderEditor(currentParseResult);
       lucide.createIcons();
+
+      // Reabre el panel con el mismo modo y los mismos pesos que el
+      // docente acababa de configurar, para que vea de inmediato el
+      // resultado sobre las tarjetas de abajo en vez de que el panel se
+      // cierre solo y parezca que no pasó nada.
+      setPointsToolMode(mode);
+      document.querySelectorAll('.points-weight-input').forEach(inp => {
+        if (inp.dataset.type in weights) inp.value = weights[inp.dataset.type];
+      });
+      updatePointsWeightPreview();
+      const panel = document.getElementById('points-tool-panel');
+      if (panel && !panel.classList.contains('panel-open')) {
+        _closeOtherCollapsiblePanels('points-tool-panel');
+        _openCollapsiblePanel(panel, 'flex');
+      }
+      _updateToggleAllPanelsLabel();
+
       showToast('Puntos redistribuidos — revisa cada pregunta antes de generar el XML', 'info');
     }
 
@@ -2828,8 +2915,42 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '');
       label.textContent = `${fmt(sum)} / ${fmt(total)} pts`;
     }
+    // Vista previa en vivo del panel "Por tipo": mientras el docente
+    // escribe un peso, se calcula al instante cuánto le tocaría a cada
+    // pregunta de ese tipo CON LOS PESOS ACTUALES — sin tocar todavía el
+    // puntaje real de ninguna pregunta (eso solo pasa al pulsar Aplicar).
+    // Así se ve de inmediato, por ejemplo, que si un tipo se lleva todo el
+    // peso los demás quedan en 0, en vez de tener que adivinar y aplicar
+    // para recién enterarse.
+    function updatePointsWeightPreview() {
+      const previews = document.querySelectorAll('.points-weight-preview');
+      if (!previews.length) return;
+      const totalPoints = currentUploadMetadata ? currentUploadMetadata.total_points : 0;
+      const counts = {};
+      document.querySelectorAll('#editor-questions-container .editor-card').forEach(card => {
+        const t = card.dataset.qtype;
+        counts[t] = (counts[t] || 0) + 1;
+      });
+      const weights = {};
+      document.querySelectorAll('.points-weight-input').forEach(inp => {
+        const v = parseFloat(inp.value);
+        weights[inp.dataset.type] = Number.isFinite(v) && v >= 0 ? v : 0;
+      });
+      let totalWeight = 0;
+      Object.keys(counts).forEach(t => { totalWeight += (weights[t] || 0) * counts[t]; });
+      const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '');
+      previews.forEach(el => {
+        const t = el.dataset.type;
+        if (totalWeight <= 0) { el.textContent = '—'; return; }
+        const unit = totalPoints / totalWeight;
+        const grade = Math.round((weights[t] || 0) * unit * 100) / 100;
+        el.textContent = `${fmt(grade)} pts c/u`;
+      });
+    }
+
     document.getElementById('editor-questions-container').addEventListener('input', e => {
       if (e.target.classList.contains('q-points')) updatePointsAssignedLabel();
+      if (e.target.classList.contains('points-weight-input')) updatePointsWeightPreview();
     });
 
     function collectEditorData() {
@@ -2960,6 +3081,18 @@ Ahora convierte el examen adjunto a este formato.</pre>
     //   mode 'byType': misma fórmula que compute_grades() en el backend
     //                  (unit = total / Σ peso_i·cantidad_i), pero resuelta
     //                  aquí para poder mostrarla y dejarla editar en vivo.
+    // OJO con `w[t] || 1`: en JS, 0 es "falsy", así que ese patrón convertía
+    // silenciosamente cualquier peso puesto en 0 a 1 — un docente que
+    // quisiera "que este tipo no reciba nada" no podía lograrlo, y si
+    // ponía TODOS los pesos en 0 el resultado terminaba siendo un reparto
+    // equitativo sin ningún aviso de que 0 no se había respetado. Este
+    // helper solo cae al default (1) cuando el peso no es un número válido
+    // (campo vacío o NaN) — 0 se respeta tal cual.
+    function _weightOrDefault(w, type) {
+      const v = w[type];
+      return (typeof v === 'number' && Number.isFinite(v) && v >= 0) ? v : 1;
+    }
+
     function autoDistributePoints(questions, totalPoints, mode, weights) {
       if (!questions || !questions.length) return;
       if (mode === 'equal') {
@@ -2971,11 +3104,17 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const counts = {};
       questions.forEach(q => { counts[q.type] = (counts[q.type] || 0) + 1; });
       let totalWeight = 0;
-      Object.keys(counts).forEach(t => { totalWeight += (w[t] || 1) * counts[t]; });
-      if (totalWeight <= 0) totalWeight = questions.length;
+      Object.keys(counts).forEach(t => { totalWeight += _weightOrDefault(w, t) * counts[t]; });
+      if (totalWeight <= 0) {
+        // Caso degenerado: todos los pesos en 0 (o negativos) no tiene una
+        // solución matemática (dividiría entre cero) — se cae a reparto
+        // equitativo en vez de fallar en silencio.
+        autoDistributePoints(questions, totalPoints, 'equal');
+        return;
+      }
       const unit = totalPoints / totalWeight;
       questions.forEach(q => {
-        q.points = Math.round((w[q.type] || 1) * unit * 100) / 100;
+        q.points = Math.round(_weightOrDefault(w, q.type) * unit * 100) / 100;
       });
     }
 
