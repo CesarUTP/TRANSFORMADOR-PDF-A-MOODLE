@@ -2542,7 +2542,18 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <button type="button" id="points-mode-equal" class="btn btn-ghost" onclick="setPointsToolMode('equal')" style="flex:1;">Equitativo</button>
             <button type="button" id="points-mode-byType" class="btn btn-primary" onclick="setPointsToolMode('byType')" style="flex:1;">Por tipo</button>
           </div>
-          <p style="margin:0;font-size:11.5px;color:var(--color-text-subtle);">El peso es relativo entre tipos, no un puntaje directo — a la derecha se ve, en vivo, cuánto le tocaría a cada pregunta de ese tipo con los pesos actuales.</p>
+          <div style="background:var(--color-cl-bg);border:1px solid var(--color-cl-border);border-radius:var(--radius-sm);padding:10px 12px;display:flex;gap:8px;align-items:flex-start;">
+            <i data-lucide="info" style="width:14px;height:14px;color:var(--color-cl);flex-shrink:0;margin-top:2px;"></i>
+            <div style="font-size:12px;color:var(--color-text-muted);line-height:1.65;">
+              <strong style="color:var(--color-text);">¿Para qué sirve este número?</strong> No es el puntaje final — define cuánto vale un tipo de pregunta <em>en comparación</em> con los demás:
+              <ul style="margin:6px 0 0;padding-left:18px;">
+                <li>Si dejas todo en 1, todas las preguntas valen lo mismo.</li>
+                <li>Si a Ensayo le pones 2 y a Múltiple le dejas 1, cada ensayo valdrá el doble que una múltiple.</li>
+                <li>Si a Ensayo le pones 3, cada ensayo valdrá el triple que una múltiple.</li>
+              </ul>
+              <span style="display:block;margin-top:6px;">Cada vez que cambias un número, la columna de la derecha recalcula al instante cuánto le tocaría a cada pregunta — la suma de todo el examen siempre va a dar <strong style="color:var(--color-text);">${currentUploadMetadata ? currentUploadMetadata.total_points : (data.metadata && data.metadata.total_points) || 100}</strong> puntos.</span>
+            </div>
+          </div>
           <div id="points-weights-editor" style="display:flex;flex-direction:column;gap:8px;">
             ${typesPresent.map(t => {
               const def = QUESTION_TYPE_DEFS.find(d => d.key === t) || { label: t, colorVar: 'var(--color-text)' };
