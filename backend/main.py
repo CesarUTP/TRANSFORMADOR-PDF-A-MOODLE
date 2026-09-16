@@ -36,7 +36,7 @@ from validator import (
     estimate_question_count,
 )
 from xml_builder import build_xml, compute_grades
-from database import init_db, save_conversion, get_history_list, get_xml_content
+from database import init_db, save_conversion, get_history_list, get_xml_content, delete_history_item
 from pydantic import BaseModel
 from typing import Dict, List, Any
 
@@ -505,3 +505,9 @@ async def api_download_history(record_id: int):
             "Content-Disposition": f'attachment; filename="{output_filename}"',
         },
     )
+
+@app.delete("/api/history/{record_id}")
+async def api_delete_history(record_id: int):
+    if not delete_history_item(record_id):
+        raise HTTPException(status_code=404, detail="Registro no encontrado")
+    return {"deleted": True}

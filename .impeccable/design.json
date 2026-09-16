@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-16T00:46:37Z",
+  "title": "Design System: Conversor a Moodle XML",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Azul Señal",
+        "canonical": "#0369a1",
+        "tonalRamp": ["#0c4a6e", "#075985", "#0369a1", "#0284c7", "#0ea5e9", "#38bdf8", "#7dd3fc", "#bae6fd"]
+      },
+      "accent-senal": {
+        "role": "secondary",
+        "displayName": "Cian de Acento",
+        "canonical": "#38bdf8",
+        "tonalRamp": ["#0c4a6e", "#075985", "#0369a1", "#0284c7", "#0ea5e9", "#38bdf8", "#7dd3fc", "#bae6fd"]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Slate Profundo",
+        "canonical": "#090d16",
+        "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Slate Superficie",
+        "canonical": "#131c31",
+        "tonalRamp": ["#020617", "#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1"]
+      },
+      "success": {
+        "role": "semantic-success",
+        "displayName": "Verde Éxito",
+        "canonical": "#10b981",
+        "tonalRamp": ["#064e3b", "#065f46", "#047857", "#059669", "#10b981", "#34d399", "#6ee7b7", "#a7f3d0"]
+      },
+      "warning": {
+        "role": "semantic-warning",
+        "displayName": "Ámbar Aviso",
+        "canonical": "#f59e0b",
+        "tonalRamp": ["#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fde68a"]
+      },
+      "error": {
+        "role": "semantic-error",
+        "displayName": "Rojo Error",
+        "canonical": "#f43f5e",
+        "tonalRamp": ["#4c0519", "#881337", "#9f1239", "#be123c", "#e11d48", "#f43f5e", "#fb7185", "#fda4af"]
+      },
+      "tipo-multichoice": { "role": "categorical", "displayName": "Azul Multiopción", "canonical": "#38bdf8" },
+      "tipo-truefalse":   { "role": "categorical", "displayName": "Verde Afirmativo", "canonical": "#34d399" },
+      "tipo-matching":    { "role": "categorical", "displayName": "Ámbar Emparejador", "canonical": "#fbbf24" },
+      "tipo-cloze":       { "role": "categorical", "displayName": "Violeta Completar", "canonical": "#a78bfa" },
+      "tipo-essay":       { "role": "categorical", "displayName": "Rosa Ensayo", "canonical": "#f472b6" },
+      "tipo-shortanswer": { "role": "categorical", "displayName": "Turquesa Respuesta Corta", "canonical": "#2dd4bf" },
+      "tipo-numerical":   { "role": "categorical", "displayName": "Naranja Numérico", "canonical": "#fb923c" }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Headline", "purpose": "Títulos de pantalla completa (éxito, progreso)." },
+      "title":    { "displayName": "Title", "purpose": "Marca y encabezados de sección." },
+      "body":     { "displayName": "Body", "purpose": "Instrucciones, descripciones, notas." },
+      "label":    { "displayName": "Label", "purpose": "Etiquetas de campo y badges de tipo, mayúsculas cortas." },
+      "mono":     { "displayName": "Mono", "purpose": "Bloques de código/formato (ejemplos XML, prompt IA)." }
+    },
+    "shadows": [
+      { "name": "shadow-sm", "value": "0 2px 8px rgba(0,0,0,0.2)", "purpose": "Elevación mínima, controles pequeños." },
+      { "name": "shadow-md", "value": "0 8px 24px rgba(0,0,0,0.3)", "purpose": "Tarjetas modales, dropdowns." },
+      { "name": "shadow-lg", "value": "0 20px 50px rgba(0,0,0,0.45)", "purpose": "Superficies flotantes (modal Guía/Historial)." },
+      { "name": "shadow-glow", "value": "0 8px 20px rgba(0,0,0,0.35)", "purpose": "Elevación neutra de logo y botón primario (nombre heredado, ya no es un halo de color)." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Easing por defecto de transiciones de botones y tarjetas." },
+      { "name": "duration-fast", "value": "0.2s", "purpose": "Hover/focus de botones e inputs." },
+      { "name": "duration-appear", "value": "0.35s–0.4s", "purpose": "Aparición de paneles (fadeInUp / scaleUp)." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "480px" },
+      { "name": "md", "value": "640px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal del flujo (procesar examen, descargar XML).",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2v20M2 12h20\"/></svg> Procesar y Convertir Examen</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: -0.1px; color: #ffffff; background: linear-gradient(135deg, #075985 0%, #0369a1 50%, #4338ca 100%); border: none; border-radius: 14px; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.35); transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), filter 0.2s; } .ds-btn-primary:hover { filter: brightness(1.1); transform: translateY(-2px); } .ds-btn-primary:focus-visible { outline: 2px solid #38bdf8; outline-offset: 3px; } .ds-btn-primary:active { transform: scale(0.98); }"
+    },
+    {
+      "name": "Success Button",
+      "kind": "button",
+      "refersTo": "button-success",
+      "description": "Acción de confirmación positiva (Aprobar y Generar XML).",
+      "html": "<button class=\"ds-btn-success\">Aprobar y Generar Moodle XML</button>",
+      "css": ".ds-btn-success { display: inline-flex; align-items: center; gap: 8px; padding: 14px 22px; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 14px; font-weight: 700; color: #ffffff; background: linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%); border: none; border-radius: 14px; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.35); transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), filter 0.2s; } .ds-btn-success:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.35); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Acción secundaria (Historial, Reintentar, Cancelar edición).",
+      "html": "<button class=\"ds-btn-ghost\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 6v6l4 2\"/></svg> Historial</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 13px; font-weight: 600; color: #94a3b8; background: #1e293b; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; cursor: pointer; transition: all 0.2s; } .ds-btn-ghost:hover { color: #f8fafc; background: #131c31; border-color: rgba(56,189,248,0.35); } .ds-btn-ghost:focus-visible { outline: 2px solid #38bdf8; outline-offset: 3px; }"
+    },
+    {
+      "name": "Type Badge / Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip-filter",
+      "description": "Identificador categórico de tipo de pregunta (Ensayo, Numérica, etc.) usado como badge de tarjeta y como chip de filtro.",
+      "html": "<span class=\"ds-chip-essay\">Ensayo</span>",
+      "css": ".ds-chip-essay { display: inline-block; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 9999px; background: rgba(244, 114, 182, 0.15); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.3); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Campo de texto/número (categoría Moodle, puntaje, respuesta corta/numérica).",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"mis-preguntas\" value=\"mis-preguntas\" />",
+      "css": ".ds-input { width: 100%; background: #090d16; border: 1.5px solid rgba(255,255,255,0.12); color: #f8fafc; border-radius: 14px; padding: 12px 16px; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 14.5px; transition: all 0.2s; } .ds-input:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,0.2); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card-surface",
+      "description": "Contenedor de sección principal (glass-card) con fondo semitransparente y desenfoque sobre el lienzo con textura.",
+      "html": "<div class=\"ds-card\"><strong>Revisión de Preguntas Parseadas</strong><p>Inspecciona y edita cualquier pregunta antes de generar el paquete Moodle XML.</p></div>",
+      "css": ".ds-card { background: rgba(19, 28, 49, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 28px; color: #f8fafc; } .ds-card p { margin-top: 6px; font-size: 13.5px; color: #94a3b8; line-height: 1.6; }"
+    },
+    {
+      "name": "Stepper",
+      "kind": "custom",
+      "refersTo": "stepper",
+      "description": "Indicador de progreso de 3 pasos del flujo (componente de firma del sistema).",
+      "html": "<div class=\"ds-stepper\"><span class=\"ds-step ds-step-active\">1</span><span class=\"ds-step-line\"></span><span class=\"ds-step\">2</span><span class=\"ds-step-line\"></span><span class=\"ds-step\">3</span></div>",
+      "css": ".ds-stepper { display: flex; align-items: center; gap: 8px; background: #131c31; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 12px 16px; } .ds-step { width: 28px; height: 28px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; background: transparent; border: 1.5px solid rgba(255,255,255,0.12); color: #94a3b8; } .ds-step-active { background: #0369a1; border-color: #38bdf8; color: #ffffff; } .ds-step-line { flex: 1; height: 1px; background: rgba(255,255,255,0.12); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "El Laboratorio de Conversión",
+    "overview": "Este sistema es el instrumental de un laboratorio, no la vitrina de un producto: un examen desordenado entra, pasa por una secuencia de pasos visibles (subir → revisar → descargar) y sale como un XML validado. Todo el lenguaje visual sirve a ese proceso — fondo slate profundo por defecto para minimizar fatiga visual en sesiones largas de revisión de 30-40 preguntas, tipografía geométrica de alto contraste para escanear rápido, y un único acento (azul cian \"Señal\") reservado casi exclusivamente para lo que se puede accionar ahora mismo. No es una landing page ni busca persuadir: es una herramienta de trabajo (modo Operar) para docentes sin conocimientos técnicos, así que la claridad y la previsibilidad superan a la expresión.",
+    "keyCharacteristics": [
+      "Oscuro por defecto, con una variante clara completa como alternativa, no como pensamiento tardío.",
+      "Un acento funcional (Azul Señal) + una paleta de 7 colores categóricos para tipos de pregunta.",
+      "Sombras neutras (negro a baja opacidad) para elevación; cero halos de color.",
+      "Tarjetas redondeadas de esquina generosa (14-28px) sobre un fondo con textura sutil.",
+      "Tipografía geométrica (Outfit + Hanken Grotesk) — no una fuente de IA genérica."
+    ],
+    "rules": [
+      { "name": "La Regla del Acento Único", "body": "Azul Señal se usa solo en controles accionables (botones primarios, foco de inputs, enlaces). Nunca aparece como decoración de fondo o como color de un ícono puramente informativo.", "section": "colors" },
+      { "name": "La Regla Sin Halo", "body": "Ninguna sombra de color sin desplazamiento — la elevación se comunica con sombras neutras (negro a baja opacidad) con desplazamiento y difuminado reales.", "section": "elevation" },
+      { "name": "La Regla de las Mayúsculas Cortas", "body": "text-transform: uppercase solo en etiquetas de ≤20 caracteres (badges, labels de campo). Cualquier encabezado que sea una oración o pregunta completa va en case normal.", "section": "typography" }
+    ],
+    "dos": [
+      "Do usar Azul Señal solo para lo accionable — botones primarios, foco, enlaces.",
+      "Do dar a cada sombra un desplazamiento vertical real y difuminado.",
+      "Do reservar mayúsculas a etiquetas cortas; oraciones completas van en case normal.",
+      "Do mantener un color categórico fijo por tipo de pregunta en toda la app.",
+      "Do dar a los callouts de estado un borde de 1px en las 4 caras, no un acento lateral grueso."
+    ],
+    "donts": [
+      "Don't usar texto en degradado (background-clip: text).",
+      "Don't usar Plus Jakarta Sans, Inter, Space Grotesk, Roboto ni Geist.",
+      "Don't animar width/height para barras de progreso — usar transform: scaleX().",
+      "Don't dejar animaciones decorativas infinitas sin alternativa para prefers-reduced-motion.",
+      "Don't reusar un color categórico de tipo de pregunta con un significado distinto."
+    ]
+  }
+}

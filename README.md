@@ -8,12 +8,12 @@ Corre como una app de escritorio nativa (Windows/macOS, vía `pywebview`) — no
 
 ## Características principales
 
-- **4 tipos de pregunta Moodle**: opción múltiple, verdadero/falso, emparejamiento y completar (Cloze).
+- **7 tipos de pregunta Moodle**: opción múltiple, verdadero/falso, emparejamiento, completar (Cloze), ensayo, respuesta corta y numérica.
 - **Respuestas múltiples**: tanto en opción múltiple como en cada espacio de una pregunta Cloze, se puede marcar más de una opción como correcta a la vez.
 - **Prefiltro de IA**: si el examen no viene en el formato esperado (numeración distinta, respuestas marcadas con ✓, claves de emparejamiento sueltas, etc.), Gemini lo normaliza automáticamente antes de procesarlo — sin inventar ni resolver ninguna respuesta que no esté indicada en el original.
 - **Validación de que el archivo sea realmente una prueba**: antes de convertir nada, el sistema evalúa si el documento tiene preguntas y una clave de respuestas reales. Si le suben una presentación, un manual, un artículo o cualquier otro documento que no sea una evaluación, lo rechaza con un mensaje claro en vez de inventar preguntas a partir de su contenido.
 - **Editor de revisión interactivo**: antes de generar el XML final, se pueden inspeccionar y editar todas las preguntas.
-  - Filtro por tipo (opción múltiple, V/F, emparejar, completar), con conteo en vivo y color propio por tipo.
+  - Filtro por tipo (los 7 tipos soportados), con conteo en vivo y color propio por tipo.
   - Menú de "Añadir nueva pregunta" colapsable: se despliega en un clic y vuelve a cerrarse solo al elegir un tipo.
   - Botones de acción (**Aprobar y Generar XML** / **Cancelar**) fijos arriba del todo — accesibles sin bajar por exámenes de 100+ preguntas — en verde y rojo respectivamente, por convención de color.
   - Checkboxes para respuestas múltiples y un constructor visual para preguntas Cloze (sin escribir la sintaxis de corchetes a mano).

@@ -98,3 +98,13 @@ def get_xml_content(record_id: int) -> Optional[Dict[str, Any]]:
     if row:
         return dict(row)
     return None
+
+def delete_history_item(record_id: int) -> bool:
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM history WHERE id = ?', (record_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted

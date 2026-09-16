@@ -8,10 +8,10 @@
   <meta name="description"
     content="Plataforma de ingeniería de evaluación académica para convertir pruebas, quices y exámenes (PDF o TXT) al formato Moodle XML con validación estructural e IA." />
 
-  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <!-- Google Fonts: Hanken Grotesk & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   
   <!-- Lucide Icons (versión fija: "@latest" puede romper la UI sin aviso si Lucide publica un cambio incompatible) -->
   <script src="https://unpkg.com/lucide@1.44.0/dist/umd/lucide.min.js"></script>
@@ -34,7 +34,7 @@
 
       --color-text:           #f8fafc;
       --color-text-muted:     #94a3b8;
-      --color-text-subtle:    #8593a7;
+      --color-text-subtle:    #8f9db0;
 
       --color-primary:        #0369a1;
       --color-primary-hover:  #0284c7;
@@ -55,10 +55,10 @@
          se mantienen igual de oscuras en modo claro y oscuro, porque lo que
          importa es el contraste del texto blanco contra el botón, no el
          fondo de la página. */
-      --color-cta-success-gradient: linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%);
-      --color-cta-danger-gradient:  linear-gradient(135deg, #7f1d2e 0%, #be123c 50%, #f43f5e 100%);
-      --shadow-glow-success: 0 0 30px rgba(16, 185, 129, 0.3);
-      --shadow-glow-danger:  0 0 30px rgba(244, 63, 94, 0.3);
+      --color-cta-success-gradient: linear-gradient(135deg, #065f46 0%, #047857 50%, #04845e 100%);
+      --color-cta-danger-gradient:  linear-gradient(135deg, #7f1d2e 0%, #be123c 50%, #e11d48 100%);
+      --shadow-glow-success: 0 8px 20px rgba(0, 0, 0, 0.35);
+      --shadow-glow-danger:  0 8px 20px rgba(0, 0, 0, 0.35);
 
       --color-success:        #10b981;
       --color-success-bg:     rgba(16, 185, 129, 0.12);
@@ -102,11 +102,11 @@
       --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
       --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
       --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.45);
-      --shadow-glow: 0 0 30px rgba(56, 189, 248, 0.25);
+      --shadow-glow: 0 8px 20px rgba(0, 0, 0, 0.35);
 
       /* Typography */
-      --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      --font-heading: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+      --font-heading: 'Outfit', 'Hanken Grotesk', system-ui, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
 
@@ -169,7 +169,7 @@
       --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
       --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
       --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
-      --shadow-glow: 0 0 25px rgba(2, 132, 199, 0.18);
+      --shadow-glow: 0 8px 18px rgba(15, 23, 42, 0.16);
     }
 
     /* ── BASE STYLES & RESET ─────────────────────────────────────────────── */
@@ -213,14 +213,24 @@
     @keyframes spinSlow {
       to { transform: rotate(360deg); }
     }
-    @keyframes pulseRing {
-      0%   { transform: scale(0.95); box-shadow: 0 0 0 0 var(--color-accent-glow); }
-      70%  { transform: scale(1); box-shadow: 0 0 0 16px rgba(56, 189, 248, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
-    }
 
     .animate-fadeIn { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     .animate-scaleUp { animation: scaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    /* Con "reducir movimiento" activado en el sistema, las secciones siguen
+       apareciendo (opacidad) para no perder la señal de cambio de estado,
+       pero sin el desplazamiento/escala que puede incomodar a quien activó
+       esa preferencia. El spinner de carga queda fuera a propósito: es la
+       única señal de "proceso en curso" en la pantalla de progreso. */
+    @media (prefers-reduced-motion: reduce) {
+      .animate-fadeIn, .animate-scaleUp {
+        animation-name: fadeOnly;
+      }
+    }
+    @keyframes fadeOnly {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
 
     /* ── CONTAINER & CARDS ───────────────────────────────────────────────── */
     .app-header {
@@ -258,7 +268,9 @@
       box-shadow: var(--shadow-glow);
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .logo-badge:hover { transform: scale(1.05) rotate(-3deg); }
+    @media (hover: hover) and (pointer: fine) {
+      .logo-badge:hover { transform: scale(1.05) rotate(-3deg); }
+    }
 
     .brand-title {
       font-family: var(--font-heading);
@@ -266,9 +278,7 @@
       font-weight: 800;
       letter-spacing: -0.5px;
       line-height: 1.2;
-      background: var(--color-accent-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: var(--color-accent);
     }
     .brand-sub {
       font-size: 12px;
@@ -320,13 +330,14 @@
       justify-content: center;
       font-size: 12px;
       font-weight: 800;
-      transition: all 0.25s;
+      transition-property: background-color, border-color, color, box-shadow;
+      transition-duration: 0.25s;
     }
     .step-item.active .step-num {
       background: var(--color-primary);
       border-color: var(--color-accent);
       color: #ffffff;
-      box-shadow: 0 0 12px var(--color-primary-glow);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
     }
     .step-item.completed .step-num {
       background: var(--color-success-solid);
@@ -372,7 +383,9 @@
       border-radius: var(--radius-md);
       cursor: pointer;
       border: none;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition-property: transform, box-shadow, filter, opacity;
+      transition-duration: 0.2s;
+      transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
       text-decoration: none;
       letter-spacing: -0.1px;
     }
@@ -383,10 +396,12 @@
       color: #ffffff;
       box-shadow: var(--shadow-glow);
     }
-    .btn-primary:hover:not(:disabled) {
-      filter: brightness(1.1);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px var(--color-primary-glow);
+    @media (hover: hover) and (pointer: fine) {
+      .btn-primary:hover:not(:disabled) {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      }
     }
     .btn-primary:disabled {
       opacity: 0.45;
@@ -402,10 +417,12 @@
       color: #ffffff;
       box-shadow: var(--shadow-glow-success);
     }
-    .btn-success:hover:not(:disabled) {
-      filter: brightness(1.1);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+    @media (hover: hover) and (pointer: fine) {
+      .btn-success:hover:not(:disabled) {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      }
     }
     .btn-success:disabled {
       opacity: 0.45;
@@ -421,10 +438,12 @@
       color: #ffffff;
       box-shadow: var(--shadow-glow-danger);
     }
-    .btn-danger:hover:not(:disabled) {
-      filter: brightness(1.1);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(244, 63, 94, 0.35);
+    @media (hover: hover) and (pointer: fine) {
+      .btn-danger:hover:not(:disabled) {
+        filter: brightness(1.1);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      }
     }
 
     .btn-ghost {
@@ -447,7 +466,8 @@
       border: 1px solid var(--color-border);
       color: var(--color-text-muted);
       cursor: pointer;
-      transition: all 0.2s;
+      transition-property: color, border-color, background-color, filter;
+      transition-duration: 0.2s;
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -465,7 +485,7 @@
       background: var(--color-cta-gradient);
       border-color: transparent;
       color: #ffffff;
-      box-shadow: 0 2px 10px var(--color-primary-glow);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     }
     .btn-icon-text.btn-guide:hover {
       color: #ffffff;
@@ -481,12 +501,21 @@
       text-align: center;
       cursor: pointer;
       background: var(--color-dropzone-bg);
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition-property: border-color, background-color, transform;
+      transition-duration: 0.25s;
+      transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
     }
-    #drop-zone.drag-over, #drop-zone:hover {
+    #drop-zone.drag-over {
       border-color: var(--color-accent);
       background: var(--color-accent-glow);
       transform: scale(1.01);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      #drop-zone:hover {
+        border-color: var(--color-accent);
+        background: var(--color-accent-glow);
+        transform: scale(1.01);
+      }
     }
     .drop-icon-wrapper {
       width: 72px;
@@ -498,7 +527,6 @@
       align-items: center;
       justify-content: center;
       margin: 0 auto 20px;
-      animation: pulseRing 3s infinite;
     }
 
     /* ── FILE PREVIEW ────────────────────────────────────────────────────── */
@@ -539,7 +567,8 @@
       font-family: inherit;
       width: 100%;
       outline: none;
-      transition: all 0.2s;
+      transition-property: border-color, box-shadow;
+      transition-duration: 0.2s;
     }
     .form-input:focus {
       border-color: var(--color-accent);
@@ -629,7 +658,8 @@
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.2s;
+      transition-property: color, border-color, background-color;
+      transition-duration: 0.2s;
     }
     .cloze-insert-btn:hover { color: var(--color-cl); border-color: var(--color-cl-border); background: var(--color-cl-bg); }
     .cloze-blank-card {
@@ -664,6 +694,20 @@
     .mc-option-row .mc-option-letter { font-weight: 800; color: var(--color-mc); width: 16px; flex-shrink: 0; }
     .mc-option-row .q-opt { flex: 1; margin-top: 0; }
 
+    /* Paneles colapsables (Filtrar / Añadir nueva pregunta): sin esto
+       aparecían/desaparecían de golpe con display:none — se sentía roto. */
+    #add-question-types, #filter-chips-bar {
+      opacity: 0;
+      transform: translateY(-6px);
+      transition-property: opacity, transform;
+      transition-duration: 0.2s;
+      transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #add-question-types.panel-open, #filter-chips-bar.panel-open {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     /* ── FILTER CHIPS (Revisar Preguntas) ────────────────────────────────── */
     .filter-chip {
       display: inline-flex;
@@ -680,7 +724,8 @@
       background: var(--color-surface);
       color: var(--color-text-muted);
       cursor: pointer;
-      transition: all 0.2s;
+      transition-property: background-color, border-color, color;
+      transition-duration: 0.2s;
     }
     .filter-chip:hover { border-color: var(--color-border-glow); color: var(--color-text); }
 
@@ -729,7 +774,9 @@
       text-align: center;
       transition: transform 0.2s ease, border-color 0.2s ease;
     }
-    .stat-card:hover { transform: translateY(-3px); }
+    @media (hover: hover) and (pointer: fine) {
+      .stat-card:hover { transform: translateY(-3px); }
+    }
     .stat-card .stat-num {
       font-family: var(--font-heading);
       font-size: 32px;
@@ -805,7 +852,8 @@
       border: none;
       background: transparent;
       border-bottom: 3px solid transparent;
-      transition: all 0.2s;
+      transition-property: color, border-bottom-color;
+      transition-duration: 0.2s;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -870,6 +918,15 @@
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .stepper { padding: 10px 12px; }
       .step-item span { display: none; }
+    }
+    @media (max-width: 480px) {
+      /* El header no cabe con las 3 etiquetas de texto completas junto al
+         logo — se reduce a solo íconos (con aria-label/title ya presentes
+         para lectores de pantalla y tooltips) para evitar overflow
+         horizontal en pantallas de celular. */
+      .header-inner { padding: 14px 16px; }
+      .btn-icon-text span { display: none; }
+      .btn-icon-text { padding: 10px; }
     }
   </style>
 </head>
@@ -1022,7 +1079,7 @@
         <p id="progress-subtitle" style="font-size:14.5px;color:var(--color-text-muted);margin-bottom:32px;">Extrayendo texto del examen...</p>
         
         <div style="height:8px;background:var(--color-bg);border-radius:var(--radius-full);overflow:hidden;max-width:480px;margin:0 auto;border:1px solid var(--color-border-subtle);">
-          <div id="progress-bar-fill" style="height:100%;width:0%;background:var(--color-accent-gradient);border-radius:var(--radius-full);transition:width 0.4s ease-out;"></div>
+          <div id="progress-bar-fill" style="height:100%;width:100%;transform:scaleX(0);transform-origin:left;background:var(--color-accent-gradient);border-radius:var(--radius-full);transition:transform 0.4s ease-out;"></div>
         </div>
 
         <div id="progress-timer-row" style="display:flex;justify-content:center;gap:18px;margin-top:14px;font-size:12.5px;color:var(--color-text-subtle);">
@@ -1056,6 +1113,13 @@
           </div>
         </div>
 
+        <!-- Preguntas omitidas: en el editor se explica el motivo y la
+             solución con detalle, pero esa información se perdía al llegar
+             aquí (solo quedaba el conteo en el subtítulo) — el docente podía
+             olvidar qué faltaba corregir justo cuando ya iba a descargar el
+             archivo. Se rellena en updateSuccessStats(). -->
+        <div id="success-skipped-notice" style="display:none;background:var(--color-warning-bg);border:1px solid var(--color-warning);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:20px;"></div>
+
         <!-- Stats grid: se rellena en updateSuccessStats() — solo aparece una
              tarjeta por tipo si el examen realmente tiene preguntas de ese
              tipo (ej. si no hubo preguntas de completar, esa tarjeta no se
@@ -1066,7 +1130,7 @@
              pregunta (subtotal = preguntas del tipo × pts/pregunta), no solo
              el conteo de preguntas. Se rellena en updateSuccessStats(). -->
         <div id="points-chart-card" style="display:none;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:20px;margin-bottom:20px;">
-          <p style="font-size:12px;font-weight:700;color:var(--color-text-subtle);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:16px;">Distribución de puntos por tipo</p>
+          <p style="font-size:12px;font-weight:700;color:var(--color-text-subtle);letter-spacing:0.2px;margin-bottom:16px;">Distribución de puntos por tipo</p>
           <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap;justify-content:center;">
             <svg id="points-pie-svg" viewBox="0 0 200 200" style="width:180px;height:180px;flex-shrink:0;"></svg>
             <div id="points-pie-legend" style="display:grid;grid-template-columns:auto auto auto;align-items:center;column-gap:10px;row-gap:10px;"></div>
@@ -1171,7 +1235,7 @@
           <div style="display:flex;flex-direction:column;gap:16px;">
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
-              <p style="font-size:13px;font-weight:800;color:var(--color-accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">¿Para qué fue creado este sistema?</p>
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:8px;">¿Para qué fue creado este sistema?</p>
               <p style="font-size:14px;line-height:1.7;color:var(--color-text);">
                 Moodle no permite pegar un examen en formato "normal" y ya está: cada pregunta debe cargarse a mano en el banco de preguntas, o construirse a mano en un XML con una sintaxis estricta y poco intuitiva. Hacerlo manualmente para un examen de 30-40 preguntas —especialmente con emparejamientos y respuestas de completar— es lento y fácil de arruinar con un error de tipeo.
               </p>
@@ -1181,11 +1245,11 @@
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
-              <p style="font-size:13px;font-weight:800;color:var(--color-accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">¿Qué acepta?</p>
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">¿Qué acepta?</p>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="check-circle-2" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Úsalo para pruebas parciales, quices o evaluaciones formativas</strong> de colegio, universidad o cualquier otro nivel, siempre que ya contengan preguntas de <strong style="color:var(--color-text);">selección múltiple, cierto/falso, emparejamiento o completar</strong> con su clave de respuestas — los 4 tipos que el sistema reconoce.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Úsalo para pruebas parciales, quices o evaluaciones formativas</strong> de colegio, universidad o cualquier otro nivel, siempre que ya contengan preguntas de <strong style="color:var(--color-text);">selección múltiple, cierto/falso, emparejamiento, completar, ensayo, respuesta corta o numérica</strong> con su clave de respuestas — los 7 tipos que el sistema reconoce.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="x-circle" style="width:16px;height:16px;color:var(--color-error);flex-shrink:0;margin-top:2px;"></i>
@@ -1195,7 +1259,7 @@
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
-              <p style="font-size:13px;font-weight:800;color:var(--color-accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">¿Por qué usarlo en vez de cargar a mano?</p>
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">¿Por qué usarlo en vez de cargar a mano?</p>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="shield-check" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
@@ -1289,7 +1353,7 @@ Explica con tus propias palabras las causas principales de la Revolución France
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border-glow);border-radius:var(--radius-md);padding:14px;">
-              <span style="font-size:11px;font-weight:800;color:var(--color-accent);text-transform:uppercase;letter-spacing:0.5px;">Sección RESPUESTAS (Al final del archivo)</span>
+              <span style="font-size:12px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;">Sección RESPUESTAS (Al final del archivo)</span>
               <div class="code-block" style="margin-top:8px;">RESPUESTAS
 Nº Tipo Respuesta correcta
 1 múltiple Traducir código fuente a lenguaje máquina
@@ -1321,7 +1385,7 @@ Nº Tipo Respuesta correcta
             </button>
           </div>
 
-          <pre id="ai-prompt-text" class="code-block" style="max-height:420px;">Tengo adjunta una evaluación (examen, prueba o quiz). Necesito que la conviertas al siguiente formato de texto plano para poder procesarla con un programa. Sigue estas reglas EXACTAMENTE. Eres un TRANSCRIPTOR, no un solucionador de exámenes: nunca inventes ni deduzcas una respuesta que no esté marcada explícitamente en el original (con ✓, círculo, negrita, subrayado o una clave de respuestas ya incluida).
+          <pre id="ai-prompt-text" class="code-block">Tengo adjunta una evaluación (examen, prueba o quiz). Necesito que la conviertas al siguiente formato de texto plano para poder procesarla con un programa. Sigue estas reglas EXACTAMENTE. Eres un TRANSCRIPTOR, no un solucionador de exámenes: nunca inventes ni deduzcas una respuesta que no esté marcada explícitamente en el original (con ✓, círculo, negrita, subrayado o una clave de respuestas ya incluida).
 
 ── CUERPO DEL EXAMEN ─────────────────────────────────────────
 
@@ -1590,7 +1654,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
     document.getElementById('btn-help').addEventListener('click', () => openHelp('about'));
     document.getElementById('btn-close-modal').addEventListener('click', closeHelp);
     modalHelp.addEventListener('click', e => { if (e.target === modalHelp) closeHelp(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeHelp(); });
+    // Escape cierra el modal que esté abierto en ese momento — antes solo
+    // funcionaba en la Guía; Historial y el aviso de imágenes incrustadas
+    // solo se podían cerrar con el mouse.
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      if (modalHelp.classList.contains('open')) closeHelp();
+      else if (modalHistory.classList.contains('open')) closeHistory();
+      else if (modalDisclaimer.classList.contains('open')) closeDisclaimer();
+    });
     modalTabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
 
     // Copy Prompt
@@ -1739,10 +1811,38 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // No hace falta volver a ocultarlos tras elegir un tipo: addNewQuestion()
     // termina llamando a renderEditor(), que reconstruye este bloque desde
     // cero ya colapsado.
+    // Abre/cierra un panel colapsable (Filtrar / Añadir nueva pregunta) con
+    // una transición de opacidad + desplazamiento en vez de un salto seco
+    // de display:none a flex. Forzar un reflow (leer offsetHeight) entre
+    // fijar el display y agregar la clase le garantiza al navegador que ya
+    // "vio" el estado inicial oculto antes del cambio — si no, ambos
+    // cambios se aplicarían en el mismo cálculo de estilos y la transición
+    // no se vería (esto es más confiable que requestAnimationFrame, que en
+    // pestañas en segundo plano o sin foco puede no dispararse a tiempo).
+    function _openCollapsiblePanel(el, displayValue) {
+      el.style.display = displayValue;
+      void el.offsetHeight;
+      el.classList.add('panel-open');
+    }
+    function _closeCollapsiblePanel(el) {
+      el.classList.remove('panel-open');
+      setTimeout(() => { el.style.display = 'none'; }, 200);
+    }
+
     function toggleAddQuestionMenu() {
       const el = document.getElementById('add-question-types');
       if (!el) return;
-      el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+      if (el.classList.contains('panel-open')) {
+        _closeCollapsiblePanel(el);
+      } else {
+        // Excluyente con "Filtrar": si ambos quedaran abiertos a la vez se
+        // ven 14 chips casi idénticos apilados uno tras otro (7 de filtro +
+        // 7 de añadir), leyéndose como una sola lista confusa en vez de dos
+        // acciones distintas.
+        const filterBar = document.getElementById('filter-chips-bar');
+        if (filterBar && filterBar.classList.contains('panel-open')) _closeCollapsiblePanel(filterBar);
+        _openCollapsiblePanel(el, 'flex');
+      }
     }
 
     function addNewQuestion(type) {
@@ -2219,19 +2319,44 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const container = document.getElementById('editor-questions-container');
       container.innerHTML = '';
 
-      // Acciones principales (Aprobar y Generar / Cancelar): van arriba, antes
-      // de todo lo demás, para que sean accesibles sin tener que bajar hasta
-      // el final de la lista de preguntas (con exámenes largos, de 100+
-      // preguntas, el usuario antes tenía que hacer scroll completo).
-      const actionsHtml = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
-        <button type="button" id="btn-generate-xml" class="btn btn-success" style="flex:2;" onclick="generateXml()">
-          <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
-          Aprobar y Generar Moodle XML
-        </button>
-        <button type="button" class="btn btn-danger" style="flex:1;" onclick="resetAll()">
-          Cancelar
-        </button>
+      // Acciones principales (Aprobar y Generar / Cancelar): quedan pegadas
+      // (position: sticky) justo debajo del header al hacer scroll, para
+      // que sean accesibles sin tener que subir hasta arriba del todo en
+      // exámenes largos (100+ preguntas). El offset se mide en vivo porque
+      // la altura del header varía (el subtítulo puede ocupar 1-3 líneas
+      // según el ancho de pantalla) — un valor fijo se habría desalineado.
+      const headerH = document.querySelector('.app-header')?.offsetHeight || 0;
+      // Indicador de "cuánto falta por revisar": una barra + etiqueta que se
+      // actualiza con el scroll (ver updateReviewProgress), útil en
+      // exámenes largos donde de otro modo no hay forma de saber qué tan
+      // avanzada va la revisión sin adivinar por el largo de la barra de
+      // scroll del navegador. Sin sentido con 1 sola pregunta.
+      const actionsHtml = `<div style="position:sticky;top:${headerH}px;z-index:90;background:var(--color-bg);padding:14px 0;margin:0 0 18px;border-bottom:1px solid var(--color-border-subtle);">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button type="button" id="btn-generate-xml" class="btn btn-success" style="flex:2;" onclick="generateXml()">
+            <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
+            Aprobar y Generar Moodle XML
+          </button>
+          <button type="button" class="btn btn-danger" style="flex:1;" onclick="resetAll()">
+            Cancelar
+          </button>
+        </div>
+        ${data.questions.length > 1 ? `<div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;height:4px;background:var(--color-border-subtle);border-radius:var(--radius-full);overflow:hidden;">
+            <div id="review-progress-fill" style="height:100%;width:0%;background:var(--color-accent);border-radius:var(--radius-full);"></div>
+          </div>
+          <span id="review-progress-label" style="font-size:11.5px;color:var(--color-text-subtle);white-space:nowrap;">Pregunta 1 de ${data.questions.length}</span>
+        </div>` : ''}
       </div>`;
+
+      // Aviso formal de revisión — antes se repetía idéntico en cada
+      // tarjeta (ruido puro para alguien usando lector de pantalla al
+      // pasar por 30-40 preguntas); ahora aparece una sola vez, arriba de
+      // toda la lista.
+      const reviewReminderHtml = data.questions.length > 0 ? `<div style="display:flex;gap:8px;align-items:flex-start;background:var(--color-warning-bg);border:1px solid var(--color-warning);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:18px;">
+        <i data-lucide="shield-alert" style="width:14px;height:14px;color:var(--color-warning);flex-shrink:0;margin-top:1px;"></i>
+        <p style="margin:0;font-size:12.5px;color:var(--color-text-muted);line-height:1.5;">Importante: revise cada pregunta de forma individual y confirme que no se hayan producido errores durante el proceso de normalización. De encontrarlos, corríjalos considerándolos como posibles errores de transcripción o respuestas faltantes.</p>
+      </div>` : '';
 
       // Aviso de preguntas que el sistema NO pudo procesar (ej. de
       // respuesta abierta/no autocalificable, o sin ninguna respuesta que
@@ -2255,7 +2380,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <p style="margin:0;font-size:12px;color:var(--color-text-muted);line-height:1.5;">
               ${esc_html(humanizeSkipReason(sq.reasons[0]))}
             </p>
-            <p style="margin:2px 0 0;font-size:11px;color:var(--color-text-subtle);opacity:0.75;">
+            <p style="margin:2px 0 0;font-size:12px;color:var(--color-text-subtle);">
               Ubicada como pregunta #${sq.num} — este número es del sistema, puede no coincidir con el del documento original.
             </p>
             ${sq.recoverable_data ? `<button type="button" class="btn btn-ghost" onclick="recoverSkippedQuestion(${sIdx})" style="margin-top:8px;padding:6px 12px;font-size:12px;color:var(--color-warning);border-color:var(--color-warning);">
@@ -2304,7 +2429,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       </div>`;
 
       // "Añadir nueva pregunta" arranca colapsado en un solo botón — al
-      // hacerle clic se despliegan los 4 tipos; al elegir uno se agrega la
+      // hacerle clic se despliegan los 7 tipos; al elegir uno se agrega la
       // pregunta y (como addNewQuestion() llama a renderEditor() al final)
       // este bloque se reconstruye desde cero, así que vuelve a su estado
       // colapsado automáticamente sin código extra.
@@ -2322,7 +2447,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <button type="button" class="filter-chip" data-filter="numerical" onclick="addNewQuestion('numerical')">+ Numérica</button>
         </div>
       </div>`;
-      container.innerHTML = actionsHtml + skippedHtml + colorNoticeHtml + filterHtml + addQuestionHtml;
+      container.innerHTML = actionsHtml + reviewReminderHtml + skippedHtml + colorNoticeHtml + filterHtml + addQuestionHtml;
 
       data.questions.forEach((q, i) => {
         const keyInfo = data.answer_key[q.num] || { answer: '' };
@@ -2341,10 +2466,6 @@ Ahora convierte el examen adjunto a este formato.</pre>
                 <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
               </button>
             </div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:flex-start;background:var(--color-warning-bg);border-left:3px solid var(--color-warning);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:12px;">
-            <i data-lucide="shield-alert" style="width:14px;height:14px;color:var(--color-warning);flex-shrink:0;margin-top:1px;"></i>
-            <p style="margin:0;font-size:11.5px;color:var(--color-text-muted);line-height:1.5;">Importante: revise esta pregunta de forma individual y confirme que no se hayan producido errores durante el proceso de normalización. De encontrarlos, corríjalos considerándolos como posibles errores de transcripción o respuestas faltantes.</p>
           </div>`;
 
         if (q.type === 'multichoice' || q.type === 'truefalse' || q.type === 'matching' || q.type === 'essay' || q.type === 'shortanswer' || q.type === 'numerical') {
@@ -2356,7 +2477,16 @@ Ahora convierte el examen adjunto a este formato.</pre>
           const answerTargets = (keyInfo.answer || '').split('|').map(s => s.trim().toLowerCase()).filter(Boolean);
           const isOptCorrect = (letter, optText) => {
             const optClean = optText.trim().toLowerCase();
-            return answerTargets.some(t => t === letter.toLowerCase() || t === optClean || t.includes(optClean) || optClean.includes(t));
+            return answerTargets.some(t => {
+              if (t === letter.toLowerCase() || t === optClean) return true;
+              // Fallback de coincidencia parcial: solo para respuestas largas
+              // (la clave trae el texto completo de la opción en vez de su
+              // letra). Con fragmentos cortos (ej. una sola letra) esto
+              // marcaría por error cualquier opción que solo contenga esa
+              // letra en su texto (ej. "B" calzando con "Berlín").
+              if (t.length < 4 || optClean.length < 4) return false;
+              return t.includes(optClean) || optClean.includes(t);
+            });
           };
           html += `<div style="margin-top:12px;">
             <label class="field-label" style="color:var(--color-success);">
@@ -2367,8 +2497,10 @@ Ahora convierte el examen adjunto a este formato.</pre>
           optEntries.forEach(([letter, optText]) => {
             const checked = isOptCorrect(letter, optText);
             html += `<div class="mc-option-row">
-              <input type="checkbox" class="q-opt-correct" data-letter="${letter}" ${checked ? 'checked' : ''} title="Marcar como respuesta correcta" />
-              <span class="mc-option-letter">${letter}</span>
+              <label style="display:contents;" title="Marcar como respuesta correcta">
+                <input type="checkbox" class="q-opt-correct" data-letter="${letter}" ${checked ? 'checked' : ''} aria-label="Marcar la opción ${letter} como respuesta correcta" />
+                <span class="mc-option-letter">${letter}</span>
+              </label>
               <input class="form-input q-opt" data-letter="${letter}" value="${optText.replace(/"/g, '&quot;')}" />
             </div>`;
           });
@@ -2488,7 +2620,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
     function toggleFilterMenu() {
       const el = document.getElementById('filter-chips-bar');
       if (!el) return;
-      el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+      if (el.classList.contains('panel-open')) {
+        _closeCollapsiblePanel(el);
+      } else {
+        // Excluyente con "Añadir nueva pregunta" — ver comentario homólogo
+        // en toggleAddQuestionMenu().
+        const addBar = document.getElementById('add-question-types');
+        if (addBar && addBar.classList.contains('panel-open')) _closeCollapsiblePanel(addBar);
+        _openCollapsiblePanel(el, 'flex');
+      }
     }
 
     // Onclick de cada chip: aplica el filtro y colapsa el menú de vuelta,
@@ -2496,7 +2636,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
     function selectFilter(type) {
       filterQuestionsByType(type);
       const bar = document.getElementById('filter-chips-bar');
-      if (bar) bar.style.display = 'none';
+      if (bar) _closeCollapsiblePanel(bar);
     }
 
     // Hace crecer un <textarea> verticalmente para mostrar todo su
@@ -2535,7 +2675,38 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const activeChipEl = chipsBar && chipsBar.querySelector(`.filter-chip[data-filter="${type}"]`);
       const labelEl = document.getElementById('filter-current-label');
       if (labelEl && activeChipEl) labelEl.textContent = activeChipEl.textContent;
+      updateReviewProgress();
     }
+
+    // Indicador de progreso de revisión ("Pregunta X de N"): calcula cuál
+    // es la primera pregunta VISIBLE (respeta el filtro activo) que todavía
+    // no quedó tapada por la barra de acciones fija de arriba, y usa esa
+    // como "la que se está revisando ahora". Se llama al cargar, al
+    // filtrar, y en cada scroll (limitado a una vez por frame con
+    // requestAnimationFrame para no recalcular en cada pixel).
+    function updateReviewProgress() {
+      const fill = document.getElementById('review-progress-fill');
+      const label = document.getElementById('review-progress-label');
+      if (!fill || !label) return;
+      const cards = Array.from(document.querySelectorAll('#editor-questions-container .editor-card'))
+        .filter(c => c.style.display !== 'none');
+      if (!cards.length) return;
+      const stickyBar = document.querySelector('#editor-questions-container > div');
+      const threshold = (stickyBar ? stickyBar.getBoundingClientRect().bottom : 0) + 4;
+      let current = 1;
+      for (let i = 0; i < cards.length; i++) {
+        if (cards[i].getBoundingClientRect().top <= threshold) current = i + 1;
+        else break;
+      }
+      label.textContent = `Pregunta ${current} de ${cards.length}`;
+      fill.style.width = `${Math.round((current / cards.length) * 100)}%`;
+    }
+    let _reviewProgressTicking = false;
+    window.addEventListener('scroll', () => {
+      if (_reviewProgressTicking) return;
+      _reviewProgressTicking = true;
+      requestAnimationFrame(() => { updateReviewProgress(); _reviewProgressTicking = false; });
+    }, { passive: true });
 
     function collectEditorData() {
       const qs = [];
@@ -2672,6 +2843,29 @@ Ahora convierte el examen adjunto a este formato.</pre>
         ? ` · ${skippedCount} omitida${skippedCount !== 1 ? 's' : ''}`
         : '';
       document.getElementById('success-subtitle').textContent = `${total} pregunta${total !== 1 ? 's' : ''} extraída${total !== 1 ? 's' : ''}${skippedNote} • ${downloadFilename}`;
+
+      // Mismo motivo y misma solución que se mostraban en el editor, ahora
+      // también aquí — para que no dependa de la memoria del docente entre
+      // una pantalla y otra.
+      const skippedNoticeEl = document.getElementById('success-skipped-notice');
+      if (skippedCount > 0) {
+        const skippedItemsHtml = currentParseResult.skipped_questions.map(sq => `
+          <li style="margin-bottom:6px;">
+            <strong style="color:var(--color-text);">${esc_html(sq.preview ? sq.preview.slice(0, 80) : `Pregunta ${sq.num}`)}</strong>
+            — ${esc_html(humanizeSkipReason(sq.reasons[0]))}
+          </li>`).join('');
+        skippedNoticeEl.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:var(--color-warning);margin-bottom:8px;">
+            <i data-lucide="alert-triangle" style="width:16px;height:16px;"></i>
+            ${skippedCount} pregunta${skippedCount !== 1 ? 's' : ''} no incluida${skippedCount !== 1 ? 's' : ''} en este XML
+          </div>
+          <ul style="margin:0 0 8px 20px;padding:0;font-size:13px;color:var(--color-text-muted);line-height:1.5;">${skippedItemsHtml}</ul>
+          <p style="margin:0;font-size:12px;color:var(--color-text-subtle);">Para incluirlas: corrige lo que falte en el documento original y vuelve a convertirlo, o agrégalas manualmente la próxima vez con "Añadir nueva pregunta".</p>`;
+        skippedNoticeEl.style.display = 'block';
+        if (window.lucide) lucide.createIcons();
+      } else {
+        skippedNoticeEl.style.display = 'none';
+      }
 
       // Solo entra a la lista (tarjeta + porción del pastel) el tipo que
       // realmente tiene preguntas en este examen — si no hubo, por ejemplo,
@@ -2851,7 +3045,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         stopProgress(res.ok);
 
         if (!res.ok) {
-          let errMsg = `Error del servidor (${res.status})`;
+          let errMsg = friendlyHttpError(res.status);
           try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
           showError(errMsg);
           return;
@@ -2881,7 +3075,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         stopProgress(res.ok);
 
         if (!res.ok) {
-          let errMsg = `Error del servidor (${res.status})`;
+          let errMsg = friendlyHttpError(res.status);
           try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
           showError(errMsg);
           return;
@@ -2950,7 +3144,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
 
       showPanel('progress');
       document.getElementById('progress-subtitle').textContent = 'Construyendo estructura Moodle XML...';
-      document.getElementById('progress-bar-fill').style.width = '60%';
+      document.getElementById('progress-bar-fill').style.transform = 'scaleX(0.6)';
       // Este paso es local (sin llamada a IA) y casi instantáneo — no tiene
       // sentido mostrar un tiempo transcurrido/estimado que quedó pegado
       // del paso anterior.
@@ -2965,7 +3159,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
 
         stopProgress(res.ok);
         if (!res.ok) {
-          let errMsg = `Error (${res.status})`;
+          let errMsg = friendlyHttpError(res.status);
           try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
           showError(errMsg, 'editor');
           return;
@@ -2997,9 +3191,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
 
     // History Logic
     const modalHistory = document.getElementById('modal-history');
-    document.getElementById('btn-history').addEventListener('click', async () => {
-      modalHistory.classList.add('open');
-      document.body.style.overflow = 'hidden';
+    async function loadHistoryList() {
       const list = document.getElementById('history-list');
       list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-text-muted);">Cargando historial de conversiones...</div>';
 
@@ -3008,30 +3200,55 @@ Ahora convierte el examen adjunto a este formato.</pre>
         if (!res.ok) throw new Error('Error al consultar servidor');
         const data = await res.json();
         if (data.length === 0) {
-          list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-text-muted);">No hay conversiones guardadas aún.</div>';
+          list.innerHTML = `<div style="padding:36px 24px;text-align:center;">
+            <i data-lucide="inbox" style="width:32px;height:32px;color:var(--color-text-subtle);margin-bottom:12px;"></i>
+            <p style="color:var(--color-text-muted);font-size:14px;margin-bottom:4px;">No hay conversiones guardadas aún.</p>
+            <p style="color:var(--color-text-subtle);font-size:12.5px;margin-bottom:16px;">Cada examen que conviertas queda aquí para que puedas volver a descargarlo cuando lo necesites.</p>
+            <button type="button" class="btn btn-primary" onclick="closeHistory()" style="padding:10px 20px;font-size:13px;">Convertir tu primer examen</button>
+          </div>`;
+          lucide.createIcons();
           return;
         }
         list.innerHTML = data.map(item => `
-          <div style="padding:14px 16px;border-bottom:1px solid var(--color-border-subtle);display:flex;align-items:center;justify-content:space-between;">
-            <div>
+          <div style="padding:14px 16px;border-bottom:1px solid var(--color-border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <div style="min-width:0;">
               <strong style="display:block;font-size:14px;color:var(--color-text);">${item.filename}</strong>
               <span style="font-size:12px;color:var(--color-text-muted);">${item.category} &bull; ${item.total_points} pts &bull; ${new Date(item.created_at).toLocaleString()}</span>
             </div>
-            <button class="btn btn-ghost" onclick="downloadHistory(${item.id}, '${item.filename.replace(/'/g, "\\'")}')" style="padding:6px 12px;font-size:12.5px;">
-              <i data-lucide="download" style="width:14px;height:14px;"></i> Descargar XML
-            </button>
+            <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+              <button class="btn btn-ghost" onclick="downloadHistory(${item.id}, '${item.filename.replace(/'/g, "\\'")}')" style="padding:6px 12px;font-size:12.5px;">
+                <i data-lucide="download" style="width:14px;height:14px;"></i> Descargar XML
+              </button>
+              <div class="history-action-slot" data-id="${item.id}" style="display:flex;align-items:center;">
+                <button type="button" class="btn btn-ghost" onclick="startDeleteHistory(this)" style="padding:6px 10px;color:var(--color-error);" title="Borrar del historial" aria-label="Borrar esta entrada del historial">
+                  <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+                </button>
+              </div>
+            </div>
           </div>
         `).join('');
         lucide.createIcons();
       } catch (err) {
-        list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-error);">Error al cargar el historial</div>';
+        list.innerHTML = `<div style="padding:24px;text-align:center;">
+          <p style="color:var(--color-error);font-size:14px;margin-bottom:12px;">No se pudo cargar el historial.</p>
+          <button type="button" class="btn btn-ghost" onclick="loadHistoryList()" style="padding:8px 16px;font-size:13px;">
+            <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Reintentar
+          </button>
+        </div>`;
+        lucide.createIcons();
       }
+    }
+    document.getElementById('btn-history').addEventListener('click', () => {
+      modalHistory.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      loadHistoryList();
     });
 
     function closeHistory() {
       modalHistory.classList.remove('open');
       document.body.style.overflow = '';
     }
+    modalHistory.addEventListener('click', e => { if (e.target === modalHistory) closeHistory(); });
 
     async function downloadHistory(id, originalFilename) {
       try {
@@ -3044,6 +3261,31 @@ Ahora convierte el examen adjunto a este formato.</pre>
         await saveFileToUser(blob, outName, 'XML descargado exitosamente');
       } catch (err) {
         showToast("Error descargando historial: " + err.message, 'error');
+      }
+    }
+
+    // Borrar una entrada del historial: pide confirmación en línea (Sí/No)
+    // en vez de un window.confirm() nativo, que en la ventana de escritorio
+    // (pywebview) no siempre se muestra de forma consistente entre SO.
+    function startDeleteHistory(btn) {
+      const slot = btn.closest('.history-action-slot');
+      if (!slot) return;
+      const id = slot.dataset.id;
+      slot.innerHTML = `
+        <span style="font-size:12px;color:var(--color-text-muted);margin-right:2px;">¿Borrar?</span>
+        <button type="button" onclick="confirmDeleteHistory(${id})" style="background:none;border:none;color:var(--color-error);font-weight:800;font-size:12.5px;cursor:pointer;padding:4px 6px;">Sí</button>
+        <button type="button" onclick="loadHistoryList()" style="background:none;border:none;color:var(--color-text-muted);font-size:12.5px;cursor:pointer;padding:4px 6px;">No</button>
+      `;
+    }
+    async function confirmDeleteHistory(id) {
+      try {
+        const res = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('delete failed');
+        showToast('Entrada eliminada del historial', 'info');
+      } catch (err) {
+        showToast('No se pudo borrar la entrada', 'error');
+      } finally {
+        loadHistoryList();
       }
     }
 
@@ -3067,6 +3309,23 @@ Ahora convierte el examen adjunto a este formato.</pre>
         return;
       }
       showFilePreview(file);
+    }
+
+    // Mensaje de respaldo cuando el servidor responde con error pero sin un
+    // cuerpo JSON legible (.detail) que explique qué pasó — antes se le
+    // mostraba al usuario un desnudo "Error (500)", que no dice nada
+    // accionable. Cubre los códigos que de verdad pueden ocurrir en este
+    // flujo (archivo muy pesado, límite de la API de IA, backend caído).
+    function friendlyHttpError(status) {
+      const known = {
+        413: 'El archivo es demasiado pesado para procesarlo. Intenta con un PDF más liviano o divide el examen en partes.',
+        429: 'El servicio de IA está recibiendo demasiadas solicitudes en este momento. Espera un minuto y vuelve a intentarlo.',
+        500: 'Ocurrió un error inesperado en el servidor al procesar tu examen.',
+        502: 'El servidor no pudo completar la solicitud. Vuelve a intentarlo en unos segundos.',
+        503: 'El servicio no está disponible en este momento. Vuelve a intentarlo en unos segundos.',
+        504: 'La solicitud tardó demasiado en responder. Vuelve a intentarlo — si tu examen es muy largo, puede tomar más tiempo del esperado.',
+      };
+      return known[status] || `El servidor respondió con un error (código ${status}). Vuelve a intentarlo; si el problema persiste, revisa que el archivo no esté dañado.`;
     }
 
     // Error Handler
@@ -3171,7 +3430,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       progressEstimatedTotal = _getEstimatedDuration(kind);
 
       document.getElementById('progress-timer-row').style.display = 'flex';
-      pFill.style.width = '0%';
+      pFill.style.transform = 'scaleX(0)';
       pSubtitle.textContent = sequence[0].text;
       elapsedEl.textContent = '0:00';
       etaEl.textContent = formatMMSS(progressEstimatedTotal);
@@ -3180,7 +3439,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         const elapsedSec = (Date.now() - progressStartTime) / 1000;
 
         let pct = Math.min(elapsedSec * 7, 92);
-        pFill.style.width = `${pct}%`;
+        pFill.style.transform = `scaleX(${pct / 100})`;
         const stage = sequence.slice().reverse().find(s => elapsedSec >= s.time);
         if (stage && pSubtitle.textContent !== stage.text) {
           pSubtitle.textContent = stage.text;
@@ -3201,7 +3460,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
     function stopProgress(success) {
       clearInterval(progressInterval);
       if (success) {
-        document.getElementById('progress-bar-fill').style.width = '100%';
+        document.getElementById('progress-bar-fill').style.transform = 'scaleX(1)';
         const finalElapsed = (Date.now() - progressStartTime) / 1000;
         document.getElementById('progress-elapsed').textContent = formatMMSS(finalElapsed);
         document.getElementById('progress-eta').textContent = '0:00';
