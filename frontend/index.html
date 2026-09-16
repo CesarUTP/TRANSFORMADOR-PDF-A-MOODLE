@@ -19,6 +19,15 @@
   <style>
     /* ── DESIGN SYSTEM & TOKENS (Impeccable & Design Tokens) ──────────────── */
     :root {
+      /* Le dice al navegador de qué color pintar lo que dibuja ÉL y no el
+         CSS de esta página: las flechitas de <input type="number">, las
+         barras de scroll, el cursor de texto y el desplegable de un
+         <select>. Sin esto el navegador asume fondo claro siempre, así que
+         en modo oscuro las flechitas quedaban gris oscuro sobre el input
+         oscuro — invisibles. No se puede maquillar con CSS propio: son
+         partes internas del control. */
+      color-scheme: dark;
+
       /* Color Palette — Dark Mode Default (Rich Deep Slate & Electric Cyan) */
       --color-bg:             #090d16;
       --color-bg-alt:         #0f172a;
@@ -111,6 +120,7 @@
     }
 
     [data-theme="light"] {
+      color-scheme: light;
       --color-bg:             #f1f5f9;
       --color-bg-alt:         #e2e8f0;
       --color-surface:        #ffffff;
@@ -1855,6 +1865,28 @@ Ahora convierte el examen adjunto a este formato.</pre>
       });
     }
 
+    // Vuelve a abrir los 3 paneles cuando el modo "Desplegar todo" está
+    // fijado. Hace falta porque renderEditor() reconstruye el bloque de
+    // paneles desde cero (añadir/borrar una pregunta, aplicar puntos…) y
+    // los deja colapsados: sin esto, el modo quedaba activo por dentro
+    // pero con todo cerrado en pantalla.
+    function _restorePanelsExpandedMode() {
+      if (!_panelsExpandedMode) return;
+      COLLAPSIBLE_PANEL_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.classList.contains('panel-open')) _openCollapsiblePanel(el, 'flex');
+      });
+    }
+
+    // Colapsar un panel a mano rompe el "todo abierto", así que apaga el
+    // modo fijado — si no, el botón diría "Desplegar todo" mientras por
+    // dentro seguiría fijado, y el panel cerrado volvería a abrirse solo en
+    // el siguiente re-render.
+    function _collapsePanelByHand(el) {
+      _panelsExpandedMode = false;
+      _closeCollapsiblePanel(el);
+    }
+
     function _allPanelsOpen() {
       return COLLAPSIBLE_PANEL_IDS.every(id => {
         const el = document.getElementById(id);
@@ -1894,7 +1926,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const el = document.getElementById('add-question-types');
       if (!el) return;
       if (el.classList.contains('panel-open')) {
-        _closeCollapsiblePanel(el);
+        _collapsePanelByHand(el);
       } else {
         _closeOtherCollapsiblePanels('add-question-types');
         _openCollapsiblePanel(el, 'flex');
@@ -1975,6 +2007,14 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const existingCards = document.querySelectorAll('.editor-card');
       const nextNum = existingCards.length + 1;
       const newQ = { num: nextNum, type: sq.type, data: JSON.parse(JSON.stringify(sq.recoverable_data)) };
+      // Mismo puntaje default que "Añadir nueva pregunta": el promedio de
+      // lo que ya vale el resto. Sin esto la pregunta rescatada entraba sin
+      // `points`, su casilla salía vacía y el contador "X / Y pts" la
+      // contaba como 0 sin que se notara por qué.
+      const recoveredPeers = currentParseResult.questions.map(q => Number(q.points) || 0).filter(p => p > 0);
+      newQ.points = recoveredPeers.length
+        ? Math.round((recoveredPeers.reduce((a, b) => a + b, 0) / recoveredPeers.length) * 100) / 100
+        : Math.round((_editorTotalPoints() / (currentParseResult.questions.length + 1)) * 100) / 100;
 
       // Respuesta en blanco por tipo — el usuario la completa a mano. Para
       // truefalse se deja "Verdadero" preseleccionado (el <select> siempre
@@ -2545,13 +2585,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <div style="background:var(--color-cl-bg);border:1px solid var(--color-cl-border);border-radius:var(--radius-sm);padding:10px 12px;display:flex;gap:8px;align-items:flex-start;">
             <i data-lucide="info" style="width:14px;height:14px;color:var(--color-cl);flex-shrink:0;margin-top:2px;"></i>
             <div style="font-size:12px;color:var(--color-text-muted);line-height:1.65;">
-              <strong style="color:var(--color-text);">¿Para qué sirve este número?</strong> No es el puntaje final — define cuánto vale un tipo de pregunta <em>en comparación</em> con los demás:
-              <ul style="margin:6px 0 0;padding-left:18px;">
-                <li>Si dejas todo en 1, todas las preguntas valen lo mismo.</li>
-                <li>Si a Ensayo le pones 2 y a Múltiple le dejas 1, cada ensayo valdrá el doble que una múltiple.</li>
-                <li>Si a Ensayo le pones 3, cada ensayo valdrá el triple que una múltiple.</li>
-              </ul>
-              <span style="display:block;margin-top:6px;">Cada vez que cambias un número, la columna de la derecha recalcula al instante cuánto le tocaría a cada pregunta — la suma de todo el examen siempre va a dar <strong style="color:var(--color-text);">${currentUploadMetadata ? currentUploadMetadata.total_points : (data.metadata && data.metadata.total_points) || 100}</strong> puntos.</span>
+              <strong style="color:var(--color-text);">¿Qué significa este número?</strong> Es un peso relativo, no el puntaje final: un tipo con peso 2 vale el doble que uno con peso 1, y con peso 3, el triple. Si todos los pesos son iguales, todas las preguntas valen lo mismo.
+              <span style="display:block;margin-top:6px;">La columna de la derecha recalcula al instante cuánto quedaría cada pregunta, y el reparto siempre suma el total que definiste para este examen: <strong style="color:var(--color-text);">${fmtPoints(_editorTotalPoints())}</strong> pts.</span>
             </div>
           </div>
           <div id="points-weights-editor" style="display:flex;flex-direction:column;gap:8px;">
@@ -2704,6 +2739,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       refreshFilterChips();
       updatePointsAssignedLabel();
       updatePointsWeightPreview();
+      _restorePanelsExpandedMode();
       _updateToggleAllPanelsLabel();
       lucide.createIcons();
     }
@@ -2752,7 +2788,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const el = document.getElementById('filter-chips-bar');
       if (!el) return;
       if (el.classList.contains('panel-open')) {
-        _closeCollapsiblePanel(el);
+        _collapsePanelByHand(el);
       } else {
         _closeOtherCollapsiblePanels('filter-chips-bar');
         _openCollapsiblePanel(el, 'flex');
@@ -2761,9 +2797,13 @@ Ahora convierte el examen adjunto a este formato.</pre>
     }
 
     // Onclick de cada chip: aplica el filtro y colapsa el menú de vuelta,
-    // como al elegir una opción de un desplegable.
+    // como al elegir una opción de un desplegable — SALVO con "Desplegar
+    // todo" fijado, donde los paneles se quedan abiertos hasta que el
+    // docente pulse "Ocultar todo". Filtrar cerraba la barra igual, así
+    // que "Desplegar todo" parecía apagarse solo al elegir un tipo.
     function selectFilter(type) {
       filterQuestionsByType(type);
+      if (_panelsExpandedMode) return;
       const bar = document.getElementById('filter-chips-bar');
       if (bar) _closeCollapsiblePanel(bar);
     }
@@ -2842,13 +2882,40 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const el = document.getElementById('points-tool-panel');
       if (!el) return;
       if (el.classList.contains('panel-open')) {
-        _closeCollapsiblePanel(el);
+        _collapsePanelByHand(el);
       } else {
         _closeOtherCollapsiblePanels('points-tool-panel');
         _openCollapsiblePanel(el, 'flex');
         updatePointsWeightPreview();
       }
       _updateToggleAllPanelsLabel();
+    }
+
+    // Puntos totales del examen: SIEMPRE los que el docente escribió al
+    // subir el archivo (nunca un 100 asumido) — un único lugar del que
+    // leerlos, para que el panel, la vista previa y el contador no puedan
+    // quedar diciendo cosas distintas.
+    function _editorTotalPoints() {
+      const t = currentUploadMetadata ? Number(currentUploadMetadata.total_points) : NaN;
+      return Number.isFinite(t) && t > 0 ? t : 0;
+    }
+    // Formato corto y sin ceros de relleno (2.50 → "2.5", 20.00 → "20").
+    const fmtPoints = n => Number(n).toFixed(2).replace(/\.?0+$/, '');
+
+    // Lee los pesos escritos en el panel "Por tipo". Es la ÚNICA lectura de
+    // esos inputs: la vista previa y el botón "Aplicar" la comparten a
+    // propósito, porque antes cada una interpretaba distinto un campo vacío
+    // (la vista previa lo tomaba como 0 y "Aplicar" como 1), así que el
+    // reparto que se aplicaba no era el que la vista previa había
+    // prometido. Un campo vacío o con basura vale 1 (peso neutro); un 0
+    // escrito a propósito sí se respeta.
+    function readTypeWeights() {
+      const weights = {};
+      document.querySelectorAll('.points-weight-input').forEach(inp => {
+        const v = parseFloat(inp.value);
+        weights[inp.dataset.type] = Number.isFinite(v) && v >= 0 ? v : 1;
+      });
+      return weights;
     }
 
     // Cambia entre "Equitativo" (sin configuración) y "Por tipo" (muestra
@@ -2878,19 +2945,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
       // en el panel ya aplicado (si no, el panel se veía "reiniciado" al
       // pulsar Aplicar, como si no hubiera pasado nada).
       const mode = _pointsToolMode;
-      const weights = {};
-      document.querySelectorAll('.points-weight-input').forEach(inp => {
-        const v = parseFloat(inp.value);
-        weights[inp.dataset.type] = Number.isFinite(v) && v >= 0 ? v : 1;
-      });
+      const weights = readTypeWeights();
 
       syncParseResultFromDOM();
-      const totalPoints = currentUploadMetadata.total_points;
-      if (mode === 'equal') {
-        autoDistributePoints(currentParseResult.questions, totalPoints, 'equal');
-      } else {
-        autoDistributePoints(currentParseResult.questions, totalPoints, 'byType', weights);
+      const totalPoints = _editorTotalPoints();
+      if (!totalPoints) {
+        showToast('No hay un total de puntos definido para este examen', 'error');
+        return;
       }
+      autoDistributePoints(currentParseResult.questions, totalPoints, mode, weights);
       renderEditor(currentParseResult);
       lucide.createIcons();
 
@@ -2910,7 +2973,13 @@ Ahora convierte el examen adjunto a este formato.</pre>
       }
       _updateToggleAllPanelsLabel();
 
-      showToast('Puntos redistribuidos — revisa cada pregunta antes de generar el XML', 'info');
+      // El toast dice el resultado concreto (no solo "listo"): con el panel
+      // abierto y la lista de preguntas abajo, es la señal más clara de que
+      // el botón sí hizo algo y de cuánto se repartió en total.
+      showToast(
+        `${fmtPoints(totalPoints)} pts repartidos entre ${currentParseResult.questions.length} preguntas — revisa cada una antes de generar el XML`,
+        'info'
+      );
     }
 
     // Contador en vivo "X / Y pts": no bloquea nada, solo ayuda a notar un
@@ -2922,9 +2991,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
       if (!label) return;
       let sum = 0;
       document.querySelectorAll('.q-points').forEach(inp => { sum += parseFloat(inp.value) || 0; });
-      const total = currentUploadMetadata ? currentUploadMetadata.total_points : 0;
-      const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '');
-      label.textContent = `${fmt(sum)} / ${fmt(total)} pts`;
+      const total = _editorTotalPoints();
+      label.textContent = `${fmtPoints(sum)} / ${fmtPoints(total)} pts`;
     }
     // Vista previa en vivo del panel "Por tipo": mientras el docente
     // escribe un peso, se calcula al instante cuánto le tocaría a cada
@@ -2936,26 +3004,34 @@ Ahora convierte el examen adjunto a este formato.</pre>
     function updatePointsWeightPreview() {
       const previews = document.querySelectorAll('.points-weight-preview');
       if (!previews.length) return;
-      const totalPoints = currentUploadMetadata ? currentUploadMetadata.total_points : 0;
-      const counts = {};
-      document.querySelectorAll('#editor-questions-container .editor-card').forEach(card => {
-        const t = card.dataset.qtype;
-        counts[t] = (counts[t] || 0) + 1;
+      const totalPoints = _editorTotalPoints();
+      // La vista previa no reimplementa la fórmula: corre el MISMO
+      // autoDistributePoints() que el botón "Aplicar", pero sobre una copia
+      // de juguete (solo el tipo de cada tarjeta) para no tocar ninguna
+      // pregunta de verdad. Así es imposible que prometa un reparto y luego
+      // se aplique otro.
+      const mock = [...document.querySelectorAll('#editor-questions-container .editor-card')]
+        .map(card => ({ type: card.dataset.qtype }));
+      if (!mock.length || !totalPoints) {
+        previews.forEach(el => { el.textContent = '—'; });
+        return;
+      }
+      autoDistributePoints(mock, totalPoints, _pointsToolMode, readTypeWeights());
+      const range = {};
+      mock.forEach(q => {
+        const r = range[q.type] || (range[q.type] = { min: q.points, max: q.points });
+        r.min = Math.min(r.min, q.points);
+        r.max = Math.max(r.max, q.points);
       });
-      const weights = {};
-      document.querySelectorAll('.points-weight-input').forEach(inp => {
-        const v = parseFloat(inp.value);
-        weights[inp.dataset.type] = Number.isFinite(v) && v >= 0 ? v : 0;
-      });
-      let totalWeight = 0;
-      Object.keys(counts).forEach(t => { totalWeight += (weights[t] || 0) * counts[t]; });
-      const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '');
       previews.forEach(el => {
-        const t = el.dataset.type;
-        if (totalWeight <= 0) { el.textContent = '—'; return; }
-        const unit = totalPoints / totalWeight;
-        const grade = Math.round((weights[t] || 0) * unit * 100) / 100;
-        el.textContent = `${fmt(grade)} pts c/u`;
+        const r = range[el.dataset.type];
+        if (!r) { el.textContent = '—'; return; }
+        // El reparto de céntimos sobrantes puede dejar 0.01 de diferencia
+        // dentro de un mismo tipo — se muestra el rango en vez de un valor
+        // único que no sería cierto para todas.
+        el.textContent = r.min === r.max
+          ? `${fmtPoints(r.min)} pts c/u`
+          : `${fmtPoints(r.min)}–${fmtPoints(r.max)} pts c/u`;
       });
     }
 
@@ -3106,27 +3182,51 @@ Ahora convierte el examen adjunto a este formato.</pre>
 
     function autoDistributePoints(questions, totalPoints, mode, weights) {
       if (!questions || !questions.length) return;
-      if (mode === 'equal') {
-        const share = totalPoints / questions.length;
-        questions.forEach(q => { q.points = Math.round(share * 100) / 100; });
-        return;
-      }
+      const total = Number(totalPoints);
+      if (!Number.isFinite(total) || total <= 0) return;
+
+      // Peso de cada pregunta: 1 para todas en modo equitativo, o el peso
+      // de su tipo en modo "Por tipo".
       const w = weights || DEFAULT_TYPE_WEIGHTS;
-      const counts = {};
-      questions.forEach(q => { counts[q.type] = (counts[q.type] || 0) + 1; });
-      let totalWeight = 0;
-      Object.keys(counts).forEach(t => { totalWeight += _weightOrDefault(w, t) * counts[t]; });
+      let shares = questions.map(q => (mode === 'equal' ? 1 : _weightOrDefault(w, q.type)));
+      let totalWeight = shares.reduce((a, b) => a + b, 0);
       if (totalWeight <= 0) {
         // Caso degenerado: todos los pesos en 0 (o negativos) no tiene una
         // solución matemática (dividiría entre cero) — se cae a reparto
         // equitativo en vez de fallar en silencio.
-        autoDistributePoints(questions, totalPoints, 'equal');
-        return;
+        shares = questions.map(() => 1);
+        totalWeight = questions.length;
       }
-      const unit = totalPoints / totalWeight;
-      questions.forEach(q => {
-        q.points = Math.round(_weightOrDefault(w, q.type) * unit * 100) / 100;
-      });
+
+      // El reparto se hace en CÉNTIMOS con el método del resto mayor, no
+      // redondeando cada pregunta por separado. Redondear una por una hacía
+      // que la suma se fuera del total que el docente había fijado (7
+      // preguntas de 1.74 + 3 de 2.61 daba 20.01 / 20 pts, y el contador de
+      // arriba lo mostraba), justo lo contrario de lo que promete el panel.
+      // Ahora se reparte el total exacto y los céntimos sobrantes se dan de
+      // a uno a las preguntas con mayor resto, así que la suma SIEMPRE
+      // cuadra; dentro de un mismo tipo dos preguntas pueden diferir como
+      // mucho en 0.01 pts.
+      const totalCents = Math.round(total * 100);
+      const exact = shares.map(s => (s / totalWeight) * totalCents);
+      const cents = exact.map(v => Math.floor(v));
+      const leftover = totalCents - cents.reduce((a, b) => a + b, 0);
+      // Entre preguntas empatadas, los céntimos sobrantes se reparten por
+      // turnos entre los tipos (1ª de cada tipo, 2ª de cada tipo…) en vez de
+      // vaciarlos sobre el primer tipo de la lista. Si no, dos tipos con el
+      // MISMO peso podían terminar mostrando valores distintos (1.93 vs
+      // 1.92 pts c/u), que se lee como un error aunque la suma cuadre.
+      const seenPerType = {};
+      const byRemainder = exact
+        .map((v, i) => {
+          const t = questions[i].type;
+          const turn = seenPerType[t] = (seenPerType[t] === undefined ? 0 : seenPerType[t] + 1);
+          return { i, turn, frac: v - Math.floor(v) };
+        })
+        .sort((a, b) => (b.frac - a.frac) || (a.turn - b.turn) || (a.i - b.i));
+      for (let k = 0; k < leftover && k < byRemainder.length; k++) cents[byRemainder[k].i] += 1;
+
+      questions.forEach((q, i) => { q.points = cents[i] / 100; });
     }
 
     // Stats Updater

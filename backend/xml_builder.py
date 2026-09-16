@@ -225,8 +225,14 @@ def build_xml(
         # donde el peso "genérico por tipo" no tiene forma de acertar).
         # Si no llega (payload viejo o pregunta sin tocar), cae al reparto
         # por peso de tipo de siempre — nunca falta un <defaultgrade>.
+        # OJO con el `>= 0`: un docente puede poner a propósito un tipo en
+        # peso 0 desde "Distribuir puntos" (esas preguntas quedan en 0 pts).
+        # Con `> 0` ese 0 se descartaba como "no vino puntaje" y el XML
+        # terminaba dándoles el puntaje por peso de tipo — lo contrario de
+        # lo que el editor mostraba en pantalla.
         q_points = q.get("points")
-        grade_val = q_points if isinstance(q_points, (int, float)) and q_points > 0 else grades.get(qtype, 1.0)
+        has_points = isinstance(q_points, (int, float)) and not isinstance(q_points, bool) and q_points >= 0
+        grade_val = q_points if has_points else grades.get(qtype, 1.0)
 
         # ── multichoice ──
         # Spec: <answer fraction="100"/"0"> for each choice, <single>, <shuffleanswers>
