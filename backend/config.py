@@ -7,12 +7,54 @@ variables de entorno con un fallback vacío para forzar configuración
 explícita en producción.
 """
 import os
+import sys
+import logging
+from pathlib import Path
+
+_logger = logging.getLogger(__name__)
+
+
+def _load_dotenv() -> None:
+    """
+    Carga variables desde un archivo .env local (NO versionado — ver
+    .gitignore) sin agregar dependencias: una línea CLAVE=valor por
+    variable, se ignoran comentarios (#) y líneas vacías. Nunca pisa una
+    variable que ya venga del entorno real. Se buscan, en orden: junto al
+    ejecutable empaquetado, en backend/ y en la raíz del proyecto.
+    """
+    candidates = []
+    if getattr(sys, "frozen", False):
+        candidates.append(Path(sys.executable).parent / ".env")
+    here = Path(__file__).resolve().parent
+    candidates += [here / ".env", here.parent / ".env"]
+    for path in candidates:
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key, value = key.strip(), value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+_load_dotenv()
 
 # ── Gemini API ──────────────────────────────────────────────────────────────
-GEMINI_API_KEY: str = os.environ.get(
-    "GEMINI_API_KEY",
-    "AIzaSyD-O2eEgokFLV-XZmcmH7-hBmsLRdfWOXE",  # fallback dev-only
-)
+# La key se lee de la variable de entorno GEMINI_API_KEY (o de un .env
+# local, ver _load_dotenv). El fallback de abajo es TEMPORAL: la key está
+# commiteada en el historial del repo, así que debe rotarse en Google AI
+# Studio; una vez configurada la nueva por entorno/.env, este fallback se
+# elimina. Se deja mientras tanto para no romper el ejecutable empaquetado.
+_LEGACY_FALLBACK_KEY = "AIzaSyD-O2eEgokFLV-XZmcmH7-hBmsLRdfWOXE"
+GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "") or _LEGACY_FALLBACK_KEY
+if GEMINI_API_KEY == _LEGACY_FALLBACK_KEY:
+    _logger.warning(
+        "GEMINI_API_KEY no configurada: usando la key de respaldo commiteada en el "
+        "repo. Rótala y configúrala en un archivo .env (ver .env.example)."
+    )
 GEMINI_MODEL_NAME: str = "gemini-3.1-flash-lite"
 GEMINI_MAX_RETRIES: int = 3
 GEMINI_RETRY_WAIT_SECONDS: int = 10
@@ -89,7 +131,11 @@ VALID_QUESTION_TYPES: set[str] = {
 REQUIRED_FIELDS: dict[str, list[str]] = {
     "multichoice":  ["stem", "options"],       # al menos 2 <answer>, con fraction
     "truefalse":    ["stem"],                  # exactamente 2 <answer> (true/false)
-    "matching":     ["stem", "col_a", "col_b"], # enunciado + al menos 2 <subquestion>
+    # Sin "stem" a propósito: una tabla convertida a emparejamiento (REGLA 10)
+    # suele venir sin enunciado propio, y xml_builder ya pone
+    # DEFAULT_MATCHING_STEM en ese caso. Exigirlo aquí descartaba preguntas
+    # completas y correctas que el generador sí sabía construir.
+    "matching":     ["col_a", "col_b"],         # al menos 2 <subquestion>
     "cloze":        ["text"],                   # questiontext con sintaxis {N:TYPE:...}
     "essay":        ["stem"],                   # sin respuesta que validar — califica el docente en Moodle
     "shortanswer":  ["stem"],                   # <answer> con el texto corto esperado

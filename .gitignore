@@ -34,3 +34,7 @@ dev/*.pdf
 dev/resultado_test.txt
 dev/test_output.txt
 dev/api_resp.json
+
+# Secretos locales (API keys) — nunca se versionan
+.env
+backend/.env
