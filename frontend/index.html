@@ -989,6 +989,10 @@
          en vez de cortarse. */
       overflow-x: auto;
       scrollbar-width: none;
+      /* Con overflow, el navegador permite encogerla a 0 dentro de la
+         columna del modal: en pestañas largas (Formato, Prompt IA) la
+         cinta quedaba aplastada. */
+      flex-shrink: 0;
     }
     .modal-tabs::-webkit-scrollbar { display: none; }
     .modal-tab {
@@ -1658,11 +1662,11 @@ Nº Tipo Respuesta correcta
 
         <!-- Tab 2: AI Prompt -->
         <div class="tab-panel" id="modal-panel-prompt">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <p style="font-size:13.5px;color:var(--color-text-muted);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+            <p style="font-size:13.5px;color:var(--color-text-muted);flex:1 1 260px;margin:0;">
               <strong style="color:var(--color-text);">Alternativa, normalmente no hace falta.</strong> Si el sistema no reconoce bien tu documento, pega este prompt en tu IA de preferencia junto con el examen, guarda la respuesta como .txt y súbela en el Paso 1.
             </p>
-            <button id="btn-copy-prompt" class="btn btn-ghost" style="padding:8px 14px;font-size:13px;">
+            <button id="btn-copy-prompt" class="btn btn-ghost" style="padding:8px 14px;font-size:13px;white-space:nowrap;flex-shrink:0;">
               <i data-lucide="copy" id="copy-icon" style="width:14px;height:14px;"></i>
               <span id="copy-label">Copiar Prompt</span>
             </button>
