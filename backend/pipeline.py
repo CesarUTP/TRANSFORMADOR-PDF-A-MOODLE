@@ -32,7 +32,7 @@ from extractor import (
 )
 from formatter import verify_and_format, extract_structured
 from schema_adapter import adapt
-from mark_resolver import resolve_color_marks, resolve_table_marks
+from mark_resolver import resolve_answer_marks, resolve_table_marks
 from parser import parse_answer_key, build_questions
 from validator import (
     partition_questions,
@@ -43,13 +43,56 @@ from validator import (
 
 logger = logging.getLogger(__name__)
 
+# Aviso genérico cuando el PDF tiene texto en color pero todavía no se sabe
+# (o no se pudo determinar) si ese color marca respuestas. _marks_notice lo
+# reemplaza por uno concreto cuando las marcas se resolvieron en código.
 COLOR_MARKS_NOTICE = (
-    "El documento original parece usar color para marcar respuestas "
-    "(por ejemplo texto en rojo). El sistema ya sabe interpretar esta marca, "
-    "pero no es 100% infalible — se recomienda revisar manualmente las "
-    "respuestas marcadas como correctas antes de aprobar, por si hubo algún "
-    "error de normalización."
+    "El documento tiene texto en color, pero el sistema no encontró un "
+    "patrón claro de respuestas marcadas, así que las marcas las interpretó "
+    "la IA. Revisa las preguntas con el aviso «revisar marca» antes de aprobar."
 )
+
+# (cómo se dice "marcadas ___", cómo se nombra la marca en una frase)
+_MARK_LABELS = {
+    "resaltado": ("con resaltado", "el resaltado"),
+    "subrayado": ("con subrayado", "el subrayado"),
+    "negrita": ("en negrita", "la negrita"),
+}
+
+
+def _marks_notice(mark: Any, applied: int, n_table: int, n_uncertain: int,
+                  fallback: Any) -> Any:
+    """Aviso que explica de dónde salieron las respuestas cuando el
+    documento las marca (color, resaltado, subrayado, negrita o X en un
+    cuadro) en vez de traer una clave. applied y n_table cuentan las
+    preguntas que llegan al editor con la respuesta leída de la marca."""
+    parts: List[str] = []
+    if mark and applied:
+        label, article = _MARK_LABELS.get(mark, (f"en {mark}", f"el {mark}"))
+        parts.append(
+            f"Las respuestas correctas de este documento están marcadas {label}. "
+            f"En {applied} pregunta{'s' if applied != 1 else ''} el sistema leyó esa marca "
+            f"directamente del PDF y usó las opciones marcadas como respuesta, sin que la IA la interprete. "
+            f"Revísalas antes de aprobar: si el documento también usa {article} para otras "
+            f"cosas (títulos, palabras destacadas), alguna respuesta podría haber quedado mal."
+        )
+        if n_uncertain:
+            parts.append(
+                f"Las {n_uncertain} con el aviso «revisar marca» son las que no se pudieron leer con certeza."
+                if n_uncertain != 1 else
+                "La que tiene el aviso «revisar marca» es la que no se pudo leer con certeza."
+            )
+    if n_table:
+        parts.append(
+            f"{n_table} pregunta{'s' if n_table != 1 else ''} de emparejamiento se "
+            f"{'armaron' if n_table != 1 else 'armó'} desde un cuadro marcado con X, "
+            f"uniendo cada fila con la columna de su X"
+            + ("." if parts else ": revisa que cada pareja haya quedado bien antes de aprobar.")
+        )
+    if not parts:
+        return fallback
+    return " ".join(parts)
+
 
 _COLOR_HINT_MIN_LEN = 20  # evita anclar con un enunciado demasiado corto/genérico
 
@@ -392,12 +435,18 @@ def _finalize_common(
 ) -> Dict[str, Any]:
     """Cola compartida por ambos modos: marcas resueltas en código, modo
     tolerante, avisos y recorte de la clave a las preguntas válidas."""
+    mark_result: Dict[str, Any] = {"mark": None, "applied": 0, "changed": 0}
+    n_table = 0
     if marks:
         pages, tables = marks
-        n_color = resolve_color_marks(questions, effective_answer_key, pages) if colored_pages_text else 0
+        # Siempre, no solo con texto en color: resaltado, subrayado y
+        # negrita también son marcas. resolve_answer_marks decide si el
+        # documento de verdad marca respuestas así (ver su docstring).
+        mark_result = resolve_answer_marks(questions, effective_answer_key, pages)
         n_table = resolve_table_marks(questions, effective_answer_key, tables) if tables else 0
-        if n_color or n_table:
-            logger.info("Marcas resueltas en código: %d por color, %d por tabla.", n_color, n_table)
+        if mark_result["applied"] or n_table:
+            logger.info("Marcas resueltas en código: %d por marca (%s), %d por tabla.",
+                        mark_result["applied"], mark_result["mark"], n_table)
 
     # Modo Tolerante: separar preguntas válidas de las que hay que omitir
     # en vez de bloquear TODA la conversión por una sola pregunta
@@ -407,6 +456,19 @@ def _finalize_common(
 
     if colored_pages_text:
         _tag_color_review_hints(valid_questions, colored_pages_text)
+    # Una respuesta leída de la marca en código no necesita "revisar marca":
+    # el aviso queda solo para las que la IA tuvo que interpretar.
+    for q in valid_questions:
+        if q["data"].get("answer_from_marks"):
+            q["data"].pop("color_review_hint", None)
+    n_uncertain = sum(1 for q in valid_questions if q["data"].get("color_review_hint"))
+    from_marks = [q for q in valid_questions if q["data"].get("answer_from_marks")]
+    color_marks_notice = _marks_notice(
+        mark_result["mark"],
+        sum(1 for q in from_marks if q["type"] == "multichoice"),
+        sum(1 for q in from_marks if q["type"] == "matching"),
+        n_uncertain, color_marks_notice,
+    )
 
     if not valid_questions:
         raise HTTPException(

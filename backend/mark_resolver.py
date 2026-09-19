@@ -117,19 +117,30 @@ def _option_line(lines: List[_Line], lo: int, hi: int, option: str) -> Optional[
     return None
 
 
-def resolve_color_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[str, Any]],
-                        pages: List[str]) -> int:
+def resolve_answer_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[str, Any]],
+                         pages: List[str]) -> Dict[str, Any]:
     """
     Para cada pregunta multichoice, ubica su bloque en el texto enriquecido
-    (entre su enunciado y el de la siguiente pregunta), ubica cada opción, y
-    si TODAS se encuentran y al menos una está en el color de marca, la
-    respuesta pasa a ser exactamente las opciones en ese color.
-    Devuelve cuántas preguntas cambió.
+    (entre su enunciado y el de la siguiente pregunta) y cada opción. Si
+    TODAS se encuentran y algunas (no todas) llevan la marca del documento
+    (un color, resaltado, subrayado o negrita), la respuesta pasa a ser
+    exactamente las opciones marcadas.
+
+    Solo se aplica si la marca funciona de verdad como sistema de
+    respuestas: en al menos 2 preguntas y en al menos el 30 % de las que se
+    pudieron ubicar. Muchos exámenes usan negrita o color para títulos o
+    para destacar una palabra: una opción marcada de casualidad no debe
+    reemplazar la respuesta de la clave.
+
+    Devuelve {"mark": nombre de la marca o None, "applied": preguntas cuya
+    respuesta salió de la marca, "changed": cuántas cambiaron respecto a
+    lo que dijo el modelo}.
     """
+    result = {"mark": None, "applied": 0, "changed": 0}
     lines = _lines(pages)
     color = _mark_color(lines)
     if not color:
-        return 0
+        return result
 
     anchors: List[Optional[int]] = []
     cursor = 0
@@ -140,7 +151,8 @@ def resolve_color_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, D
         if a is not None:
             cursor = a + 1
 
-    changed = 0
+    located = 0
+    candidates: List[Tuple[Dict[str, Any], List[str]]] = []
     for idx, q in enumerate(questions):
         if q.get("type") != "multichoice" or anchors[idx] is None:
             continue
@@ -150,18 +162,26 @@ def resolve_color_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, D
         found = {L: _option_line(lines, lo, hi, text) for L, text in options.items()}
         if not options or any(v is None for v in found.values()):
             continue
+        located += 1
         marked = [options[L] for L, i in sorted(found.items()) if lines[i].colors == color]
         # Sin marca, o con TODAS las opciones marcadas (ej. un examen que
         # pone todas las opciones en negrita): eso no señala una respuesta.
-        if not marked or len(marked) == len(options):
-            continue
+        if marked and len(marked) < len(options):
+            candidates.append((q, marked))
+
+    if len(candidates) < 2 or len(candidates) < 0.3 * located:
+        return result
+
+    result["mark"] = color
+    for q, marked in candidates:
         new_answer = " | ".join(marked)
         entry = answer_key.setdefault(q["num"], {"type": "multichoice"})
         if entry.get("answer") != new_answer:
             entry["answer"] = new_answer
-            changed += 1
+            result["changed"] += 1
         q["data"]["answer_from_marks"] = True
-    return changed
+        result["applied"] += 1
+    return result
 
 
 # ── Cuadros de marcas (REGLA 10) ─────────────────────────────────────────────

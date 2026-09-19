@@ -15,7 +15,7 @@ Corre como una app de escritorio nativa (Windows/macOS, vía `pywebview`) — no
 - **Editor de revisión interactivo**: antes de generar el XML final, se pueden inspeccionar y editar todas las preguntas.
   - Filtro por tipo (los 7 tipos soportados), con conteo en vivo y color propio por tipo.
   - Menú de "Añadir nueva pregunta" colapsable: se despliega en un clic y vuelve a cerrarse solo al elegir un tipo.
-  - Botones de acción (**Aprobar y Generar XML** / **Cancelar**) fijos arriba del todo — accesibles sin bajar por exámenes de 100+ preguntas — en verde y rojo respectivamente, por convención de color.
+  - Panel de revisión a la derecha (abajo en pantallas angostas): mapa del examen con la pregunta actual, las que tienen avisos y clic para saltar, más los botones **Aprobar** / **Cancelar**, siempre a la vista.
   - Checkboxes para respuestas múltiples y un constructor visual para preguntas Cloze (sin escribir la sintaxis de corchetes a mano).
 - **Resumen visual del resultado**: al terminar, una tarjeta por cada tipo de pregunta *presente* en el examen (no se muestran tipos con 0 preguntas) y una gráfica de pastel con la distribución de los puntos totales por tipo.
 - **Historial de conversiones**: cada examen convertido queda guardado localmente y se puede volver a descargar.
@@ -41,7 +41,7 @@ Conversor a Moodle XML/
 │   ├── formatter.py      ← Llamada a Gemini (modo texto o JSON con esquema)
 │   ├── parser.py         ← Lee el formato de texto que devuelve la IA (modo texto)
 │   ├── schema_adapter.py ← Convierte la salida JSON de la IA (modo JSON)
-│   ├── mark_resolver.py  ← Decide en código las respuestas marcadas por color o tabla
+│   ├── mark_resolver.py  ← Decide en código las respuestas marcadas (color, resaltado, subrayado, negrita, X en tablas)
 │   ├── validator.py      ← Validación de preguntas contra el spec Moodle XML
 │   ├── xml_builder.py    ← Generación del XML Moodle
 │   ├── database.py       ← Historial de conversiones (SQLite)
@@ -268,7 +268,8 @@ PDF/TXT → Extracción (texto + color + tablas) → [GEMINI] → Parser / Adapt
 **Las marcas del PDF se leen, no se adivinan.** En un PDF digital, `extract_text()` pierde justo las marcas de respuesta más comunes: el color de una opción, el resaltado, el subrayado, la negrita y la columna de la "X" en un cuadro de marcas. Sin ellas el modelo tiende a *resolver* la pregunta con su propio conocimiento. Por eso:
 
 - el texto que recibe el modelo lleva esas marcas anotadas (`⟦rojo⟧Lista (list)⟦/rojo⟧`, `⟦resaltado⟧…`, `⟦subrayado⟧…`, `⟦negrita⟧…`) y las tablas con su estructura (`| Evento | … | x |`);
-- después, `mark_resolver.py` decide en código las respuestas marcadas. El modelo solo estructura (qué es enunciado, qué es opción).
+- después, `mark_resolver.py` decide en código las respuestas marcadas. El modelo solo estructura (qué es enunciado, qué es opción). Una marca se aplica solo si funciona como sistema de respuestas (algunas opciones marcadas, no todas, en al menos 2 preguntas y el 30 % de las ubicadas): así la negrita de los títulos o una palabra destacada no reemplaza la clave;
+- el editor explica de dónde salió cada respuesta: un aviso arriba ("las respuestas están marcadas en rojo; en 20 preguntas se leyó la marca del PDF…"), la etiqueta **respuesta por marca** en esas preguntas y **revisar marca** en las que la IA tuvo que interpretar.
 
 **Progreso en vivo.** La llamada a Gemini se hace por streaming (SSE) y el backend va informando al navegador cuántas preguntas lleva procesadas (`/api/parse_stream`, `/api/normalize_with_ai_stream`), así la pantalla de carga muestra "12 de ~40 preguntas procesadas" y el tiempo restante real.
 

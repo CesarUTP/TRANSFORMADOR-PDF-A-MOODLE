@@ -703,12 +703,6 @@
       .review-rail.grid-open .rail-grid-wrap { display: flex; }
       .rail-grid { max-height: 45vh; }
     }
-    @media (max-width: 480px) {
-      .rail-actions .btn-success .rail-btn-long { display: none; }
-    }
-    @media (min-width: 480.02px) {
-      .rail-actions .btn-success .rail-btn-short { display: none; }
-    }
 
     /* ── EDITOR CARDS (Interactive Question Editor) ──────────────────────── */
     .editor-card {
@@ -1351,7 +1345,7 @@
     <div class="rail-actions">
       <button type="button" id="btn-generate-xml" class="btn btn-success" onclick="generateXml()">
         <i data-lucide="check-circle" style="width:17px;height:17px;"></i>
-        <span class="rail-btn-long">Aprobar y Generar XML</span><span class="rail-btn-short">Aprobar</span>
+        Aprobar
       </button>
       <button type="button" class="btn btn-danger" onclick="resetAll()">Cancelar</button>
     </div>
@@ -2630,10 +2624,10 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </div>`;
       }
 
-      // Aviso informativo (no de advertencia): el documento usa color para
-      // marcar respuestas. El sistema ya sabe interpretarlo, así que esto NO
-      // bloquea ni pregunta nada — solo recomienda una revisión manual por
-      // si la IA se equivocó identificando alguna marca.
+      // Aviso informativo (no de advertencia): de dónde salieron las
+      // respuestas cuando el documento las marca (color, resaltado,
+      // subrayado, negrita o X en un cuadro). Lo arma el backend con lo que
+      // de verdad detectó (ver pipeline._marks_notice); no bloquea nada.
       let colorNoticeHtml = '';
       if (data.color_marks_notice) {
         colorNoticeHtml = `<div style="background:var(--color-cl-bg);border:1px solid var(--color-cl-border);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;">
@@ -2740,8 +2734,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
               ${q.data.from_table ? `<span class="type-badge" style="background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);" title="El sistema detectó una tabla/cuadro en el documento original y la convirtió automáticamente a esta pregunta de emparejamiento — revísala con cuidado antes de aprobar.">
                 <i data-lucide="table-2" style="width:12px;height:12px;vertical-align:-2px;"></i> convertida de tabla
               </span>` : ''}
-              ${q.data.color_review_hint ? `<span class="type-badge" style="background:var(--color-cl-bg);color:var(--color-cl);border:1px solid var(--color-cl-border);" title="Esta pregunta viene de una página con respuestas marcadas por color — revisa que la IA haya identificado todas las opciones correctas, especialmente si hay más de una marcada.">
-                <i data-lucide="palette" style="width:12px;height:12px;vertical-align:-2px;"></i> revisar marca de color
+              ${q.data.color_review_hint ? `<span class="type-badge" style="background:var(--color-cl-bg);color:var(--color-cl);border:1px solid var(--color-cl-border);" title="Esta pregunta viene de una página con respuestas marcadas (color, resaltado, subrayado o negrita), pero el sistema no pudo leer la marca con certeza y la interpretó la IA. Compara las opciones correctas con el documento original, sobre todo si hay más de una marcada.">
+                <i data-lucide="palette" style="width:12px;height:12px;vertical-align:-2px;"></i> revisar marca
+              </span>` : ''}
+              ${q.data.answer_from_marks ? `<span class="type-badge" style="background:transparent;color:var(--color-text-subtle);border:1px solid var(--color-border);" title="La respuesta se tomó directamente de la marca del documento (color, resaltado, subrayado, negrita o X en un cuadro), leída del PDF sin que la IA la interprete.">
+                <i data-lucide="highlighter" style="width:12px;height:12px;vertical-align:-2px;"></i> respuesta por marca
               </span>` : ''}
               ${q.data.low_confidence ? `<span class="type-badge" style="background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);" title="La IA indicó que no pudo leer con total confianza una imagen que esta pregunta necesita (código o marca borrosa/cortada). Compárala con el documento original antes de aprobar.">
                 <i data-lucide="eye-off" style="width:12px;height:12px;vertical-align:-2px;"></i> confianza baja
