@@ -1,0 +1,56 @@
+{
+  "source": "synthetic",
+  "reviewed": true,
+  "file": "synthetic/s03_enunciados_con_lista_AB.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Enunciados que contienen su propia lista A./B. antes de las opciones (el parser de texto los trunca en silencio).",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "Considera las siguientes afirmaciones:\nA. El agua hierve a 100 °C a nivel del mar.\nB. El hielo se derrite a 0 °C.\n¿Cuál de las opciones es correcta respecto a ellas?",
+      "answers": [
+        "Ambas"
+      ],
+      "options": [
+        "Solo la primera",
+        "Solo la segunda",
+        "Ambas",
+        "Ninguna"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Lee las siguientes proposiciones:\nA. Lima es la capital del Perú.\nB. Cusco es la capital del Perú.\n¿Qué se puede afirmar?",
+      "answers": [
+        "A es verdadera y B es falsa"
+      ],
+      "options": [
+        "A es verdadera y B es falsa",
+        "A es falsa y B es verdadera",
+        "Ambas son verdaderas",
+        "Ambas son falsas"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Dados los siguientes pasos de un algoritmo:\nA. Leer el número.\nB. Multiplicarlo por dos.\n¿Qué resultado da el algoritmo si se lee el 7?",
+      "answers": [
+        "14"
+      ],
+      "options": [
+        "7",
+        "9",
+        "14",
+        "49"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Un triángulo equilátero tiene sus tres lados iguales.",
+      "answers": [
+        "Verdadero"
+      ]
+    }
+  ]
+}

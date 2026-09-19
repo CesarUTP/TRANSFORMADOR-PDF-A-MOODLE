@@ -1,0 +1,86 @@
+{
+  "source": "synthetic",
+  "reviewed": true,
+  "file": "synthetic/s08_asterisco_y_sin_marca.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Correctas marcadas con *; 2 preguntas sin ninguna marca (deben quedar sin respuesta).",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿En qué año llegó Cristóbal Colón a América?",
+      "answers": [
+        "1502"
+      ],
+      "options": [
+        "1492",
+        "1502",
+        "1392",
+        "1521"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el océano más grande del mundo?",
+      "answers": [
+        "Pacífico"
+      ],
+      "options": [
+        "Atlántico",
+        "Índico",
+        "Pacífico",
+        "Ártico"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué órgano bombea la sangre en el cuerpo humano?",
+      "answers": [],
+      "options": [
+        "Pulmón",
+        "Hígado",
+        "Riñón",
+        "Corazón"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el metal más abundante en la corteza terrestre?",
+      "answers": [
+        "Aluminio"
+      ],
+      "options": [
+        "Hierro",
+        "Aluminio",
+        "Cobre",
+        "Oro"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuántos continentes se reconocen tradicionalmente?",
+      "answers": [],
+      "options": [
+        "Cinco",
+        "Seis",
+        "Siete",
+        "Ocho"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué científico formuló la teoría de la relatividad?",
+      "answers": [
+        "Newton"
+      ],
+      "options": [
+        "Newton",
+        "Einstein",
+        "Galileo",
+        "Darwin"
+      ]
+    }
+  ]
+}

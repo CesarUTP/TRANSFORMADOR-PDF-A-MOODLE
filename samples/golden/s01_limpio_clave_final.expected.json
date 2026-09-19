@@ -1,0 +1,115 @@
+{
+  "source": "synthetic",
+  "reviewed": true,
+  "file": "synthetic/s01_limpio_clave_final.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Los 7 tipos, respuestas solo en la clave al final (formato típico de docente).",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el planeta más grande del sistema solar?",
+      "answers": [
+        "Saturno"
+      ],
+      "options": [
+        "Marte",
+        "Júpiter",
+        "Saturno",
+        "Venus"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué gas absorben las plantas durante la fotosíntesis?",
+      "answers": [
+        "Dióxido de carbono"
+      ],
+      "options": [
+        "Oxígeno",
+        "Nitrógeno",
+        "Dióxido de carbono",
+        "Helio"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El agua hierve a 100 grados Celsius a nivel del mar.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La Gran Muralla China es visible a simple vista desde la Luna.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada país con su capital.",
+      "pairs": [
+        [
+          "Perú",
+          "Lima"
+        ],
+        [
+          "Chile",
+          "Santiago"
+        ],
+        [
+          "Colombia",
+          "Bogotá"
+        ],
+        [
+          "Ecuador",
+          "Quito"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "La capital de Francia es ____ y su río principal es el ____.",
+      "blanks": [
+        [
+          "París"
+        ],
+        [
+          "Sena"
+        ]
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Explica con tus palabras las causas principales de la Primera Guerra Mundial."
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el proceso por el cual el agua pasa de líquido a gas?",
+      "answers": [
+        "Evaporación"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuántos minutos tiene una hora?",
+      "answers": [
+        "50"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de estos animales es un mamífero?",
+      "answers": [
+        "Delfín"
+      ],
+      "options": [
+        "Tiburón",
+        "Delfín",
+        "Pingüino",
+        "Cocodrilo"
+      ]
+    }
+  ]
+}

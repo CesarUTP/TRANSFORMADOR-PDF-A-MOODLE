@@ -1,0 +1,89 @@
+{
+  "source": "real",
+  "reviewed": true,
+  "file": "test_tipos_nuevos.txt",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Pre-llenado con el pipeline de texto y VERIFICADO de forma determinista contra la clave de respuestas que trae el propio documento (tipos, letras/textos, V/F, pares). No depende del modelo.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la capital de Francia?",
+      "options": [
+        "Londres",
+        "Madrid",
+        "París",
+        "Roma"
+      ],
+      "answers": [
+        "París"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El agua hierve a 100°C a nivel del mar.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Explica brevemente qué es la fotosíntesis y por qué es importante para los ecosistemas."
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el proceso mediante el cual las plantas convierten la luz solar en energía química?",
+      "answers": [
+        "Fotosíntesis"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuánto es 15 multiplicado por 4?",
+      "answers": [
+        "60"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Describe con tus propias palabras las causas principales de la Revolución Francesa y su impacto en Europa."
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cuál es el término que se usa para describir un número que solo es divisible por 1 y por sí mismo?",
+      "answers": [
+        "Número primo"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "Calcula el área de un rectángulo de 8 cm de base por 5 cm de altura.",
+      "answers": [
+        "40"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Analiza el impacto de la inteligencia artificial en el mercado laboral actual, dando al menos dos ejemplos concretos."
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona los siguientes países con su capital.",
+      "pairs": [
+        [
+          "Francia",
+          "París"
+        ],
+        [
+          "Japón",
+          "Tokio"
+        ],
+        [
+          "Egipto",
+          "El Cairo"
+        ]
+      ]
+    }
+  ],
+  "reviewed_by": "claude"
+}

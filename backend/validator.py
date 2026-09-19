@@ -584,7 +584,6 @@ def pre_validate_raw_text(text: str) -> None:
     Verifica que:
       - El texto no esté vacío y tenga una longitud mínima (ej. 100 caracteres).
       - Contenga indicios de preguntas (ej. la palabra 'pregunta' o numeraciones)
-      - Contenga indicios de clave de respuestas (ej. 'respuestas' o 'respuesta').
     """
     text_clean = text.strip()
     if len(text_clean) < 100:
@@ -603,14 +602,15 @@ def pre_validate_raw_text(text: str) -> None:
         or re.search(r'(?:^|\n)\s*[1-5]\s*[.\)\-:]', text_clean) is not None
     )
     
-    # Comprobar si tiene sección de respuestas o respuestas correctas
-    has_answers = "respuestas" in lower_text or "respuesta" in lower_text or "correcta" in lower_text
-
+    # Ya NO se exige una palabra como "respuesta" o "correcta": un examen
+    # real puede marcar las respuestas en rojo, con un asterisco o con una
+    # clave titulada "CLAVE" / "Solucionario", sin usar nunca esa palabra —
+    # y se rechazaba entero antes de llegar a la IA (lo detectó el set de
+    # regresión, samples/golden/s04). Un examen sin ninguna respuesta
+    # marcada tampoco debe bloquearse aquí: el modo tolerante deja esas
+    # preguntas como "rescatables" para marcarlas a mano en el editor.
     if not has_questions:
         raise ValueError("No se encontraron indicios de preguntas en el documento (ej. 'Pregunta N:' o numeraciones).")
-
-    if not has_answers:
-        raise ValueError("No se encontraron indicios de la sección de respuestas en el documento (ej. 'RESPUESTAS').")
 
 
 def estimate_question_count(raw_text: str) -> int:

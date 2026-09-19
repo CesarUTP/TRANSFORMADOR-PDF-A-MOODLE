@@ -1,0 +1,740 @@
+{
+  "source": "real",
+  "reviewed": true,
+  "file": "PARCIAL 1 2026 1S.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Pre-llenado con el pipeline de texto y VERIFICADO de forma determinista contra la clave de respuestas que trae el propio documento (tipos, letras/textos, V/F, pares). No depende del modelo.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "Un equipo de ingeniería de software postula que un nuevo algoritmo de compresión es óptimo porque \"está guiado por una lógica computacional perfecta que trasciende cualquier prueba empírica de laboratorio\". Desde el criterio de demarcación de Karl Popper, ¿por qué esta afirmación queda excluida de la ciencia?",
+      "options": [
+        "Carece de una formulación matemática deductiva en su planteamiento.",
+        "Resulta imposible concebir un experimento empírico capaz de refutarla.",
+        "No fue sometida inicialmente a una evaluación anónima por pares.",
+        "Utiliza conceptos algorítmicos abstractos en lugar de variables medibles."
+      ],
+      "answers": [
+        "Resulta imposible concebir un experimento empírico capaz de refutarla."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Al evaluar el rendimiento de una arquitectura de microservicios, los desarrolladores registran que en 12 de 100 pruebas la latencia superó los 800 ms. En el informe técnico deciden omitir estas 12 corridas y graficar únicamente las 88 exitosas para afirmar que el sistema es de \"baja latencia garantizada\". ¿Qué fenómeno metodológico no científico describe esta acción?",
+      "options": [
+        "Formulación de hipótesis infalsables.",
+        "Falacia de confirmación mediante cherry picking.",
+        "Transición de paradigma por acumulación de anomalías.",
+        "Ruptura de reproducibilidad por sesgo instrumental."
+      ],
+      "answers": [
+        "Falacia de confirmación mediante cherry picking."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un estudiante de ingeniería plantea la siguiente hipótesis: \"Si se incrementa la memoria RAM asignada al contenedor de 2 GB a 4 GB, el tiempo de procesamiento de peticiones concurrentes disminuirá en al menos un 35%\". ¿Por qué esta hipótesis satisface los requerimientos de la investigación científica rigurosa?",
+      "options": [
+        "Garantiza el éxito técnico del sistema antes de ejecutar la prueba empírica.",
+        "Combina de forma equilibrada datos cuantitativos con percepciones de usuario.",
+        "Plantea una relación precisa, directamente medible y potencialmente falsable.",
+        "Emplea un enfoque sociocrítico enfocado en optimizar recursos disponibles."
+      ],
+      "answers": [
+        "Plantea una relación precisa, directamente medible y potencialmente falsable."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Durante una revisión por pares de un artículo sobre seguridad informática, los revisores rechazan el manuscrito porque el autor no incluyó el conjunto de datos de prueba, la configuración del entorno ni el código fuente necesario para replicar las métricas reportadas. ¿Qué criterio esencial del método científico se vulneró?",
+      "options": [
+        "Pluralismo metodológico.",
+        "Falsabilidad conceptual.",
+        "Reproducibilidad empírica.",
+        "Heterogeneidad del método."
+      ],
+      "answers": [
+        "Reproducibilidad empírica."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En un estudio de arquitectura de software, los investigadores descubren que su modelo teórico inicial falla sistemáticamente al predecir el tráfico en horas pico. Ante esto, ajustan las variables del modelo, documentan el error y diseñan un nuevo experimento controlado. ¿Qué rasgo del conocimiento científico se evidencia?",
+      "options": [
+        "Exactitud matemática invariable.",
+        "Falibilidad y carácter revisable de las teorías.",
+        "Racionalidad puramente deductiva.",
+        "Adopción de un enfoque interpretativo."
+      ],
+      "answers": [
+        "Falibilidad y carácter revisable de las teorías."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un grupo de investigadores concluye su informe indicando: \"La tasa de éxito del 99.4% de este clasificador fue validada para textos de hasta 500 palabras; se desconoce su comportamiento con documentos extensos\". Esta declaración constituye un ejemplo riguroso de:",
+      "options": [
+        "Falta de validez interna en el experimento ejecutado.",
+        "Reconocimiento explícito de los límites del estudio.",
+        "Planteamiento de hipótesis irrefutable según Popper.",
+        "Desviación hacia el paradigma constructivista."
+      ],
+      "answers": [
+        "Reconocimiento explícito de los límites del estudio."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un equipo de soporte técnico observa que las estaciones de trabajo tardan 70 segundos en compilar proyectos. Plantean que limpiando archivos temporales y limitando procesos residentes el tiempo se reducirá a menos de 30 segundos. Tras la intervención y reinicio, el cronómetro registra 25 segundos. ¿A qué fase del método científico corresponde el registro de 25 segundos?",
+      "options": [
+        "Comunicación de hallazgos.",
+        "Investigación preliminar.",
+        "Análisis de resultados contrastados.",
+        "Formulación de la pregunta de investigación."
+      ],
+      "answers": [
+        "Análisis de resultados contrastados."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de las siguientes formulaciones representa una hipótesis no científica por violar el principio de falsabilidad?",
+      "options": [
+        "La tasa de abandono del carrito aumentará si la pasarela añade más de tres pasos de verificación.",
+        "Una red neuronal convolucional entrenada con ruido gaussiano presentará mayor tasa de error.",
+        "La tecnología de cadena de bloques transformará la sociedad solo cuando las condiciones cósmicas sean favorables.",
+        "Si el servidor opera al 90% de CPU durante 40 minutos seguidos, el servicio web colapsará."
+      ],
+      "answers": [
+        "La tecnología de cadena de bloques transformará la sociedad solo cuando las condiciones cósmicas sean favorables."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "La heterogeneidad del método científico sostiene que no existe una única receta metodológica universal, sino familias de métodos. La razón epistemológica principal de esta diversidad radica en que:",
+      "options": [
+        "Cada comunidad científica define de manera arbitraria sus criterios de verdad.",
+        "El método depende de la naturaleza del fenómeno y de la pregunta de investigación formulada.",
+        "Los métodos cuantitativos han quedado obsoletos frente a los algoritmos predictivos.",
+        "La ciencia normal prohíbe el uso simultáneo de modelos matemáticos y entrevistas."
+      ],
+      "answers": [
+        "El método depende de la naturaleza del fenómeno y de la pregunta de investigación formulada."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Al investigar las leyes físicas que rigen la disipación térmica de un microprocesador bajo diferentes cargas de trabajo, el investigador opta por un diseño experimental cuantitativo. Esta decisión se fundamenta en que:",
+      "options": [
+        "Los fenómenos físicos son subjetivos y requieren interpretación del entorno social.",
+        "Los fenómenos naturales son estables y repetibles, permitiendo modelar regularidades numéricas.",
+        "El paradigma sociocrítico exige transformar la estructura operativa del procesador.",
+        "La ciencia aplicada prohíbe el uso de instrumentos cualitativos en ingeniería de hardware."
+      ],
+      "answers": [
+        "Los fenómenos naturales son estables y repetibles, permitiendo modelar regularidades numéricas."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Una institución bancaria reporta que el 40% de sus usuarios de la tercera edad abandonan la aplicación móvil durante la autenticación biométrica. Si el objetivo es comprender las frustraciones, dudas de seguridad y bloqueos emocionales de estos usuarios, el enfoque pertinente es:",
+      "options": [
+        "Cuantitativo, aplicando pruebas de hipótesis sobre el tiempo de clic.",
+        "Experimental puro, sometiendo a los usuarios a estímulos fisiológicos controlados.",
+        "Cualitativo, mediante entrevistas en profundidad y observación contextual.",
+        "Positivista estricto, correlacionando el modelo de teléfono con la edad."
+      ],
+      "answers": [
+        "Cualitativo, mediante entrevistas en profundidad y observación contextual."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En el desarrollo de una plataforma educativa, el equipo combina métricas de latencia de carga de videos con grupos focales sobre el nivel de estrés percibido por los alumnos. El beneficio central de integrar ambos enfoques en un diseño mixto radica en:",
+      "options": [
+        "Sustituir la revisión bibliográfica tradicional por analítica de datos.",
+        "Generar metainferencias que articulan cuánto sucede un fenómeno con por qué ocurre.",
+        "Evitar someter el estudio a la evaluación independiente por pares.",
+        "Reemplazar la necesidad de plantear hipótesis refutables."
+      ],
+      "answers": [
+        "Generar metainferencias que articulan cuánto sucede un fenómeno con por qué ocurre."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la ventaja primordial que ofrece el enfoque cuantitativo frente al enfoque cualitativo en un estudio sobre ciberseguridad?",
+      "options": [
+        "Mayor flexibilidad para reformular las preguntas a medida que se interactúa con atacantes.",
+        "Capacidad de generalizar patrones de ataque a grandes poblaciones de servidores con control estadístico.",
+        "Comprensión profunda de las motivaciones subjetivas e ideológicas del atacante.",
+        "Supresión absoluta de la necesidad de verificar la reproducibilidad de los datos."
+      ],
+      "answers": [
+        "Capacidad de generalizar patrones de ataque a grandes poblaciones de servidores con control estadístico."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué característica distintiva aporta el enfoque cualitativo cuando se evalúa la adopción de una herramienta de gestión de proyectos en un equipo de desarrollo?",
+      "options": [
+        "Rigidez operativa para evitar que surjan variables no contempladas en el plan inicial.",
+        "Estimación precisa del porcentaje exacto de desarrolladores que aprueban el cambio.",
+        "Riqueza interpretativa y adaptabilidad para identificar barreras culturales no previstas.",
+        "Falsación matemática de las hipótesis operativas planteadas por la gerencia."
+      ],
+      "answers": [
+        "Riqueza interpretativa y adaptabilidad para identificar barreras culturales no previstas."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En la teoría del desarrollo científico de Thomas Kuhn, un paradigma entra en crisis principalmente cuando:",
+      "options": [
+        "La comunidad científica decide cambiar sus autoridades académicas.",
+        "Se acumulan anomalías y evidencias contradictorias que las reglas vigentes no logran resolver.",
+        "Las herramientas de inteligencia artificial sustituyen a los investigadores humanos.",
+        "Los investigadores optan por un enfoque exclusivamente cualitativo."
+      ],
+      "answers": [
+        "Se acumulan anomalías y evidencias contradictorias que las reglas vigentes no logran resolver."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Durante el periodo de \"ciencia normal\", ¿cuál es la actividad principal de la comunidad de investigadores dentro de un paradigma establecido?",
+      "options": [
+        "Destruir y refutar constantemente los supuestos epistemológicos de la disciplina.",
+        "Resolver problemas o \"rompecabezas\" aplicando las teorías y reglas comúnmente aceptadas.",
+        "Implementar metodologías sociocríticas orientadas al empoderamiento político.",
+        "Descartar el uso de datos empíricos a favor de modelos puramente filosóficos."
+      ],
+      "answers": [
+        "Resolver problemas o \"rompecabezas\" aplicando las teorías y reglas comúnmente aceptadas."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un investigador asume que la realidad computacional es objetiva, independiente del observador y regida por leyes universales de causa y efecto, orientando su labor a predecir la saturación de redes troncales mediante regresiones estadísticas. ¿Bajo qué paradigma investiga?",
+      "options": [
+        "Constructivista.",
+        "Sociocrítico.",
+        "Positivista / postpositivista.",
+        "Dialéctico hermenéutico."
+      ],
+      "answers": [
+        "Positivista / postpositivista."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un estudio indaga: \"¿Qué significados y representaciones culturales construyen los programadores remotos en torno al concepto de 'desconexión digital'?\". Esta interrogante se fundamenta ontológicamente en el paradigma:",
+      "options": [
+        "Positivista.",
+        "Interpretativo / constructivista.",
+        "Conductista.",
+        "Cuantitativo puro."
+      ],
+      "answers": [
+        "Interpretativo / constructivista."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un grupo de investigadores universitarios se inserta en una comunidad rural para co-diseñar redes comunitarias de telecomunicación, buscando que los habitantes se apropien de la tecnología, superen la exclusión digital y transformen sus condiciones socioeconómicas. Este proyecto responde al paradigma:",
+      "options": [
+        "Postpositivista.",
+        "Positivista experimental.",
+        "Crítico / sociocrítico.",
+        "Racionalista deductivo abstracto."
+      ],
+      "answers": [
+        "Crítico / sociocrítico."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de las siguientes preguntas de investigación refleja con exactitud una mirada positivista en ingeniería de software?",
+      "options": [
+        "¿Cómo experimentan los diseñadores júnior la presión temporal en metodologías ágiles?",
+        "¿En qué medida el algoritmo de ordenamiento Quicksort modificado reduce el uso de memoria en un 15% frente a la versión estándar?",
+        "¿De qué manera la jerarquía laboral dentro del laboratorio perpetúa desigualdades de género?",
+        "¿Qué narrativas surgen en los foros cuando una librería de código abierto es dada de baja?"
+      ],
+      "answers": [
+        "¿En qué medida el algoritmo de ordenamiento Quicksort modificado reduce el uso de memoria en un 15% frente a la versión estándar?"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "El concepto de triangulación en investigaciones con diseño mixto se utiliza para:",
+      "options": [
+        "Validar los resultados cruzando datos cuantitativos y narrativas cualitativas para compensar debilidades de cada método.",
+        "Sustituir la experimentación tradicional mediante tres simulaciones algorítmicas independientes.",
+        "Demostrar que los métodos cualitativos carecen de rigor científico por su naturaleza subjetiva.",
+        "Garantizar que una teoría se vuelva universal e inmune a futuras refutaciones popperianas."
+      ],
+      "answers": [
+        "Validar los resultados cruzando datos cuantitativos y narrativas cualitativas para compensar debilidades de cada método."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Al redactar la revisión de la literatura de una tesis de grado, un estudiante utiliza una herramienta de IA generativa. ¿Cuál de las siguientes acciones representa una práctica metodológicamente correcta y recomendada?",
+      "options": [
+        "Copiar el marco teórico generado por el modelo asumiendo que los motores de IA no cometen errores.",
+        "Usar la herramienta para clasificar y mapear artículos relevantes, verificando críticamente cada referencia en fuentes primarias.",
+        "Permitir que la IA introduzca citas bibliográficas sin cotejarlas, siempre que la redacción tenga fluidez.",
+        "Solicitar a la IA que redacte las conclusiones finales de la tesis prescindiendo del análisis humano."
+      ],
+      "answers": [
+        "Usar la herramienta para clasificar y mapear artículos relevantes, verificando críticamente cada referencia en fuentes primarias."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un tesista le pide a un modelo de lenguaje que genere una tabla con datos de telemetría de 50 servidores que \"simule\" el comportamiento bajo ataque DDoS para no tener que configurar el banco de pruebas real. Desde el punto de vista metodológico y ético, esta acción:",
+      "options": [
+        "Constituye una práctica innovadora permitida dentro del paradigma interpretativo.",
+        "Es una falta grave de integridad científica al inventar datos empíricos de la nada.",
+        "Es válida si el estudiante declara la versión exacta y el fabricante del modelo utilizado.",
+        "Satisface el criterio de reproducibilidad exigido por el método científico."
+      ],
+      "answers": [
+        "Es una falta grave de integridad científica al inventar datos empíricos de la nada."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿A qué se refiere el término \"alucinación\" en el contexto de herramientas de IA generativa aplicadas a la investigación académica?",
+      "options": [
+        "A la incapacidad del algoritmo para procesar archivos PDF de más de diez páginas.",
+        "A la generación de textos, datos o referencias bibliográficas verosímiles pero completamente inexistentes o falsos.",
+        "Al aumento excesivo de latencia del servidor cuando procesa consultas estadísticas complejas.",
+        "A la postura epistemológica que rechaza los enfoques cuantitativos por considerarlos sesgados."
+      ],
+      "answers": [
+        "A la generación de textos, datos o referencias bibliográficas verosímiles pero completamente inexistentes o falsos."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Al emplear inteligencia artificial para procesar transcripciones de entrevistas a usuarios de un sistema ERP hospitalario, ¿cuál es el límite que el investigador humano debe mantener estrictamente?",
+      "options": [
+        "Impedir que la IA participe en la extracción preliminar de palabras clave y frecuencias léxicas.",
+        "Reservar para el criterio humano la interpretación teórica de los significados, manteniendo la responsabilidad final.",
+        "Prohibir el uso de hojas de cálculo o bases de datos relacionales durante la codificación.",
+        "Delegar la redacción íntegra del apartado de discusión de resultados al modelo generativo."
+      ],
+      "answers": [
+        "Reservar para el criterio humano la interpretación teórica de los significados, manteniendo la responsabilidad final."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un grupo de investigación planea cargar grabaciones de audio de pacientes y notas clínicas confidenciales a un servicio público de IA generativa en la nube para transcribir y clasificar síntomas. ¿Qué riesgo primordial se está comprometiendo de manera directa?",
+      "options": [
+        "La falsabilidad popperiana de los síntomas.",
+        "La ética de la investigación, privacidad de datos sensibles y consentimiento informado.",
+        "La heterogeneidad metodológica del proyecto.",
+        "La posibilidad de publicar en conferencias del paradigma positivista."
+      ],
+      "answers": [
+        "La ética de la investigación, privacidad de datos sensibles y consentimiento informado."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es una consecuencia perjudicial a largo plazo para los estudiantes universitarios si delegan excesivamente la formulación de preguntas y la búsqueda documental en asistentes de IA?",
+      "options": [
+        "La invalidación automática de las pruebas A/B en entornos de producción.",
+        "La atrofia y pérdida de habilidades críticas de análisis, lectura profunda y síntesis académica.",
+        "La imposibilidad técnica de emplear diseños metodológicos cuantitativos en ingeniería.",
+        "La incompatibilidad con los estándares de revisión anónima por pares."
+      ],
+      "answers": [
+        "La atrofia y pérdida de habilidades críticas de análisis, lectura profunda y síntesis académica."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En las directrices de integridad científica actuales, ¿cuál es la pauta obligatoria respecto al uso de asistentes de IA en la preparación de manuscritos académicos?",
+      "options": [
+        "Ocultar su intervención para evitar prejuicios por parte de los revisores.",
+        "Declarar con precisión la herramienta, versión y propósito de su empleo, asumiendo la autoría humana plena.",
+        "Asignar a la herramienta de inteligencia artificial la coautoría principal del documento.",
+        "Limitar su uso exclusivo a la fase de recolección de evidencia en campo."
+      ],
+      "answers": [
+        "Declarar con precisión la herramienta, versión y propósito de su empleo, asumiendo la autoría humana plena."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de las siguientes actividades de investigación describe un soporte metodológico de la IA eficiente y legítimo?",
+      "options": [
+        "Alterar distribuciones de frecuencias para conseguir significancia estadística en una prueba.",
+        "Corregir el estilo gramatical, estructurar ideas previas y sugerir resúmenes visuales de datos reales.",
+        "Generar citas apócrifas de autores consagrados para respaldar un marco teórico inconcluso.",
+        "Delegar en la IA el juicio valorativo sobre el impacto social de una política tecnológica."
+      ],
+      "answers": [
+        "Corregir el estilo gramatical, estructurar ideas previas y sugerir resúmenes visuales de datos reales."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "La metáfora pedagógica que compara a la IA en investigación con \"un becario muy rápido, pero poco fiable\" subraya que:",
+      "options": [
+        "Sus productos nunca deben ser considerados en ninguna fase preliminar de un proyecto.",
+        "Puede acelerar el procesamiento mecánico, pero cada producto debe ser verificado, corregido y validado por el investigador.",
+        "Tarde o temprano sustituirá de forma autónoma la necesidad de evaluación por pares.",
+        "Carece por completo de utilidad computacional para el análisis de grandes volúmenes de texto."
+      ],
+      "answers": [
+        "Puede acelerar el procesamiento mecánico, pero cada producto debe ser verificado, corregido y validado por el investigador."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un ingeniero evalúa dos modelos predictivos de mantenimiento: el Modelo A describe con detalle los factores cualitativos de desgaste pero no ofrece predicciones temporales comprobables; el Modelo B sostiene que una bomba fallará si la vibración armónica excede los 4.5 mm/s durante 2 horas consecutivas. Desde la epistemología científica de Popper, ¿cuál de los modelos posee estatus científico riguroso?",
+      "options": [
+        "El Modelo A, porque incluye factores cualitativos y contextuales más ricos.",
+        "El Modelo B, porque formula una predicción empíricamente verificable y refutable.",
+        "Ambos por igual, siempre que cuenten con el aval del fabricante de la maquinaria.",
+        "Ninguno, puesto que la ingeniería prescinde de leyes universales de la ciencia."
+      ],
+      "answers": [
+        "El Modelo B, porque formula una predicción empíricamente verificable y refutable."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿En qué se diferencia fundamentalmente la ciencia normal de un periodo de revolución científica en el esquema de Thomas Kuhn?",
+      "options": [
+        "La ciencia normal opera acumulativamente bajo un paradigma consensuado; la revolución científica reemplaza dicho marco por uno nuevo tras una crisis.",
+        "La ciencia normal rechaza los experimentos controlados, mientras que las revoluciones científicas imponen el enfoque cualitativo.",
+        "La ciencia normal se desarrolla exclusivamente en ciencias sociales, y las revoluciones en ciencias exactas.",
+        "La ciencia normal requiere herramientas de IA generativa, mientras que la revolución científica depende del análisis humano."
+      ],
+      "answers": [
+        "La ciencia normal opera acumulativamente bajo un paradigma consensuado; la revolución científica reemplaza dicho marco por uno nuevo tras una crisis."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En un estudio sobre la adopción de billeteras digitales, el investigador mide cuantitativamente la frecuencia de transacciones semanales y cualitativamente las razones del temor al fraude reportadas por los comerciantes. La integración de ambos resultados en la discusión corresponde a:",
+      "options": [
+        "Una anomalía teórica no resuelta.",
+        "La generación de metainferencias comprensivas.",
+        "Una práctica de sesgo deliberado o cherry picking.",
+        "La refutación empírica del método científico."
+      ],
+      "answers": [
+        "La generación de metainferencias comprensivas."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Por qué el conocimiento científico se define formalmente como sistemático y falible?",
+      "options": [
+        "Porque obedece a procedimientos metódicos y ordenados, admitiendo siempre la posibilidad de corrección ante nueva evidencia.",
+        "Porque se fundamenta en verdades eternas e inmutables que no admiten réplica empírica.",
+        "Porque combina de manera aleatoria técnicas cuantitativas y opiniones subjetivas de la comunidad.",
+        "Porque depende exclusivamente de la intuición deductiva del líder del laboratorio."
+      ],
+      "answers": [
+        "Porque obedece a procedimientos metódicos y ordenados, admitiendo siempre la posibilidad de corrección ante nueva evidencia."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Al diseñar un instrumento para medir la usabilidad de una interfaz web, un investigador utiliza IA para redactar un primer borrador de reactivos tipo Likert. ¿Cuál es la responsabilidad metodológica inexcusable del investigador antes de aplicar la encuesta?",
+      "options": [
+        "Verificar la coherencia, validez de constructo, claridad pedagógica y aplicabilidad de los ítems propuestos.",
+        "Omitir las pruebas piloto asumiendo la calidad formal del modelo de procesamiento de lenguaje.",
+        "Solicitar a la IA que responda las encuestas simulando usuarios reales para agilizar el estudio.",
+        "Cambiar el enfoque del estudio a la investigación-acción sociocrítica."
+      ],
+      "answers": [
+        "Verificar la coherencia, validez de constructo, claridad pedagógica y aplicabilidad de los ítems propuestos."
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El criterio de falsabilidad popperiano establece que para que una hipótesis sea clasificada como científica debe existir al menos un resultado empírico concebible capaz de refutarla.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La práctica de cherry picking en la redacción de informes de rendimiento algorítmico es metodológicamente válida siempre que la muestra de éxitos supere el 80% del total de casos.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La heterogeneidad metodológica implica que la selección entre un enfoque cuantitativo, cualitativo o mixto debe estar subordinada a la naturaleza del problema de investigación y no a imposiciones rígidas.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Los fenómenos naturales, por su estabilidad física y repetibilidad independiente del observador, se prestan primordialmente a diseños cuantitativos y experimentales con formulaciones matemáticas.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "En un diseño de investigación mixto en ingeniería de software, las metainferencias consisten en descartar las métricas de rendimiento cuantitativas si estas contradicen las opiniones recogidas en entrevistas cualitativas.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Según la teoría de Thomas Kuhn, la aparición de anomalías aisladas dentro de una comunidad científica provoca de forma inmediata una revolución científica y el abandono del paradigma vigente.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El paradigma constructivista o interpretativo concibe la existencia de realidades múltiples construidas contextualmente por los sujetos, priorizando la comprensión de significados sobre la medición numérica abstracta.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Es éticamente admisible emplear asistentes de IA generativa para confeccionar conjuntos de datos numéricos sintéticos y presentarlos como mediciones de telemetría reales de un laboratorio.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Las alucinaciones de los modelos de IA generativa representan una amenaza directa a la confiabilidad y validez de una revisión de la literatura académica si los hallazgos no se cotejan con fuentes primarias verificadas.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La revisión por pares (peer review) garantiza la calidad del conocimiento científico al someter los manuscritos a la crítica independiente de evaluadores anónimos y competentes en la misma disciplina.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada característica del conocimiento científico con el ejemplo de aplicación técnica en ingeniería de sistemas:",
+      "pairs": [
+        [
+          "Falsable",
+          "La afirmación teórica predice una reducción precisa de la latencia a menos de 200 ms, susceptible de ser contradicha si el tiempo medido es superior."
+        ],
+        [
+          "Reproducible",
+          "Un segundo equipo de desarrollo ejecuta el mismo script de prueba de carga y obtiene idénticas curvas de concurrencia."
+        ],
+        [
+          "Falible",
+          "Se descarta una teoría de concurrencia aceptada temporalmente al descubrirse una condición de carrera bajo nuevas arquitecturas de hardware."
+        ],
+        [
+          "Exacta y verificable",
+          "Se mide el consumo de memoria en megabytes con un perfilador determinista y se publica el registro completo."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada conducta metodológica con su clasificación respecto a la práctica científica:",
+      "pairs": [
+        [
+          "Ocultar los casos de prueba en los que el cortafuegos falló y publicar únicamente las intrusiones bloqueadas.",
+          "Sesgo de confirmación por cherry picking."
+        ],
+        [
+          "Afirmar que un motor de videojuegos posee una arquitectura perfecta e incuestionable que la mente humana jamás podrá evaluar.",
+          "Hipótesis infalsable (pseudociencia)."
+        ],
+        [
+          "Explicitar que la precisión del reconocedor de voz solo fue testeada en hablantes nativos de español en ambientes silenciosos.",
+          "Reconocimiento riguroso de límites del alcance científico."
+        ],
+        [
+          "Enviar un manuscrito a dictamen anónimo de expertos para su escrutinio metodológico antes de su divulgación.",
+          "Proceso de revisión por pares."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada paradigma investigativo con su propósito ontológico y metodológico central:",
+      "pairs": [
+        [
+          "Positivista / Postpositivista",
+          "Explicar, predecir y controlar relaciones causales objetivas mediante medición y métodos estadísticos."
+        ],
+        [
+          "Interpretativo / Constructivista",
+          "Comprender significados, narrativas y percepciones profundas mediante observación contextual y entrevistas."
+        ],
+        [
+          "Crítico / Sociocrítico",
+          "Empoderar a colectivos vulnerables y transformar asimetrías sociales mediante investigación participativa."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada problema de investigación en ingeniería con el paradigma que orienta prioritariamente su formulación:",
+      "pairs": [
+        [
+          "Determinar el impacto estadístico del almacenamiento en caché NVMe sobre el tiempo de lectura/escritura en servidores de bases de datos.",
+          "Paradigma Positivista / Postpositivista."
+        ],
+        [
+          "Explorar cómo los administradores de sistemas sénior perciben la transición hacia la nube soberana y qué significados le atribuyen.",
+          "Paradigma Interpretativo / Constructivista."
+        ],
+        [
+          "Desarrollar una red inalámbrica rural autogestionada con la comunidad para mitigar la brecha de oportunidades educativas locales.",
+          "Paradigma Crítico / Sociocrítico."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada enfoque investigativo con su principal fortaleza metodológica:",
+      "pairs": [
+        [
+          "Cuantitativo",
+          "Facilita la generalización de hallazgos hacia amplias poblaciones con control riguroso de variables y réplica estadística."
+        ],
+        [
+          "Cualitativo",
+          "Facilita la comprensión del contexto profundo y ofrece flexibilidad para descubrir factores emergentes no contemplados."
+        ],
+        [
+          "Mixto",
+          "Permite la triangulación metodológica, combinando el cálculo numérico del fenómeno con las razones cualitativas de su ocurrencia."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada interrogante de investigación en desarrollo de software con la ruta metodológica requerida:",
+      "pairs": [
+        [
+          "¿Cuál es la tasa de caídas por cada millón de transacciones en la pasarela de pagos tras actualizar el kernel?",
+          "Cuantitativa."
+        ],
+        [
+          "¿Qué angustias y desconfianzas experimentan los clientes al enfrentarse a un fallo en la autenticación biométrica?",
+          "Cualitativa."
+        ],
+        [
+          "¿Cómo se relaciona el número de microdesconexiones en la plataforma con las razones de insatisfacción cualitativa que motivan la cancelación de suscripciones?",
+          "Mixta."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona la etapa del flujo investigativo con la asistencia legítima que puede aportar un modelo de IA:",
+      "pairs": [
+        [
+          "Formulación del tema y preguntas",
+          "Sugerir líneas de indagación general, conceptos afines y borradores de objetivos para depuración humana."
+        ],
+        [
+          "Revisión de la literatura",
+          "Mapear rápidamente tópicos, agrupar temáticas y sintetizar tendencias de publicación para contraste posterior."
+        ],
+        [
+          "Análisis preliminar de datos",
+          "Apoyar en la categorización léxica inicial de entrevistas o explorar patrones exploratorios en tablas."
+        ],
+        [
+          "Redacción y comunicación científica",
+          "Mejorar la fluidez sintáctica, sugerir palabras clave normalizadas y generar resúmenes visuales."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada concepto epistemológico kuhniano con su definición operativa en investigación:",
+      "pairs": [
+        [
+          "Paradigma",
+          "Matriz disciplinar compartida de creencias, métodos, valores y modelos ejemplares adoptada por una comunidad."
+        ],
+        [
+          "Ciencia normal",
+          "Práctica de resolución metódica de problemas técnicos dentro de los límites y reglas de una matriz aceptada."
+        ],
+        [
+          "Anomalía",
+          "Evidencia o resultado empírico persistente que contradice las predicciones y no logra encajar en el marco vigente."
+        ],
+        [
+          "Revolución científica",
+          "Reemplazo estructural del marco conceptual y las reglas metodológicas compartidas tras una crisis insostenible."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada riesgo metodológico del uso indiscriminado de IA con su implicación directa:",
+      "pairs": [
+        [
+          "Alucinación de fuentes",
+          "Inclusión de artículos, citas bibliográficas y volúmenes de revista inexistentes en el marco teórico."
+        ],
+        [
+          "Delegación excesiva de la búsqueda crítica",
+          "Deterioro progresivo del pensamiento crítico, la capacidad analítica y la alfabetización informacional."
+        ],
+        [
+          "Carga de datos no anonimizados en la nube",
+          "Vulneración ética grave a la confidencialidad, privacidad de los participantes y secreto industrial."
+        ],
+        [
+          "Generación artificial de mediciones experimentales",
+          "Fabricación ilícita de evidencia empírica que destruye la integridad y honestidad científica."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada criterio práctico sobre el uso de la IA en la investigación universitaria con su directriz normativa correspondiente:",
+      "pairs": [
+        [
+          "Generación de hipótesis y esquemas preliminares",
+          "Práctica permitida y sugerida para explorar ideas que el estudiante deberá fundamentar y justificar."
+        ],
+        [
+          "Fabricación de matrices de datos de laboratorio",
+          "Acción prohibida de forma absoluta por constituir falsificación y fraude académico."
+        ],
+        [
+          "Redacción del análisis e interpretación final",
+          "Responsabilidad exclusiva e intransferible del investigador humano, prohibida a la delegación ciega."
+        ],
+        [
+          "Transparencia metodológica",
+          "Deber obligatorio de reportar el software, versión y alcance de la asistencia computacional empleada."
+        ]
+      ]
+    }
+  ],
+  "reviewed_by": "claude"
+}

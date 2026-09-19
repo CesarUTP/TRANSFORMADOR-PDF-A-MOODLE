@@ -26,6 +26,22 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
     return full_text
 
 
+def extract_pages_text(file_bytes: bytes) -> List[str]:
+    """Texto de cada página por separado (mismo extract_text que el resto)."""
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        return [page.extract_text() or "" for page in pdf.pages]
+
+
+def join_pages_with_markers(pages: List[str]) -> str:
+    """
+    Une el texto de las páginas con una marca "[Página N]" antes de cada
+    una. El modo JSON la usa para que el modelo pueda decir de qué página
+    viene cada pregunta (campo "pagina"), dato que el formato de texto
+    perdía por completo al concatenar todo.
+    """
+    return "\n\n".join(f"[Página {i}]\n{t}" for i, t in enumerate(pages, start=1) if t.strip())
+
+
 def extract_text_and_images_from_pdf(file_bytes: bytes) -> tuple[str, List[Image.Image]]:
     """
     Extrae el texto completo del PDF, y además renderiza como imagen
@@ -104,6 +120,88 @@ def _char_has_color(ch: dict) -> bool:
     # pequeño evita falsos positivos por antialiasing o negros/grises
     # ligeramente impuros.
     return max(abs(r - g), abs(g - b), abs(r - b)) > 0.15
+
+
+def _color_name(rgb) -> str:
+    """Nombre aproximado de un color RGB (0-1), para que el modelo distinga
+    p. ej. una marca en rojo de un título en azul."""
+    import colorsys
+    r, g, b = (float(x) for x in rgb)
+    h, l, sat = colorsys.rgb_to_hls(r, g, b)
+    deg = h * 360
+    if deg < 15 or deg >= 330:
+        return "rojo"
+    if deg < 45:
+        return "naranja"
+    if deg < 70:
+        return "amarillo"
+    if deg < 170:
+        return "verde"
+    if deg < 200:
+        return "celeste"
+    if deg < 260:
+        return "azul"
+    return "morado"
+
+
+def _annotated_page_text(page) -> str:
+    """
+    Texto de UNA página con cada tramo de texto en color envuelto como
+    ⟦rojo⟧texto⟦/rojo⟧. extract_text() descarta el color, así que una
+    respuesta marcada en rojo llegaba al modelo como texto normal —
+    invisible — y el modelo terminaba resolviendo la pregunta por su
+    cuenta (ver REGLA 8). Se reconstruyen las líneas desde las palabras
+    (mismo agrupamiento por altura que usa pdfplumber) para poder marcar
+    exactamente qué palabras tienen color.
+    """
+    from pdfplumber.utils import cluster_objects
+
+    words = page.extract_words(extra_attrs=["non_stroking_color"], keep_blank_chars=False)
+    lines_out: List[str] = []
+    for line in cluster_objects(words, "top", tolerance=3):
+        line = sorted(line, key=lambda w: w["x0"])
+        parts: List[str] = []
+        current = None  # nombre del color del tramo abierto
+        for w in line:
+            color = w.get("non_stroking_color")
+            name = _color_name(color) if _char_has_color({"text": w["text"], "non_stroking_color": color}) else None
+            if name != current:
+                if current:
+                    parts[-1] += f"⟦/{current}⟧"
+                if name:
+                    parts.append(f"⟦{name}⟧{w['text']}")
+                else:
+                    parts.append(w["text"])
+                current = name
+            else:
+                parts.append(w["text"])
+        if current:
+            parts[-1] += f"⟦/{current}⟧"
+        lines_out.append(" ".join(parts))
+    return "\n".join(lines_out)
+
+
+def extract_pages_text_with_color_marks(file_bytes: bytes) -> List[str]:
+    """
+    Como extract_pages_text, pero en las páginas que usan texto de color
+    ese texto va anotado con ⟦color⟧…⟦/color⟧ (ver _annotated_page_text).
+    Las páginas sin color salen exactamente igual que con extract_text,
+    para no cambiar nada en los documentos que no usan color.
+    """
+    pages: List[str] = []
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        for page in pdf.pages:
+            if any(_char_has_color(ch) for ch in page.chars):
+                pages.append(_annotated_page_text(page))
+            else:
+                pages.append(page.extract_text() or "")
+    return pages
+
+
+def get_colored_page_numbers(file_bytes: bytes) -> List[int]:
+    """Números (1-based) de las páginas que usan texto de color."""
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        return [p.page_number for p in pdf.pages if any(_char_has_color(ch) for ch in p.chars)]
 
 
 def get_colored_text_pages(file_bytes: bytes) -> List[str]:

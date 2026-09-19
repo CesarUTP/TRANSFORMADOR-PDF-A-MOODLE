@@ -2650,6 +2650,9 @@ Ahora convierte el examen adjunto a este formato.</pre>
               ${q.data.color_review_hint ? `<span class="type-badge" style="background:var(--color-cl-bg);color:var(--color-cl);border:1px solid var(--color-cl-border);" title="Esta pregunta viene de una página con respuestas marcadas por color — revisa que la IA haya identificado todas las opciones correctas, especialmente si hay más de una marcada.">
                 <i data-lucide="palette" style="width:12px;height:12px;vertical-align:-2px;"></i> revisar marca de color
               </span>` : ''}
+              ${q.data.low_confidence ? `<span class="type-badge" style="background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);" title="La IA indicó que no pudo leer con total confianza una imagen que esta pregunta necesita (código o marca borrosa/cortada). Compárala con el documento original antes de aprobar.">
+                <i data-lucide="eye-off" style="width:12px;height:12px;vertical-align:-2px;"></i> confianza baja
+              </span>` : ''}
               <span class="type-badge ${q.type}">${QUESTION_TYPE_LABEL_MAP[q.type] || q.type}</span>
               <div style="display:flex;align-items:center;gap:4px;" title="Puntos que vale esta pregunta">
                 <input type="number" class="q-points form-input" step="0.01" min="0" value="${q.points != null ? q.points : ''}" style="width:64px;padding:6px 8px;font-size:12.5px;text-align:right;" aria-label="Puntos de la pregunta ${q.num}" />

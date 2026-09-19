@@ -1,0 +1,58 @@
+{
+  "source": "synthetic",
+  "reviewed": true,
+  "file": "synthetic/s09_completar_y_banco.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Cloze con 1-2 huecos; el hueco de la pregunta 4 solo tiene banco de palabras y no está en la clave (REGLA 6: no se debe inventar).",
+  "questions": [
+    {
+      "type": "cloze",
+      "stem": "El sol sale por el ____ y se oculta por el ____.",
+      "blanks": [
+        [
+          "este"
+        ],
+        [
+          "oeste"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "Los seres vivos que fabrican su propio alimento se llaman ____.",
+      "blanks": [
+        [
+          "autótrofos"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "El corazón tiene ____ cavidades y la sangre oxigenada sale por la ____.",
+      "blanks": [
+        [
+          "cuatro"
+        ],
+        [
+          "aorta"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "La cordillera que atraviesa Sudamérica de norte a sur es ____.",
+      "blanks": [
+        []
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Qué nombre recibe la capa de gases que rodea la Tierra?",
+      "answers": [
+        "Atmósfera"
+      ]
+    }
+  ]
+}

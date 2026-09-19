@@ -1,0 +1,57 @@
+{
+  "source": "synthetic",
+  "reviewed": true,
+  "file": "synthetic/s04_tabla_de_marcas.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Tabla con una X por fila (REGLA 10 → emparejamiento) + 2 preguntas normales.",
+  "questions": [
+    {
+      "type": "matching",
+      "stem": "Marca con una X el tipo de operador al que corresponde cada situación.",
+      "from_table": true,
+      "pairs": [
+        [
+          "Elevar un número a un exponente",
+          "Aritmético"
+        ],
+        [
+          "Saber si un número es mayor que otro",
+          "Relacional"
+        ],
+        [
+          "Exigir que se cumplan dos condiciones a la vez",
+          "Lógico"
+        ],
+        [
+          "Guardar un valor dentro de una variable",
+          "Asignación"
+        ],
+        [
+          "Sumar dos cantidades",
+          "Aritmético"
+        ]
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El operador == compara si dos valores son iguales.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué valor tiene la expresión 2 + 3 * 4?",
+      "answers": [
+        "14"
+      ],
+      "options": [
+        "20",
+        "14",
+        "24",
+        "9"
+      ]
+    }
+  ]
+}

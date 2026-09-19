@@ -1,0 +1,377 @@
+{
+  "source": "real",
+  "reviewed": false,
+  "reviewed_by": "claude",
+  "file": "Parcial #1_ Computacion.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Revisado por Claude contra el PDF: texto con marcas de color extraídas con pdfplumber (páginas 1,3,4,9) e imágenes de las páginas 2,5,6,7,8. Respuesta = lo marcado en ROJO. Las preguntas 'lenient' son ambiguas en el original: solo se exige que aparezcan. Falta confirmación humana (reviewed=false).",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Modo de representar los datos la cual contiene determinadas reglas?",
+      "options": [
+        "Entero (int)",
+        "Listas",
+        "Estructuras de datos",
+        "Diccionario (dictionary)"
+      ],
+      "answers": [
+        "Estructuras de datos"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Ayudan a organizar y mejorar el diseño de una solución de la información?",
+      "options": [
+        "Entero (int)",
+        "Listas",
+        "Estructuras de datos",
+        "Diccionario (dictionary)"
+      ],
+      "answers": [
+        "Estructuras de datos"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Son clasificación de estructuras de datos?",
+      "options": [
+        "Entero, Listas, Diccionario",
+        "Registros y arreglos",
+        "Lógicas, primitivas y simples, lineales no lineales"
+      ],
+      "answers": [
+        "Lógicas, primitivas y simples, lineales no lineales"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Son los tipos de datos básicos que no pueden dividirse en componentes más pequeños?",
+      "options": [
+        "Entero (int)",
+        "estructuras Simples",
+        "Cadena de caracteres (string)",
+        "estructuras primitivas"
+      ],
+      "answers": [
+        "estructuras Simples",
+        "estructuras primitivas"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un usuario necesita en un programa recibir los años y el nombre de un usuario, ¿Qué tipo de variables debe utilizar?",
+      "options": [
+        "Entero (int)",
+        "Flotante (float)",
+        "Cadena de caracteres (string)"
+      ],
+      "answers": [
+        "Entero (int)",
+        "Cadena de caracteres (string)"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Para que sirve una variable tipo booleano, explique brevemente e indique los valores que puede tener dicho tipo de dato."
+    },
+    {
+      "type": "multichoice",
+      "stem": "Condicionales permiten comprobar condiciones y hacer que el programa se comporte de una forma u otra",
+      "options": [
+        "If",
+        "While",
+        "For",
+        "=="
+      ],
+      "answers": [
+        "If"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Ejemplo: print(\"I lola mundo\") Corrección: print(\"Hola mundo\") que tipo de error es",
+      "options": [
+        "Errores de Sintaxis",
+        "Errores de Semántica",
+        "Errores de Lógica"
+      ],
+      "answers": [
+        "Errores de Sintaxis"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Ejemplo: numero1 = 10 numero2 = 20 maximo = numero1 print(f\"El número más grande es {maximo}\") que tipo de error es",
+      "options": [
+        "Errores de Sintaxis",
+        "Errores de Semántica",
+        "Errores de Lógica"
+      ],
+      "answers": [
+        "Errores de Lógica"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Indicar como se Accede a la información de una lista",
+      "options": [
+        "Con el índice",
+        "Con el dato",
+        "Con las dos anteriores"
+      ],
+      "answers": [
+        "Con el índice"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Dos maneras de utilizar la variable tipo booleanos",
+      "options": [
+        "es_soleado = True",
+        "es_soleado = 'True'",
+        "print('False')",
+        "print(False)"
+      ],
+      "answers": [
+        "es_soleado = True",
+        "print(False)"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de las siguientes estructuras de datos permite almacenar elementos únicos sin un orden específico?",
+      "options": [
+        "Diccionario (dictionary)",
+        "Conjunto (set)",
+        "Tupla (tuple)",
+        "Lista (list)"
+      ],
+      "answers": [
+        "Conjunto (set)"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estructura de datos se utiliza para asociar claves con valores y permite acceder a los valores de manera eficiente mediante las claves?",
+      "options": [
+        "Diccionario (dictionary)",
+        "Conjunto (set)",
+        "Tupla (tuple)",
+        "Lista (list)"
+      ],
+      "answers": [
+        "Diccionario (dictionary)"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la principal característica de una tupla en Python?",
+      "options": [
+        "Es mutable, es decir, se pueden modificar sus elementos.",
+        "Puede contener elementos duplicados.",
+        "Es inmutable, es decir, sus elementos no pueden modificarse después de su creación.",
+        "Se accede a sus elementos mediante índices negativos."
+      ],
+      "answers": [
+        "Es inmutable, es decir, sus elementos no pueden modificarse después de su creación."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estructura de datos se utiliza para representar una colección de elementos ordenados y duplicados?",
+      "options": [
+        "Conjunto (set)",
+        "Diccionario (dictionary)",
+        "Tupla (tuple)",
+        "Lista (list)"
+      ],
+      "answers": [
+        "Lista (list)"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de las siguientes estructuras de datos es más eficiente para la inserción y eliminación de elementos en el medio de la colección?",
+      "options": [
+        "Lista (list)",
+        "Conjunto (set)",
+        "Diccionario (dictionary)",
+        "Tupla (tuple)"
+      ],
+      "answers": [
+        "Lista (list)"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles son las diferencias entre una lista (list) y una tupla (tuple) en Python?",
+      "options": [
+        "Una lista es inmutable, mientras que una tupla es mutable.",
+        "Una lista permite elementos duplicados, mientras que una tupla no.",
+        "Una lista se accede mediante índices negativos, mientras que una tupla no.",
+        "Una lista se define con llaves {}, mientras que una tupla se define con paréntesis ()."
+      ],
+      "answers": [
+        "Una lista permite elementos duplicados, mientras que una tupla no.",
+        "Una lista se define con llaves {}, mientras que una tupla se define con paréntesis ()."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estructura de datos se utiliza para representar una colección de elementos desordenados y únicos en Python?",
+      "options": [
+        "Lista (list)",
+        "Conjunto (set)",
+        "Diccionario (dictionary)",
+        "Tupla (tuple)"
+      ],
+      "answers": [
+        "Conjunto (set)"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Rellenar el cuadro con la función que corresponda",
+      "from_table": true,
+      "pairs": [
+        [
+          "Inicializar variable",
+          "Operadores de asignación"
+        ],
+        [
+          "Condiciones para saber si un número es mayor que otro",
+          "Operadores relacionales"
+        ],
+        [
+          "Asignar valores de una variable en otra.",
+          "Operadores de asignación"
+        ],
+        [
+          "Una variable debe cumplir dos requisitos para que sea cierto",
+          "Operadores lógicos"
+        ],
+        [
+          "Elevar un número a un exponente",
+          "Operadores aritméticos"
+        ]
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Cuantos errores en total tiene el código (código en imagen). Escribe cuales son los errores",
+      "lenient": true,
+      "note": "El '6' aparece en negro bajo la pregunta: ambiguo si es la respuesta del docente o parte del enunciado."
+    },
+    {
+      "type": "multichoice",
+      "stem": "Indicar si se necesita crear un menú desplegable que estructura será la más optima",
+      "options": [
+        "While",
+        "For",
+        "If",
+        "Otra"
+      ],
+      "answers": [
+        "While"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Del siguiente código cual seria el resultado en pantalla (a = 1, while a<=5: print(a); a+=1; print('Fin'))",
+      "lenient": true,
+      "note": "Sin opciones ni marca; puede salir como essay o shortanswer."
+    },
+    {
+      "type": "essay",
+      "stem": "Crear un ciclo FOR para imprimir numero del 1 al 6 e imprimir la suma de los numero pares."
+    },
+    {
+      "type": "multichoice",
+      "stem": "Si mi peso es 70 kg y mi altura es 1.64m. cual será la respuesta del siguiente código",
+      "options": [
+        "Esta bajo peso",
+        "Tiene un peso normal",
+        "Tiene sobrepeso",
+        "Tiene Obesidad tipo 1",
+        "Tiene Obesidad tipo 2",
+        "Tiene Obesidad tipo 3"
+      ],
+      "answers": [
+        "Tiene sobrepeso"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Cuál sería el resultado de los print del siguiente código (lista = [1, 'a', 3.5, 'Hola'] ...)",
+      "lenient": true,
+      "note": "Sin opciones ni marca."
+    },
+    {
+      "type": "multichoice",
+      "stem": "El resultado del siguiente código es (numero1 = 400, numero2 = 250, if numero1 < numero2 ...)",
+      "options": [
+        "El número más grande es 250",
+        "El número más grande es 400",
+        "El número más grande es Máximo"
+      ],
+      "answers": [
+        "El número más grande es 250"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Crea un ciclo para que se imprima el índice y dato de la siguiente lista miprimeralista=[\"maria\", \"juan\", \"mateo\", 91, 12.3]"
+    },
+    {
+      "type": "essay",
+      "stem": "El resultado de este código es (coordenadas = (3.14, 2.71); coordenadas.pop(0); print(coordenadas))",
+      "lenient": true,
+      "note": "'Error' aparece en negro debajo: ambiguo si es la respuesta o una única opción."
+    },
+    {
+      "type": "multichoice",
+      "stem": "Que función realiza arreglo_enteros.append(6)",
+      "options": [
+        "Agregar dato a una lista",
+        "Agregar dato a una tupla",
+        "Eliminar dato de una lista",
+        "Modificar dato de una lista"
+      ],
+      "answers": [
+        "Agregar dato a una lista"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "Si tengo el siguiente arreglo arreglo_enteros = [1, 2, 3, 4, 5] y coloco la siguiente línea de código arreglo_enteros[2] = 30, cual es el valor de la tercera posición del arreglo.",
+      "answers": [],
+      "unanswered": true,
+      "note": "El documento no marca respuesta: lo correcto es NO inventar el 30."
+    },
+    {
+      "type": "essay",
+      "stem": "Como se sale de un ciclo escrito de la siguiente manera while True: (única opción 'Break', sin marca)",
+      "lenient": true,
+      "note": "Una sola opción en negro, sin marca de color."
+    },
+    {
+      "type": "multichoice",
+      "stem": "Que tipo de dato es nom en la siguiente línea de código nom=int(input(\"ingrese\"))",
+      "options": [
+        "entero",
+        "cadena",
+        "flotante",
+        "carácter"
+      ],
+      "answers": [
+        "entero"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "crear un diccionario en python que contenga nombre y edad"
+    }
+  ]
+}

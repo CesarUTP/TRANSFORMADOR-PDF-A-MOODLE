@@ -1,0 +1,117 @@
+{
+  "source": "synthetic",
+  "reviewed": true,
+  "file": "synthetic/s02_color_sin_imagenes.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Respuestas marcadas SOLO con texto rojo, sin imágenes ni clave; títulos en azul como distractor; 3 preguntas con varias correctas.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de los siguientes son tipos de datos primitivos en Python?",
+      "answers": [
+        "Lista (list)",
+        "Diccionario (dict)"
+      ],
+      "options": [
+        "Entero (int)",
+        "Lista (list)",
+        "Cadena de caracteres (string)",
+        "Diccionario (dict)"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estructura de datos no permite elementos duplicados?",
+      "answers": [
+        "Lista (list)"
+      ],
+      "options": [
+        "Lista (list)",
+        "Tupla (tuple)",
+        "Conjunto (set)",
+        "Cadena (str)"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es una característica de una tupla en Python?",
+      "answers": [
+        "Es inmutable, sus elementos no pueden modificarse después de su creación"
+      ],
+      "options": [
+        "Es inmutable, sus elementos no pueden modificarse después de su creación",
+        "Solo puede contener números",
+        "Se define con llaves {}",
+        "No admite índices"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estos lenguajes son de tipado dinámico?",
+      "answers": [
+        "Java",
+        "C"
+      ],
+      "options": [
+        "Python",
+        "Java",
+        "JavaScript",
+        "C"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué palabra reservada se usa para definir una función en Python?",
+      "answers": [
+        "func"
+      ],
+      "options": [
+        "func",
+        "def",
+        "function",
+        "lambda"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué imprime la instrucción print(3 > 5)?",
+      "answers": [
+        "True"
+      ],
+      "options": [
+        "True",
+        "False",
+        "None",
+        "Error"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué operador calcula el residuo de una división?",
+      "answers": [
+        "%"
+      ],
+      "options": [
+        "/",
+        "//",
+        "%",
+        "**"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de los siguientes son bucles en Python?",
+      "answers": [
+        "repeat",
+        "loop"
+      ],
+      "options": [
+        "for",
+        "repeat",
+        "while",
+        "loop"
+      ]
+    }
+  ]
+}

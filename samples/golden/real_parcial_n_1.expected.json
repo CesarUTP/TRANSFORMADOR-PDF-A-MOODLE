@@ -1,0 +1,621 @@
+{
+  "source": "real",
+  "reviewed": true,
+  "file": "parcial n.1.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Pre-llenado con el pipeline de texto y VERIFICADO de forma determinista contra la clave de respuestas que trae el propio documento (tipos, letras/textos, V/F, pares). No depende del modelo.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "Un coordinador observa que en un departamento cada empleado entrega puntualmente su informe técnico semanal, pero ninguno conoce ni interviene en el avance de sus pares. La evaluación global se reduce a compilar dichos reportes. Según la conceptualización del material, esta estructura corresponde a:",
+      "options": [
+        "Un equipo de alto rendimiento con liderazgo distribuido.",
+        "Un grupo de trabajo caracterizado por responsabilidad estrictamente individual.",
+        "Una comunidad colaborativa con interdependencia funcional.",
+        "Un equipo en fase de desempeño con roles socioemocionales consolidados."
+      ],
+      "answers": [
+        "Un grupo de trabajo caracterizado por responsabilidad estrictamente individual."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En un proyecto de desarrollo, dos ingenieros deciden repartirse los módulos de un sistema: uno programa la autenticación y el otro la base de datos de forma aislada, planeando integrar ambos códigos únicamente el día de la entrega final. Este método de trabajo constituye un ejemplo de:",
+      "options": [
+        "Cooperación.",
+        "Colaboración.",
+        "Pedagogía de la acción.",
+        "Liderazgo situacional."
+      ],
+      "answers": [
+        "Cooperación."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Durante la construcción de una arquitectura de software, los miembros del equipo debaten de forma continua sobre los estándares de diseño, reescriben funciones de manera conjunta y renegocian el alcance técnico en cada iteración. Según el material, este proceso se define como:",
+      "options": [
+        "Cooperación fragmentada.",
+        "Colaboración.",
+        "Dinámica de concienciación.",
+        "Grupo informal funcional."
+      ],
+      "answers": [
+        "Colaboración."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En la primera reunión de un comité técnico, los profesionales muestran un trato cordial y distante, limitándose a revisar la agenda oficial sin manifestar discrepancias sobre el cronograma propuesto. ¿En qué etapa del desarrollo se encuentra este equipo?",
+      "options": [
+        "Conflicto.",
+        "Normalización.",
+        "Formación.",
+        "Desempeño."
+      ],
+      "answers": [
+        "Formación."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Tras dos semanas de trabajo, los diseñadores de un laboratorio discuten abiertamente sobre quién debe liderar las decisiones de interfaz y cuestionan el método de documentación impuesto. De acuerdo con el modelo de desarrollo grupal, el equipo atraviesa la fase de:",
+      "options": [
+        "Conflicto.",
+        "Formación.",
+        "Desempeño.",
+        "Disolución."
+      ],
+      "answers": [
+        "Conflicto."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un equipo ha definido sus normas internas de convivencia, acordó canales de comunicación y manifiesta un clima de confianza recíproca donde los integrantes aceptan de buen grado sus responsabilidades. Esta situación describe la etapa de:",
+      "options": [
+        "Formación.",
+        "Conflicto.",
+        "Normalización.",
+        "Disolución."
+      ],
+      "answers": [
+        "Normalización."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Una célula de innovación técnica opera con plena autonomía, resuelve incidencias operativas sin requerir supervisión jerárquica directa y focaliza su energía en alcanzar los objetivos de entrega pactados. ¿Qué fase del ciclo de vida evidencia?",
+      "options": [
+        "Normalización.",
+        "Desempeño.",
+        "Formación.",
+        "Conflicto."
+      ],
+      "answers": [
+        "Desempeño."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Al término de una auditoría anual de sistemas, la comisión auditora entrega el informe definitivo, revisa los aprendizajes obtenidos y el líder formaliza el cierre reconociendo las metas logradas antes de separar a los miembros. Esta fase corresponde a:",
+      "options": [
+        "Normalización.",
+        "Disolución o finalización.",
+        "Desempeño extendido.",
+        "Conflicto residual."
+      ],
+      "answers": [
+        "Disolución o finalización."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de las siguientes acciones promueve de manera directa un factor facilitador del desarrollo grupal según el material?",
+      "options": [
+        "Fomentar la concentración del control operativo en un único perfil directivo permanente.",
+        "Definir con claridad el propósito y las metas compartidas desde el momento inicial.",
+        "Evitar la retroalimentación continua para no alterar el clima socioemocional.",
+        "Asignar responsabilidades tácitas sin formalizar compromisos mutuos."
+      ],
+      "answers": [
+        "Definir con claridad el propósito y las metas compartidas desde el momento inicial."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un docente universitario implementa al inicio del semestre cuestionarios breves de autopercepción y entrevistas diagnósticas a los estudiantes. ¿Cuál es la finalidad metodológica de esta práctica según el texto?",
+      "options": [
+        "Sustituir la etapa de conflicto del desarrollo del equipo.",
+        "Conocer la composición, habilidades, estilos y expectativas del equipo para anticipar tensiones y asignar actividades acordes.",
+        "Forzar una dinámica de concienciación crítica desde el primer contacto pedagógico.",
+        "Establecer un estilo de liderazgo de tipo laissez-faire en la gestión del aula."
+      ],
+      "answers": [
+        "Conocer la composición, habilidades, estilos y expectativas del equipo para anticipar tensiones y asignar actividades acordes."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "El postulado de la pedagogía grupal sostiene principalmente que:",
+      "options": [
+        "El grupo es únicamente un instrumento logístico para transferir contenidos conceptuales.",
+        "El grupo constituye un espacio formativo en sí mismo donde se aprende a convivir, negociar y liderar.",
+        "La dinámica grupal debe reemplazar por completo las evaluaciones individuales de desempeño.",
+        "Las interacciones en el aula deben regirse de manera exclusiva por la psicología experimental clínica."
+      ],
+      "answers": [
+        "El grupo constituye un espacio formativo en sí mismo donde se aprende a convivir, negociar y liderar."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un círculo de familiares y amigos cercanos que mantiene vínculos afectivos estrechos y prolongados a lo largo de los años clasifica teóricamente como:",
+      "options": [
+        "Grupo primario.",
+        "Grupo secundario.",
+        "Grupo formal institucional.",
+        "Equipo de trabajo transitorio."
+      ],
+      "answers": [
+        "Grupo primario."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Una comisión de acreditación creada deliberadamente por el consejo universitario, con un reglamento escrito, estructura jerárquica y funciones institucionales delimitadas, constituye un ejemplo de:",
+      "options": [
+        "Grupo informal.",
+        "Grupo primario.",
+        "Grupo formal.",
+        "Dinámica de concienciación."
+      ],
+      "answers": [
+        "Grupo formal."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Tres analistas de distintas áreas de una empresa se reúnen habitualmente a almorzar y a conversar sobre tecnología debido a intereses y afinidades personales espontáneas, sin una asignación corporativa oficial. Esta agrupación representa un:",
+      "options": [
+        "Grupo formal.",
+        "Grupo secundario formal.",
+        "Grupo informal.",
+        "Equipo en fase de disolución."
+      ],
+      "answers": [
+        "Grupo informal."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un equipo de ingeniería de proyectos interdepartamentales que mantiene vínculos funcionales, orientados estrictamente al logro de un objetivo laboral técnico, se clasifica como:",
+      "options": [
+        "Grupo primario.",
+        "Grupo secundario.",
+        "Grupo informal no regulado.",
+        "Red afectiva profunda."
+      ],
+      "answers": [
+        "Grupo secundario."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En un entorno virtual de trabajo, el facilitador detecta malos entendidos severos causados por la brevedad de los mensajes de texto. Para mitigar este problema al inicio del proyecto, decide aplicar una dinámica de comunicación. ¿Qué técnica es idónea para este propósito específico?",
+      "options": [
+        "El sociograma interactivo.",
+        "Ejercicios de escucha activa por parejas o dinámicas sobre distorsión de mensajes (como el rumor).",
+        "Proyectos de aprendizaje-servicio comunitario.",
+        "Dinámicas de caída de confianza física."
+      ],
+      "answers": [
+        "Ejercicios de escucha activa por parejas o dinámicas sobre distorsión de mensajes (como el rumor)."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Para monitorear la salud relacional de un equipo, un consultor aplica una herramienta gráfica que mapea las preferencias de interacción, los aislamientos y los subgrupos existentes. Esta intervención se enmarca en las:",
+      "options": [
+        "Dinámicas de comunicación.",
+        "Dinámicas sobre la vida grupal.",
+        "Técnicas de pedagogía de la acción.",
+        "Dinámicas de relaciones humanas profundas."
+      ],
+      "answers": [
+        "Dinámicas sobre la vida grupal."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Con el fin de mitigar la desconfianza interpersonal y crear un clima psicológicamente seguro donde los miembros no teman manifestar dudas o errores, el líder organiza actividades de reconocimiento entre pares y rompehielos adaptados a videollamada. Este enfoque corresponde a:",
+      "options": [
+        "Dinámicas de relaciones humanas.",
+        "Dinámicas de pedagogía de la acción.",
+        "Dinámicas sobre la vida grupal.",
+        "Phillips 6.6."
+      ],
+      "answers": [
+        "Dinámicas de relaciones humanas."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un grupo de trabajo realiza debates estructurados y una autoevaluación reflexiva para cuestionar por qué ciertas voces son sistemáticamente ignoradas en sus reuniones y cómo operan las relaciones de poder internas. Este ejercicio pertenece a las:",
+      "options": [
+        "Dinámicas de concienciación.",
+        "Dinámicas de comunicación operativa.",
+        "Técnicas de mesa redonda.",
+        "Dinámicas de relaciones humanas afectivas."
+      ],
+      "answers": [
+        "Dinámicas de concienciación."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un curso universitario implementa un proyecto colaborativo que inicia con la observación de una problemática en un centro comunitario, continúa con el análisis crítico de causas, diseña una propuesta y ejecuta la intervención técnica. Esta metodología sigue los principios de:",
+      "options": [
+        "Las dinámicas de vida grupal.",
+        "La pedagogía de la acción.",
+        "El estudio de casos simulados.",
+        "La dinámica del rumor."
+      ],
+      "answers": [
+        "La pedagogía de la acción."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En un equipo de desarrollo de software, un integrante asume la tarea de sintetizar los requerimientos, redactar la documentación técnica y verificar que los entregables cumplan con los criterios de calidad pactados. Este rol pertenece a la categoría de:",
+      "options": [
+        "Roles socioemocionales.",
+        "Roles de tarea.",
+        "Roles disfuncionales.",
+        "Roles institucionales pasivos."
+      ],
+      "answers": [
+        "Roles de tarea."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Durante una reunión acalorada, un miembro interviene para distender el ambiente, media en las fricciones entre dos compañeros y fomenta el ánimo positivo del colectivo. Este comportamiento corresponde a un:",
+      "options": [
+        "Rol de tarea.",
+        "Rol socioemocional.",
+        "Rol disfuncional.",
+        "Rol formal de supervisión."
+      ],
+      "answers": [
+        "Rol socioemocional."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un integrante interrumpe continuamente las deliberaciones del equipo descalificando cualquier iniciativa ajena, impidiendo el avance de la agenda y rechazando sistemáticamente los acuerdos mayoritarios. Su comportamiento ejemplifica un:",
+      "options": [
+        "Rol socioemocional de mediación.",
+        "Rol disfuncional (bloqueador o dominador).",
+        "Rol de tarea orientado a la calidad.",
+        "Liderazgo facilitador de procesos."
+      ],
+      "answers": [
+        "Rol disfuncional (bloqueador o dominador)."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Para evitar la sobrecarga permanente de trabajo en un único perfil y asegurar el desarrollo integral de competencias en todos los estudiantes, el docente debe aplicar el criterio de:",
+      "options": [
+        "Mantener los roles fijos e inmutables durante todo el ciclo lectivo.",
+        "Rotar periódicamente los roles a lo largo de las fases del proyecto.",
+        "Dejar la definición de funciones abierta sin detallarlas por escrito.",
+        "Concentrar el liderazgo en quien posea mayor conocimiento técnico."
+      ],
+      "answers": [
+        "Rotar periódicamente los roles a lo largo de las fases del proyecto."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "El concepto de liderazgo situacional sostiene fundamentalmente que:",
+      "options": [
+        "El estilo autocrático es superior al democrático en todas las etapas del equipo.",
+        "El estilo más efectivo depende del nivel de madurez y autonomía que posee el equipo en cada momento de su desarrollo.",
+        "El líder debe ser invariablemente la persona que acumule mayores conocimientos técnicos en la materia.",
+        "El estilo laissez-faire es el único compatible con herramientas colaborativas digitales."
+      ],
+      "answers": [
+        "El estilo más efectivo depende del nivel de madurez y autonomía que posee el equipo en cada momento de su desarrollo."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En una asamblea de 60 estudiantes se requiere que todos debatan activamente sobre una propuesta de diseño en un lapso de tiempo muy reducido antes de una plenaria general. De acuerdo con el criterio de selección de técnicas grupales, la alternativa más pertinente es:",
+      "options": [
+        "Seminario de investigación.",
+        "Phillips 6.6.",
+        "Estudio de casos de larga extensión.",
+        "Panel de discusión con audiencia pasiva."
+      ],
+      "answers": [
+        "Phillips 6.6."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un profesor requiere que su clase examine a fondo los dilemas éticos y técnicos de un fallo de seguridad informático ocurrido en una corporación real para extraer lecciones operativas aplicables. La técnica de trabajo grupal que responde directamente a esta necesidad es:",
+      "options": [
+        "Lluvia de ideas inicial.",
+        "Estudio de casos.",
+        "Phillips 6.6.",
+        "Dinámica del rumor."
+      ],
+      "answers": [
+        "Estudio de casos."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un equipo necesita concebir soluciones innovadoras para una interfaz de usuario sin someter ninguna propuesta a juicio o descarte preliminar inmediato, aplazando el filtrado para una etapa posterior. La técnica correspondiente es:",
+      "options": [
+        "Lluvia de ideas.",
+        "Mesa redonda.",
+        "Seminario.",
+        "Panel."
+      ],
+      "answers": [
+        "Lluvia de ideas."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un equipo de investigadores decide explorar exhaustivamente la bibliografía científica sobre computación cuántica a lo largo de varias semanas para luego sostener debates críticos continuos guiados por el propio colectivo. Esta metodología corresponde a:",
+      "options": [
+        "Foro abierto de divulgación.",
+        "Seminario.",
+        "Juego de roles.",
+        "Phillips 6.6."
+      ],
+      "answers": [
+        "Seminario."
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la principal diferencia funcional entre un foro y un panel según las técnicas de trabajo grupal presentadas en el material?",
+      "options": [
+        "El foro reúne exclusivamente a cuatro expertos en debate cerrado, mientras que el panel carece de moderador.",
+        "El foro maximiza la participación abierta de toda la audiencia, mientras que el panel concentra la conversación en un grupo reducido ante un público.",
+        "El foro prohíbe las exposiciones previas y el panel requiere la rotación obligatoria de roles en seis minutos.",
+        "El foro es una técnica exclusiva de evaluación sumativa y el panel es una dinámica socioemocional."
+      ],
+      "answers": [
+        "El foro maximiza la participación abierta de toda la audiencia, mientras que el panel concentra la conversación en un grupo reducido ante un público."
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada situación de trabajo descrita con la categoría conceptual que le corresponde según la distinción teórica del material:",
+      "pairs": [
+        [
+          "Los miembros dividen el desarrollo de una aplicación web en cuatro módulos aislados, programan por separado y unen los archivos sin interactuar durante el proceso.",
+          "Cooperación"
+        ],
+        [
+          "Los programadores diseñan juntos la arquitectura del sistema, dialogan continuamente sobre las decisiones técnicas y refactorizan el código en conjunto.",
+          "Colaboración"
+        ],
+        [
+          "Cada integrante entrega sus métricas de ventas individuales para que el jefe las sume en una hoja de cálculo; no existe un objetivo compartido profundo.",
+          "Grupo de trabajo"
+        ],
+        [
+          "El grupo asume responsabilidad mutua sobre el software entregado; el logro final trasciende la simple suma de los esfuerzos individuales por efecto de la sinergia.",
+          "Equipo de trabajo"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada comportamiento grupal con la fase del modelo de desarrollo de equipos en la que tiene lugar:",
+      "pairs": [
+        [
+          "Los miembros debaten enérgicamente sobre los métodos de documentación y disputan la coordinación del cronograma.",
+          "Conflicto"
+        ],
+        [
+          "Los integrantes interactúan con cautela formal, evalúan las expectativas mutuas y procuran no generar roces interpersonales.",
+          "Formación"
+        ],
+        [
+          "El equipo opera de forma totalmente autónoma, coordinada y orientada al cumplimiento de los objetivos de rendimiento.",
+          "Desempeño"
+        ],
+        [
+          "Se pactan reglas claras de convivencia interna, se consolida la confianza y se aceptan formalmente los roles asignados.",
+          "Normalización"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada agrupación humana con la tipología sociológica que le corresponde según el material:",
+      "pairs": [
+        [
+          "Un núcleo familiar que comparte un lazo afectivo duradero y una convivencia estrecha a través de los años.",
+          "Grupo primario"
+        ],
+        [
+          "Un comité de ciberseguridad creado formalmente por la junta directiva de una entidad bancaria, con roles y reglamentos estipulados.",
+          "Grupo formal"
+        ],
+        [
+          "Una mesa de empleados de diversas dependencias que se reúnen diariamente en la cafetería para hablar de deportes por afinidad espontánea.",
+          "Grupo informal"
+        ],
+        [
+          "Una red de consultores contratados con roles funcionales y formales para cumplir exclusivamente con la entrega de una auditoría técnica.",
+          "Grupo secundario"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada propósito formativo o relacional con el enfoque de dinámicas de grupo correspondiente:",
+      "pairs": [
+        [
+          "Reducir la distorsión en la transmisión de mensajes y entrenar la retroalimentación en canales virtuales.",
+          "Dinámicas de comunicación"
+        ],
+        [
+          "Evidenciar patrones de aislamiento, subgrupos internos y desequilibrios de participación entre los integrantes.",
+          "Dinámicas sobre la vida grupal"
+        ],
+        [
+          "Desarrollar empatía, respeto mutuo y un entorno psicológicamente seguro mediante el reconocimiento entre pares.",
+          "Dinámicas de relaciones humanas"
+        ],
+        [
+          "Analizar críticamente el impacto de las relaciones de poder y reconocer esquemas de exclusión dentro del propio equipo.",
+          "Dinámicas de concienciación"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada manifestación o conducta de un integrante con la categoría de rol correspondiente:",
+      "pairs": [
+        [
+          "Un estudiante recopila fuentes académicas confiables y redacta las secciones técnicas del proyecto.",
+          "Rol de tarea"
+        ],
+        [
+          "Un colaborador interviene calmadamente para conciliar las discrepancias personales surgidas entre dos compañeros.",
+          "Rol socioemocional"
+        ],
+        [
+          "Un miembro desestima todas las sugerencias del grupo, interrumpe el uso de la palabra y frena la toma de decisiones.",
+          "Rol disfuncional de bloqueo"
+        ],
+        [
+          "Un participante se limita a observar pasivamente la reunión sin aportar opiniones ni asumir ninguna tarea asignada.",
+          "Rol disfuncional por ausencia"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada técnica grupal con su definición procedimental básica:",
+      "pairs": [
+        [
+          "Phillips 6.6",
+          "Discusión en subgrupos de seis integrantes durante seis minutos previa exposición de acuerdos en plenaria."
+        ],
+        [
+          "Lluvia de ideas",
+          "Generación abierta y libre de propuestas suspendiendo el juicio crítico para luego seleccionar las viables."
+        ],
+        [
+          "Juego de roles",
+          "Representación de posturas o personajes por parte de los integrantes para comprender distintas perspectivas."
+        ],
+        [
+          "Estudio de casos",
+          "Análisis grupal y reflexivo de una situación simulada o real para extraer aprendizajes contextualizados."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada formato de discusión grupal con su característica de participación distintiva:",
+      "pairs": [
+        [
+          "Foro",
+          "Intercambio de carácter abierto donde todos los asistentes intervienen activamente tras una ponencia preliminar."
+        ],
+        [
+          "Panel",
+          "Conversación informal de un grupo seleccionado de personas frente a un público espectador."
+        ],
+        [
+          "Mesa redonda",
+          "Discusión y contraste de posturas diferenciadas entre varios expertos o representantes ante el grupo."
+        ],
+        [
+          "Seminario",
+          "Proceso de investigación sistemática y profunda de un tema debatido críticamente por el mismo colectivo."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada necesidad pedagógica u operativa con el criterio de selección de la técnica grupal pertinente:",
+      "pairs": [
+        [
+          "Se cuenta con un aula numerosa de 48 alumnos y solo 15 minutos para relevar opiniones sobre una consigna rápida.",
+          "Phillips 6.6"
+        ],
+        [
+          "Se requiere profundizar a nivel teórico y metodológico en un eje temático complejo a lo largo de un mes de clases con pocos alumnos.",
+          "Seminario"
+        ],
+        [
+          "Se busca que un grupo genere un abanico amplio de alternativas disruptivas frente a un problema de diseño sin descartes tempranos.",
+          "Lluvia de ideas"
+        ],
+        [
+          "Se requiere confrontar visiones divergentes de tres especialistas frente a un auditorio universitario.",
+          "Mesa redonda"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada etapa del ciclo metodológico de la pedagogía de la acción con la actividad correspondiente dentro de un proyecto universitario:",
+      "pairs": [
+        [
+          "Observar la realidad",
+          "Recopilar datos y registrar deficiencias existentes en el entorno del usuario."
+        ],
+        [
+          "Analizarla críticamente",
+          "Identificar las causas estructurales y los factores que originan el problema observado."
+        ],
+        [
+          "Planificar una intervención",
+          "Diseñar el cronograma, la asignación de roles y la solución técnica requerida."
+        ],
+        [
+          "Actuar sobre ella",
+          "Implementar la solución tecnológica directamente en la comunidad seleccionada."
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada estilo o práctica de conducción grupal con su descripción conceptual:",
+      "pairs": [
+        [
+          "Liderazgo autocrático",
+          "La persona a cargo centraliza de manera unilateral la toma de decisiones sin consultar a los miembros."
+        ],
+        [
+          "Liderazgo democrático",
+          "Las decisiones se toman a partir del diálogo, la consulta colectiva y la búsqueda de consenso."
+        ],
+        [
+          "Liderazgo laissez-faire",
+          "El facilitador otorga delegación amplia y autonomía prácticamente total en la ejecución al equipo."
+        ],
+        [
+          "Liderazgo distribuido",
+          "Distintos integrantes asumen la responsabilidad de guiar al equipo según la necesidad y el momento del proyecto."
+        ]
+      ]
+    }
+  ],
+  "reviewed_by": "claude"
+}

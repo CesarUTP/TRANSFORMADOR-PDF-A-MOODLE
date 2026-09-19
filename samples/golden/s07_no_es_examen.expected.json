@@ -1,0 +1,9 @@
+{
+  "source": "synthetic",
+  "reviewed": true,
+  "file": "synthetic/s07_no_es_examen.pdf",
+  "path": "parse",
+  "is_exam": false,
+  "notes": "Manual técnico con lista numerada y las palabras 'respuesta'/'preguntas'. Debe rechazarse, nunca inventar preguntas.",
+  "questions": []
+}

@@ -1,0 +1,188 @@
+{
+  "source": "real",
+  "reviewed": true,
+  "file": "Parcial_Historia_Geografia.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Pre-llenado con el pipeline de texto y VERIFICADO de forma determinista contra la clave de respuestas que trae el propio documento (tipos, letras/textos, V/F, pares). No depende del modelo.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el país más extenso del mundo por superficie?",
+      "options": [
+        "China",
+        "Canadá",
+        "Rusia",
+        "Brasil"
+      ],
+      "answers": [
+        "Rusia"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿En qué continente se encuentra el río Amazonas?",
+      "options": [
+        "África",
+        "Asia",
+        "América del Sur",
+        "Europa"
+      ],
+      "answers": [
+        "América del Sur"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el océano más grande del mundo?",
+      "options": [
+        "Atlántico",
+        "Índico",
+        "Ártico",
+        "Pacífico"
+      ],
+      "answers": [
+        "Pacífico"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál fue el primer país en enviar un ser humano al espacio?",
+      "options": [
+        "Estados Unidos",
+        "China",
+        "Alemania",
+        "Unión Soviética"
+      ],
+      "answers": [
+        "Unión Soviética"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuántos continentes tiene el planeta Tierra?",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "answers": [
+        "7"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La capital de Australia es Sídney.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El Nilo es el río más largo del continente africano.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El Sol es una estrella de tipo espectral G ubicada en el centro del sistema solar.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La Gran Muralla China puede verse a simple vista desde el espacio.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El español es la lengua con más hablantes nativos en el mundo.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Una cada capital con el país al que pertenece.",
+      "pairs": [
+        [
+          "París",
+          "Francia"
+        ],
+        [
+          "Tokio",
+          "Japón"
+        ],
+        [
+          "Brasilia",
+          "Brasil"
+        ],
+        [
+          "El Cairo",
+          "Egipto"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Una cada científico con su aportación más destacada.",
+      "pairs": [
+        [
+          "Isaac Newton",
+          "Ley de la gravitación universal"
+        ],
+        [
+          "Marie Curie",
+          "Descubrimiento de la radioactividad"
+        ],
+        [
+          "Albert Einstein",
+          "Teoría de la relatividad"
+        ],
+        [
+          "Charles Darwin",
+          "Teoría de la evolución"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "El continente ____ es el más frío del planeta y está cubierto casi en su totalidad por hielo.",
+      "blanks": [
+        [
+          "Antártida"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "Las plantas producen alimento mediante la fotosíntesis, un proceso que requiere ____ y que libera ____ como subproducto.",
+      "blanks": [
+        [
+          "luz solar"
+        ],
+        [
+          "oxígeno"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "El ____, ubicado en el Himalaya, es la montaña más alta del mundo con ____ metros sobre el nivel del mar.",
+      "blanks": [
+        [
+          "Monte Everest"
+        ],
+        [
+          "8849"
+        ]
+      ]
+    }
+  ],
+  "reviewed_by": "claude"
+}

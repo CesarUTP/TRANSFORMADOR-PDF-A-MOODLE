@@ -1,0 +1,1660 @@
+{
+  "source": "synthetic",
+  "reviewed": true,
+  "file": "synthetic/s10_estres_150_preguntas.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Prueba de estrés: 150 preguntas. Mide el techo del modo JSON (salida más larga) y si el modelo se salta preguntas en un documento muy largo.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 3 + 7?",
+      "answers": [
+        "10"
+      ],
+      "options": [
+        "8",
+        "10",
+        "13",
+        "15"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 4 + 10?",
+      "answers": [
+        "14"
+      ],
+      "options": [
+        "14",
+        "17",
+        "19",
+        "12"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 5 y 13 es igual a 18.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 6 + 16?",
+      "answers": [
+        "22"
+      ],
+      "options": [
+        "27",
+        "20",
+        "22",
+        "25"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 7 + 8?",
+      "answers": [
+        "15"
+      ],
+      "options": [
+        "13",
+        "15",
+        "18",
+        "20"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 8 y 11 es igual a 20.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 9 + 14?",
+      "answers": [
+        "23"
+      ],
+      "options": [
+        "26",
+        "28",
+        "21",
+        "23"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 10 + 17?",
+      "answers": [
+        "27"
+      ],
+      "options": [
+        "32",
+        "25",
+        "27",
+        "30"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 11 y 9 es igual a 20.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 12 + 12?",
+      "answers": [
+        "24"
+      ],
+      "options": [
+        "24",
+        "27",
+        "29",
+        "22"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 13 + 15?",
+      "answers": [
+        "28"
+      ],
+      "options": [
+        "31",
+        "33",
+        "26",
+        "28"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 14 y 7 es igual a 22.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 15 + 10?",
+      "answers": [
+        "25"
+      ],
+      "options": [
+        "23",
+        "25",
+        "28",
+        "30"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 16 + 13?",
+      "answers": [
+        "29"
+      ],
+      "options": [
+        "29",
+        "32",
+        "34",
+        "27"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 17 y 16 es igual a 33.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 18 + 8?",
+      "answers": [
+        "26"
+      ],
+      "options": [
+        "31",
+        "24",
+        "26",
+        "29"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 19 + 11?",
+      "answers": [
+        "30"
+      ],
+      "options": [
+        "28",
+        "30",
+        "33",
+        "35"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 20 y 14 es igual a 35.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 21 + 17?",
+      "answers": [
+        "38"
+      ],
+      "options": [
+        "41",
+        "43",
+        "36",
+        "38"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 22 + 9?",
+      "answers": [
+        "31"
+      ],
+      "options": [
+        "36",
+        "29",
+        "31",
+        "34"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 23 y 12 es igual a 35.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 24 + 15?",
+      "answers": [
+        "39"
+      ],
+      "options": [
+        "39",
+        "42",
+        "44",
+        "37"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 25 + 7?",
+      "answers": [
+        "32"
+      ],
+      "options": [
+        "35",
+        "37",
+        "30",
+        "32"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 26 y 10 es igual a 37.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 27 + 13?",
+      "answers": [
+        "40"
+      ],
+      "options": [
+        "38",
+        "40",
+        "43",
+        "45"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 28 + 16?",
+      "answers": [
+        "44"
+      ],
+      "options": [
+        "44",
+        "47",
+        "49",
+        "42"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 29 y 8 es igual a 37.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 30 + 11?",
+      "answers": [
+        "41"
+      ],
+      "options": [
+        "46",
+        "39",
+        "41",
+        "44"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 31 + 14?",
+      "answers": [
+        "45"
+      ],
+      "options": [
+        "43",
+        "45",
+        "48",
+        "50"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 32 y 17 es igual a 50.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 33 + 9?",
+      "answers": [
+        "42"
+      ],
+      "options": [
+        "45",
+        "47",
+        "40",
+        "42"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 34 + 12?",
+      "answers": [
+        "46"
+      ],
+      "options": [
+        "51",
+        "44",
+        "46",
+        "49"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 35 y 15 es igual a 50.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 36 + 7?",
+      "answers": [
+        "43"
+      ],
+      "options": [
+        "43",
+        "46",
+        "48",
+        "41"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 37 + 10?",
+      "answers": [
+        "47"
+      ],
+      "options": [
+        "50",
+        "52",
+        "45",
+        "47"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 38 y 13 es igual a 52.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 39 + 16?",
+      "answers": [
+        "55"
+      ],
+      "options": [
+        "53",
+        "55",
+        "58",
+        "60"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 40 + 8?",
+      "answers": [
+        "48"
+      ],
+      "options": [
+        "48",
+        "51",
+        "53",
+        "46"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 41 y 11 es igual a 52.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 42 + 14?",
+      "answers": [
+        "56"
+      ],
+      "options": [
+        "61",
+        "54",
+        "56",
+        "59"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 43 + 17?",
+      "answers": [
+        "60"
+      ],
+      "options": [
+        "58",
+        "60",
+        "63",
+        "65"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 44 y 9 es igual a 54.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 45 + 12?",
+      "answers": [
+        "57"
+      ],
+      "options": [
+        "60",
+        "62",
+        "55",
+        "57"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 46 + 15?",
+      "answers": [
+        "61"
+      ],
+      "options": [
+        "66",
+        "59",
+        "61",
+        "64"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 47 y 7 es igual a 54.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 48 + 10?",
+      "answers": [
+        "58"
+      ],
+      "options": [
+        "58",
+        "61",
+        "63",
+        "56"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 49 + 13?",
+      "answers": [
+        "62"
+      ],
+      "options": [
+        "65",
+        "67",
+        "60",
+        "62"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 50 y 16 es igual a 67.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 51 + 8?",
+      "answers": [
+        "59"
+      ],
+      "options": [
+        "57",
+        "59",
+        "62",
+        "64"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 52 + 11?",
+      "answers": [
+        "63"
+      ],
+      "options": [
+        "63",
+        "66",
+        "68",
+        "61"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 53 y 14 es igual a 67.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 54 + 17?",
+      "answers": [
+        "71"
+      ],
+      "options": [
+        "76",
+        "69",
+        "71",
+        "74"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 55 + 9?",
+      "answers": [
+        "64"
+      ],
+      "options": [
+        "62",
+        "64",
+        "67",
+        "69"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 56 y 12 es igual a 69.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 57 + 15?",
+      "answers": [
+        "72"
+      ],
+      "options": [
+        "75",
+        "77",
+        "70",
+        "72"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 58 + 7?",
+      "answers": [
+        "65"
+      ],
+      "options": [
+        "70",
+        "63",
+        "65",
+        "68"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 59 y 10 es igual a 69.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 60 + 13?",
+      "answers": [
+        "73"
+      ],
+      "options": [
+        "73",
+        "76",
+        "78",
+        "71"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 61 + 16?",
+      "answers": [
+        "77"
+      ],
+      "options": [
+        "80",
+        "82",
+        "75",
+        "77"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 62 y 8 es igual a 71.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 63 + 11?",
+      "answers": [
+        "74"
+      ],
+      "options": [
+        "72",
+        "74",
+        "77",
+        "79"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 64 + 14?",
+      "answers": [
+        "78"
+      ],
+      "options": [
+        "78",
+        "81",
+        "83",
+        "76"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 65 y 17 es igual a 82.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 66 + 9?",
+      "answers": [
+        "75"
+      ],
+      "options": [
+        "80",
+        "73",
+        "75",
+        "78"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 67 + 12?",
+      "answers": [
+        "79"
+      ],
+      "options": [
+        "77",
+        "79",
+        "82",
+        "84"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 68 y 15 es igual a 84.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 69 + 7?",
+      "answers": [
+        "76"
+      ],
+      "options": [
+        "79",
+        "81",
+        "74",
+        "76"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 70 + 10?",
+      "answers": [
+        "80"
+      ],
+      "options": [
+        "85",
+        "78",
+        "80",
+        "83"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 71 y 13 es igual a 84.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 72 + 16?",
+      "answers": [
+        "88"
+      ],
+      "options": [
+        "88",
+        "91",
+        "93",
+        "86"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 73 + 8?",
+      "answers": [
+        "81"
+      ],
+      "options": [
+        "84",
+        "86",
+        "79",
+        "81"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 74 y 11 es igual a 86.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 75 + 14?",
+      "answers": [
+        "89"
+      ],
+      "options": [
+        "87",
+        "89",
+        "92",
+        "94"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 76 + 17?",
+      "answers": [
+        "93"
+      ],
+      "options": [
+        "93",
+        "96",
+        "98",
+        "91"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 77 y 9 es igual a 86.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 78 + 12?",
+      "answers": [
+        "90"
+      ],
+      "options": [
+        "95",
+        "88",
+        "90",
+        "93"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 79 + 15?",
+      "answers": [
+        "94"
+      ],
+      "options": [
+        "92",
+        "94",
+        "97",
+        "99"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 80 y 7 es igual a 88.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 81 + 10?",
+      "answers": [
+        "91"
+      ],
+      "options": [
+        "94",
+        "96",
+        "89",
+        "91"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 82 + 13?",
+      "answers": [
+        "95"
+      ],
+      "options": [
+        "100",
+        "93",
+        "95",
+        "98"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 83 y 16 es igual a 99.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 84 + 8?",
+      "answers": [
+        "92"
+      ],
+      "options": [
+        "92",
+        "95",
+        "97",
+        "90"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 85 + 11?",
+      "answers": [
+        "96"
+      ],
+      "options": [
+        "99",
+        "101",
+        "94",
+        "96"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 86 y 14 es igual a 101.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 87 + 17?",
+      "answers": [
+        "104"
+      ],
+      "options": [
+        "102",
+        "104",
+        "107",
+        "109"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 88 + 9?",
+      "answers": [
+        "97"
+      ],
+      "options": [
+        "97",
+        "100",
+        "102",
+        "95"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 89 y 12 es igual a 101.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 90 + 15?",
+      "answers": [
+        "105"
+      ],
+      "options": [
+        "110",
+        "103",
+        "105",
+        "108"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 91 + 7?",
+      "answers": [
+        "98"
+      ],
+      "options": [
+        "96",
+        "98",
+        "101",
+        "103"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 92 y 10 es igual a 103.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 93 + 13?",
+      "answers": [
+        "106"
+      ],
+      "options": [
+        "109",
+        "111",
+        "104",
+        "106"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 94 + 16?",
+      "answers": [
+        "110"
+      ],
+      "options": [
+        "115",
+        "108",
+        "110",
+        "113"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 95 y 8 es igual a 103.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 96 + 11?",
+      "answers": [
+        "107"
+      ],
+      "options": [
+        "107",
+        "110",
+        "112",
+        "105"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 97 + 14?",
+      "answers": [
+        "111"
+      ],
+      "options": [
+        "114",
+        "116",
+        "109",
+        "111"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 98 y 17 es igual a 116.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 99 + 9?",
+      "answers": [
+        "108"
+      ],
+      "options": [
+        "106",
+        "108",
+        "111",
+        "113"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 100 + 12?",
+      "answers": [
+        "112"
+      ],
+      "options": [
+        "112",
+        "115",
+        "117",
+        "110"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 101 y 15 es igual a 116.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 102 + 7?",
+      "answers": [
+        "109"
+      ],
+      "options": [
+        "114",
+        "107",
+        "109",
+        "112"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 103 + 10?",
+      "answers": [
+        "113"
+      ],
+      "options": [
+        "111",
+        "113",
+        "116",
+        "118"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 104 y 13 es igual a 118.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 105 + 16?",
+      "answers": [
+        "121"
+      ],
+      "options": [
+        "124",
+        "126",
+        "119",
+        "121"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 106 + 8?",
+      "answers": [
+        "114"
+      ],
+      "options": [
+        "119",
+        "112",
+        "114",
+        "117"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 107 y 11 es igual a 118.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 108 + 14?",
+      "answers": [
+        "122"
+      ],
+      "options": [
+        "122",
+        "125",
+        "127",
+        "120"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 109 + 17?",
+      "answers": [
+        "126"
+      ],
+      "options": [
+        "129",
+        "131",
+        "124",
+        "126"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 110 y 9 es igual a 120.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 111 + 12?",
+      "answers": [
+        "123"
+      ],
+      "options": [
+        "121",
+        "123",
+        "126",
+        "128"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 112 + 15?",
+      "answers": [
+        "127"
+      ],
+      "options": [
+        "127",
+        "130",
+        "132",
+        "125"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 113 y 7 es igual a 120.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 114 + 10?",
+      "answers": [
+        "124"
+      ],
+      "options": [
+        "129",
+        "122",
+        "124",
+        "127"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 115 + 13?",
+      "answers": [
+        "128"
+      ],
+      "options": [
+        "126",
+        "128",
+        "131",
+        "133"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 116 y 16 es igual a 133.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 117 + 8?",
+      "answers": [
+        "125"
+      ],
+      "options": [
+        "128",
+        "130",
+        "123",
+        "125"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 118 + 11?",
+      "answers": [
+        "129"
+      ],
+      "options": [
+        "134",
+        "127",
+        "129",
+        "132"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 119 y 14 es igual a 133.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 120 + 17?",
+      "answers": [
+        "137"
+      ],
+      "options": [
+        "137",
+        "140",
+        "142",
+        "135"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 121 + 9?",
+      "answers": [
+        "130"
+      ],
+      "options": [
+        "133",
+        "135",
+        "128",
+        "130"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 122 y 12 es igual a 135.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 123 + 15?",
+      "answers": [
+        "138"
+      ],
+      "options": [
+        "136",
+        "138",
+        "141",
+        "143"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 124 + 7?",
+      "answers": [
+        "131"
+      ],
+      "options": [
+        "131",
+        "134",
+        "136",
+        "129"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 125 y 10 es igual a 135.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 126 + 13?",
+      "answers": [
+        "139"
+      ],
+      "options": [
+        "144",
+        "137",
+        "139",
+        "142"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 127 + 16?",
+      "answers": [
+        "143"
+      ],
+      "options": [
+        "141",
+        "143",
+        "146",
+        "148"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 128 y 8 es igual a 137.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 129 + 11?",
+      "answers": [
+        "140"
+      ],
+      "options": [
+        "143",
+        "145",
+        "138",
+        "140"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 130 + 14?",
+      "answers": [
+        "144"
+      ],
+      "options": [
+        "149",
+        "142",
+        "144",
+        "147"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 131 y 17 es igual a 148.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 132 + 9?",
+      "answers": [
+        "141"
+      ],
+      "options": [
+        "141",
+        "144",
+        "146",
+        "139"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 133 + 12?",
+      "answers": [
+        "145"
+      ],
+      "options": [
+        "148",
+        "150",
+        "143",
+        "145"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 134 y 15 es igual a 150.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 135 + 7?",
+      "answers": [
+        "142"
+      ],
+      "options": [
+        "140",
+        "142",
+        "145",
+        "147"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 136 + 10?",
+      "answers": [
+        "146"
+      ],
+      "options": [
+        "146",
+        "149",
+        "151",
+        "144"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 137 y 13 es igual a 150.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 138 + 16?",
+      "answers": [
+        "154"
+      ],
+      "options": [
+        "159",
+        "152",
+        "154",
+        "157"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 139 + 8?",
+      "answers": [
+        "147"
+      ],
+      "options": [
+        "145",
+        "147",
+        "150",
+        "152"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 140 y 11 es igual a 152.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 141 + 14?",
+      "answers": [
+        "155"
+      ],
+      "options": [
+        "158",
+        "160",
+        "153",
+        "155"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 142 + 17?",
+      "answers": [
+        "159"
+      ],
+      "options": [
+        "164",
+        "157",
+        "159",
+        "162"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 143 y 9 es igual a 152.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 144 + 12?",
+      "answers": [
+        "156"
+      ],
+      "options": [
+        "156",
+        "159",
+        "161",
+        "154"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 145 + 15?",
+      "answers": [
+        "160"
+      ],
+      "options": [
+        "163",
+        "165",
+        "158",
+        "160"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 146 y 7 es igual a 154.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 147 + 10?",
+      "answers": [
+        "157"
+      ],
+      "options": [
+        "155",
+        "157",
+        "160",
+        "162"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 148 + 13?",
+      "answers": [
+        "161"
+      ],
+      "options": [
+        "161",
+        "164",
+        "166",
+        "159"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 149 y 16 es igual a 165.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 150 + 8?",
+      "answers": [
+        "158"
+      ],
+      "options": [
+        "163",
+        "156",
+        "158",
+        "161"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 151 + 11?",
+      "answers": [
+        "162"
+      ],
+      "options": [
+        "160",
+        "162",
+        "165",
+        "167"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La suma de 152 y 14 es igual a 167.",
+      "answers": [
+        "Falso"
+      ]
+    }
+  ]
+}
