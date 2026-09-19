@@ -3925,6 +3925,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
     let aiStartTime = 0;
     let aiExpected = 0;
     let aiDone = 0;
+    let aiMessage = '';
     // Segundos por pregunta medidos en la evaluación (dev/eval_results):
     // JSON ~0.7, texto ~0.3; con todas las páginas como imagen, más.
     const SECONDS_PER_QUESTION_DEFAULTS = { json: 0.75, text: 0.35, normalize: 1.2 };
@@ -3966,6 +3967,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         _setProgressDetail('');
       } else if (ev.key === 'ai') {
         window._aiMode = ev.mode || 'json';
+        aiMessage = ev.message || '';
         aiStartTime = Date.now();
         aiExpected = ev.expected || 0;
         aiDone = 0;
@@ -3976,6 +3978,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
         } else {
           _setProgressDetail(ev.images ? `Leyendo ${ev.images} página(s) como imagen` : '');
         }
+      } else if (ev.key === 'retry') {
+        // Google saturado o límite por minuto: el backend espera y reintenta.
+        // La respuesta vuelve a empezar desde cero, así que el ritmo se mide
+        // de nuevo (aiStartTime = 0 → se reinicia con el próximo avance).
+        const wait = Number((/(\d+)\s*s/.exec(ev.message || '') || [])[1] || 10);
+        aiStartTime = 0;
+        aiDone = 0;
+        _setProgressDetail('Esperando al servicio de IA…');
+        progressEstimatedTotal = elapsedSec + wait + 3 + (aiExpected || 20) * _getSecondsPerQuestion();
       } else if (ev.key === 'review') {
         _setProgressBar(96);
         _setProgressDetail(aiDone ? `${aiDone} preguntas procesadas · verificando…` : 'Verificando…');
@@ -3988,6 +3999,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
       aiDone = ev.done || 0;
       if (ev.expected) aiExpected = ev.expected;
       const now = Date.now();
+      if (!aiStartTime) {
+        // Primer avance tras un reintento: la IA volvió a responder.
+        aiStartTime = now;
+        if (aiMessage) document.getElementById('progress-subtitle').textContent = aiMessage;
+      }
       const elapsedSec = (now - progressStartTime) / 1000;
       const aiElapsed = (now - aiStartTime) / 1000;
       // La estimación inicial se corrige con el ritmo REAL de esta
@@ -4028,6 +4044,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       aiStartTime = 0;
       aiExpected = 0;
       aiDone = 0;
+      aiMessage = '';
       _setProgressDetail('');
 
       document.getElementById('progress-timer-row').style.display = 'flex';

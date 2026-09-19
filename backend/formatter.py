@@ -35,6 +35,8 @@ from google.api_core.exceptions import (
     PermissionDenied,
     Unauthenticated,
     BadRequest,
+    ServiceUnavailable,
+    InternalServerError,
 )
 
 from config import (
@@ -190,6 +192,12 @@ def _stream_generate(body: dict, timeout: int, on_text: Optional[Callable[[str],
             if not line or not line.startswith("data:"):
                 continue
             event = json.loads(line[5:])
+            if event.get("error"):
+                # Un error que llega DENTRO del stream (ya con status 200),
+                # típicamente la sobrecarga del modelo a mitad de respuesta.
+                err = event["error"]
+                raise google_exceptions.from_http_status(
+                    int(err.get("code") or 500), err.get("message") or "error en el stream")
             block = (event.get("promptFeedback") or {}).get("blockReason") or block
             for cand in event.get("candidates") or []:
                 for part in (cand.get("content") or {}).get("parts") or []:
@@ -207,6 +215,11 @@ def _stream_generate(body: dict, timeout: int, on_text: Optional[Callable[[str],
         # Bloqueo de seguridad, respuesta vacía, etc.: cuenta como un intento
         # fallido más y se reintenta.
         raise RuntimeError(f"Respuesta vacía de la IA (finish={finish or '-'}, block={block or '-'})")
+    if not finish:
+        # El stream terminó sin finishReason: la conexión se cortó a mitad
+        # de la respuesta. Sin esto, el texto truncado llegaba al parser
+        # como un JSON mal formado ("Expecting value: line 50…").
+        raise RuntimeError(f"La respuesta de la IA llegó cortada ({len(text)} caracteres)")
     return _GenResult(text=text, finish_reason=finish, prompt_tokens=prompt_tokens, output_tokens=output_tokens)
 
 
@@ -248,7 +261,8 @@ def _sin_respuesta_ratio(text: str) -> float:
 
 
 def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = None,
-                      progress: ProgressFn = None) -> tuple[str, bool]:
+                      progress: ProgressFn = None,
+                      on_retry: Optional[Callable[[str], None]] = None) -> tuple[str, bool]:
     """
     Pasa el texto (y, si el documento es un PDF con imágenes incrustadas,
     esas páginas como imagen) por Gemini para normalizar estructura.
@@ -260,7 +274,9 @@ def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = 
     o un PDF sin imágenes incrustadas).
 
     progress(n), si se pasa, recibe cuántas preguntas ("Pregunta N:") lleva
-    escritas la IA mientras responde.
+    escritas la IA mientras responde. on_retry(mensaje), si se pasa, recibe
+    un aviso cada vez que hay que esperar y reintentar (Google saturado,
+    límite por minuto, respuesta cortada).
 
     Returns:
         (texto_para_parser, fue_reformateado)
@@ -285,7 +301,7 @@ def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = 
     best_was_reformatted = False
 
     for quality_attempt in range(1, quality_attempts + 1):
-        result_text, was_reformatted = _call_gemini_with_retries(body, raw_text, on_text)
+        result_text, was_reformatted = _call_gemini_with_retries(body, raw_text, on_text, on_retry)
 
         ratio = _sin_respuesta_ratio(result_text) if page_images else 0.0
         logger.info(
@@ -321,7 +337,7 @@ def _not_an_exam_error() -> HTTPException:
     )
 
 
-def _call_gemini_with_retries(body: dict, raw_text: str, on_text=None) -> tuple[str, bool]:
+def _call_gemini_with_retries(body: dict, raw_text: str, on_text=None, on_retry=None) -> tuple[str, bool]:
     """Modo texto: una llamada lógica que devuelve (texto_reformateado, fue_reformateado)."""
 
     def parse(result: _GenResult) -> tuple[str, bool]:
@@ -340,10 +356,27 @@ def _call_gemini_with_retries(body: dict, raw_text: str, on_text=None) -> tuple[
             raise _not_an_exam_error()
         return (result_text, result_text.strip() != raw_text.strip())
 
-    return _generate_with_retries(body, len(raw_text), parse, GEMINI_REQUEST_TIMEOUT_SECONDS, on_text)
+    return _generate_with_retries(body, len(raw_text), parse, GEMINI_REQUEST_TIMEOUT_SECONDS, on_text, on_retry)
 
 
-def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on_text=None):
+# Esperas ante "el modelo está saturado" (503 de Google). Es habitual en
+# el plan gratuito y suele durar segundos o pocos minutos, así que se
+# espera cada vez más antes de rendirse (~1.5 min en total), avisando en
+# pantalla para que el docente no crea que la app se colgó.
+_OVERLOAD_WAITS = (5, 10, 20, 30, 30)
+
+
+def _notify(on_retry: Optional[Callable[[str], None]], message: str) -> None:
+    if on_retry is None:
+        return
+    try:
+        on_retry(message)
+    except Exception:  # noqa: BLE001 — el aviso nunca debe romper la conversión
+        pass
+
+
+def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on_text=None,
+                           on_retry: Optional[Callable[[str], None]] = None):
     """
     Una llamada "lógica" a Gemini, con el reintento por FALLO DE RED/API de
     siempre (no confundir con el reintento de calidad, que es sobre
@@ -358,6 +391,7 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
     # con esperar lo que Google indica. Tiene su propio contador para no
     # gastar los reintentos normales esperando la cuota.
     quota_waits_left = 5
+    overload_waits = list(_OVERLOAD_WAITS)
 
     attempt = 0
     while attempt < max_retries:
@@ -398,6 +432,25 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
             attempt -= 1
             delay = _quota_retry_seconds(exc)
             logger.warning("Gemini prefiltro: cuota por minuto agotada (429); esperando %.0fs.", delay)
+            _notify(on_retry, f"Límite por minuto del servicio de IA alcanzado: se continúa en {delay:.0f} s…")
+            time.sleep(delay)
+
+        except (ServiceUnavailable, InternalServerError) as exc:
+            # Google saturado o con un error interno: no es un problema del
+            # documento, así que tiene su propio contador y esperas crecientes.
+            if not overload_waits:
+                logger.error("Gemini prefiltro: servicio saturado de forma persistente. Detalle: %s", exc)
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        "El servicio de IA de Google está saturado en este momento (no es un "
+                        "problema del documento). Intenta de nuevo en unos minutos."
+                    ),
+                )
+            attempt -= 1
+            delay = overload_waits.pop(0)
+            logger.warning("Gemini prefiltro: servicio saturado (%s); reintento en %ds.", exc.code, delay)
+            _notify(on_retry, f"El servicio de IA está saturado; reintentando en {delay} s…")
             time.sleep(delay)
 
         except HTTPException:
@@ -426,6 +479,7 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
             )
             if attempt < max_retries:
                 logger.info("Esperando %d segundos antes de reintentar...", wait_time)
+                _notify(on_retry, "La respuesta de la IA llegó incompleta; reintentando…")
                 time.sleep(wait_time)
             else:
                 logger.error("Gemini prefiltro no disponible tras %d intentos.", max_retries)
@@ -474,7 +528,8 @@ def _unanswered_ratio(data: dict) -> float:
 
 
 def extract_structured(raw_text: str, page_images: Optional[List[Image.Image]] = None,
-                       progress: ProgressFn = None) -> dict:
+                       progress: ProgressFn = None,
+                       on_retry: Optional[Callable[[str], None]] = None) -> dict:
     """
     Igual que verify_and_format, pero el modelo devuelve JSON restringido por
     RESPONSE_SCHEMA (decodificación con esquema: la forma de la salida está
@@ -496,7 +551,7 @@ def extract_structured(raw_text: str, page_images: Optional[List[Image.Image]] =
     best_score = None
     for quality_attempt in range(1, quality_attempts + 1):
         data = _generate_with_retries(body, len(raw_text), _parse_structured_response,
-                                      GEMINI_REQUEST_TIMEOUT_SECONDS_JSON, on_text)
+                                      GEMINI_REQUEST_TIMEOUT_SECONDS_JSON, on_text, on_retry)
         ratio = _unanswered_ratio(data) if page_images else 0.0
         n = len(data.get("preguntas") or [])
         logger.info(

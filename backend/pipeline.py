@@ -75,6 +75,14 @@ def _ai_progress(progress: ProgressCallback, expected: int):
     return lambda done: _emit(progress, type="progress", done=done, expected=expected)
 
 
+def _ai_retry(progress: ProgressCallback):
+    """Aviso de "esperando y reintentando" (Google saturado, límite por
+    minuto): la pantalla lo muestra para que no parezca que se colgó."""
+    if progress is None:
+        return None
+    return lambda message: _emit(progress, type="stage", key="retry", message=message)
+
+
 def _tag_color_review_hints(valid_questions: List[Dict[str, Any]], colored_pages_text: List[str]) -> None:
     """
     Marca in-place cada pregunta multichoice cuya página de origen tenía
@@ -173,7 +181,7 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
 
     if NORMALIZER_MODE == "json":
         model_text = _model_text_json(raw_bytes, marks) if suffix == ".pdf" else full_text
-        payload = extract_structured(model_text, page_images, progress=on_ai)
+        payload = extract_structured(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress))
         _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
         return _finalize_structured(
             filename, payload,
@@ -182,7 +190,7 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
         )
 
     model_text = "\n".join(marks[0]) if marks else full_text
-    reformatted_text, was_reformatted = verify_and_format(model_text, page_images, progress=on_ai)
+    reformatted_text, was_reformatted = verify_and_format(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress))
     _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
 
     return finalize_parse_response(
@@ -241,7 +249,7 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
 
     if NORMALIZER_MODE_AI == "json":
         model_text = _model_text_json(raw_bytes, marks)
-        payload = extract_structured(model_text, page_images, progress=on_ai)
+        payload = extract_structured(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress))
         _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
         return _finalize_structured(
             filename, payload,
@@ -249,7 +257,7 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
             _colored_pages(raw_bytes), marks,
         )
 
-    reformatted_text, was_reformatted = verify_and_format(full_text, page_images, progress=on_ai)
+    reformatted_text, was_reformatted = verify_and_format(full_text, page_images, progress=on_ai, on_retry=_ai_retry(progress))
     _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
 
     return finalize_parse_response(
