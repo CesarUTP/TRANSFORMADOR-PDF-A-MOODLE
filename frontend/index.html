@@ -4014,10 +4014,9 @@ Ahora convierte el examen adjunto a este formato.</pre>
       if (total > 0) {
         progressEstimatedTotal = elapsedSec + Math.max(total - aiDone, 0) * spq + 1.5;
         _setProgressBar(8 + 86 * Math.min(aiDone / total, 1));
-        // El total es aproximado: si el documento resulta tener bastantes
-        // más preguntas de las estimadas, se deja de mostrar un "de ~N"
-        // que ya no es cierto.
-        _setProgressDetail(aiExpected && aiDone <= aiExpected * 1.25
+        // El total es aproximado: en cuanto la IA pasa del estimado, se
+        // deja de mostrar un "de ~N" que ya no es cierto ("33 de ~27").
+        _setProgressDetail(aiExpected && aiDone <= aiExpected
           ? `${aiDone} de ~${aiExpected} preguntas procesadas`
           : `${aiDone} preguntas procesadas`);
       } else {

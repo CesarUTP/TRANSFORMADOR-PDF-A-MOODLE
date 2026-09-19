@@ -649,5 +649,24 @@ def estimate_expected_questions(raw_text: str) -> int:
     k = 0
     while k + 1 in nums:
         k += 1
-    question_marks = sum(1 for line in raw_text.splitlines() if line.strip().endswith("?"))
-    return max(k, question_marks)
+    lines = [ln.strip() for ln in raw_text.splitlines()]
+    question_marks = sum(1 for ln in lines if ln.endswith("?"))
+    if not k:
+        return question_marks
+    # Preguntas SIN número intercaladas entre las numeradas (medido en
+    # Computación: 27 numeradas + 6 sueltas tras la 13, y la pantalla
+    # decía "de ~27" hasta que llegaba a 33). Un "?" cuenta como pregunta
+    # aparte solo si la pregunta numerada anterior ya se cerró con su
+    # propio "?"; si no, es la segunda línea de ese mismo enunciado. Una
+    # opción rotulada ("A. ¿Cómo…") abre su propio bloque por la misma
+    # razón: su "?" en la línea siguiente no es una pregunta nueva.
+    numbered = re.compile(r"(?i)^(?:pregunta\s*\d{1,3}\b|\d{1,3}\s*[.):\-]|[a-z]\s*[.)]\s)")
+    extra, closed = 0, True
+    for ln in lines:
+        if numbered.match(ln):
+            closed = ln.endswith("?")
+        elif ln.endswith("?"):
+            if closed:
+                extra += 1
+            closed = True
+    return max(k + extra, question_marks)
