@@ -37,8 +37,11 @@ Conversor a Moodle XML/
 │   ├── main.py           ← API FastAPI (endpoints)
 │   ├── config.py         ← Configuración centralizada + prompt del sistema (IA)
 │   ├── extractor.py      ← Extracción de texto (.pdf / .txt)
-│   ├── formatter.py      ← Prefiltro Gemini (normalización de estructura)
-│   ├── parser.py         ← Parseo dinámico de preguntas y clave de respuestas
+│   ├── pipeline.py       ← Flujo completo de normalización (lo usan la API y dev/eval.py)
+│   ├── formatter.py      ← Llamada a Gemini (modo texto o JSON con esquema)
+│   ├── parser.py         ← Lee el formato de texto que devuelve la IA (modo texto)
+│   ├── schema_adapter.py ← Convierte la salida JSON de la IA (modo JSON)
+│   ├── mark_resolver.py  ← Decide en código las respuestas marcadas por color o tabla
 │   ├── validator.py      ← Validación de preguntas contra el spec Moodle XML
 │   ├── xml_builder.py    ← Generación del XML Moodle
 │   ├── database.py       ← Historial de conversiones (SQLite)
@@ -57,6 +60,17 @@ Conversor a Moodle XML/
 │
 ├── docs/
 │   └── Formato Moodle XML.txt  ← Referencia del spec Moodle XML usado por el validador
+│
+├── samples/
+│   ├── *.pdf / *.txt     ← Exámenes reales de prueba
+│   ├── synthetic/        ← Exámenes sintéticos (generados por dev/synthetic/)
+│   └── golden/           ← Resultado esperado de cada uno (set de regresión)
+│
+├── dev/
+│   ├── eval.py           ← Evaluación de la normalización contra samples/golden/
+│   ├── compare.py        ← Compara resultados de eval.py lado a lado
+│   ├── synthetic/        ← Generador de los exámenes sintéticos
+│   └── eval_results/     ← Resultados guardados (ver RESULTADOS.md)
 │
 ├── samples/              ← Exámenes de ejemplo para probar la app manualmente
 │   ├── Parcial_Historia_Geografia.pdf
@@ -129,6 +143,21 @@ Documentación interactiva Swagger: `http://localhost:8000/docs`.
 ### 5. Abrir el frontend
 
 Con el backend corriendo, abre `http://localhost:8000` en el navegador — el propio backend sirve el frontend. También puedes correr la app de escritorio nativa con `python launcher.py` desde la raíz del proyecto.
+
+---
+
+## Evaluar cambios en la normalización
+
+Antes de cambiar el prompt, el modelo o la extracción, compara contra el set de regresión:
+
+```bash
+backend/venv/bin/python dev/eval.py                    # 15 documentos × 3 corridas
+backend/venv/bin/python dev/eval.py --only s02 s05     # solo algunos
+backend/venv/bin/python dev/eval.py --mode json        # probar el modo JSON
+backend/venv/bin/python dev/compare.py dev/eval_results/A.json dev/eval_results/B.json
+```
+
+La métrica principal es la **exactitud**: preguntas que llegan al editor con el tipo, el enunciado completo y la respuesta correctos. Varios exámenes sintéticos traen a propósito claves "incorrectas" (ej. Saturno como el planeta más grande), para detectar si el modelo resuelve en vez de transcribir. Detalles en `samples/golden/README.md`; resultados actuales en `dev/eval_results/RESULTADOS.md`.
 
 ---
 
@@ -225,11 +254,25 @@ Además, para la app de escritorio: `pywebview` (no incluida en `requirements.tx
 
 ## Módulo de prefiltro de IA
 
-El sistema utiliza **Gemini 3.1 Flash Lite** para normalizar la estructura de los documentos antes del parsing por regex — nunca para resolver ni inventar respuestas.
+El sistema utiliza **Gemini 3.1 Flash Lite** para normalizar la estructura de los documentos — nunca para resolver ni inventar respuestas.
 
 ```
-PDF/TXT → Extracción de texto → [PREFILTRO GEMINI] → Parser → Validador → XML Builder → Moodle XML
+PDF/TXT → Extracción (texto + color + tablas) → [GEMINI] → Parser / Adaptador JSON
+        → Marcas resueltas en código → Validador → Editor → XML Builder → Moodle XML
 ```
+
+**Las marcas del PDF se leen, no se adivinan.** En un PDF digital, `extract_text()` pierde justo las marcas de respuesta más comunes: el color de una opción y la columna de la "X" en un cuadro de marcas. Sin ellas el modelo tiende a *resolver* la pregunta con su propio conocimiento. Por eso:
+
+- el texto que recibe el modelo lleva el color anotado (`⟦rojo⟧Lista (list)⟦/rojo⟧`) y las tablas con su estructura (`| Evento | … | x |`);
+- después, `mark_resolver.py` decide en código las respuestas marcadas por color o por tabla. El modelo solo estructura (qué es enunciado, qué es opción).
+
+Se controla con variables de entorno (o un archivo `.env`):
+
+| Variable | Por defecto | Qué hace |
+|---|---|---|
+| `GEMINI_API_KEY` | — | Key de Google AI Studio (ver `.env.example`) |
+| `ENRICH_PDF_TEXT` | `1` | Color y tablas en el texto + marcas resueltas en código |
+| `NORMALIZER_MODE` | `text` | `json`: la IA devuelve JSON con esquema en vez del formato de texto. Corrige dos errores silenciosos del modo texto, pero tarda ~3.5× más (ver `dev/eval_results/RESULTADOS.md`) |
 
 | Caso | Acción |
 |------|--------|
@@ -237,7 +280,8 @@ PDF/TXT → Extracción de texto → [PREFILTRO GEMINI] → Parser → Validador
 | El documento **no tiene** el formato estándar | Gemini reformatea **solo la estructura**, conservando preguntas y respuestas tal cual están |
 | El documento **no es una prueba real** (presentación, manual, artículo, apuntes, etc.) | Gemini responde con un centinela interno (`NO_ES_UNA_PRUEBA`); el backend lo detecta y responde `422` sin generar ninguna pregunta |
 | Una pregunta **no tiene respuesta marcada** en el original | Se marca `SIN_RESPUESTA` — el sistema bloquea el XML en vez de adivinar |
-| La API de Gemini **no está disponible** | Reintenta 3 veces (10s de espera entre intentos) antes de devolver error |
+| La API de Gemini **no está disponible** | Reintenta 3 veces (10s de espera entre intentos) antes de devolver error; una llamada colgada se corta a los 180 s |
+| Se alcanzó el **límite de peticiones por minuto** (429) | Espera el tiempo que indica Google y reintenta |
 
 ---
 

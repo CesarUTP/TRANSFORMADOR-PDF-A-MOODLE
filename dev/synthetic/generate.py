@@ -21,6 +21,7 @@ import sys
 from pathlib import Path
 from xml.sax.saxutils import escape
 
+from reportlab import rl_config
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
@@ -31,6 +32,11 @@ from reportlab.platypus import (
 
 sys.path.insert(0, str(Path(__file__).parent))
 import exams as E  # noqa: E402
+
+# Sin fecha de creación ni ID aleatorio en el PDF: regenerar produce
+# exactamente los mismos bytes, así git no ve cambios si el contenido no
+# cambió.
+rl_config.invariant = 1
 
 ROOT = Path(__file__).resolve().parents[2]
 PDF_DIR = ROOT / "samples" / "synthetic"
