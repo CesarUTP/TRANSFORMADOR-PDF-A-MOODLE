@@ -589,34 +589,15 @@
       box-shadow: 0 0 0 3px var(--color-accent-glow);
     }
 
-    /* Barra fija de "Aprobar y Generar / Cancelar". Repite EXACTAMENTE la
-       misma pintura que <body> — color de fondo más los dos brillos
-       radiales con background-attachment: fixed, que se posicionan
-       respecto al viewport y por eso calzan pixel a pixel con los del
-       fondo. Antes llevaba un var(--color-bg) plano: como el fondo de la
-       página lleva encima esos brillos, el bloque plano se recortaba
-       contra ellos y se veía un recuadro pegado por encima de la página,
-       sobre todo arriba a la izquierda (donde el brillo es más fuerte).
-       Sigue siendo opaco a propósito: las tarjetas tienen que desaparecer
-       por debajo al hacer scroll, no transparentarse. */
+    /* Barra fija de "Aprobar y Generar / Cancelar". Sin fondo: cualquier
+       fondo propio (plano o imitando los brillos del <body>) se veía como
+       un recuadro detrás de los botones. */
     .editor-sticky-actions {
       position: sticky;
       z-index: 90;
       padding: 14px 0;
       margin: 0 0 18px;
-      background-color: var(--color-bg);
-      background-image:
-        radial-gradient(at 0% 0%, var(--color-primary-glow) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, var(--color-accent-glow) 0px, transparent 50%);
-      background-attachment: fixed;
-      /* La línea divisoria solo tiene sentido cuando de verdad hay
-         contenido pasando por debajo; quieta arriba del todo era otro
-         borde más del "recuadro". */
-      border-bottom: 1px solid transparent;
-      transition: border-color 0.2s ease;
-    }
-    .editor-sticky-actions.is-stuck {
-      border-bottom-color: var(--color-border-subtle);
+      background: transparent;
     }
 
     /* ── EDITOR CARDS (Interactive Question Editor) ──────────────────────── */
@@ -1890,7 +1871,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // abrir uno de los 3 paneles ya NO cierra los otros dos. Se apaga solo
     // al pulsar "Ocultar todo" (o al volver a activarlo si ya estaban
     // todos abiertos) — interactuar con un panel individual no lo apaga.
-    let _panelsExpandedMode = false;
+    // Arranca activo: al abrir el editor los 3 paneles se ven desplegados.
+    let _panelsExpandedMode = true;
     function _closeOtherCollapsiblePanels(exceptId) {
       if (_panelsExpandedMode) return;
       COLLAPSIBLE_PANEL_IDS.forEach(id => {
@@ -2901,13 +2883,6 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // requestAnimationFrame para no recalcular en cada pixel).
     function updateReviewProgress() {
       const stickyBar = document.querySelector('.editor-sticky-actions');
-      // ¿La barra ya está pegada bajo el header (hay contenido pasándole
-      // por debajo) o todavía va con el flujo de la página? Solo en el
-      // primer caso se dibuja la línea que la separa de las tarjetas.
-      if (stickyBar) {
-        const headerBottom = document.querySelector('.app-header')?.getBoundingClientRect().bottom || 0;
-        stickyBar.classList.toggle('is-stuck', stickyBar.getBoundingClientRect().top <= headerBottom + 1);
-      }
       const fill = document.getElementById('review-progress-fill');
       const label = document.getElementById('review-progress-label');
       if (!fill || !label) return;
@@ -3515,6 +3490,9 @@ Ahora convierte el examen adjunto a este formato.</pre>
       // de siempre, sin pasos extra.
       autoDistributePoints(parsedData.questions, ptsVal, 'byType');
       showPanel('editor');
+      // Cada examen nuevo abre el editor con los 3 paneles desplegados,
+      // aunque en el anterior el docente los haya ocultado.
+      _panelsExpandedMode = true;
       renderEditor(parsedData);
       lucide.createIcons();
     }
