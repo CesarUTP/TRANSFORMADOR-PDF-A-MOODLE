@@ -30,12 +30,24 @@ app. Al abrirlo, aparece una ventana con "ConvertidorMoodle.app" y
 un acceso directo a la carpeta Aplicaciones — arrastrando el ícono
 ahí queda "instalada" como cualquier app de Mac.
 
-Nota sobre la clave de Gemini
+Clave de Gemini (API key)
 ------------------------------------------------
-El ejecutable incluye la misma clave de API de Gemini que usas en
-desarrollo (sigue pendiente moverla a configuración). Si vas a
-compartir este instalador con alguien fuera de tu control directo,
-ten en cuenta que esa clave queda embebida dentro de la app.
+La app NO trae ninguna clave adentro. Cada Mac donde se instale
+necesita un archivo ".env" junto al ejecutable, dentro del paquete:
+
+    ConvertidorMoodle.app/Contents/MacOS/.env
+
+con una sola línea:
+
+    GEMINI_API_KEY=tu_clave_aqui
+
+(Para llegar ahí: clic derecho en la app → "Mostrar contenido del
+paquete" → Contents → MacOS.)
+
+La clave se obtiene gratis en https://aistudio.google.com/apikey
+
+Sin ese archivo la app abre igual, pero al convertir un examen avisa
+que falta configurar la clave.
 
 "Apple no puede verificar que esta app esté libre de malware"
 ------------------------------------------------

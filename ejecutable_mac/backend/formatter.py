@@ -1,44 +1,265 @@
 """
-formatter.py — Prefiltro Gemini para normalizar la estructura
-del documento antes de que llegue al parser regex.
+formatter.py — Llamada a Gemini que normaliza la estructura del documento.
 
-Flujo:
-  texto_extraido → verify_and_format() → texto_garantizado → parser
+Dos modos (ver NORMALIZER_MODE en config.py):
+  verify_and_format()   → texto con el formato propio → parser.py
+  extract_structured()  → JSON restringido por RESPONSE_SCHEMA → schema_adapter.py
+
+La llamada se hace directo contra la API REST con streaming (SSE), no con
+el SDK: el SDK en modo REST junta toda la respuesta antes de entregarla,
+así que no hay forma de saber cuántas preguntas lleva procesadas. Con SSE
+las preguntas llegan a medida que se generan y la pantalla de carga puede
+mostrar el avance real ("pregunta 12 de ~40, faltan ~20 s").
 """
 
+import base64
+import io
+import json
+import os
 import re
+import threading
 import time
 import logging
-from typing import Optional, List
+from dataclasses import dataclass
+from typing import Callable, List, Optional
+
+import requests
 from fastapi import HTTPException
 from PIL import Image
-import google.generativeai as genai
-from google.api_core.exceptions import (
-    NotFound,
-    InvalidArgument,
-    PermissionDenied,
-    Unauthenticated,
-    BadRequest,
-)
 
 from config import (
     GEMINI_API_KEY,
+    MISSING_API_KEY_MESSAGE,
     GEMINI_MODEL_NAME,
     GEMINI_MAX_RETRIES,
+    GEMINI_REQUEST_TIMEOUT_SECONDS,
+    GEMINI_REQUEST_TIMEOUT_SECONDS_JSON,
     GEMINI_RETRY_WAIT_SECONDS,
     GEMINI_TEMPERATURE,
     GEMINI_SIN_RESPUESTA_THRESHOLD,
     GEMINI_MAX_QUALITY_ATTEMPTS,
     SYSTEM_PROMPT,
+    SYSTEM_PROMPT_JSON,
+    RESPONSE_SCHEMA,
+    GEMINI_MAX_OUTPUT_TOKENS,
     NOT_AN_EXAM_SENTINEL,
 )
 
+_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+
+# Recibe el número de preguntas que la IA ya terminó de escribir.
+ProgressFn = Optional[Callable[[int], None]]
+
 logger = logging.getLogger(__name__)
 
-# Errores que NO se arreglan reintentando (modelo inexistente, API key
-# inválida, petición mal formada): fallar de inmediato con un mensaje claro
-# en vez de agotar los 3 reintentos con 10s de espera cada uno para nada.
-_NON_RETRYABLE_ERRORS = (NotFound, InvalidArgument, PermissionDenied, Unauthenticated, BadRequest)
+# Registro por hilo de cada llamada a Gemini (tokens y segundos). Lo usa
+# dev/eval.py para medir costo/latencia de cada documento; la app no lo
+# lee. Es por hilo porque la evaluación procesa varios documentos en
+# paralelo y cada uno debe ver solo sus propias llamadas.
+_call_log = threading.local()
+
+
+def reset_call_log() -> None:
+    _call_log.entries = []
+
+
+def get_call_log() -> List[dict]:
+    return list(getattr(_call_log, "entries", []))
+
+
+# ── Límite de peticiones por minuto ─────────────────────────────────────────
+# El plan gratuito de Gemini admite pocas peticiones por minuto (15 para
+# flash-lite). GEMINI_MAX_RPM, si se define, espacia las llamadas de TODO
+# el proceso (compartido entre hilos) para no llegar al límite: lo usa
+# dev/eval.py, que procesa varios documentos en paralelo. La app no lo
+# necesita normalmente (un usuario, una conversión a la vez).
+_rpm_lock = threading.Lock()
+_rpm_calls: List[float] = []
+
+
+def _throttle() -> None:
+    try:
+        max_rpm = int(os.environ.get("GEMINI_MAX_RPM", "0"))
+    except ValueError:
+        max_rpm = 0
+    if max_rpm <= 0:
+        return
+    while True:
+        with _rpm_lock:
+            now = time.monotonic()
+            while _rpm_calls and now - _rpm_calls[0] > 60:
+                _rpm_calls.pop(0)
+            if len(_rpm_calls) < max_rpm:
+                _rpm_calls.append(now)
+                return
+            wait = 60 - (now - _rpm_calls[0]) + 0.5
+        time.sleep(max(wait, 0.5))
+
+
+def _quota_retry_seconds(exc: Exception) -> float:
+    """Segundos que Google pide esperar tras un 429 ("Please retry in 38.7s")."""
+    m = re.search(r"retry in ([\d.]+)s", str(exc))
+    return min(float(m.group(1)) + 1.0, 65.0) if m else 30.0
+
+
+def _record_call(result: "_GenResult", seconds: float) -> None:
+    entry = {
+        "seconds": round(seconds, 2),
+        "prompt_tokens": result.prompt_tokens,
+        "output_tokens": result.output_tokens,
+    }
+    if not hasattr(_call_log, "entries"):
+        _call_log.entries = []
+    _call_log.entries.append(entry)
+
+# ── Errores HTTP de la API de Gemini ─────────────────────────────────────────
+# Tres familias, según qué conviene hacer con cada una (ver
+# _generate_with_retries). El texto de la excepción lleva el cuerpo completo
+# de la respuesta de Google: ahí vienen "Please retry in 38s" y el nombre de
+# la cuota agotada ("...PerDay...").
+
+class GeminiHTTPError(Exception):
+    def __init__(self, code: int, body: str):
+        self.code = code
+        super().__init__(f"{code} {body}")
+
+
+class GeminiQuotaError(GeminiHTTPError):
+    """429: cuota por minuto o por día agotada."""
+
+
+class GeminiOverloadedError(GeminiHTTPError):
+    """500/502/503/504: Google saturado o con un error interno."""
+
+
+class GeminiRejectedError(GeminiHTTPError):
+    """400/401/403/404: modelo inexistente, API key inválida o petición
+    mal formada. No se arregla reintentando: se falla de inmediato."""
+
+
+def _http_error(code: int, body: str) -> GeminiHTTPError:
+    if code == 429:
+        return GeminiQuotaError(code, body)
+    if code in (500, 502, 503, 504):
+        return GeminiOverloadedError(code, body)
+    if code in (400, 401, 403, 404):
+        return GeminiRejectedError(code, body)
+    return GeminiHTTPError(code, body)
+
+
+# ── Llamada REST con streaming ──────────────────────────────────────────────
+
+@dataclass
+class _GenResult:
+    text: str
+    finish_reason: str
+    prompt_tokens: int
+    output_tokens: int
+
+
+def _image_part(img: Image.Image) -> dict:
+    # WebP sin pérdida: el mismo formato que usa el SDK de Gemini, para que
+    # las páginas con imágenes (código en captura, marcas de color) lleguen
+    # con la misma calidad que antes de dejar el SDK.
+    buf = io.BytesIO()
+    img.save(buf, format="webp", lossless=True)
+    return {"inline_data": {"mime_type": "image/webp", "data": base64.b64encode(buf.getvalue()).decode()}}
+
+
+def _build_request(system_prompt: str, raw_text: str, page_images, generation_config: dict) -> dict:
+    parts = [{"text": raw_text}] + [_image_part(img) for img in (page_images or [])]
+    return {
+        "systemInstruction": {"parts": [{"text": system_prompt}]},
+        "contents": [{"role": "user", "parts": parts}],
+        "generationConfig": generation_config,
+    }
+
+
+def _stream_generate(body: dict, timeout: int, on_text: Optional[Callable[[str], None]]) -> _GenResult:
+    """
+    Una llamada a streamGenerateContent (SSE). Va acumulando el texto y
+    llama a on_text(texto_acumulado) con cada fragmento. Los errores HTTP se
+    convierten en GeminiQuotaError / GeminiOverloadedError /
+    GeminiRejectedError para el manejo de reintentos de más abajo.
+    """
+    url = f"{_API_BASE}/models/{GEMINI_MODEL_NAME}:streamGenerateContent?alt=sse"
+    deadline = time.monotonic() + timeout
+    resp = requests.post(
+        url,
+        headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+        json=body,
+        stream=True,
+        # (conexión, lectura entre fragmentos): una respuesta que deja de
+        # llegar se corta sin esperar el tope total.
+        timeout=(20, min(timeout, 120)),
+    )
+    if resp.status_code != 200:
+        try:
+            body = resp.text
+        finally:
+            resp.close()
+        raise _http_error(resp.status_code, body)
+    # El stream SSE llega como "text/event-stream" sin charset, y requests
+    # asume ISO-8859-1 en ese caso: las tildes salían como "Â¿CuÃ¡nto" en
+    # vez de "¿Cuánto" (lo detectó dev/eval.py). La API siempre responde
+    # en UTF-8.
+    resp.encoding = "utf-8"
+
+    text, finish, prompt_tokens, output_tokens, block = "", "", 0, 0, ""
+    try:
+        for line in resp.iter_lines(decode_unicode=True):
+            if time.monotonic() > deadline:
+                raise TimeoutError(f"La respuesta de la IA superó {timeout} s")
+            if not line or not line.startswith("data:"):
+                continue
+            event = json.loads(line[5:])
+            if event.get("error"):
+                # Un error que llega DENTRO del stream (ya con status 200),
+                # típicamente la sobrecarga del modelo a mitad de respuesta.
+                err = event["error"]
+                raise _http_error(int(err.get("code") or 500), json.dumps(err, ensure_ascii=False))
+            block = (event.get("promptFeedback") or {}).get("blockReason") or block
+            for cand in event.get("candidates") or []:
+                for part in (cand.get("content") or {}).get("parts") or []:
+                    text += part.get("text", "")
+                finish = cand.get("finishReason") or finish
+            usage = event.get("usageMetadata") or {}
+            prompt_tokens = usage.get("promptTokenCount", prompt_tokens) or prompt_tokens
+            output_tokens = usage.get("candidatesTokenCount", output_tokens) or output_tokens
+            if on_text:
+                on_text(text)
+    finally:
+        resp.close()
+
+    if not text:
+        # Bloqueo de seguridad, respuesta vacía, etc.: cuenta como un intento
+        # fallido más y se reintenta.
+        raise RuntimeError(f"Respuesta vacía de la IA (finish={finish or '-'}, block={block or '-'})")
+    if not finish:
+        # El stream terminó sin finishReason: la conexión se cortó a mitad
+        # de la respuesta. Sin esto, el texto truncado llegaba al parser
+        # como un JSON mal formado ("Expecting value: line 50…").
+        raise RuntimeError(f"La respuesta de la IA llegó cortada ({len(text)} caracteres)")
+    return _GenResult(text=text, finish_reason=finish, prompt_tokens=prompt_tokens, output_tokens=output_tokens)
+
+
+def _progress_counter(pattern: str, progress: ProgressFn) -> Optional[Callable[[str], None]]:
+    """Convierte el texto acumulado en "preguntas terminadas" y avisa solo
+    cuando el número cambia."""
+    if progress is None:
+        return None
+    rx = re.compile(pattern)
+    last = [-1]
+
+    def on_text(acc: str) -> None:
+        n = len(rx.findall(acc))
+        if n != last[0]:
+            last[0] = n
+            try:
+                progress(n)
+            except Exception:  # noqa: BLE001 — el aviso de progreso nunca debe romper la conversión
+                pass
+    return on_text
 
 
 def _sin_respuesta_ratio(text: str) -> float:
@@ -59,7 +280,9 @@ def _sin_respuesta_ratio(text: str) -> float:
 
 
 
-def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = None) -> tuple[str, bool]:
+def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = None,
+                      progress: ProgressFn = None,
+                      on_retry: Optional[Callable[[str], None]] = None) -> tuple[str, bool]:
     """
     Pasa el texto (y, si el documento es un PDF con imágenes incrustadas,
     esas páginas como imagen) por Gemini para normalizar estructura.
@@ -70,28 +293,23 @@ def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = 
     SYSTEM_PROMPT). Sigue funcionando igual que antes si se omite (.txt,
     o un PDF sin imágenes incrustadas).
 
+    progress(n), si se pasa, recibe cuántas preguntas ("Pregunta N:") lleva
+    escritas la IA mientras responde. on_retry(mensaje), si se pasa, recibe
+    un aviso cada vez que hay que esperar y reintentar (Google saturado,
+    límite por minuto, respuesta cortada).
+
     Returns:
         (texto_para_parser, fue_reformateado)
         - En caso de error de API → lanza HTTPException 503 tras 3 intentos.
     """
-    # transport="rest" en vez del gRPC por defecto: en algunas redes
-    # (proxies corporativos/universitarios, ciertas configuraciones de
-    # Windows) el protocolo HTTP/2 de gRPC negocia la conexión mucho más
-    # lento que REST plano sobre HTTPS — mismo resultado, sin el retraso.
-    genai.configure(api_key=GEMINI_API_KEY, transport="rest")
-    model = genai.GenerativeModel(
-        model_name=GEMINI_MODEL_NAME,
-        system_instruction=SYSTEM_PROMPT,
-        # temperature=0: mismo documento, misma salida — reduce (no elimina)
-        # la inconsistencia observada entre corridas idénticas.
-        generation_config=genai.GenerationConfig(temperature=GEMINI_TEMPERATURE),
-    )
+    # temperature=0: mismo documento, misma salida — reduce (no elimina)
+    # la inconsistencia observada entre corridas idénticas.
+    body = _build_request(SYSTEM_PROMPT, raw_text, page_images, {"temperature": GEMINI_TEMPERATURE})
+    on_text = _progress_counter(r"(?m)^Pregunta\s+\d+:", progress)
 
     # Con imágenes, la petición a Gemini puede tardar bastante más que una
     # de solo texto (se ha visto hasta ~2 minutos en pruebas reales) — es
     # normal, no es que esté colgado.
-    content = [raw_text, *page_images] if page_images else raw_text
-
     # Reintento de CALIDAD: solo tiene sentido cuando hay imágenes de por
     # medio — es ahí donde se ha visto que una corrida "lee mal" el color
     # de las marcas aunque técnicamente no haya ningún error de API. Con
@@ -103,7 +321,7 @@ def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = 
     best_was_reformatted = False
 
     for quality_attempt in range(1, quality_attempts + 1):
-        result_text, was_reformatted = _call_gemini_with_retries(model, content, raw_text)
+        result_text, was_reformatted = _call_gemini_with_retries(body, raw_text, on_text, on_retry)
 
         ratio = _sin_respuesta_ratio(result_text) if page_images else 0.0
         logger.info(
@@ -126,49 +344,137 @@ def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = 
     return (best_text, best_was_reformatted)
 
 
-def _call_gemini_with_retries(model, content, raw_text: str) -> tuple[str, bool]:
+def _not_an_exam_error() -> HTTPException:
+    return HTTPException(
+        status_code=422,
+        detail={
+            "message": "El archivo no parece ser una prueba o examen:",
+            "errors": [
+                "No se detectaron preguntas y respuestas reales, destinadas a evaluar, en el documento.",
+                "Verifica que subiste el archivo correcto (no una presentación, un manual, un artículo, etc.).",
+            ],
+        },
+    )
+
+
+def _call_gemini_with_retries(body: dict, raw_text: str, on_text=None, on_retry=None) -> tuple[str, bool]:
+    """Modo texto: una llamada lógica que devuelve (texto_reformateado, fue_reformateado)."""
+
+    def parse(result: _GenResult) -> tuple[str, bool]:
+        result_text = result.text.strip()
+        logger.info(
+            "Gemini prefiltro: respuesta recibida (%d chars). Primeros 400 chars:\n%s",
+            len(result_text), result_text[:400]
+        )
+        # Gemini responde con este centinela cuando el documento no es una
+        # prueba real (ver PASO 0 del SYSTEM_PROMPT) — se detecta por un
+        # texto corto que contiene el centinela para no dar falsos
+        # positivos si por alguna razón apareciera dentro de un examen
+        # legítimo (muchísimo más largo).
+        if len(result_text) < 200 and NOT_AN_EXAM_SENTINEL in result_text:
+            logger.info("Gemini prefiltro: el documento no parece ser una prueba/examen.")
+            raise _not_an_exam_error()
+        return (result_text, result_text.strip() != raw_text.strip())
+
+    return _generate_with_retries(body, len(raw_text), parse, GEMINI_REQUEST_TIMEOUT_SECONDS, on_text, on_retry)
+
+
+# Esperas ante "el modelo está saturado" (503 de Google). Es habitual en
+# el plan gratuito y suele durar segundos o pocos minutos, así que se
+# espera cada vez más antes de rendirse (~1.5 min en total), avisando en
+# pantalla para que el docente no crea que la app se colgó.
+_OVERLOAD_WAITS = (5, 10, 20, 30, 30)
+
+
+def _notify(on_retry: Optional[Callable[[str], None]], message: str) -> None:
+    if on_retry is None:
+        return
+    try:
+        on_retry(message)
+    except Exception:  # noqa: BLE001 — el aviso nunca debe romper la conversión
+        pass
+
+
+def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on_text=None,
+                           on_retry: Optional[Callable[[str], None]] = None):
     """
     Una llamada "lógica" a Gemini, con el reintento por FALLO DE RED/API de
-    siempre (no confundir con el reintento de calidad de verify_and_format,
-    que es sobre respuestas técnicamente exitosas pero de baja calidad).
+    siempre (no confundir con el reintento de calidad, que es sobre
+    respuestas técnicamente exitosas pero de baja calidad). `parse` convierte
+    la respuesta en el resultado; si lanza HTTPException se propaga tal
+    cual, y cualquier otra excepción cuenta como un intento fallido más
+    (ej. un JSON mal formado se reintenta igual que un error de red).
     """
     max_retries = GEMINI_MAX_RETRIES
     wait_time = GEMINI_RETRY_WAIT_SECONDS
+    # Un 429 (cuota por minuto agotada) no es un fallo del servicio: basta
+    # con esperar lo que Google indica. Tiene su propio contador para no
+    # gastar los reintentos normales esperando la cuota.
+    quota_waits_left = 5
+    overload_waits = list(_OVERLOAD_WAITS)
 
-    for attempt in range(1, max_retries + 1):
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=503, detail=MISSING_API_KEY_MESSAGE)
+
+    attempt = 0
+    while attempt < max_retries:
+        attempt += 1
         try:
             logger.info(
-                "Gemini prefiltro: enviando texto (%d chars)... Intento %d/%d",
-                len(raw_text), attempt, max_retries,
+                "Gemini prefiltro: enviando contenido (%d chars de texto)... Intento %d/%d",
+                input_chars, attempt, max_retries,
             )
-            response = model.generate_content(content)
-            result_text = response.text.strip()
+            _throttle()
+            t0 = time.monotonic()
+            result = _stream_generate(body, timeout, on_text)
+            _record_call(result, time.monotonic() - t0)
+            return parse(result)
 
-            logger.info(
-                "Gemini prefiltro: respuesta recibida (%d chars). Primeros 400 chars:\n%s",
-                len(result_text), result_text[:400]
-            )
-
-            # Gemini responde con este centinela cuando el documento no es una
-            # prueba real (ver PASO 0 del SYSTEM_PROMPT) — se detecta por un
-            # texto corto que contiene el centinela para no dar falsos
-            # positivos si por alguna razón apareciera dentro de un examen
-            # legítimo (muchísimo más largo).
-            if len(result_text) < 200 and NOT_AN_EXAM_SENTINEL in result_text:
-                logger.info("Gemini prefiltro: el documento no parece ser una prueba/examen.")
+        except GeminiQuotaError as exc:
+            if "PerDay" in str(exc):
+                # Cuota DIARIA agotada (el plan gratuito admite 500
+                # peticiones por día y por modelo): esperar un minuto no
+                # sirve de nada, así que se avisa de inmediato en vez de
+                # hacer esperar al docente ~5 minutos de reintentos inútiles.
+                logger.error("Gemini prefiltro: cuota DIARIA agotada.")
                 raise HTTPException(
-                    status_code=422,
-                    detail={
-                        "message": "El archivo no parece ser una prueba o examen:",
-                        "errors": [
-                            "No se detectaron preguntas y respuestas reales, destinadas a evaluar, en el documento.",
-                            "Verifica que subiste el archivo correcto (no una presentación, un manual, un artículo, etc.).",
-                        ],
-                    },
+                    status_code=503,
+                    detail=(
+                        "Se alcanzó el límite diario de uso del servicio de IA. "
+                        "Se restablece automáticamente cada día (medianoche, hora del Pacífico). "
+                        "Si esto ocurre seguido, conviene usar una API key con facturación activada."
+                    ),
                 )
+            if quota_waits_left <= 0:
+                logger.error("Gemini prefiltro: cuota agotada de forma persistente.")
+                raise HTTPException(
+                    status_code=503,
+                    detail="Se alcanzó el límite de uso del servicio de IA. Espera un minuto e intenta de nuevo.",
+                )
+            quota_waits_left -= 1
+            attempt -= 1
+            delay = _quota_retry_seconds(exc)
+            logger.warning("Gemini prefiltro: cuota por minuto agotada (429); esperando %.0fs.", delay)
+            _notify(on_retry, f"Límite por minuto del servicio de IA alcanzado: se continúa en {delay:.0f} s…")
+            time.sleep(delay)
 
-            was_reformatted = result_text.strip() != raw_text.strip()
-            return (result_text, was_reformatted)
+        except GeminiOverloadedError as exc:
+            # Google saturado o con un error interno: no es un problema del
+            # documento, así que tiene su propio contador y esperas crecientes.
+            if not overload_waits:
+                logger.error("Gemini prefiltro: servicio saturado de forma persistente. Detalle: %s", exc)
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        "El servicio de IA de Google está saturado en este momento (no es un "
+                        "problema del documento). Intenta de nuevo en unos minutos."
+                    ),
+                )
+            attempt -= 1
+            delay = overload_waits.pop(0)
+            logger.warning("Gemini prefiltro: servicio saturado (%s); reintento en %ds.", exc.code, delay)
+            _notify(on_retry, f"El servicio de IA está saturado; reintentando en {delay} s…")
+            time.sleep(delay)
 
         except HTTPException:
             # Ya es un error nuestro con status/detail bien formados (ej. el
@@ -176,7 +482,7 @@ def _call_gemini_with_retries(model, content, raw_text: str) -> tuple[str, bool]
             # transitorio de Gemini, así que no debe reintentarse ni
             # convertirse en un 503 genérico por el "except Exception" de abajo.
             raise
-        except _NON_RETRYABLE_ERRORS as exc:
+        except GeminiRejectedError as exc:
             logger.error(
                 "Gemini prefiltro: error no recuperable (%s). No se reintenta. Detalle: %s",
                 type(exc).__name__, exc,
@@ -186,7 +492,7 @@ def _call_gemini_with_retries(model, content, raw_text: str) -> tuple[str, bool]
                 detail=(
                     "El servicio de IA rechazó la solicitud (posible configuración "
                     "inválida del modelo o de la API key). Contacta al administrador "
-                    f"del sistema. Detalle técnico: {type(exc).__name__}."
+                    f"del sistema. Detalle técnico: error HTTP {exc.code}."
                 ),
             )
         except Exception as exc:
@@ -196,6 +502,7 @@ def _call_gemini_with_retries(model, content, raw_text: str) -> tuple[str, bool]
             )
             if attempt < max_retries:
                 logger.info("Esperando %d segundos antes de reintentar...", wait_time)
+                _notify(on_retry, "La respuesta de la IA llegó incompleta; reintentando…")
                 time.sleep(wait_time)
             else:
                 logger.error("Gemini prefiltro no disponible tras %d intentos.", max_retries)
@@ -203,3 +510,84 @@ def _call_gemini_with_retries(model, content, raw_text: str) -> tuple[str, bool]
                     status_code=503,
                     detail="El servidor de procesamiento está muy concurrido en este momento. Por favor, intenta de nuevo más tarde."
                 )
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Modo JSON: salida estructurada con esquema (NORMALIZER_MODE="json")
+# ══════════════════════════════════════════════════════════════════════════
+
+def _parse_structured_response(result: _GenResult) -> dict:
+    if result.finish_reason == "MAX_TOKENS":
+        # JSON cortado a la mitad: no se puede leer, y reintentar da lo
+        # mismo. Se falla con un mensaje claro en vez de uno genérico.
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": "El documento es demasiado largo para procesarlo de una sola vez:",
+                "errors": [
+                    "La respuesta de la IA superó el tamaño máximo permitido.",
+                    "Divide el examen en partes más pequeñas y súbelas por separado.",
+                ],
+            },
+        )
+    data = json.loads(result.text)
+    logger.info(
+        "Gemini prefiltro (JSON): es_examen=%s, %d pregunta(s).",
+        data.get("es_examen"), len(data.get("preguntas") or []),
+    )
+    if data.get("es_examen") is False:
+        logger.info("Gemini prefiltro: el documento no parece ser una prueba/examen.")
+        raise _not_an_exam_error()
+    return data
+
+
+def _unanswered_ratio(data: dict) -> float:
+    """Equivalente estructurado de _sin_respuesta_ratio: proporción de
+    preguntas autocalificables que salieron sin respuesta marcada."""
+    graded = [q for q in data.get("preguntas") or [] if q.get("tipo") != "essay"]
+    if not graded:
+        return 1.0
+    return sum(1 for q in graded if not q.get("respuesta_marcada")) / len(graded)
+
+
+def extract_structured(raw_text: str, page_images: Optional[List[Image.Image]] = None,
+                       progress: ProgressFn = None,
+                       on_retry: Optional[Callable[[str], None]] = None) -> dict:
+    """
+    Igual que verify_and_format, pero el modelo devuelve JSON restringido por
+    RESPONSE_SCHEMA (decodificación con esquema: la forma de la salida está
+    garantizada), que schema_adapter convierte a lo que consume el editor.
+    Mismo reintento de calidad que el modo texto cuando hay imágenes.
+    progress(n) recibe cuántas preguntas lleva escritas la IA ("orden" es
+    el primer campo de cada pregunta en el esquema).
+    """
+    body = _build_request(SYSTEM_PROMPT_JSON, raw_text, page_images, {
+        "temperature": GEMINI_TEMPERATURE,
+        "responseMimeType": "application/json",
+        "responseSchema": RESPONSE_SCHEMA,
+        "maxOutputTokens": GEMINI_MAX_OUTPUT_TOKENS,
+    })
+    on_text = _progress_counter(r'"orden"\s*:', progress)
+
+    quality_attempts = GEMINI_MAX_QUALITY_ATTEMPTS if page_images else 1
+    best: Optional[dict] = None
+    best_score = None
+    for quality_attempt in range(1, quality_attempts + 1):
+        data = _generate_with_retries(body, len(raw_text), _parse_structured_response,
+                                      GEMINI_REQUEST_TIMEOUT_SECONDS_JSON, on_text, on_retry)
+        ratio = _unanswered_ratio(data) if page_images else 0.0
+        n = len(data.get("preguntas") or [])
+        logger.info(
+            "Gemini prefiltro (JSON): intento de calidad %d/%d - %d preguntas, sin respuesta %.2f",
+            quality_attempt, quality_attempts, n, ratio,
+        )
+        # Se elige primero por CANTIDAD de preguntas y solo después por
+        # menos "sin respuesta": elegir solo por el ratio premiaba al
+        # intento que omitía las preguntas sin marca — el ratio baja
+        # justamente porque esas preguntas desaparecen.
+        score = (n, -ratio)
+        if best_score is None or score > best_score:
+            best, best_score = data, score
+        if ratio <= GEMINI_SIN_RESPUESTA_THRESHOLD:
+            break
+    return best

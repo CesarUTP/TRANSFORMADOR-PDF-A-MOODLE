@@ -19,6 +19,15 @@
   <style>
     /* ── DESIGN SYSTEM & TOKENS (Impeccable & Design Tokens) ──────────────── */
     :root {
+      /* Le dice al navegador de qué color pintar lo que dibuja ÉL y no el
+         CSS de esta página: las flechitas de <input type="number">, las
+         barras de scroll, el cursor de texto y el desplegable de un
+         <select>. Sin esto el navegador asume fondo claro siempre, así que
+         en modo oscuro las flechitas quedaban gris oscuro sobre el input
+         oscuro — invisibles. No se puede maquillar con CSS propio: son
+         partes internas del control. */
+      color-scheme: dark;
+
       /* Color Palette — Dark Mode Default (Rich Deep Slate & Electric Cyan) */
       --color-bg:             #090d16;
       --color-bg-alt:         #0f172a;
@@ -111,6 +120,7 @@
     }
 
     [data-theme="light"] {
+      color-scheme: light;
       --color-bg:             #f1f5f9;
       --color-bg-alt:         #e2e8f0;
       --color-surface:        #ffffff;
@@ -579,6 +589,130 @@
       box-shadow: 0 0 0 3px var(--color-accent-glow);
     }
 
+    /* ── PANEL DE REVISIÓN (mapa del examen + Aprobar/Cancelar) ─────────────
+       Vive FUERA de #panel-editor: la animación de entrada de las
+       secciones usa transform, y un position: fixed dentro de un ancestro
+       con transform deja de ser fijo respecto a la ventana.
+       ≥1320px: columna a la derecha del contenido (860px), sin tapar nada.
+       Más angosto: barra fija abajo; "12/55" despliega la grilla. */
+    .review-rail { display: none; }
+    body.editor-active .review-rail { display: flex; }
+    .review-rail {
+      position: fixed;
+      z-index: 90;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,0.12));
+    }
+    .rail-head { display: flex; flex-direction: column; gap: 8px; }
+    .rail-pos {
+      all: unset;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      font-size: 13px; font-weight: 700; color: var(--color-text);
+      font-family: var(--font-heading);
+    }
+    .rail-pos .rail-pos-short, .rail-pos .rail-warn-short { display: none; }
+    .rail-bar { height: 4px; background: var(--color-border-subtle); border-radius: var(--radius-full); overflow: hidden; }
+    #review-progress-fill { height: 100%; width: 0%; background: var(--color-accent); border-radius: var(--radius-full); transition: width 0.15s ease; }
+    .rail-grid-wrap { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+    .rail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+      gap: 5px;
+      overflow-y: auto;
+      padding: 2px;
+    }
+    .rail-item {
+      all: unset;
+      box-sizing: border-box;
+      height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11.5px; font-weight: 600;
+      color: var(--color-text-muted);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      position: relative;
+    }
+    .rail-item:hover { border-color: var(--color-accent); color: var(--color-text); }
+    .rail-item:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+    .rail-item.needs-review { border-color: var(--color-warning); color: var(--color-warning); }
+    .rail-item.needs-review::after {
+      content: ""; position: absolute; top: 3px; right: 3px;
+      width: 5px; height: 5px; border-radius: 50%; background: var(--color-warning);
+    }
+    /* Incompleta (falta enunciado, opciones o respuesta): rojo, y manda
+       sobre el naranja de "para revisar". */
+    .rail-item.incomplete { border-color: var(--color-error); color: var(--color-error); background: var(--color-error-bg); }
+    .rail-item.incomplete::after {
+      content: ""; position: absolute; top: 3px; right: 3px;
+      width: 5px; height: 5px; border-radius: 50%; background: var(--color-error);
+    }
+    .rail-item.current { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+    .rail-item.current::after { background: #fff; }
+    .rail-review-next {
+      all: unset;
+      display: none; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; color: var(--color-warning);
+      cursor: pointer;
+    }
+    .rail-review-next.visible { display: flex; }
+    .rail-review-next.is-error { color: var(--color-error); }
+    .rail-links { display: flex; flex-direction: column; gap: 6px; }
+    .rail-review-next:hover { text-decoration: underline; }
+    .rail-actions { display: flex; flex-direction: column; gap: 8px; }
+    .rail-actions .btn { width: 100%; justify-content: center; padding: 11px 12px; font-size: 13.5px; }
+
+    @media (min-width: 1320px) {
+      .review-rail {
+        top: calc(var(--header-h, 80px) + 24px);
+        left: calc(50% + 430px + 20px);
+        width: 196px;
+        max-height: calc(100vh - var(--header-h, 80px) - 48px);
+      }
+      .rail-grid { max-height: none; flex: 1; }
+      .rail-grid-wrap { flex: 1; overflow: hidden; }
+    }
+    @media (max-width: 1319.98px) {
+      .review-rail {
+        left: 0; right: 0; bottom: 0;
+        flex-direction: row; align-items: center;
+        border-radius: 0; border-width: 1px 0 0;
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+        background: var(--color-bg-alt);
+      }
+      body.editor-active .main-wrapper { padding-bottom: 110px; }
+      .rail-head { flex: 0 0 auto; }
+      .rail-pos {
+        cursor: pointer; padding: 8px 12px;
+        border: 1px solid var(--color-border); border-radius: var(--radius-md);
+        background: var(--color-surface);
+      }
+      .rail-pos .rail-pos-long { display: none; }
+      .rail-pos .rail-pos-short, .rail-pos .rail-warn-short.visible { display: inline; }
+      .rail-bar { display: none; }
+      .rail-actions { flex: 1; flex-direction: row; }
+      .rail-actions .btn-success { flex: 2; }
+      .rail-actions .btn-danger { flex: 1; }
+      .rail-grid-wrap {
+        display: none;
+        position: absolute; left: 12px; right: 12px; bottom: calc(100% + 8px);
+        max-width: 520px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: 12px;
+        box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,0.18));
+      }
+      .review-rail.grid-open .rail-grid-wrap { display: flex; }
+      .rail-grid { max-height: 45vh; }
+    }
+
     /* ── EDITOR CARDS (Interactive Question Editor) ──────────────────────── */
     .editor-card {
       background: var(--color-surface);
@@ -589,6 +723,11 @@
     }
     .editor-card:hover {
       border-color: var(--color-border-glow);
+    }
+    .editor-card.is-incomplete { border-color: var(--color-error); }
+    .card-issues {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      margin: -4px 0 12px; font-size: 12.5px; font-weight: 600; color: var(--color-error);
     }
     .editor-card textarea, .editor-card input {
       background: var(--color-bg);
@@ -846,8 +985,19 @@
       padding: 0 24px;
       border-bottom: 1px solid var(--color-border);
       background: var(--color-tabstrip-bg);
+      /* En pantallas angostas las 5 pestañas no caben: se desplazan de lado
+         en vez de cortarse. */
+      overflow-x: auto;
+      scrollbar-width: none;
+      /* Con overflow, el navegador permite encogerla a 0 dentro de la
+         columna del modal: en pestañas largas (Formato, Prompt IA) la
+         cinta quedaba aplastada. */
+      flex-shrink: 0;
     }
+    .modal-tabs::-webkit-scrollbar { display: none; }
     .modal-tab {
+      flex-shrink: 0;
+      white-space: nowrap;
       padding: 12px 18px;
       font-size: 13.5px;
       font-weight: 700;
@@ -1080,7 +1230,12 @@
           <i data-lucide="loader-2" id="spinner-icon" style="width:36px;height:36px;color:var(--color-accent);animation:spinSlow 1.2s linear infinite;"></i>
         </div>
         <h3 id="progress-title" style="font-family:var(--font-heading);font-size:22px;font-weight:800;margin-bottom:8px;">Procesando documento…</h3>
-        <p id="progress-subtitle" style="font-size:14.5px;color:var(--color-text-muted);margin-bottom:32px;">Extrayendo texto del examen...</p>
+        <p id="progress-subtitle" style="font-size:14.5px;color:var(--color-text-muted);margin-bottom:6px;">Extrayendo texto del examen...</p>
+        <!-- Avance real que informa el backend ("12 de ~40 preguntas
+             procesadas"). aria-live="off": se actualiza varias veces por
+             segundo y no debe leerse en voz alta cada vez; el subtítulo de
+             arriba (etapa) sí se anuncia. -->
+        <p id="progress-detail" aria-live="off" style="font-size:12.5px;color:var(--color-text-subtle);min-height:18px;margin-bottom:22px;font-variant-numeric:tabular-nums;"></p>
         
         <div style="height:8px;background:var(--color-bg);border-radius:var(--radius-full);overflow:hidden;max-width:480px;margin:0 auto;border:1px solid var(--color-border-subtle);">
           <div id="progress-bar-fill" style="height:100%;width:100%;transform:scaleX(0);transform-origin:left;background:var(--color-accent-gradient);border-radius:var(--radius-full);transition:transform 0.4s ease-out;"></div>
@@ -1198,6 +1353,33 @@
 
   </main>
 
+  <!-- Panel de revisión: mapa del examen + Aprobar/Cancelar (ver .review-rail) -->
+  <aside id="review-rail" class="review-rail" aria-label="Navegación y acciones de la revisión">
+    <div class="rail-head">
+      <button type="button" class="rail-pos" onclick="toggleRailGrid()" aria-controls="review-rail-grid">
+        <span class="rail-pos-long" id="review-progress-label">Pregunta 1 de 1</span>
+        <span class="rail-pos-short" id="review-progress-short">1/1</span>
+        <span id="rail-error-short" class="rail-warn-short" style="color:var(--color-error);"></span>
+        <span id="rail-warn-short" class="rail-warn-short" style="color:var(--color-warning);"></span>
+      </button>
+      <div class="rail-bar"><div id="review-progress-fill"></div></div>
+    </div>
+    <div class="rail-grid-wrap">
+      <div class="rail-grid" id="review-rail-grid" role="list"></div>
+      <div class="rail-links">
+        <button type="button" class="rail-review-next is-error" id="rail-incomplete-next" onclick="jumpToNextFlagged('incomplete')"></button>
+        <button type="button" class="rail-review-next" id="rail-review-next" onclick="jumpToNextFlagged('review')"></button>
+      </div>
+    </div>
+    <div class="rail-actions">
+      <button type="button" id="btn-generate-xml" class="btn btn-success" onclick="generateXml()">
+        <i data-lucide="check-circle" style="width:17px;height:17px;"></i>
+        Aprobar
+      </button>
+      <button type="button" class="btn btn-danger" onclick="resetAll()">Cancelar</button>
+    </div>
+  </aside>
+
   <!-- Toast Notification -->
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
@@ -1217,11 +1399,15 @@
       <div class="modal-tabs">
         <button class="modal-tab active" data-tab="about">
           <i data-lucide="target" style="width:15px;height:15px;"></i>
-          ¿Qué es esto?
+          ¿Qué es?
+        </button>
+        <button class="modal-tab" data-tab="review">
+          <i data-lucide="list-checks" style="width:15px;height:15px;"></i>
+          Revisión
         </button>
         <button class="modal-tab" data-tab="format">
           <i data-lucide="file-code" style="width:15px;height:15px;"></i>
-          Formato del Examen
+          Formato
         </button>
         <button class="modal-tab" data-tab="prompt">
           <i data-lucide="bot" style="width:15px;height:15px;"></i>
@@ -1229,7 +1415,7 @@
         </button>
         <button class="modal-tab" data-tab="moodle">
           <i data-lucide="graduation-cap" style="width:15px;height:15px;"></i>
-          Importar a Moodle
+          Importar
         </button>
       </div>
 
@@ -1244,7 +1430,7 @@
                 Moodle no permite pegar un examen en formato "normal" y ya está: cada pregunta debe cargarse a mano en el banco de preguntas, o construirse a mano en un XML con una sintaxis estricta y poco intuitiva. Hacerlo manualmente para un examen de 30-40 preguntas —especialmente con emparejamientos y respuestas de completar— es lento y fácil de arruinar con un error de tipeo.
               </p>
               <p style="font-size:14px;line-height:1.7;color:var(--color-text);margin-top:10px;">
-                Este sistema toma tu examen tal como ya lo tienes (PDF o TXT), lo interpreta con ayuda de IA, y genera directamente el archivo <strong>Moodle XML</strong> listo para importar en <em>Banco de preguntas → Importar</em>. Lo que antes tomaba horas de carga manual, aquí toma segundos.
+                Este sistema toma tu examen tal como ya lo tienes (PDF o TXT), lo interpreta con ayuda de IA, y genera directamente el archivo <strong>Moodle XML</strong> listo para importar en <em>Banco de preguntas → Importar</em>. Lo que antes tomaba horas de carga manual, aquí se reduce a revisar y aprobar.
               </p>
             </div>
 
@@ -1253,11 +1439,37 @@
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="check-circle-2" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Úsalo para pruebas parciales, quices o evaluaciones formativas</strong> de colegio, universidad o cualquier otro nivel, siempre que ya contengan preguntas de <strong style="color:var(--color-text);">selección múltiple, cierto/falso, emparejamiento, completar, ensayo, respuesta corta o numérica</strong> con su clave de respuestas — los 7 tipos que el sistema reconoce.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Pruebas, parciales y quices en PDF o TXT</strong> con preguntas de <strong style="color:var(--color-text);">opción múltiple, verdadero/falso, emparejamiento, completar, ensayo, respuesta corta o numérica</strong>. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="scan-line" style="width:16px;height:16px;color:var(--color-cl);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">PDF escaneados.</strong> Si el PDF es una foto o un escaneo (sin texto seleccionable), el sistema lo avisa y ofrece <strong style="color:var(--color-text);">Normalizar con IA</strong>, que lee las páginas como imagen (hasta 15).</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="x-circle" style="width:16px;height:16px;color:var(--color-error);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">No subas presentaciones de diapositivas, listas de vocabulario, apuntes de clase</strong> ni ningún documento que no esté organizado como preguntas con respuesta. El sistema no inventa preguntas: solo transcribe las que ya existen en tu documento, así que si no las hay, el resultado no será el esperado.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">No sirve para presentaciones, apuntes o listas de vocabulario.</strong> El sistema no inventa preguntas: solo transcribe las que ya están en el documento.</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">¿Cómo reconoce la respuesta correcta?</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="list-ordered" style="width:16px;height:16px;color:var(--color-mc);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Clave de respuestas</strong> al final del documento, con la letra (“1. c”) o el texto de la opción.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="highlighter" style="width:16px;height:16px;color:var(--color-warning);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Marcas en el propio examen:</strong> texto en color (rojo, azul, verde…), resaltado, subrayado, negrita, o un ✓ / asterisco junto a la opción. En un PDF digital estas marcas se leen directamente del archivo, no las adivina la IA.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="table-2" style="width:16px;height:16px;color:var(--color-mt);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Cuadros con X,</strong> donde cada fila se une con la columna marcada (se convierten en emparejamiento).</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="help-circle" style="width:16px;height:16px;color:var(--color-text-subtle);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Si una pregunta no tiene respuesta marcada,</strong> el sistema no la inventa: queda señalada para que la completes en la revisión.</span>
                 </div>
               </div>
             </div>
@@ -1266,20 +1478,91 @@
               <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">¿Por qué usarlo en vez de cargar a mano?</p>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <i data-lucide="shield-check" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Validación estricta antes de generar el XML.</strong> El sistema verifica que cada pregunta cumpla el formato que Moodle espera —incluyendo que cada par de un emparejamiento corresponda realmente a la respuesta correcta, no solo que "la cantidad cuadre"— y te avisa con un error claro si algo no cierra, en vez de dejarte importar un examen roto sin saberlo.</span>
-                </div>
-                <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <i data-lucide="sparkles" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Prefiltro con IA.</strong> No necesitas que tu examen esté perfectamente formateado: un modelo de IA normaliza la estructura del texto antes de procesarlo, así que puedes partir de un documento casi cualquiera y aun así obtener un resultado limpio.</span>
+                  <i data-lucide="zap" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Rápido.</strong> Un examen de 40 preguntas queda listo para revisar en menos de un minuto, con el avance en pantalla.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="edit-3" style="width:16px;height:16px;color:var(--color-mt);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Revisión antes de descargar.</strong> Nunca genera el XML a ciegas: siempre puedes inspeccionar y corregir cada pregunta detectada antes de aprobar la conversión final.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Siempre revisas antes de descargar.</strong> Cada pregunta se puede corregir, y el sistema te señala las incompletas y las que conviene mirar dos veces.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="shield-check" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">El XML sale válido.</strong> Antes de generarlo se verifica que cada pregunta cumpla lo que Moodle exige, así no importas un examen roto sin saberlo.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="lock" style="width:16px;height:16px;color:var(--color-cl);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Procesamiento local.</strong> Tu examen se procesa en tu propio equipo; solo el texto extraído se envía a la IA para normalizar la estructura, nunca el archivo original.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Tu archivo se procesa en tu equipo.</strong> Al servicio de IA solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas en imágenes o PDF escaneados).</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Tab: Revisar preguntas -->
+        <div class="tab-panel" id="modal-panel-review">
+          <div style="display:flex;flex-direction:column;gap:16px;">
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Panel de navegación</p>
+              <p style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);margin-bottom:10px;">A la derecha (o abajo, en pantallas pequeñas) hay un cuadro por pregunta. Haz clic en uno para ir a esa pregunta.</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span style="width:22px;height:22px;border-radius:6px;flex-shrink:0;margin-top:1px;background:var(--color-accent);"></span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Azul:</strong> la pregunta que estás viendo.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span style="width:22px;height:22px;border-radius:6px;flex-shrink:0;margin-top:1px;border:1.5px solid var(--color-error);background:var(--color-error-bg);"></span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Rojo: incompleta.</strong> Falta el enunciado, opciones, la respuesta correcta o una pareja. La tarjeta dice qué falta, y <strong style="color:var(--color-text);">Aprobar</strong> no avanza hasta completarlas.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span style="width:22px;height:22px;border-radius:6px;flex-shrink:0;margin-top:1px;border:1.5px solid var(--color-warning);"></span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Naranja: para revisar.</strong> Está completa, pero conviene compararla con el documento original.</span>
+                </div>
+              </div>
+              <p style="font-size:12.5px;color:var(--color-text-subtle);margin-top:10px;">Los contadores “✕ incompletas” y “⚠ para revisar” te llevan a la siguiente de cada tipo.</p>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Etiquetas de cada pregunta</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span class="type-badge" style="flex-shrink:0;background:transparent;color:var(--color-text-subtle);border:1px solid var(--color-border);"><i data-lucide="highlighter" style="width:12px;height:12px;vertical-align:-2px;"></i> respuesta por marca</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">La respuesta se tomó de la marca del documento (color, resaltado, subrayado, negrita o X).</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span class="type-badge" style="flex-shrink:0;background:var(--color-cl-bg);color:var(--color-cl);border:1px solid var(--color-cl-border);"><i data-lucide="palette" style="width:12px;height:12px;vertical-align:-2px;"></i> revisar marca</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">El documento tiene marcas en esa página, pero no se pudieron leer con certeza.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span class="type-badge" style="flex-shrink:0;background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);"><i data-lucide="eye-off" style="width:12px;height:12px;vertical-align:-2px;"></i> confianza baja</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">La pregunta depende de una imagen (código, marca) que la IA no leyó con total claridad.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span class="type-badge" style="flex-shrink:0;background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);"><i data-lucide="table-2" style="width:12px;height:12px;vertical-align:-2px;"></i> convertida de tabla</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">Un cuadro del documento se convirtió en emparejamiento.</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Otras herramientas</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="scale" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Distribuir puntos:</strong> <em>Equitativo</em> reparte el total entre todas las preguntas; <em>Por tipo</em> usa pesos (un tipo con peso 2 vale el doble que uno con peso 1). Siempre suma exacto el total que definiste.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="filter" style="width:16px;height:16px;color:var(--color-mc);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Filtrar</strong> muestra solo un tipo de pregunta; el panel de navegación sigue ese filtro.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="plus-circle" style="width:16px;height:16px;color:var(--color-mt);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Añadir nueva pregunta</strong> si faltó alguna, de cualquiera de los 7 tipos.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="alert-triangle" style="width:16px;height:16px;color:var(--color-warning);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Preguntas que no se pudieron incluir:</strong> aparecen arriba con el motivo. Si solo les falta la respuesta, usa <em>Añadir con lo ya extraído</em> y márcala tú.</span>
                 </div>
               </div>
             </div>
@@ -1290,7 +1573,7 @@
         <!-- Tab 1: Format -->
         <div class="tab-panel" id="modal-panel-format">
           <p style="font-size:13.5px;color:var(--color-text-muted);margin-bottom:16px;">
-            El examen debe estructurarse con preguntas numeradas (<code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">Pregunta N:</code>) y finalizar con la sección obligatoria <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">RESPUESTAS</code>.
+            <strong style="color:var(--color-text);">No es obligatorio:</strong> el sistema entiende exámenes con el formato habitual. Úsalo si escribes el examen directamente en un <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">.txt</code>: preguntas con <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">Pregunta N:</code> y la sección <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">RESPUESTAS</code> al final, sin lugar a dudas.
           </p>
 
           <div style="display:flex;flex-direction:column;gap:14px;">
@@ -1346,14 +1629,14 @@ Explica con tus propias palabras las causas principales de la Revolución France
               <span class="type-badge shortanswer">6. Respuesta Corta</span>
               <div class="code-block" style="margin-top:8px;">Pregunta 6:
 ¿Cómo se llama el proceso mediante el cual las plantas convierten la luz solar en energía?</div>
-              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas que esperan una sola palabra o frase corta como respuesta. Moodle la calificará automáticamente comparando el texto, sin distinguir mayúsculas de minúsculas y aceptando también la respuesta sin tildes. Sin embargo, no cubre otras variaciones de redacción ni una tilde ubicada incorrectamente. Le recomendamos considerar estas limitaciones antes de utilizar este tipo de pregunta — si la respuesta esperada admite más variantes, use Ensayo en su lugar.</p>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas que esperan una sola palabra o frase corta como respuesta. Moodle la califica comparando el texto, sin distinguir mayúsculas y aceptando la respuesta sin tildes. No acepta otras formas de redactarla: si la respuesta admite variantes, usa Ensayo.</p>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
               <span class="type-badge numerical">7. Numérica</span>
               <div class="code-block" style="margin-top:8px;">Pregunta 7:
 ¿Cuánto es 15 multiplicado por 4?</div>
-              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas cuya respuesta es un número. En RESPUESTAS debe ir el valor numérico tal cual (ej. "60"), no escrito en palabras ni con unidades — si tu examen ya lo escribe así, tradúcelo al procesar.</p>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas cuya respuesta es un número. En RESPUESTAS va solo el número (ej. "60"), sin palabras ni unidades.</p>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border-glow);border-radius:var(--radius-md);padding:14px;">
@@ -1379,11 +1662,11 @@ Nº Tipo Respuesta correcta
 
         <!-- Tab 2: AI Prompt -->
         <div class="tab-panel" id="modal-panel-prompt">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <p style="font-size:13.5px;color:var(--color-text-muted);">
-              Copia este prompt y pégalo en tu IA de preferencia junto con tu examen (PDF o imagen). Guarda su respuesta como un archivo .txt y súbelo en el Paso 1.
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+            <p style="font-size:13.5px;color:var(--color-text-muted);flex:1 1 260px;margin:0;">
+              <strong style="color:var(--color-text);">Alternativa, normalmente no hace falta.</strong> Si el sistema no reconoce bien tu documento, pega este prompt en tu IA de preferencia junto con el examen, guarda la respuesta como .txt y súbela en el Paso 1.
             </p>
-            <button id="btn-copy-prompt" class="btn btn-ghost" style="padding:8px 14px;font-size:13px;">
+            <button id="btn-copy-prompt" class="btn btn-ghost" style="padding:8px 14px;font-size:13px;white-space:nowrap;flex-shrink:0;">
               <i data-lucide="copy" id="copy-icon" style="width:14px;height:14px;"></i>
               <span id="copy-label">Copiar Prompt</span>
             </button>
@@ -1635,6 +1918,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
     const modalTabs = document.querySelectorAll('.modal-tab');
     const modalPanels = {
       about: document.getElementById('modal-panel-about'),
+      review: document.getElementById('modal-panel-review'),
       format: document.getElementById('modal-panel-format'),
       prompt: document.getElementById('modal-panel-prompt'),
       moodle: document.getElementById('modal-panel-moodle'),
@@ -1653,6 +1937,10 @@ Ahora convierte el examen adjunto a este formato.</pre>
     function switchTab(tabId) {
       modalTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
       Object.entries(modalPanels).forEach(([id, panel]) => panel.classList.toggle('active', id === tabId));
+      // En celular la fila de pestañas se desplaza: la elegida queda a la vista.
+      document.querySelector(`.modal-tab[data-tab="${tabId}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      const body = document.querySelector('#modal-help .modal-body');
+      if (body) body.scrollTop = 0;
     }
 
     document.getElementById('btn-help').addEventListener('click', () => openHelp('about'));
@@ -1762,6 +2050,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
       panelEditor.style.display   = name === 'editor'   ? 'block' : 'none';
       panelSuccess.style.display  = name === 'success'  ? 'block' : 'none';
       panelError.style.display    = name === 'error'    ? 'block' : 'none';
+      document.body.classList.toggle('editor-active', name === 'editor');
+      document.getElementById('review-rail')?.classList.remove('grid-open');
 
       if (name === 'upload') updateStepper(1);
       else if (name === 'editor') updateStepper(2);
@@ -1845,7 +2135,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // abrir uno de los 3 paneles ya NO cierra los otros dos. Se apaga solo
     // al pulsar "Ocultar todo" (o al volver a activarlo si ya estaban
     // todos abiertos) — interactuar con un panel individual no lo apaga.
-    let _panelsExpandedMode = false;
+    // Arranca activo: al abrir el editor los 3 paneles se ven desplegados.
+    let _panelsExpandedMode = true;
     function _closeOtherCollapsiblePanels(exceptId) {
       if (_panelsExpandedMode) return;
       COLLAPSIBLE_PANEL_IDS.forEach(id => {
@@ -1853,6 +2144,28 @@ Ahora convierte el examen adjunto a este formato.</pre>
         const el = document.getElementById(id);
         if (el && el.classList.contains('panel-open')) _closeCollapsiblePanel(el);
       });
+    }
+
+    // Vuelve a abrir los 3 paneles cuando el modo "Desplegar todo" está
+    // fijado. Hace falta porque renderEditor() reconstruye el bloque de
+    // paneles desde cero (añadir/borrar una pregunta, aplicar puntos…) y
+    // los deja colapsados: sin esto, el modo quedaba activo por dentro
+    // pero con todo cerrado en pantalla.
+    function _restorePanelsExpandedMode() {
+      if (!_panelsExpandedMode) return;
+      COLLAPSIBLE_PANEL_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.classList.contains('panel-open')) _openCollapsiblePanel(el, 'flex');
+      });
+    }
+
+    // Colapsar un panel a mano rompe el "todo abierto", así que apaga el
+    // modo fijado — si no, el botón diría "Desplegar todo" mientras por
+    // dentro seguiría fijado, y el panel cerrado volvería a abrirse solo en
+    // el siguiente re-render.
+    function _collapsePanelByHand(el) {
+      _panelsExpandedMode = false;
+      _closeCollapsiblePanel(el);
     }
 
     function _allPanelsOpen() {
@@ -1894,7 +2207,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const el = document.getElementById('add-question-types');
       if (!el) return;
       if (el.classList.contains('panel-open')) {
-        _closeCollapsiblePanel(el);
+        _collapsePanelByHand(el);
       } else {
         _closeOtherCollapsiblePanels('add-question-types');
         _openCollapsiblePanel(el, 'flex');
@@ -1975,6 +2288,14 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const existingCards = document.querySelectorAll('.editor-card');
       const nextNum = existingCards.length + 1;
       const newQ = { num: nextNum, type: sq.type, data: JSON.parse(JSON.stringify(sq.recoverable_data)) };
+      // Mismo puntaje default que "Añadir nueva pregunta": el promedio de
+      // lo que ya vale el resto. Sin esto la pregunta rescatada entraba sin
+      // `points`, su casilla salía vacía y el contador "X / Y pts" la
+      // contaba como 0 sin que se notara por qué.
+      const recoveredPeers = currentParseResult.questions.map(q => Number(q.points) || 0).filter(p => p > 0);
+      newQ.points = recoveredPeers.length
+        ? Math.round((recoveredPeers.reduce((a, b) => a + b, 0) / recoveredPeers.length) * 100) / 100
+        : Math.round((_editorTotalPoints() / (currentParseResult.questions.length + 1)) * 100) / 100;
 
       // Respuesta en blanco por tipo — el usuario la completa a mano. Para
       // truefalse se deja "Verdadero" preseleccionado (el <select> siempre
@@ -2385,36 +2706,6 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const container = document.getElementById('editor-questions-container');
       container.innerHTML = '';
 
-      // Acciones principales (Aprobar y Generar / Cancelar): quedan pegadas
-      // (position: sticky) justo debajo del header al hacer scroll, para
-      // que sean accesibles sin tener que subir hasta arriba del todo en
-      // exámenes largos (100+ preguntas). El offset se mide en vivo porque
-      // la altura del header varía (el subtítulo puede ocupar 1-3 líneas
-      // según el ancho de pantalla) — un valor fijo se habría desalineado.
-      const headerH = document.querySelector('.app-header')?.offsetHeight || 0;
-      // Indicador de "cuánto falta por revisar": una barra + etiqueta que se
-      // actualiza con el scroll (ver updateReviewProgress), útil en
-      // exámenes largos donde de otro modo no hay forma de saber qué tan
-      // avanzada va la revisión sin adivinar por el largo de la barra de
-      // scroll del navegador. Sin sentido con 1 sola pregunta.
-      const actionsHtml = `<div style="position:sticky;top:${headerH}px;z-index:90;background:var(--color-bg);padding:14px 0;margin:0 0 18px;border-bottom:1px solid var(--color-border-subtle);">
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <button type="button" id="btn-generate-xml" class="btn btn-success" style="flex:2;" onclick="generateXml()">
-            <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
-            Aprobar y Generar Moodle XML
-          </button>
-          <button type="button" class="btn btn-danger" style="flex:1;" onclick="resetAll()">
-            Cancelar
-          </button>
-        </div>
-        ${data.questions.length > 1 ? `<div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
-          <div style="flex:1;height:4px;background:var(--color-border-subtle);border-radius:var(--radius-full);overflow:hidden;">
-            <div id="review-progress-fill" style="height:100%;width:0%;background:var(--color-accent);border-radius:var(--radius-full);"></div>
-          </div>
-          <span id="review-progress-label" style="font-size:11.5px;color:var(--color-text-subtle);white-space:nowrap;">Pregunta 1 de ${data.questions.length}</span>
-        </div>` : ''}
-      </div>`;
-
       // Aviso formal de revisión — antes se repetía idéntico en cada
       // tarjeta (ruido puro para alguien usando lector de pantalla al
       // pasar por 30-40 preguntas); ahora aparece una sola vez, arriba de
@@ -2468,10 +2759,10 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </div>`;
       }
 
-      // Aviso informativo (no de advertencia): el documento usa color para
-      // marcar respuestas. El sistema ya sabe interpretarlo, así que esto NO
-      // bloquea ni pregunta nada — solo recomienda una revisión manual por
-      // si la IA se equivocó identificando alguna marca.
+      // Aviso informativo (no de advertencia): de dónde salieron las
+      // respuestas cuando el documento las marca (color, resaltado,
+      // subrayado, negrita o X en un cuadro). Lo arma el backend con lo que
+      // de verdad detectó (ver pipeline._marks_notice); no bloquea nada.
       let colorNoticeHtml = '';
       if (data.color_marks_notice) {
         colorNoticeHtml = `<div style="background:var(--color-cl-bg);border:1px solid var(--color-cl-border);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;">
@@ -2545,13 +2836,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <div style="background:var(--color-cl-bg);border:1px solid var(--color-cl-border);border-radius:var(--radius-sm);padding:10px 12px;display:flex;gap:8px;align-items:flex-start;">
             <i data-lucide="info" style="width:14px;height:14px;color:var(--color-cl);flex-shrink:0;margin-top:2px;"></i>
             <div style="font-size:12px;color:var(--color-text-muted);line-height:1.65;">
-              <strong style="color:var(--color-text);">¿Para qué sirve este número?</strong> No es el puntaje final — define cuánto vale un tipo de pregunta <em>en comparación</em> con los demás:
-              <ul style="margin:6px 0 0;padding-left:18px;">
-                <li>Si dejas todo en 1, todas las preguntas valen lo mismo.</li>
-                <li>Si a Ensayo le pones 2 y a Múltiple le dejas 1, cada ensayo valdrá el doble que una múltiple.</li>
-                <li>Si a Ensayo le pones 3, cada ensayo valdrá el triple que una múltiple.</li>
-              </ul>
-              <span style="display:block;margin-top:6px;">Cada vez que cambias un número, la columna de la derecha recalcula al instante cuánto le tocaría a cada pregunta — la suma de todo el examen siempre va a dar <strong style="color:var(--color-text);">${currentUploadMetadata ? currentUploadMetadata.total_points : (data.metadata && data.metadata.total_points) || 100}</strong> puntos.</span>
+              <strong style="color:var(--color-text);">¿Qué significa este número?</strong> Es un peso relativo, no el puntaje final: un tipo con peso 2 vale el doble que uno con peso 1, y con peso 3, el triple. Si todos los pesos son iguales, todas las preguntas valen lo mismo.
+              <span style="display:block;margin-top:6px;">La columna de la derecha recalcula al instante cuánto quedaría cada pregunta, y el reparto siempre suma el total que definiste para este examen: <strong style="color:var(--color-text);">${fmtPoints(_editorTotalPoints())}</strong> pts.</span>
             </div>
           </div>
           <div id="points-weights-editor" style="display:flex;flex-direction:column;gap:8px;">
@@ -2571,19 +2857,26 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </div>
       </div>`;
 
-      container.innerHTML = actionsHtml + reviewReminderHtml + skippedHtml + colorNoticeHtml + panelsToggleHtml + filterHtml + addQuestionHtml + pointsToolHtml;
+      container.innerHTML = reviewReminderHtml + skippedHtml + colorNoticeHtml + panelsToggleHtml + filterHtml + addQuestionHtml + pointsToolHtml;
 
       data.questions.forEach((q, i) => {
         const keyInfo = data.answer_key[q.num] || { answer: '' };
-        let html = `<div class="editor-card" data-idx="${i}" data-qnum="${q.num}" data-qtype="${q.type}">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        const needsReview = q.data.from_table || q.data.color_review_hint || q.data.low_confidence;
+        let html = `<div class="editor-card" data-idx="${i}" data-qnum="${q.num}" data-qtype="${q.type}"${needsReview ? ' data-review="1"' : ''}>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
             <strong style="color:var(--color-accent);font-size:15px;font-family:var(--font-heading);">Pregunta ${q.num}</strong>
-            <div style="display:flex;align-items:center;gap:10px;">
+            <div style="display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;">
               ${q.data.from_table ? `<span class="type-badge" style="background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);" title="El sistema detectó una tabla/cuadro en el documento original y la convirtió automáticamente a esta pregunta de emparejamiento — revísala con cuidado antes de aprobar.">
                 <i data-lucide="table-2" style="width:12px;height:12px;vertical-align:-2px;"></i> convertida de tabla
               </span>` : ''}
-              ${q.data.color_review_hint ? `<span class="type-badge" style="background:var(--color-cl-bg);color:var(--color-cl);border:1px solid var(--color-cl-border);" title="Esta pregunta viene de una página con respuestas marcadas por color — revisa que la IA haya identificado todas las opciones correctas, especialmente si hay más de una marcada.">
-                <i data-lucide="palette" style="width:12px;height:12px;vertical-align:-2px;"></i> revisar marca de color
+              ${q.data.color_review_hint ? `<span class="type-badge" style="background:var(--color-cl-bg);color:var(--color-cl);border:1px solid var(--color-cl-border);" title="Esta pregunta viene de una página con respuestas marcadas (color, resaltado, subrayado o negrita), pero el sistema no pudo leer la marca con certeza y la interpretó la IA. Compara las opciones correctas con el documento original, sobre todo si hay más de una marcada.">
+                <i data-lucide="palette" style="width:12px;height:12px;vertical-align:-2px;"></i> revisar marca
+              </span>` : ''}
+              ${q.data.answer_from_marks ? `<span class="type-badge" style="background:transparent;color:var(--color-text-subtle);border:1px solid var(--color-border);" title="La respuesta se tomó directamente de la marca del documento (color, resaltado, subrayado, negrita o X en un cuadro), leída del PDF sin que la IA la interprete.">
+                <i data-lucide="highlighter" style="width:12px;height:12px;vertical-align:-2px;"></i> respuesta por marca
+              </span>` : ''}
+              ${q.data.low_confidence ? `<span class="type-badge" style="background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);" title="La IA indicó que no pudo leer con total confianza una imagen que esta pregunta necesita (código o marca borrosa/cortada). Compárala con el documento original antes de aprobar.">
+                <i data-lucide="eye-off" style="width:12px;height:12px;vertical-align:-2px;"></i> confianza baja
               </span>` : ''}
               <span class="type-badge ${q.type}">${QUESTION_TYPE_LABEL_MAP[q.type] || q.type}</span>
               <div style="display:flex;align-items:center;gap:4px;" title="Puntos que vale esta pregunta">
@@ -2603,10 +2896,18 @@ Ahora convierte el examen adjunto a este formato.</pre>
         if (q.type === 'multichoice') {
           const optEntries = Object.entries(q.data.options || {});
           const answerTargets = (keyInfo.answer || '').split('|').map(s => s.trim().toLowerCase()).filter(Boolean);
+          // Un objetivo de la clave que coincide EXACTO con el texto de
+          // alguna opción es esa opción y NINGUNA otra: con opciones
+          // A: Python / B: Java / C: JavaScript / D: C y la respuesta
+          // "Java | C", antes se marcaban también JavaScript (por la letra
+          // C, y porque "java" está contenido en "javascript").
+          const allOptTexts = optEntries.map(([, txt]) => txt.trim().toLowerCase());
           const isOptCorrect = (letter, optText) => {
             const optClean = optText.trim().toLowerCase();
             return answerTargets.some(t => {
-              if (t === letter.toLowerCase() || t === optClean) return true;
+              if (t === optClean) return true;
+              if (allOptTexts.includes(t)) return false;
+              if (t === letter.toLowerCase()) return true;
               // Fallback de coincidencia parcial: solo para respuestas largas
               // (la clave trae el texto completo de la opción en vez de su
               // letra). Con fragmentos cortos (ej. una sola letra) esto
@@ -2704,6 +3005,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       refreshFilterChips();
       updatePointsAssignedLabel();
       updatePointsWeightPreview();
+      _restorePanelsExpandedMode();
       _updateToggleAllPanelsLabel();
       lucide.createIcons();
     }
@@ -2752,7 +3054,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const el = document.getElementById('filter-chips-bar');
       if (!el) return;
       if (el.classList.contains('panel-open')) {
-        _closeCollapsiblePanel(el);
+        _collapsePanelByHand(el);
       } else {
         _closeOtherCollapsiblePanels('filter-chips-bar');
         _openCollapsiblePanel(el, 'flex');
@@ -2761,9 +3063,13 @@ Ahora convierte el examen adjunto a este formato.</pre>
     }
 
     // Onclick de cada chip: aplica el filtro y colapsa el menú de vuelta,
-    // como al elegir una opción de un desplegable.
+    // como al elegir una opción de un desplegable — SALVO con "Desplegar
+    // todo" fijado, donde los paneles se quedan abiertos hasta que el
+    // docente pulse "Ocultar todo". Filtrar cerraba la barra igual, así
+    // que "Desplegar todo" parecía apagarse solo al elegir un tipo.
     function selectFilter(type) {
       filterQuestionsByType(type);
+      if (_panelsExpandedMode) return;
       const bar = document.getElementById('filter-chips-bar');
       if (bar) _closeCollapsiblePanel(bar);
     }
@@ -2804,31 +3110,220 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const activeChipEl = chipsBar && chipsBar.querySelector(`.filter-chip[data-filter="${type}"]`);
       const labelEl = document.getElementById('filter-current-label');
       if (labelEl && activeChipEl) labelEl.textContent = activeChipEl.textContent;
+      buildReviewRail();
+    }
+
+    // ── Panel de revisión (mapa del examen) ────────────────────────────────
+    // Un cuadrito por pregunta VISIBLE (respeta el filtro activo): la actual
+    // resaltada, las que traen un aviso ("confianza baja", "revisar marca de
+    // color", "convertida de tabla") en color de advertencia, y clic para
+    // saltar a ella. Se reconstruye cuando cambian las tarjetas (render,
+    // borrar, añadir, filtrar) y se actualiza con el scroll.
+    function _visibleEditorCards() {
+      return Array.from(document.querySelectorAll('#editor-questions-container .editor-card'))
+        .filter(c => c.style.display !== 'none');
+    }
+
+    function _headerBottom() {
+      return document.querySelector('.app-header')?.getBoundingClientRect().bottom || 0;
+    }
+
+    function scrollToEditorCard(card) {
+      const top = card.getBoundingClientRect().top + window.scrollY - _headerBottom() - 16;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+
+    // ── Preguntas incompletas (revisión en vivo) ───────────────────────────
+    // Mismas reglas que el validador del backend (validator.py): lo que
+    // aquí se marca como incompleto es lo que haría fallar "Aprobar". Se
+    // revisa mientras el docente edita, no recién al generar el XML.
+    function questionIssues(q, key) {
+      const issues = [];
+      const d = q.data || {};
+      const ans = ((key && key.answer) || '').trim();
+      if (q.type !== 'cloze' && !(d.stem || '').trim()) issues.push('Falta el enunciado');
+      if (q.type === 'multichoice') {
+        const opts = Object.values(d.options || {});
+        const filled = opts.filter(o => (o || '').trim());
+        if (filled.length < 2) issues.push('Faltan opciones (mínimo 2)');
+        else if (filled.length < opts.length) issues.push('Hay una opción vacía');
+        if (!ans) issues.push('Falta marcar la respuesta correcta');
+      } else if (q.type === 'truefalse') {
+        if (!/^(verdadero|falso)$/i.test(ans)) issues.push('Falta elegir Verdadero o Falso');
+      } else if (q.type === 'matching') {
+        const a = d.col_a || {}, b = d.col_b || {};
+        const keys = Object.keys(a);
+        const complete = keys.filter(k => (a[k] || '').trim() && (b[String.fromCharCode(96 + Number(k))] || '').trim());
+        if (complete.length < keys.length) issues.push('Hay una pareja incompleta');
+        if (complete.length < 2) issues.push('Faltan parejas (mínimo 2)');
+      } else if (q.type === 'cloze') {
+        const text = d.text || '';
+        const blanks = text.match(/\[[A-Z]:[^\]]*\]/g) || [];
+        if (!blanks.length) issues.push('Faltan los espacios para completar');
+        else if (blanks.some(bl => !bl.slice(3, -1).trim())) issues.push('Un espacio no tiene opciones');
+        if (!text.replace(/\[[A-Z]:[^\]]*\]/g, '').trim()) issues.push('Falta el texto de la pregunta');
+      } else if (q.type === 'shortanswer') {
+        if (!ans) issues.push('Falta la respuesta');
+      } else if (q.type === 'numerical') {
+        if (!ans) issues.push('Falta la respuesta');
+        else if (isNaN(Number(ans.replace(',', '.')))) issues.push('La respuesta debe ser un número');
+      }
+      return issues;
+    }
+
+    // Marca cada tarjeta (borde rojo + qué le falta) y devuelve cuántas
+    // quedan incompletas. collectEditorData recorre las tarjetas en el mismo
+    // orden del DOM, así que el índice de cada pregunta es el de su tarjeta.
+    function refreshQuestionIssues() {
+      const cards = Array.from(document.querySelectorAll('#editor-questions-container .editor-card'));
+      if (!cards.length) return 0;
+      const { questions, answer_key } = collectEditorData();
+      let incomplete = 0;
+      cards.forEach((card, i) => {
+        const q = questions[i];
+        const issues = q ? questionIssues(q, answer_key[q.num]) : [];
+        card.classList.toggle('is-incomplete', issues.length > 0);
+        card.dataset.issues = issues.join(' · ');
+        let box = card.querySelector(':scope > .card-issues');
+        if (issues.length) {
+          incomplete++;
+          if (!box) {
+            box = document.createElement('div');
+            box.className = 'card-issues';
+            box.setAttribute('role', 'status');
+            card.firstElementChild.insertAdjacentElement('afterend', box);
+          }
+          box.textContent = '✕ ' + issues.join(' · ');
+        } else if (box) {
+          box.remove();
+        }
+      });
+      return incomplete;
+    }
+
+    // Se revisa al escribir, marcar casillas o añadir/quitar opciones
+    // (con un pequeño retraso para no recalcular en cada tecla).
+    let _issuesTimer = null;
+    function scheduleIssuesRefresh() {
+      clearTimeout(_issuesTimer);
+      _issuesTimer = setTimeout(() => {
+        if (document.body.classList.contains('editor-active')) buildReviewRail();
+      }, 250);
+    }
+    ['input', 'change', 'click'].forEach(evt => {
+      document.addEventListener(evt, e => {
+        if (e.target.closest && e.target.closest('#editor-questions-container')) scheduleIssuesRefresh();
+      }, true);
+    });
+
+    function buildReviewRail() {
+      const rail = document.getElementById('review-rail');
+      const grid = document.getElementById('review-rail-grid');
+      if (!rail || !grid) return;
+      rail.style.setProperty('--header-h', `${document.querySelector('.app-header')?.offsetHeight || 0}px`);
+      refreshQuestionIssues();
+      const cards = _visibleEditorCards();
+      grid.innerHTML = cards.map((c, i) => {
+        const missing = c.dataset.issues || '';
+        const review = !missing && c.dataset.review === '1';
+        const cls = missing ? ' incomplete' : review ? ' needs-review' : '';
+        const tip = missing ? ` — ${missing}` : review ? ' — tiene un aviso para revisar' : '';
+        return `<button type="button" role="listitem" class="rail-item${cls}" data-pos="${i}"
+          title="Pregunta ${c.dataset.qnum}${esc_html(tip)}">${c.dataset.qnum}</button>`;
+      }).join('');
+      grid.querySelectorAll('.rail-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const card = _visibleEditorCards()[Number(btn.dataset.pos)];
+          if (card) scrollToEditorCard(card);
+          rail.classList.remove('grid-open');
+        });
+      });
+      const missing = cards.filter(c => c.dataset.issues).length;
+      const pending = cards.filter(c => !c.dataset.issues && c.dataset.review === '1').length;
+      const nextMissing = document.getElementById('rail-incomplete-next');
+      nextMissing.classList.toggle('visible', missing > 0);
+      nextMissing.textContent = missing === 1 ? '✕ 1 pregunta incompleta' : `✕ ${missing} preguntas incompletas`;
+      nextMissing.title = 'Ir a la siguiente pregunta incompleta';
+      const next = document.getElementById('rail-review-next');
+      next.classList.toggle('visible', pending > 0);
+      next.textContent = pending === 1 ? '⚠ 1 pregunta para revisar' : `⚠ ${pending} preguntas para revisar`;
+      next.title = 'Ir a la siguiente pregunta con aviso';
+      const errShort = document.getElementById('rail-error-short');
+      errShort.classList.toggle('visible', missing > 0);
+      errShort.textContent = `✕${missing}`;
+      const warnShort = document.getElementById('rail-warn-short');
+      warnShort.classList.toggle('visible', pending > 0);
+      warnShort.textContent = `⚠${pending}`;
+      _railCurrent = -1;
       updateReviewProgress();
     }
 
-    // Indicador de progreso de revisión ("Pregunta X de N"): calcula cuál
-    // es la primera pregunta VISIBLE (respeta el filtro activo) que todavía
-    // no quedó tapada por la barra de acciones fija de arriba, y usa esa
-    // como "la que se está revisando ahora". Se llama al cargar, al
-    // filtrar, y en cada scroll (limitado a una vez por frame con
-    // requestAnimationFrame para no recalcular en cada pixel).
+    // Salta a la siguiente pregunta incompleta ('incomplete') o con aviso
+    // ('review') DESPUÉS de la actual, y vuelve a la primera al llegar al final.
+    function jumpToNextFlagged(kind) {
+      const cards = _visibleEditorCards();
+      const match = kind === 'incomplete'
+        ? c => !!c.dataset.issues
+        : c => !c.dataset.issues && c.dataset.review === '1';
+      const flagged = cards.map((c, i) => [c, i]).filter(([c]) => match(c));
+      if (!flagged.length) return;
+      const target = flagged.find(([, i]) => i > _railCurrent) || flagged[0];
+      scrollToEditorCard(target[0]);
+      document.getElementById('review-rail')?.classList.remove('grid-open');
+    }
+
+    // En pantallas angostas la grilla se abre como un panel sobre la barra
+    // de abajo. En escritorio siempre está visible y el botón no hace nada.
+    function toggleRailGrid() {
+      if (window.matchMedia('(min-width: 1320px)').matches) return;
+      document.getElementById('review-rail')?.classList.toggle('grid-open');
+    }
+
+    // "Pregunta X de N": la primera tarjeta visible cuyo borde superior ya
+    // pasó justo por debajo del header. Se llama al cargar, al filtrar y en
+    // cada scroll (una vez por frame, con requestAnimationFrame).
+    let _railCurrent = -1;
     function updateReviewProgress() {
-      const fill = document.getElementById('review-progress-fill');
+      const cards = _visibleEditorCards();
       const label = document.getElementById('review-progress-label');
-      if (!fill || !label) return;
-      const cards = Array.from(document.querySelectorAll('#editor-questions-container .editor-card'))
-        .filter(c => c.style.display !== 'none');
-      if (!cards.length) return;
-      const stickyBar = document.querySelector('#editor-questions-container > div');
-      const threshold = (stickyBar ? stickyBar.getBoundingClientRect().bottom : 0) + 4;
-      let current = 1;
+      const short = document.getElementById('review-progress-short');
+      const fill = document.getElementById('review-progress-fill');
+      if (!label || !cards.length) {
+        if (label) label.textContent = 'Sin preguntas';
+        if (short) short.textContent = '0/0';
+        if (fill) fill.style.width = '0%';
+        return;
+      }
+      const threshold = _headerBottom() + 24;
+      let current = 0;
       for (let i = 0; i < cards.length; i++) {
-        if (cards[i].getBoundingClientRect().top <= threshold) current = i + 1;
+        if (cards[i].getBoundingClientRect().top <= threshold) current = i;
         else break;
       }
-      label.textContent = `Pregunta ${current} de ${cards.length}`;
-      fill.style.width = `${Math.round((current / cards.length) * 100)}%`;
+      // Al final de la página, la última tarjeta puede no llegar nunca
+      // arriba del todo: se da por "actual" la última.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) current = cards.length - 1;
+      // Con un filtro activo o preguntas borradas, el número de la pregunta
+      // ya no coincide con su posición en la lista: se muestran ambos.
+      const qnum = cards[current].dataset.qnum;
+      label.textContent = String(current + 1) === qnum
+        ? `Pregunta ${qnum} de ${cards.length}`
+        : `Pregunta ${qnum} · ${current + 1} de ${cards.length}`;
+      if (short) short.textContent = `${current + 1}/${cards.length}`;
+      fill.style.width = `${Math.round(((current + 1) / cards.length) * 100)}%`;
+      if (current !== _railCurrent) {
+        _railCurrent = current;
+        const grid = document.getElementById('review-rail-grid');
+        grid?.querySelectorAll('.rail-item.current').forEach(b => b.classList.remove('current'));
+        const item = grid?.querySelector(`.rail-item[data-pos="${current}"]`);
+        if (item) {
+          item.classList.add('current');
+          // Mantiene visible el cuadrito actual dentro de la grilla (con 150
+          // preguntas la grilla tiene su propio scroll), sin mover la página.
+          const g = grid.getBoundingClientRect(), r = item.getBoundingClientRect();
+          if (r.top < g.top || r.bottom > g.bottom) grid.scrollTop += r.top - g.top - g.height / 2;
+        }
+      }
     }
     let _reviewProgressTicking = false;
     window.addEventListener('scroll', () => {
@@ -2836,19 +3331,60 @@ Ahora convierte el examen adjunto a este formato.</pre>
       _reviewProgressTicking = true;
       requestAnimationFrame(() => { updateReviewProgress(); _reviewProgressTicking = false; });
     }, { passive: true });
+    // La altura del header cambia con el ancho (el subtítulo ocupa 1-3
+    // líneas): al redimensionar se recoloca el panel de revisión.
+    window.addEventListener('resize', () => {
+      if (document.body.classList.contains('editor-active')) buildReviewRail();
+    });
+    // En pantallas angostas la grilla abierta se cierra con Escape o con un
+    // clic fuera del panel, como cualquier menú desplegable.
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') document.getElementById('review-rail')?.classList.remove('grid-open');
+    });
+    document.addEventListener('click', e => {
+      const rail = document.getElementById('review-rail');
+      if (rail?.classList.contains('grid-open') && !rail.contains(e.target)) rail.classList.remove('grid-open');
+    });
 
     // ── Panel "Distribuir puntos" ──────────────────────────────────────────
     function togglePointsToolMenu() {
       const el = document.getElementById('points-tool-panel');
       if (!el) return;
       if (el.classList.contains('panel-open')) {
-        _closeCollapsiblePanel(el);
+        _collapsePanelByHand(el);
       } else {
         _closeOtherCollapsiblePanels('points-tool-panel');
         _openCollapsiblePanel(el, 'flex');
         updatePointsWeightPreview();
       }
       _updateToggleAllPanelsLabel();
+    }
+
+    // Puntos totales del examen: SIEMPRE los que el docente escribió al
+    // subir el archivo (nunca un 100 asumido) — un único lugar del que
+    // leerlos, para que el panel, la vista previa y el contador no puedan
+    // quedar diciendo cosas distintas.
+    function _editorTotalPoints() {
+      const t = currentUploadMetadata ? Number(currentUploadMetadata.total_points) : NaN;
+      return Number.isFinite(t) && t > 0 ? t : 0;
+    }
+    // Formato corto y sin ceros de relleno (2.50 → "2.5", 20.00 → "20").
+    const fmtPoints = n => Number(n).toFixed(2).replace(/\.?0+$/, '');
+
+    // Lee los pesos escritos en el panel "Por tipo". Es la ÚNICA lectura de
+    // esos inputs: la vista previa y el botón "Aplicar" la comparten a
+    // propósito, porque antes cada una interpretaba distinto un campo vacío
+    // (la vista previa lo tomaba como 0 y "Aplicar" como 1), así que el
+    // reparto que se aplicaba no era el que la vista previa había
+    // prometido. Un campo vacío o con basura vale 1 (peso neutro); un 0
+    // escrito a propósito sí se respeta.
+    function readTypeWeights() {
+      const weights = {};
+      document.querySelectorAll('.points-weight-input').forEach(inp => {
+        const v = parseFloat(inp.value);
+        weights[inp.dataset.type] = Number.isFinite(v) && v >= 0 ? v : 1;
+      });
+      return weights;
     }
 
     // Cambia entre "Equitativo" (sin configuración) y "Por tipo" (muestra
@@ -2878,19 +3414,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
       // en el panel ya aplicado (si no, el panel se veía "reiniciado" al
       // pulsar Aplicar, como si no hubiera pasado nada).
       const mode = _pointsToolMode;
-      const weights = {};
-      document.querySelectorAll('.points-weight-input').forEach(inp => {
-        const v = parseFloat(inp.value);
-        weights[inp.dataset.type] = Number.isFinite(v) && v >= 0 ? v : 1;
-      });
+      const weights = readTypeWeights();
 
       syncParseResultFromDOM();
-      const totalPoints = currentUploadMetadata.total_points;
-      if (mode === 'equal') {
-        autoDistributePoints(currentParseResult.questions, totalPoints, 'equal');
-      } else {
-        autoDistributePoints(currentParseResult.questions, totalPoints, 'byType', weights);
+      const totalPoints = _editorTotalPoints();
+      if (!totalPoints) {
+        showToast('No hay un total de puntos definido para este examen', 'error');
+        return;
       }
+      autoDistributePoints(currentParseResult.questions, totalPoints, mode, weights);
       renderEditor(currentParseResult);
       lucide.createIcons();
 
@@ -2910,7 +3442,13 @@ Ahora convierte el examen adjunto a este formato.</pre>
       }
       _updateToggleAllPanelsLabel();
 
-      showToast('Puntos redistribuidos — revisa cada pregunta antes de generar el XML', 'info');
+      // El toast dice el resultado concreto (no solo "listo"): con el panel
+      // abierto y la lista de preguntas abajo, es la señal más clara de que
+      // el botón sí hizo algo y de cuánto se repartió en total.
+      showToast(
+        `${fmtPoints(totalPoints)} pts repartidos entre ${currentParseResult.questions.length} preguntas — revisa cada una antes de generar el XML`,
+        'info'
+      );
     }
 
     // Contador en vivo "X / Y pts": no bloquea nada, solo ayuda a notar un
@@ -2922,9 +3460,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
       if (!label) return;
       let sum = 0;
       document.querySelectorAll('.q-points').forEach(inp => { sum += parseFloat(inp.value) || 0; });
-      const total = currentUploadMetadata ? currentUploadMetadata.total_points : 0;
-      const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '');
-      label.textContent = `${fmt(sum)} / ${fmt(total)} pts`;
+      const total = _editorTotalPoints();
+      label.textContent = `${fmtPoints(sum)} / ${fmtPoints(total)} pts`;
     }
     // Vista previa en vivo del panel "Por tipo": mientras el docente
     // escribe un peso, se calcula al instante cuánto le tocaría a cada
@@ -2936,26 +3473,34 @@ Ahora convierte el examen adjunto a este formato.</pre>
     function updatePointsWeightPreview() {
       const previews = document.querySelectorAll('.points-weight-preview');
       if (!previews.length) return;
-      const totalPoints = currentUploadMetadata ? currentUploadMetadata.total_points : 0;
-      const counts = {};
-      document.querySelectorAll('#editor-questions-container .editor-card').forEach(card => {
-        const t = card.dataset.qtype;
-        counts[t] = (counts[t] || 0) + 1;
+      const totalPoints = _editorTotalPoints();
+      // La vista previa no reimplementa la fórmula: corre el MISMO
+      // autoDistributePoints() que el botón "Aplicar", pero sobre una copia
+      // de juguete (solo el tipo de cada tarjeta) para no tocar ninguna
+      // pregunta de verdad. Así es imposible que prometa un reparto y luego
+      // se aplique otro.
+      const mock = [...document.querySelectorAll('#editor-questions-container .editor-card')]
+        .map(card => ({ type: card.dataset.qtype }));
+      if (!mock.length || !totalPoints) {
+        previews.forEach(el => { el.textContent = '—'; });
+        return;
+      }
+      autoDistributePoints(mock, totalPoints, _pointsToolMode, readTypeWeights());
+      const range = {};
+      mock.forEach(q => {
+        const r = range[q.type] || (range[q.type] = { min: q.points, max: q.points });
+        r.min = Math.min(r.min, q.points);
+        r.max = Math.max(r.max, q.points);
       });
-      const weights = {};
-      document.querySelectorAll('.points-weight-input').forEach(inp => {
-        const v = parseFloat(inp.value);
-        weights[inp.dataset.type] = Number.isFinite(v) && v >= 0 ? v : 0;
-      });
-      let totalWeight = 0;
-      Object.keys(counts).forEach(t => { totalWeight += (weights[t] || 0) * counts[t]; });
-      const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '');
       previews.forEach(el => {
-        const t = el.dataset.type;
-        if (totalWeight <= 0) { el.textContent = '—'; return; }
-        const unit = totalPoints / totalWeight;
-        const grade = Math.round((weights[t] || 0) * unit * 100) / 100;
-        el.textContent = `${fmt(grade)} pts c/u`;
+        const r = range[el.dataset.type];
+        if (!r) { el.textContent = '—'; return; }
+        // El reparto de céntimos sobrantes puede dejar 0.01 de diferencia
+        // dentro de un mismo tipo — se muestra el rango en vez de un valor
+        // único que no sería cierto para todas.
+        el.textContent = r.min === r.max
+          ? `${fmtPoints(r.min)} pts c/u`
+          : `${fmtPoints(r.min)}–${fmtPoints(r.max)} pts c/u`;
       });
     }
 
@@ -3106,27 +3651,51 @@ Ahora convierte el examen adjunto a este formato.</pre>
 
     function autoDistributePoints(questions, totalPoints, mode, weights) {
       if (!questions || !questions.length) return;
-      if (mode === 'equal') {
-        const share = totalPoints / questions.length;
-        questions.forEach(q => { q.points = Math.round(share * 100) / 100; });
-        return;
-      }
+      const total = Number(totalPoints);
+      if (!Number.isFinite(total) || total <= 0) return;
+
+      // Peso de cada pregunta: 1 para todas en modo equitativo, o el peso
+      // de su tipo en modo "Por tipo".
       const w = weights || DEFAULT_TYPE_WEIGHTS;
-      const counts = {};
-      questions.forEach(q => { counts[q.type] = (counts[q.type] || 0) + 1; });
-      let totalWeight = 0;
-      Object.keys(counts).forEach(t => { totalWeight += _weightOrDefault(w, t) * counts[t]; });
+      let shares = questions.map(q => (mode === 'equal' ? 1 : _weightOrDefault(w, q.type)));
+      let totalWeight = shares.reduce((a, b) => a + b, 0);
       if (totalWeight <= 0) {
         // Caso degenerado: todos los pesos en 0 (o negativos) no tiene una
         // solución matemática (dividiría entre cero) — se cae a reparto
         // equitativo en vez de fallar en silencio.
-        autoDistributePoints(questions, totalPoints, 'equal');
-        return;
+        shares = questions.map(() => 1);
+        totalWeight = questions.length;
       }
-      const unit = totalPoints / totalWeight;
-      questions.forEach(q => {
-        q.points = Math.round(_weightOrDefault(w, q.type) * unit * 100) / 100;
-      });
+
+      // El reparto se hace en CÉNTIMOS con el método del resto mayor, no
+      // redondeando cada pregunta por separado. Redondear una por una hacía
+      // que la suma se fuera del total que el docente había fijado (7
+      // preguntas de 1.74 + 3 de 2.61 daba 20.01 / 20 pts, y el contador de
+      // arriba lo mostraba), justo lo contrario de lo que promete el panel.
+      // Ahora se reparte el total exacto y los céntimos sobrantes se dan de
+      // a uno a las preguntas con mayor resto, así que la suma SIEMPRE
+      // cuadra; dentro de un mismo tipo dos preguntas pueden diferir como
+      // mucho en 0.01 pts.
+      const totalCents = Math.round(total * 100);
+      const exact = shares.map(s => (s / totalWeight) * totalCents);
+      const cents = exact.map(v => Math.floor(v));
+      const leftover = totalCents - cents.reduce((a, b) => a + b, 0);
+      // Entre preguntas empatadas, los céntimos sobrantes se reparten por
+      // turnos entre los tipos (1ª de cada tipo, 2ª de cada tipo…) en vez de
+      // vaciarlos sobre el primer tipo de la lista. Si no, dos tipos con el
+      // MISMO peso podían terminar mostrando valores distintos (1.93 vs
+      // 1.92 pts c/u), que se lee como un error aunque la suma cuadre.
+      const seenPerType = {};
+      const byRemainder = exact
+        .map((v, i) => {
+          const t = questions[i].type;
+          const turn = seenPerType[t] = (seenPerType[t] === undefined ? 0 : seenPerType[t] + 1);
+          return { i, turn, frac: v - Math.floor(v) };
+        })
+        .sort((a, b) => (b.frac - a.frac) || (a.turn - b.turn) || (a.i - b.i));
+      for (let k = 0; k < leftover && k < byRemainder.length; k++) cents[byRemainder[k].i] += 1;
+
+      questions.forEach((q, i) => { q.points = cents[i] / 100; });
     }
 
     // Stats Updater
@@ -3362,12 +3931,41 @@ Ahora convierte el examen adjunto a este formato.</pre>
       // de siempre, sin pasos extra.
       autoDistributePoints(parsedData.questions, ptsVal, 'byType');
       showPanel('editor');
+      // Cada examen nuevo abre el editor con los 3 paneles desplegados,
+      // aunque en el anterior el docente los haya ocultado.
+      _panelsExpandedMode = true;
       renderEditor(parsedData);
       lucide.createIcons();
     }
 
-    // Conversion Step 1: Parse
-    async function runConversion(ptsVal, kind = 'text') {
+    // Lee la respuesta de /api/*_stream: una línea JSON por evento
+    // (etapa, avance, resultado o error). Devuelve el evento final
+    // ("result" o "error") y va actualizando la pantalla de carga con el
+    // avance real mientras llega.
+    async function readProgressStream(res) {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl;
+        while ((nl = buffer.indexOf('\n')) >= 0) {
+          const line = buffer.slice(0, nl).trim();
+          buffer = buffer.slice(nl + 1);
+          if (!line) continue;
+          let ev;
+          try { ev = JSON.parse(line); } catch (_) { continue; }
+          if (ev.type === 'stage') onProgressStage(ev);
+          else if (ev.type === 'progress') onProgressCount(ev);
+          else if (ev.type === 'result' || ev.type === 'error') return ev;
+        }
+      }
+      return { type: 'error', status: 0, detail: 'La conexión con el servidor se cortó antes de terminar. Intenta de nuevo.' };
+    }
+
+    async function runStreamingConversion(endpoint, kind, ptsVal) {
       showPanel('progress');
       startProgress(kind);
 
@@ -3375,21 +3973,31 @@ Ahora convierte el examen adjunto a este formato.</pre>
       formData.append('file', selectedFile);
 
       try {
-        const res = await fetch('/api/parse', { method: 'POST', body: formData });
-        stopProgress(res.ok);
-
-        if (!res.ok) {
+        const res = await fetch(endpoint, { method: 'POST', body: formData });
+        if (!res.ok || !res.body) {
+          stopProgress(false);
           let errMsg = friendlyHttpError(res.status);
           try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
           showError(errMsg);
           return;
         }
-
-        goToEditorWithParsedData(await res.json(), ptsVal);
+        const final = await readProgressStream(res);
+        if (final.type === 'error') {
+          stopProgress(false);
+          showError(final.detail || friendlyHttpError(final.status));
+          return;
+        }
+        stopProgress(true);
+        goToEditorWithParsedData(final.data, ptsVal);
       } catch (err) {
         stopProgress(false);
         showError("No se pudo conectar con el servidor backend: " + err.message);
       }
+    }
+
+    // Conversion Step 1: Parse
+    function runConversion(ptsVal, kind = 'text') {
+      return runStreamingConversion('/api/parse_stream', kind, ptsVal);
     }
 
     // Alternativa in-app al flujo externo de "copia este prompt y pégalo en
@@ -3397,29 +4005,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // visualmente (ver /api/normalize_with_ai) — tarda más que una
     // conversión normal porque manda todas las páginas, no solo las que
     // tienen imágenes detectadas.
-    async function runNormalizeWithAI(ptsVal) {
-      showPanel('progress');
-      startProgress('normalize');
-
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      try {
-        const res = await fetch('/api/normalize_with_ai', { method: 'POST', body: formData });
-        stopProgress(res.ok);
-
-        if (!res.ok) {
-          let errMsg = friendlyHttpError(res.status);
-          try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
-          showError(errMsg);
-          return;
-        }
-
-        goToEditorWithParsedData(await res.json(), ptsVal);
-      } catch (err) {
-        stopProgress(false);
-        showError("No se pudo conectar con el servidor backend: " + err.message);
-      }
+    function runNormalizeWithAI(ptsVal) {
+      return runStreamingConversion('/api/normalize_with_ai_stream', 'normalize', ptsVal);
     }
 
     btnConvert.addEventListener('click', async () => {
@@ -3467,6 +4054,21 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // por completo en cada renderEditor() — un listener adjunto al nodo
     // anterior se perdería con cada re-render.
     async function generateXml() {
+      // Con preguntas incompletas el backend rechazaría el XML: se avisa
+      // aquí y se lleva al docente a la primera, en vez de mostrar un error.
+      const incomplete = refreshQuestionIssues();
+      if (incomplete > 0) {
+        buildReviewRail();
+        const first = document.querySelector('#editor-questions-container .editor-card.is-incomplete');
+        if (first) {
+          if (first.style.display === 'none') selectFilter('all');
+          scrollToEditorCard(first);
+        }
+        showToast(incomplete === 1
+          ? 'Falta completar 1 pregunta antes de aprobar'
+          : `Faltan completar ${incomplete} preguntas antes de aprobar`, 'error');
+        return;
+      }
       const { questions, answer_key } = collectEditorData();
       const payload = {
         filename: currentUploadMetadata.filename,
@@ -3750,6 +4352,112 @@ Ahora convierte el examen adjunto a este formato.</pre>
     let progressKind = 'text';
     let progressEstimatedTotal = TIMING_DEFAULTS.text;
 
+    // Avance REAL que informa el backend (ver readProgressStream). Mientras
+    // no llegue ningún evento se usa la secuencia estimada de siempre; en
+    // cuanto llega uno, la pantalla pasa a reflejar lo que de verdad ocurre.
+    let progressReal = false;
+    let aiStartTime = 0;
+    let aiExpected = 0;
+    let aiDone = 0;
+    let aiMessage = '';
+    // Segundos por pregunta medidos en la evaluación (dev/eval_results):
+    // JSON ~0.7, texto ~0.3; con todas las páginas como imagen, más.
+    const SECONDS_PER_QUESTION_DEFAULTS = { json: 0.75, text: 0.35, normalize: 1.2 };
+    const SPQ_KEY = 'moodle_seconds_per_question_v1';
+
+    function _spqKey() {
+      return progressKind === 'normalize' ? 'normalize' : (window._aiMode || 'json');
+    }
+    function _getSecondsPerQuestion() {
+      try {
+        const list = (JSON.parse(localStorage.getItem(SPQ_KEY)) || {})[_spqKey()];
+        if (list && list.length) return list.reduce((a, b) => a + b, 0) / list.length;
+      } catch (_) {}
+      return SECONDS_PER_QUESTION_DEFAULTS[_spqKey()] || 0.75;
+    }
+    function _recordSecondsPerQuestion(value) {
+      try {
+        const all = JSON.parse(localStorage.getItem(SPQ_KEY)) || {};
+        const list = all[_spqKey()] || [];
+        list.push(value);
+        while (list.length > TIMING_HISTORY_MAX) list.shift();
+        all[_spqKey()] = list;
+        localStorage.setItem(SPQ_KEY, JSON.stringify(all));
+      } catch (_) {}
+    }
+    function _setProgressBar(pct) {
+      document.getElementById('progress-bar-fill').style.transform = `scaleX(${Math.min(pct, 99) / 100})`;
+    }
+    function _setProgressDetail(text) {
+      document.getElementById('progress-detail').textContent = text;
+    }
+
+    function onProgressStage(ev) {
+      progressReal = true;
+      const elapsedSec = (Date.now() - progressStartTime) / 1000;
+      if (ev.message) document.getElementById('progress-subtitle').textContent = ev.message;
+      if (ev.key === 'extract') {
+        _setProgressBar(4);
+        _setProgressDetail('');
+      } else if (ev.key === 'ai') {
+        window._aiMode = ev.mode || 'json';
+        aiMessage = ev.message || '';
+        aiStartTime = Date.now();
+        aiExpected = ev.expected || 0;
+        aiDone = 0;
+        _setProgressBar(8);
+        if (aiExpected > 0) {
+          _setProgressDetail(`Se detectaron ~${aiExpected} preguntas`);
+          progressEstimatedTotal = elapsedSec + 3 + aiExpected * _getSecondsPerQuestion();
+        } else {
+          _setProgressDetail(ev.images ? `Leyendo ${ev.images} página(s) como imagen` : '');
+        }
+      } else if (ev.key === 'retry') {
+        // Google saturado o límite por minuto: el backend espera y reintenta.
+        // La respuesta vuelve a empezar desde cero, así que el ritmo se mide
+        // de nuevo (aiStartTime = 0 → se reinicia con el próximo avance).
+        const wait = Number((/(\d+)\s*s/.exec(ev.message || '') || [])[1] || 10);
+        aiStartTime = 0;
+        aiDone = 0;
+        _setProgressDetail('Esperando al servicio de IA…');
+        progressEstimatedTotal = elapsedSec + wait + 3 + (aiExpected || 20) * _getSecondsPerQuestion();
+      } else if (ev.key === 'review') {
+        _setProgressBar(96);
+        _setProgressDetail(aiDone ? `${aiDone} preguntas procesadas · verificando…` : 'Verificando…');
+        progressEstimatedTotal = elapsedSec + 1;
+      }
+    }
+
+    function onProgressCount(ev) {
+      progressReal = true;
+      aiDone = ev.done || 0;
+      if (ev.expected) aiExpected = ev.expected;
+      const now = Date.now();
+      if (!aiStartTime) {
+        // Primer avance tras un reintento: la IA volvió a responder.
+        aiStartTime = now;
+        if (aiMessage) document.getElementById('progress-subtitle').textContent = aiMessage;
+      }
+      const elapsedSec = (now - progressStartTime) / 1000;
+      const aiElapsed = (now - aiStartTime) / 1000;
+      // La estimación inicial se corrige con el ritmo REAL de esta
+      // conversión en cuanto hay un par de preguntas para medirlo.
+      const measured = aiDone >= 2 ? aiElapsed / aiDone : null;
+      const spq = measured ?? _getSecondsPerQuestion();
+      const total = aiExpected > 0 ? Math.max(aiExpected, aiDone) : 0;
+      if (total > 0) {
+        progressEstimatedTotal = elapsedSec + Math.max(total - aiDone, 0) * spq + 1.5;
+        _setProgressBar(8 + 86 * Math.min(aiDone / total, 1));
+        // El total es aproximado: en cuanto la IA pasa del estimado, se
+        // deja de mostrar un "de ~N" que ya no es cierto ("33 de ~27").
+        _setProgressDetail(aiExpected && aiDone <= aiExpected
+          ? `${aiDone} de ~${aiExpected} preguntas procesadas`
+          : `${aiDone} preguntas procesadas`);
+      } else {
+        _setProgressDetail(`${aiDone} preguntas procesadas`);
+      }
+    }
+
     function startProgress(kind = 'text') {
       const pSubtitle = document.getElementById('progress-subtitle');
       const pFill = document.getElementById('progress-bar-fill');
@@ -3765,6 +4473,12 @@ Ahora convierte el examen adjunto a este formato.</pre>
       progressKind = kind;
       progressStartTime = Date.now();
       progressEstimatedTotal = _getEstimatedDuration(kind);
+      progressReal = false;
+      aiStartTime = 0;
+      aiExpected = 0;
+      aiDone = 0;
+      aiMessage = '';
+      _setProgressDetail('');
 
       document.getElementById('progress-timer-row').style.display = 'flex';
       pFill.style.transform = 'scaleX(0)';
@@ -3775,11 +4489,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
       progressInterval = setInterval(() => {
         const elapsedSec = (Date.now() - progressStartTime) / 1000;
 
-        let pct = Math.min(elapsedSec * 7, 92);
-        pFill.style.transform = `scaleX(${pct / 100})`;
-        const stage = sequence.slice().reverse().find(s => elapsedSec >= s.time);
-        if (stage && pSubtitle.textContent !== stage.text) {
-          pSubtitle.textContent = stage.text;
+        // Sin eventos del backend todavía: secuencia estimada de siempre.
+        // Con eventos, la barra y el texto los maneja onProgress*.
+        if (!progressReal) {
+          let pct = Math.min(elapsedSec * 7, 92);
+          pFill.style.transform = `scaleX(${pct / 100})`;
+          const stage = sequence.slice().reverse().find(s => elapsedSec >= s.time);
+          if (stage && pSubtitle.textContent !== stage.text) {
+            pSubtitle.textContent = stage.text;
+          }
         }
 
         // Si ya vamos por el 90% del tiempo estimado y el servidor sigue
@@ -3805,6 +4523,9 @@ Ahora convierte el examen adjunto a este formato.</pre>
         // camino (ej. error de red) no refleja cuánto tarda una conversión
         // real de este tipo, y contaminaría el promedio hacia abajo.
         _recordDuration(progressKind, finalElapsed);
+        if (aiDone >= 3 && aiStartTime) {
+          _recordSecondsPerQuestion((Date.now() - aiStartTime) / 1000 / aiDone);
+        }
       }
     }
 

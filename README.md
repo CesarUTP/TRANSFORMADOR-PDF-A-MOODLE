@@ -75,16 +75,22 @@ Conversor a Moodle XML/
 │   ├── compare.py        ← Compara resultados de eval.py lado a lado
 │   ├── synthetic/        ← Generador de los exámenes sintéticos
 │   ├── eval_results/     ← Resultados guardados (ver RESULTADOS.md)
-│   ├── sync_ejecutable.py ← Copia el código actual a ejecutable/ (antes de armar el instalador)
+│   ├── sync_ejecutable.py ← Copia el código actual a ejecutable/ y ejecutable_mac/ (antes de armar un instalador)
 │   ├── list_models.py    ← Lista los modelos de Gemini disponibles para la API key
 │   └── create_exam_pdf.py, run_test.py, test_webview.py
 │
-└── ejecutable/           ← Todo lo necesario para generar el instalador de Windows
-    ├── backend/ frontend/ assets/ launcher.py  ← copia del código (se actualiza con dev/sync_ejecutable.py)
-    ├── build.py           ← compila el .exe con PyInstaller
-    ├── installer.iss      ← script de Inno Setup (icono, accesos directos, desinstalador)
-    ├── build_windows.bat  ← un solo doble clic que hace todo el proceso
-    └── LEEME_WINDOWS.txt  ← instrucciones y requisitos
+├── ejecutable/           ← Todo lo necesario para generar el instalador de Windows
+│   ├── backend/ frontend/ assets/ launcher.py  ← copia del código (se actualiza con dev/sync_ejecutable.py)
+│   ├── build.py           ← compila el .exe con PyInstaller
+│   ├── installer.iss      ← script de Inno Setup (icono, accesos directos, desinstalador)
+│   ├── build_windows.bat  ← un solo doble clic que hace todo el proceso
+│   └── LEEME_WINDOWS.txt  ← instrucciones y requisitos
+│
+└── ejecutable_mac/       ← Lo mismo para macOS (.app + instalador .dmg)
+    ├── backend/ frontend/ assets/ launcher.py  ← copia del código (mismo sync)
+    ├── build.py           ← compila ConvertidorMoodle.app con PyInstaller
+    ├── build_mac.sh       ← compila la app y arma el .dmg
+    └── LEEME_MAC.txt      ← instrucciones y requisitos
 ```
 
 ---
@@ -96,7 +102,7 @@ Conversor a Moodle XML/
 3. La primera vez, el script instala automáticamente todo lo necesario (puede tardar unos minutos); las siguientes veces abre directo.
 4. Se abre la app en una ventana nativa: sube tu examen, revisa las preguntas detectadas, y descarga el `.xml` listo para importar en Moodle (**Banco de preguntas → Importar**).
 
-¿Quieres un instalador de verdad (`Setup.exe`, con ícono, acceso directo y desinstalador, sin que el usuario final necesite Python)? Mira [`ejecutable/LEEME_WINDOWS.txt`](ejecutable/LEEME_WINDOWS.txt).
+¿Quieres un instalador de verdad, sin que el usuario final necesite Python? Mira [`ejecutable/LEEME_WINDOWS.txt`](ejecutable/LEEME_WINDOWS.txt) (Windows: `Setup.exe` con ícono, acceso directo y desinstalador) o [`ejecutable_mac/LEEME_MAC.txt`](ejecutable_mac/LEEME_MAC.txt) (macOS: `.dmg` que se arrastra a Aplicaciones). En ambos casos, corre antes `dev/sync_ejecutable.py` y recuerda que la app ya no trae la API key: cada instalación necesita su `.env`.
 
 ---
 
@@ -320,8 +326,8 @@ y no como código que analiza, no detecta automáticamente sus imports
 [`ejecutable/LEEME_WINDOWS.txt`](ejecutable/LEEME_WINDOWS.txt) para más detalle.
 
 Otra causa: haber armado el instalador con una copia vieja del código.
-`ejecutable/` lleva su propia copia de `backend/`, `frontend/` y
-`launcher.py`; antes de llevarla a Windows, corre
+`ejecutable/` y `ejecutable_mac/` llevan su propia copia de `backend/`, `frontend/` y
+`launcher.py`; antes de compilar, corre
 `backend/venv/bin/python dev/sync_ejecutable.py`.
 
 ---
