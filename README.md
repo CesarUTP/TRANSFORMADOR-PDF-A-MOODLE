@@ -289,6 +289,9 @@ Se controla con variables de entorno (o un archivo `.env`):
 | Una pregunta **no tiene respuesta marcada** en el original | Se marca `SIN_RESPUESTA` — el sistema bloquea el XML en vez de adivinar |
 | La API de Gemini **no está disponible** | Reintenta 3 veces (10s de espera entre intentos) antes de devolver error; una llamada colgada se corta (180 s en modo texto, 300 s en JSON) |
 | Se alcanzó el **límite de peticiones por minuto** (429) | Espera el tiempo que indica Google y reintenta |
+| Google tiene el modelo **saturado** (503 "high demand") | Espera cada vez más (5, 10, 20, 30, 30 s) y reintenta; la pantalla de carga muestra "reintentando en N s". Si persiste, avisa que no es un problema del documento |
+| La respuesta **llega cortada** a mitad del stream | Se detecta (sin `finishReason`) y se reintenta, en vez de fallar como JSON mal formado |
+| Se agotó la **cuota diaria** (500 peticiones en el plan gratuito) | Avisa de inmediato, sin reintentar |
 
 ---
 

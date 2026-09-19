@@ -1,7 +1,8 @@
 # Resultados de la evaluación de la normalización
 
-Set: 10 exámenes sintéticos (256 preguntas, verdad exacta por construcción)
-y 5 documentos reales (153 preguntas). Cada documento se procesa 3 veces.
+Set: 13 exámenes sintéticos (271 preguntas, verdad exacta por construcción;
+s11-s13 se agregaron para la corrida final) y 5 documentos reales (153
+preguntas). Cada documento se procesa 3 veces.
 **Exactitud** = preguntas que llegan al editor con el tipo, el enunciado
 completo y la respuesta correctos, sobre las esperadas. Ver cómo se mide en
 `dev/eval.py` y el formato del golden en `samples/golden/README.md`.
@@ -12,41 +13,48 @@ Reproducir la comparación:
 backend/venv/bin/python dev/compare.py \
   dev/eval_results/20260918_1904_text_base.json \
   dev/eval_results/20260918_2011_text_enrich_fase3_texto.json \
-  dev/eval_results/20260918_2003_json_enrich_fase3.json
+  dev/eval_results/20260918_2003_json_enrich_fase3.json \
+  dev/eval_results/20260919_1435_json_enrich_final_combinado.json
 ```
 
 ## Resumen
 
-| | Base (modo texto) | Texto + enriquecido **(por defecto)** | JSON + enriquecido |
-|---|---|---|---|
-| Sintéticos | 87 % | 98 % | 99–100 % |
-| Reales | 96 % | 95 % | 96 % |
-| Varianza entre corridas | sí | no | no |
-| Tiempo de IA por documento | 35 s¹ | 6 s | 21 s |
-| Tokens de salida por documento | 1 531 | 1 917 | 5 845 |
+| | Base (modo texto) | Texto + enriquecido | JSON + enriquecido | **Final (configuración actual)** |
+|---|---|---|---|---|
+| Sintéticos | 87 % | 98 % | 99–100 % | **100 %** (271/271) |
+| Reales | 96 % | 95 % | 96 % | **96 %** (147/153) |
+| Varianza entre corridas | sí | no | no | no |
+| Tiempo de IA por documento | 35 s¹ | 6 s | 21 s | 23 s⁴ |
+| Tokens de salida por documento | 1 531 | 1 917 | 5 845 | 4 333 |
 
 ¹ La base incluye llamadas que quedaban colgadas del lado de Google
 (~700 s); desde el commit de las fases 2-3 hay un timeout de 180 s.
+⁴ El 19/09 Google tuvo el modelo saturado ("high demand", 503) durante
+toda la corrida; varios tiempos incluyen esas esperas (s04 y s11 ~55 s,
+contra ~5 s con el servicio normal).
 
 ## Por documento
 
-| Documento | Qué prueba | Base | Texto+enr. | JSON+enr. |
-|---|---|---|---|---|
-| s01 clave al final | 7 tipos, clave con respuestas "incorrectas" a propósito | 90 % | 100 % | 100 % |
-| s02 color sin imágenes | respuestas marcadas solo en rojo, títulos en azul | 25 % | 100 % | 100 % |
-| s03 enunciado con lista A./B. | enunciados que traen su propia lista rotulada | 25 % | 25 % | **100 %** |
-| s04 tabla de marcas | una X por fila (y una fila "contraintuitiva") | 0 %² | 100 % | 100 % |
-| s05 60 preguntas | documento largo | 100 % | 100 % | 100 % |
-| s06 escaneado | sin capa de texto (camino "Normalizar con IA") | 100 % | 100 % | 90 % |
-| s07 no es examen | debe rechazarse | 100 % | 100 % | 100 % |
-| s08 asterisco y sin marca | 2 preguntas sin respuesta: no inventar | 100 % | 100 % | 100 % |
-| s09 completar + banco | banco de palabras sin clave: no inventar | 80 % | 80 % | **100 %** |
-| s10 150 preguntas | techo de tamaño | 100 % | 100 % | 100 % |
-| real Parcial 1 2026 1S | 55 preguntas, clave por letra | 100 % | 100 % | 100 % |
-| real Computación ³ | marcas en rojo, código en imágenes, tabla | 80 % | 79 % | 82 % |
-| real Historia/Geografía | 7 tipos, clave al final | 100 % | 100 % | 100 % |
-| real parcial n.1 | 40 preguntas, clave con justificación | 100 % | 100 % | 100 % |
-| real test tipos nuevos (.txt) | formato canónico | 100 % | 100 % | 100 % |
+| Documento | Qué prueba | Base | Texto+enr. | JSON+enr. | **Final** |
+|---|---|---|---|---|---|
+| s01 clave al final | 7 tipos, clave con respuestas "incorrectas" a propósito | 90 % | 100 % | 100 % | 100 % |
+| s02 color sin imágenes | respuestas marcadas solo en rojo, títulos en azul | 25 % | 100 % | 100 % | 100 % |
+| s03 enunciado con lista A./B. | enunciados que traen su propia lista rotulada | 25 % | 25 % | **100 %** | 100 % |
+| s04 tabla de marcas | una X por fila (y una fila "contraintuitiva") | 0 %² | 100 % | 100 % | 100 % |
+| s05 60 preguntas | documento largo | 100 % | 100 % | 100 % | 100 % |
+| s06 escaneado | sin capa de texto (camino "Normalizar con IA") | 100 % | 100 % | 90 % | 100 % |
+| s07 no es examen | debe rechazarse | 100 % | 100 % | 100 % | 100 % |
+| s08 asterisco y sin marca | 2 preguntas sin respuesta: no inventar | 100 % | 100 % | 100 % | 100 % |
+| s09 completar + banco | banco de palabras sin clave: no inventar | 80 % | 80 % | **100 %** | 100 % |
+| s10 150 preguntas | techo de tamaño | 100 % | 100 % | 100 % | 100 % |
+| real Parcial 1 2026 1S | 55 preguntas, clave por letra | 100 % | 100 % | 100 % | 100 % |
+| real Computación ³ | marcas en rojo, código en imágenes, tabla | 80 % | 79 % | 82 % | 82 % |
+| real Historia/Geografía | 7 tipos, clave al final | 100 % | 100 % | 100 % | 100 % |
+| real parcial n.1 | 40 preguntas, clave con justificación | 100 % | 100 % | 100 % | 100 % |
+| real test tipos nuevos (.txt) | formato canónico | 100 % | 100 % | 100 % | 100 % |
+| s11 resaltado | respuesta solo resaltada, clave contrafáctica | — | — | — | 100 % |
+| s12 negrita | respuesta solo en negrita, clave contrafáctica | — | — | — | 100 % |
+| s13 subrayado | respuesta solo subrayada, clave contrafáctica | — | — | — | 100 % |
 
 ² Rechazado antes de llegar a la IA por la pre-validación (exigía la
 palabra "respuesta"); corregido en la fase 1.
@@ -70,8 +78,8 @@ opciones.
 3. **El formato JSON corrige dos errores silenciosos** que el modo texto
    mantiene incluso con todo lo demás: enunciados cortados por su propia
    lista A./B. (s03) y respuestas inventadas desde un banco de palabras
-   (s09). Cuesta ~3.5× más tiempo. Queda disponible
-   (`NORMALIZER_MODE=json`) y desactivado.
+   (s09). Cuesta ~3.5× más tiempo. Tras la
+   evaluación se adoptó como modo por defecto (ver abajo).
 4. **No hizo falta procesar por páginas** (fase 4): 150 preguntas usan 25k
    de 65k tokens de salida sin omitir ninguna, y partir el documento
    separaría las preguntas de una clave que está al final. El reintento de
@@ -98,16 +106,24 @@ tarda hasta ~95 s en JSON, frente a horas de carga manual. Quedó así:
 - **Progreso en vivo** por streaming: la pantalla muestra "12 de ~40
   preguntas procesadas" y el tiempo restante real.
 
-**Pendiente:** la evaluación completa de esta configuración se cortó
-porque se agotó la cuota diaria del plan gratuito (ver abajo). Cuando se
-restablezca, correr:
+### Corrida final (19/09)
 
-```bash
-backend/venv/bin/python dev/eval.py --tag final
-backend/venv/bin/python dev/eval.py --mode text --only s03 s11 s12 s13 --tag final_texto
-```
+- **Carga normal (JSON):** 100 % en sintéticos y 96 % en reales. Lo único
+  que falta es Computación (82 %): enunciados que son código dentro de
+  una imagen, igual que en todas las configuraciones.
+- **Modo texto** en s03, s11, s12 y s13: 100 % en los cuatro. s03 pasó de
+  25 % a 100 % con el arreglo del lector.
+- **Google saturado:** en la corrida original, s05 y el parcial de 55
+  preguntas fallaron por 503 "high demand" de Google y por respuestas
+  cortadas a mitad del stream. Con los reintentos agregados después
+  (esperas de 5, 10, 20 y 30 s, detección del stream cortado y aviso en
+  pantalla) se repitieron: 6 de 6 corridas correctas y 100 % en ambos.
+  La tabla usa esa repetición
+  (`20260919_1435_json_enrich_final_combinado.json`).
 
-y agregar la columna al resumen de arriba.
+Archivos: `20260919_1433_json_enrich_final.json` (corrida original),
+`20260919_1435_json_enrich_final_largos.json` (repetición de los largos) y
+`20260919_1435_text_enrich_final_texto.json` (modo texto).
 
 ## Plan gratuito de Gemini
 

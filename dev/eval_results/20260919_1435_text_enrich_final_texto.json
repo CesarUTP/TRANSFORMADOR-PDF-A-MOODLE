@@ -1,0 +1,1265 @@
+{
+ "mode": "text",
+ "enrich": true,
+ "runs": 3,
+ "date": "2026-09-19T14:35:59",
+ "docs": {
+  "s03_enunciados_con_lista_AB": {
+   "summary": {
+    "doc": "s03_enunciados_con_lista_AB",
+    "runs": 3,
+    "esperadas": 4,
+    "exactitud": 1.0,
+    "exactitud_min": 1.0,
+    "exactitud_max": 1.0,
+    "completas": 4,
+    "completas_min": 4,
+    "completas_max": 4,
+    "encontradas": 4,
+    "encontradas_min": 4,
+    "encontradas_max": 4,
+    "utilizables": 4,
+    "utilizables_min": 4,
+    "utilizables_max": 4,
+    "tipo_ok": 4,
+    "tipo_ok_min": 4,
+    "tipo_ok_max": 4,
+    "enunciado_ok": 4,
+    "enunciado_ok_min": 4,
+    "enunciado_ok_max": 4,
+    "respuesta_ok": 4,
+    "respuesta_ok_min": 4,
+    "respuesta_ok_max": 4,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 0,
+    "omitidas_min": 0,
+    "omitidas_max": 0,
+    "seconds": 21.767,
+    "seconds_min": 10.9,
+    "seconds_max": 42.1,
+    "prompt_tokens": 4465,
+    "prompt_tokens_min": 4465,
+    "prompt_tokens_max": 4465,
+    "output_tokens": 295,
+    "output_tokens_min": 295,
+    "output_tokens_max": 295,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 12.3,
+     "prompt_tokens": 4465,
+     "output_tokens": 295,
+     "gemini_calls": 1,
+     "esperadas": 4,
+     "problemas": [],
+     "encontradas": 4,
+     "utilizables": 4,
+     "tipo_ok": 4,
+     "enunciado_ok": 4,
+     "respuesta_ok": 4,
+     "inventadas": 0,
+     "completas": 4,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Considera las siguientes afirmaciones:\nA. El agua hierve a 100 °C a nivel del mar.\nB. El hielo se derrite a 0 °C.\n¿Cuál de las opciones es correcta respecto a ellas?",
+       "options": [
+        "Solo la primera",
+        "Solo la segunda",
+        "Ambas",
+        "Ninguna"
+       ],
+       "answers": [
+        "Ambas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Lee las siguientes proposiciones:\nA. Lima es la capital del Perú.\nB. Cusco es la capital del Perú.\n¿Qué se puede afirmar?",
+       "options": [
+        "A es verdadera y B es falsa",
+        "A es falsa y B es verdadera",
+        "Ambas son verdaderas",
+        "Ambas son falsas"
+       ],
+       "answers": [
+        "A es verdadera y B es falsa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Dados los siguientes pasos de un algoritmo:\nA. Leer el número.\nB. Multiplicarlo por dos.\n¿Qué resultado da el algoritmo si se lee el 7?",
+       "options": [
+        "7",
+        "9",
+        "14",
+        "49"
+       ],
+       "answers": [
+        "14"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un triángulo equilátero tiene sus tres lados iguales.",
+       "answers": [
+        "Verdadero"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 42.1,
+     "prompt_tokens": 4465,
+     "output_tokens": 295,
+     "gemini_calls": 1,
+     "esperadas": 4,
+     "problemas": [],
+     "encontradas": 4,
+     "utilizables": 4,
+     "tipo_ok": 4,
+     "enunciado_ok": 4,
+     "respuesta_ok": 4,
+     "inventadas": 0,
+     "completas": 4,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Considera las siguientes afirmaciones:\nA. El agua hierve a 100 °C a nivel del mar.\nB. El hielo se derrite a 0 °C.\n¿Cuál de las opciones es correcta respecto a ellas?",
+       "options": [
+        "Solo la primera",
+        "Solo la segunda",
+        "Ambas",
+        "Ninguna"
+       ],
+       "answers": [
+        "Ambas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Lee las siguientes proposiciones:\nA. Lima es la capital del Perú.\nB. Cusco es la capital del Perú.\n¿Qué se puede afirmar?",
+       "options": [
+        "A es verdadera y B es falsa",
+        "A es falsa y B es verdadera",
+        "Ambas son verdaderas",
+        "Ambas son falsas"
+       ],
+       "answers": [
+        "A es verdadera y B es falsa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Dados los siguientes pasos de un algoritmo:\nA. Leer el número.\nB. Multiplicarlo por dos.\n¿Qué resultado da el algoritmo si se lee el 7?",
+       "options": [
+        "7",
+        "9",
+        "14",
+        "49"
+       ],
+       "answers": [
+        "14"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un triángulo equilátero tiene sus tres lados iguales.",
+       "answers": [
+        "Verdadero"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 10.9,
+     "prompt_tokens": 4465,
+     "output_tokens": 295,
+     "gemini_calls": 1,
+     "esperadas": 4,
+     "problemas": [],
+     "encontradas": 4,
+     "utilizables": 4,
+     "tipo_ok": 4,
+     "enunciado_ok": 4,
+     "respuesta_ok": 4,
+     "inventadas": 0,
+     "completas": 4,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Considera las siguientes afirmaciones:\nA. El agua hierve a 100 °C a nivel del mar.\nB. El hielo se derrite a 0 °C.\n¿Cuál de las opciones es correcta respecto a ellas?",
+       "options": [
+        "Solo la primera",
+        "Solo la segunda",
+        "Ambas",
+        "Ninguna"
+       ],
+       "answers": [
+        "Ambas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Lee las siguientes proposiciones:\nA. Lima es la capital del Perú.\nB. Cusco es la capital del Perú.\n¿Qué se puede afirmar?",
+       "options": [
+        "A es verdadera y B es falsa",
+        "A es falsa y B es verdadera",
+        "Ambas son verdaderas",
+        "Ambas son falsas"
+       ],
+       "answers": [
+        "A es verdadera y B es falsa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Dados los siguientes pasos de un algoritmo:\nA. Leer el número.\nB. Multiplicarlo por dos.\n¿Qué resultado da el algoritmo si se lee el 7?",
+       "options": [
+        "7",
+        "9",
+        "14",
+        "49"
+       ],
+       "answers": [
+        "14"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un triángulo equilátero tiene sus tres lados iguales.",
+       "answers": [
+        "Verdadero"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "s11_resaltado": {
+   "summary": {
+    "doc": "s11_resaltado",
+    "runs": 3,
+    "esperadas": 5,
+    "exactitud": 1.0,
+    "exactitud_min": 1.0,
+    "exactitud_max": 1.0,
+    "completas": 5,
+    "completas_min": 5,
+    "completas_max": 5,
+    "encontradas": 5,
+    "encontradas_min": 5,
+    "encontradas_max": 5,
+    "utilizables": 5,
+    "utilizables_min": 5,
+    "utilizables_max": 5,
+    "tipo_ok": 5,
+    "tipo_ok_min": 5,
+    "tipo_ok_max": 5,
+    "enunciado_ok": 5,
+    "enunciado_ok_min": 5,
+    "enunciado_ok_max": 5,
+    "respuesta_ok": 5,
+    "respuesta_ok_min": 5,
+    "respuesta_ok_max": 5,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 0,
+    "omitidas_min": 0,
+    "omitidas_max": 0,
+    "seconds": 2.9,
+    "seconds_min": 1.8,
+    "seconds_max": 4.5,
+    "prompt_tokens": 4419,
+    "prompt_tokens_min": 4419,
+    "prompt_tokens_max": 4419,
+    "output_tokens": 238,
+    "output_tokens_min": 238,
+    "output_tokens_max": 238,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 4.5,
+     "prompt_tokens": 4419,
+     "output_tokens": 238,
+     "gemini_calls": 1,
+     "esperadas": 5,
+     "problemas": [],
+     "encontradas": 5,
+     "utilizables": 5,
+     "tipo_ok": 5,
+     "enunciado_ok": 5,
+     "respuesta_ok": 5,
+     "inventadas": 0,
+     "completas": 5,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Australia?",
+       "options": [
+        "Sídney",
+        "Canberra",
+        "Melbourne",
+        "Perth"
+       ],
+       "answers": [
+        "Sídney"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos lados tiene un hexágono?",
+       "options": [
+        "Cinco",
+        "Seis",
+        "Siete",
+        "Ocho"
+       ],
+       "answers": [
+        "Seis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son números primos?",
+       "options": [
+        "4",
+        "7",
+        "9",
+        "11"
+       ],
+       "answers": [
+        "4",
+        "9"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué planeta es conocido como el planeta rojo?",
+       "options": [
+        "Venus",
+        "Marte",
+        "Júpiter",
+        "Mercurio"
+       ],
+       "answers": [
+        "Júpiter"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el río más largo de América del Sur?",
+       "options": [
+        "Amazonas",
+        "Paraná",
+        "Orinoco",
+        "Magdalena"
+       ],
+       "answers": [
+        "Amazonas"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 1.8,
+     "prompt_tokens": 4419,
+     "output_tokens": 238,
+     "gemini_calls": 1,
+     "esperadas": 5,
+     "problemas": [],
+     "encontradas": 5,
+     "utilizables": 5,
+     "tipo_ok": 5,
+     "enunciado_ok": 5,
+     "respuesta_ok": 5,
+     "inventadas": 0,
+     "completas": 5,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Australia?",
+       "options": [
+        "Sídney",
+        "Canberra",
+        "Melbourne",
+        "Perth"
+       ],
+       "answers": [
+        "Sídney"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos lados tiene un hexágono?",
+       "options": [
+        "Cinco",
+        "Seis",
+        "Siete",
+        "Ocho"
+       ],
+       "answers": [
+        "Seis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son números primos?",
+       "options": [
+        "4",
+        "7",
+        "9",
+        "11"
+       ],
+       "answers": [
+        "4",
+        "9"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué planeta es conocido como el planeta rojo?",
+       "options": [
+        "Venus",
+        "Marte",
+        "Júpiter",
+        "Mercurio"
+       ],
+       "answers": [
+        "Júpiter"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el río más largo de América del Sur?",
+       "options": [
+        "Amazonas",
+        "Paraná",
+        "Orinoco",
+        "Magdalena"
+       ],
+       "answers": [
+        "Amazonas"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 2.4,
+     "prompt_tokens": 4419,
+     "output_tokens": 238,
+     "gemini_calls": 1,
+     "esperadas": 5,
+     "problemas": [],
+     "encontradas": 5,
+     "utilizables": 5,
+     "tipo_ok": 5,
+     "enunciado_ok": 5,
+     "respuesta_ok": 5,
+     "inventadas": 0,
+     "completas": 5,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Australia?",
+       "options": [
+        "Sídney",
+        "Canberra",
+        "Melbourne",
+        "Perth"
+       ],
+       "answers": [
+        "Sídney"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos lados tiene un hexágono?",
+       "options": [
+        "Cinco",
+        "Seis",
+        "Siete",
+        "Ocho"
+       ],
+       "answers": [
+        "Seis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son números primos?",
+       "options": [
+        "4",
+        "7",
+        "9",
+        "11"
+       ],
+       "answers": [
+        "4",
+        "9"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué planeta es conocido como el planeta rojo?",
+       "options": [
+        "Venus",
+        "Marte",
+        "Júpiter",
+        "Mercurio"
+       ],
+       "answers": [
+        "Júpiter"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el río más largo de América del Sur?",
+       "options": [
+        "Amazonas",
+        "Paraná",
+        "Orinoco",
+        "Magdalena"
+       ],
+       "answers": [
+        "Amazonas"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "s12_negrita": {
+   "summary": {
+    "doc": "s12_negrita",
+    "runs": 3,
+    "esperadas": 5,
+    "exactitud": 1.0,
+    "exactitud_min": 1.0,
+    "exactitud_max": 1.0,
+    "completas": 5,
+    "completas_min": 5,
+    "completas_max": 5,
+    "encontradas": 5,
+    "encontradas_min": 5,
+    "encontradas_max": 5,
+    "utilizables": 5,
+    "utilizables_min": 5,
+    "utilizables_max": 5,
+    "tipo_ok": 5,
+    "tipo_ok_min": 5,
+    "tipo_ok_max": 5,
+    "enunciado_ok": 5,
+    "enunciado_ok_min": 5,
+    "enunciado_ok_max": 5,
+    "respuesta_ok": 5,
+    "respuesta_ok_min": 5,
+    "respuesta_ok_max": 5,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 0,
+    "omitidas_min": 0,
+    "omitidas_max": 0,
+    "seconds": 2.5,
+    "seconds_min": 1.9,
+    "seconds_max": 2.9,
+    "prompt_tokens": 4444,
+    "prompt_tokens_min": 4444,
+    "prompt_tokens_max": 4444,
+    "output_tokens": 240,
+    "output_tokens_min": 240,
+    "output_tokens_max": 240,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 1.9,
+     "prompt_tokens": 4444,
+     "output_tokens": 240,
+     "gemini_calls": 1,
+     "esperadas": 5,
+     "problemas": [],
+     "encontradas": 5,
+     "utilizables": 5,
+     "tipo_ok": 5,
+     "enunciado_ok": 5,
+     "respuesta_ok": 5,
+     "inventadas": 0,
+     "completas": 5,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué órgano produce la insulina?",
+       "options": [
+        "Hígado",
+        "Páncreas",
+        "Riñón",
+        "Estómago"
+       ],
+       "answers": [
+        "Hígado"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el símbolo químico del oro?",
+       "options": [
+        "Ag",
+        "Au",
+        "Fe",
+        "Or"
+       ],
+       "answers": [
+        "Au"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son colores primarios en el modelo RGB?",
+       "options": [
+        "Rojo",
+        "Amarillo",
+        "Verde",
+        "Violeta"
+       ],
+       "answers": [
+        "Amarillo",
+        "Violeta"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué continente está Egipto?",
+       "options": [
+        "Asia",
+        "África",
+        "Europa",
+        "Oceanía"
+       ],
+       "answers": [
+        "Asia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos huesos tiene aproximadamente el cuerpo humano adulto?",
+       "options": [
+        "106",
+        "206",
+        "306",
+        "406"
+       ],
+       "answers": [
+        "206"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 2.7,
+     "prompt_tokens": 4444,
+     "output_tokens": 240,
+     "gemini_calls": 1,
+     "esperadas": 5,
+     "problemas": [],
+     "encontradas": 5,
+     "utilizables": 5,
+     "tipo_ok": 5,
+     "enunciado_ok": 5,
+     "respuesta_ok": 5,
+     "inventadas": 0,
+     "completas": 5,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué órgano produce la insulina?",
+       "options": [
+        "Hígado",
+        "Páncreas",
+        "Riñón",
+        "Estómago"
+       ],
+       "answers": [
+        "Hígado"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el símbolo químico del oro?",
+       "options": [
+        "Ag",
+        "Au",
+        "Fe",
+        "Or"
+       ],
+       "answers": [
+        "Au"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son colores primarios en el modelo RGB?",
+       "options": [
+        "Rojo",
+        "Amarillo",
+        "Verde",
+        "Violeta"
+       ],
+       "answers": [
+        "Amarillo",
+        "Violeta"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué continente está Egipto?",
+       "options": [
+        "Asia",
+        "África",
+        "Europa",
+        "Oceanía"
+       ],
+       "answers": [
+        "Asia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos huesos tiene aproximadamente el cuerpo humano adulto?",
+       "options": [
+        "106",
+        "206",
+        "306",
+        "406"
+       ],
+       "answers": [
+        "206"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 2.9,
+     "prompt_tokens": 4444,
+     "output_tokens": 240,
+     "gemini_calls": 1,
+     "esperadas": 5,
+     "problemas": [],
+     "encontradas": 5,
+     "utilizables": 5,
+     "tipo_ok": 5,
+     "enunciado_ok": 5,
+     "respuesta_ok": 5,
+     "inventadas": 0,
+     "completas": 5,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué órgano produce la insulina?",
+       "options": [
+        "Hígado",
+        "Páncreas",
+        "Riñón",
+        "Estómago"
+       ],
+       "answers": [
+        "Hígado"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el símbolo químico del oro?",
+       "options": [
+        "Ag",
+        "Au",
+        "Fe",
+        "Or"
+       ],
+       "answers": [
+        "Au"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son colores primarios en el modelo RGB?",
+       "options": [
+        "Rojo",
+        "Amarillo",
+        "Verde",
+        "Violeta"
+       ],
+       "answers": [
+        "Amarillo",
+        "Violeta"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué continente está Egipto?",
+       "options": [
+        "Asia",
+        "África",
+        "Europa",
+        "Oceanía"
+       ],
+       "answers": [
+        "Asia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos huesos tiene aproximadamente el cuerpo humano adulto?",
+       "options": [
+        "106",
+        "206",
+        "306",
+        "406"
+       ],
+       "answers": [
+        "206"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "s13_subrayado": {
+   "summary": {
+    "doc": "s13_subrayado",
+    "runs": 3,
+    "esperadas": 5,
+    "exactitud": 1.0,
+    "exactitud_min": 1.0,
+    "exactitud_max": 1.0,
+    "completas": 5,
+    "completas_min": 5,
+    "completas_max": 5,
+    "encontradas": 5,
+    "encontradas_min": 5,
+    "encontradas_max": 5,
+    "utilizables": 5,
+    "utilizables_min": 5,
+    "utilizables_max": 5,
+    "tipo_ok": 5,
+    "tipo_ok_min": 5,
+    "tipo_ok_max": 5,
+    "enunciado_ok": 5,
+    "enunciado_ok_min": 5,
+    "enunciado_ok_max": 5,
+    "respuesta_ok": 5,
+    "respuesta_ok_min": 5,
+    "respuesta_ok_max": 5,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 0,
+    "omitidas_min": 0,
+    "omitidas_max": 0,
+    "seconds": 2.467,
+    "seconds_min": 2.3,
+    "seconds_max": 2.7,
+    "prompt_tokens": 4441,
+    "prompt_tokens_min": 4441,
+    "prompt_tokens_max": 4441,
+    "output_tokens": 262,
+    "output_tokens_min": 262,
+    "output_tokens_max": 262,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 2.4,
+     "prompt_tokens": 4441,
+     "output_tokens": 262,
+     "gemini_calls": 1,
+     "esperadas": 5,
+     "problemas": [],
+     "encontradas": 5,
+     "utilizables": 5,
+     "tipo_ok": 5,
+     "enunciado_ok": 5,
+     "respuesta_ok": 5,
+     "inventadas": 0,
+     "completas": 5,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Quién escribió Don Quijote de la Mancha?",
+       "options": [
+        "Lope de Vega",
+        "Miguel de Cervantes",
+        "Garcilaso",
+        "Góngora"
+       ],
+       "answers": [
+        "Lope de Vega"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el estado del agua a -10 °C?",
+       "options": [
+        "Líquido",
+        "Sólido",
+        "Gaseoso",
+        "Plasma"
+       ],
+       "answers": [
+        "Sólido"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos animales son reptiles?",
+       "options": [
+        "Iguana",
+        "Rana",
+        "Tortuga",
+        "Salamandra"
+       ],
+       "answers": [
+        "Rana",
+        "Salamandra"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la unidad de la fuerza en el SI?",
+       "options": [
+        "Joule",
+        "Newton",
+        "Watt",
+        "Pascal"
+       ],
+       "answers": [
+        "Watt"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos minutos hay en dos horas?",
+       "options": [
+        "60",
+        "90",
+        "120",
+        "150"
+       ],
+       "answers": [
+        "120"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 2.7,
+     "prompt_tokens": 4441,
+     "output_tokens": 262,
+     "gemini_calls": 1,
+     "esperadas": 5,
+     "problemas": [],
+     "encontradas": 5,
+     "utilizables": 5,
+     "tipo_ok": 5,
+     "enunciado_ok": 5,
+     "respuesta_ok": 5,
+     "inventadas": 0,
+     "completas": 5,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Quién escribió Don Quijote de la Mancha?",
+       "options": [
+        "Lope de Vega",
+        "Miguel de Cervantes",
+        "Garcilaso",
+        "Góngora"
+       ],
+       "answers": [
+        "Lope de Vega"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el estado del agua a -10 °C?",
+       "options": [
+        "Líquido",
+        "Sólido",
+        "Gaseoso",
+        "Plasma"
+       ],
+       "answers": [
+        "Sólido"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos animales son reptiles?",
+       "options": [
+        "Iguana",
+        "Rana",
+        "Tortuga",
+        "Salamandra"
+       ],
+       "answers": [
+        "Rana",
+        "Salamandra"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la unidad de la fuerza en el SI?",
+       "options": [
+        "Joule",
+        "Newton",
+        "Watt",
+        "Pascal"
+       ],
+       "answers": [
+        "Watt"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos minutos hay en dos horas?",
+       "options": [
+        "60",
+        "90",
+        "120",
+        "150"
+       ],
+       "answers": [
+        "120"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 2.3,
+     "prompt_tokens": 4441,
+     "output_tokens": 262,
+     "gemini_calls": 1,
+     "esperadas": 5,
+     "problemas": [],
+     "encontradas": 5,
+     "utilizables": 5,
+     "tipo_ok": 5,
+     "enunciado_ok": 5,
+     "respuesta_ok": 5,
+     "inventadas": 0,
+     "completas": 5,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Quién escribió Don Quijote de la Mancha?",
+       "options": [
+        "Lope de Vega",
+        "Miguel de Cervantes",
+        "Garcilaso",
+        "Góngora"
+       ],
+       "answers": [
+        "Lope de Vega"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el estado del agua a -10 °C?",
+       "options": [
+        "Líquido",
+        "Sólido",
+        "Gaseoso",
+        "Plasma"
+       ],
+       "answers": [
+        "Sólido"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos animales son reptiles?",
+       "options": [
+        "Iguana",
+        "Rana",
+        "Tortuga",
+        "Salamandra"
+       ],
+       "answers": [
+        "Rana",
+        "Salamandra"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la unidad de la fuerza en el SI?",
+       "options": [
+        "Joule",
+        "Newton",
+        "Watt",
+        "Pascal"
+       ],
+       "answers": [
+        "Watt"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos minutos hay en dos horas?",
+       "options": [
+        "60",
+        "90",
+        "120",
+        "150"
+       ],
+       "answers": [
+        "120"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ }
+}
