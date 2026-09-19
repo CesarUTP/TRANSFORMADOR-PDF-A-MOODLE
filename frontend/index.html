@@ -646,6 +646,13 @@
       content: ""; position: absolute; top: 3px; right: 3px;
       width: 5px; height: 5px; border-radius: 50%; background: var(--color-warning);
     }
+    /* Incompleta (falta enunciado, opciones o respuesta): rojo, y manda
+       sobre el naranja de "para revisar". */
+    .rail-item.incomplete { border-color: var(--color-error); color: var(--color-error); background: var(--color-error-bg); }
+    .rail-item.incomplete::after {
+      content: ""; position: absolute; top: 3px; right: 3px;
+      width: 5px; height: 5px; border-radius: 50%; background: var(--color-error);
+    }
     .rail-item.current { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
     .rail-item.current::after { background: #fff; }
     .rail-review-next {
@@ -655,6 +662,8 @@
       cursor: pointer;
     }
     .rail-review-next.visible { display: flex; }
+    .rail-review-next.is-error { color: var(--color-error); }
+    .rail-links { display: flex; flex-direction: column; gap: 6px; }
     .rail-review-next:hover { text-decoration: underline; }
     .rail-actions { display: flex; flex-direction: column; gap: 8px; }
     .rail-actions .btn { width: 100%; justify-content: center; padding: 11px 12px; font-size: 13.5px; }
@@ -714,6 +723,11 @@
     }
     .editor-card:hover {
       border-color: var(--color-border-glow);
+    }
+    .editor-card.is-incomplete { border-color: var(--color-error); }
+    .card-issues {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      margin: -4px 0 12px; font-size: 12.5px; font-weight: 600; color: var(--color-error);
     }
     .editor-card textarea, .editor-card input {
       background: var(--color-bg);
@@ -1334,13 +1348,17 @@
       <button type="button" class="rail-pos" onclick="toggleRailGrid()" aria-controls="review-rail-grid">
         <span class="rail-pos-long" id="review-progress-label">Pregunta 1 de 1</span>
         <span class="rail-pos-short" id="review-progress-short">1/1</span>
+        <span id="rail-error-short" class="rail-warn-short" style="color:var(--color-error);"></span>
         <span id="rail-warn-short" class="rail-warn-short" style="color:var(--color-warning);"></span>
       </button>
       <div class="rail-bar"><div id="review-progress-fill"></div></div>
     </div>
     <div class="rail-grid-wrap">
       <div class="rail-grid" id="review-rail-grid" role="list"></div>
-      <button type="button" class="rail-review-next" id="rail-review-next" onclick="jumpToNextReview()"></button>
+      <div class="rail-links">
+        <button type="button" class="rail-review-next is-error" id="rail-incomplete-next" onclick="jumpToNextFlagged('incomplete')"></button>
+        <button type="button" class="rail-review-next" id="rail-review-next" onclick="jumpToNextFlagged('review')"></button>
+      </div>
     </div>
     <div class="rail-actions">
       <button type="button" id="btn-generate-xml" class="btn btn-success" onclick="generateXml()">
@@ -2998,16 +3016,103 @@ Ahora convierte el examen adjunto a este formato.</pre>
       window.scrollTo({ top, behavior: 'smooth' });
     }
 
+    // ── Preguntas incompletas (revisión en vivo) ───────────────────────────
+    // Mismas reglas que el validador del backend (validator.py): lo que
+    // aquí se marca como incompleto es lo que haría fallar "Aprobar". Se
+    // revisa mientras el docente edita, no recién al generar el XML.
+    function questionIssues(q, key) {
+      const issues = [];
+      const d = q.data || {};
+      const ans = ((key && key.answer) || '').trim();
+      if (q.type !== 'cloze' && !(d.stem || '').trim()) issues.push('Falta el enunciado');
+      if (q.type === 'multichoice') {
+        const opts = Object.values(d.options || {});
+        const filled = opts.filter(o => (o || '').trim());
+        if (filled.length < 2) issues.push('Faltan opciones (mínimo 2)');
+        else if (filled.length < opts.length) issues.push('Hay una opción vacía');
+        if (!ans) issues.push('Falta marcar la respuesta correcta');
+      } else if (q.type === 'truefalse') {
+        if (!/^(verdadero|falso)$/i.test(ans)) issues.push('Falta elegir Verdadero o Falso');
+      } else if (q.type === 'matching') {
+        const a = d.col_a || {}, b = d.col_b || {};
+        const keys = Object.keys(a);
+        const complete = keys.filter(k => (a[k] || '').trim() && (b[String.fromCharCode(96 + Number(k))] || '').trim());
+        if (complete.length < keys.length) issues.push('Hay una pareja incompleta');
+        if (complete.length < 2) issues.push('Faltan parejas (mínimo 2)');
+      } else if (q.type === 'cloze') {
+        const text = d.text || '';
+        const blanks = text.match(/\[[A-Z]:[^\]]*\]/g) || [];
+        if (!blanks.length) issues.push('Faltan los espacios para completar');
+        else if (blanks.some(bl => !bl.slice(3, -1).trim())) issues.push('Un espacio no tiene opciones');
+        if (!text.replace(/\[[A-Z]:[^\]]*\]/g, '').trim()) issues.push('Falta el texto de la pregunta');
+      } else if (q.type === 'shortanswer') {
+        if (!ans) issues.push('Falta la respuesta');
+      } else if (q.type === 'numerical') {
+        if (!ans) issues.push('Falta la respuesta');
+        else if (isNaN(Number(ans.replace(',', '.')))) issues.push('La respuesta debe ser un número');
+      }
+      return issues;
+    }
+
+    // Marca cada tarjeta (borde rojo + qué le falta) y devuelve cuántas
+    // quedan incompletas. collectEditorData recorre las tarjetas en el mismo
+    // orden del DOM, así que el índice de cada pregunta es el de su tarjeta.
+    function refreshQuestionIssues() {
+      const cards = Array.from(document.querySelectorAll('#editor-questions-container .editor-card'));
+      if (!cards.length) return 0;
+      const { questions, answer_key } = collectEditorData();
+      let incomplete = 0;
+      cards.forEach((card, i) => {
+        const q = questions[i];
+        const issues = q ? questionIssues(q, answer_key[q.num]) : [];
+        card.classList.toggle('is-incomplete', issues.length > 0);
+        card.dataset.issues = issues.join(' · ');
+        let box = card.querySelector(':scope > .card-issues');
+        if (issues.length) {
+          incomplete++;
+          if (!box) {
+            box = document.createElement('div');
+            box.className = 'card-issues';
+            box.setAttribute('role', 'status');
+            card.firstElementChild.insertAdjacentElement('afterend', box);
+          }
+          box.textContent = '✕ ' + issues.join(' · ');
+        } else if (box) {
+          box.remove();
+        }
+      });
+      return incomplete;
+    }
+
+    // Se revisa al escribir, marcar casillas o añadir/quitar opciones
+    // (con un pequeño retraso para no recalcular en cada tecla).
+    let _issuesTimer = null;
+    function scheduleIssuesRefresh() {
+      clearTimeout(_issuesTimer);
+      _issuesTimer = setTimeout(() => {
+        if (document.body.classList.contains('editor-active')) buildReviewRail();
+      }, 250);
+    }
+    ['input', 'change', 'click'].forEach(evt => {
+      document.addEventListener(evt, e => {
+        if (e.target.closest && e.target.closest('#editor-questions-container')) scheduleIssuesRefresh();
+      }, true);
+    });
+
     function buildReviewRail() {
       const rail = document.getElementById('review-rail');
       const grid = document.getElementById('review-rail-grid');
       if (!rail || !grid) return;
       rail.style.setProperty('--header-h', `${document.querySelector('.app-header')?.offsetHeight || 0}px`);
+      refreshQuestionIssues();
       const cards = _visibleEditorCards();
       grid.innerHTML = cards.map((c, i) => {
-        const review = c.dataset.review === '1';
-        return `<button type="button" role="listitem" class="rail-item${review ? ' needs-review' : ''}" data-pos="${i}"
-          title="Pregunta ${c.dataset.qnum}${review ? ' — tiene un aviso para revisar' : ''}">${c.dataset.qnum}</button>`;
+        const missing = c.dataset.issues || '';
+        const review = !missing && c.dataset.review === '1';
+        const cls = missing ? ' incomplete' : review ? ' needs-review' : '';
+        const tip = missing ? ` — ${missing}` : review ? ' — tiene un aviso para revisar' : '';
+        return `<button type="button" role="listitem" class="rail-item${cls}" data-pos="${i}"
+          title="Pregunta ${c.dataset.qnum}${esc_html(tip)}">${c.dataset.qnum}</button>`;
       }).join('');
       grid.querySelectorAll('.rail-item').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -3016,11 +3121,19 @@ Ahora convierte el examen adjunto a este formato.</pre>
           rail.classList.remove('grid-open');
         });
       });
-      const pending = cards.filter(c => c.dataset.review === '1').length;
+      const missing = cards.filter(c => c.dataset.issues).length;
+      const pending = cards.filter(c => !c.dataset.issues && c.dataset.review === '1').length;
+      const nextMissing = document.getElementById('rail-incomplete-next');
+      nextMissing.classList.toggle('visible', missing > 0);
+      nextMissing.textContent = missing === 1 ? '✕ 1 pregunta incompleta' : `✕ ${missing} preguntas incompletas`;
+      nextMissing.title = 'Ir a la siguiente pregunta incompleta';
       const next = document.getElementById('rail-review-next');
       next.classList.toggle('visible', pending > 0);
       next.textContent = pending === 1 ? '⚠ 1 pregunta para revisar' : `⚠ ${pending} preguntas para revisar`;
       next.title = 'Ir a la siguiente pregunta con aviso';
+      const errShort = document.getElementById('rail-error-short');
+      errShort.classList.toggle('visible', missing > 0);
+      errShort.textContent = `✕${missing}`;
       const warnShort = document.getElementById('rail-warn-short');
       warnShort.classList.toggle('visible', pending > 0);
       warnShort.textContent = `⚠${pending}`;
@@ -3028,11 +3141,14 @@ Ahora convierte el examen adjunto a este formato.</pre>
       updateReviewProgress();
     }
 
-    // Salta a la siguiente pregunta con aviso DESPUÉS de la actual (y vuelve
-    // a la primera al llegar al final).
-    function jumpToNextReview() {
+    // Salta a la siguiente pregunta incompleta ('incomplete') o con aviso
+    // ('review') DESPUÉS de la actual, y vuelve a la primera al llegar al final.
+    function jumpToNextFlagged(kind) {
       const cards = _visibleEditorCards();
-      const flagged = cards.map((c, i) => [c, i]).filter(([c]) => c.dataset.review === '1');
+      const match = kind === 'incomplete'
+        ? c => !!c.dataset.issues
+        : c => !c.dataset.issues && c.dataset.review === '1';
+      const flagged = cards.map((c, i) => [c, i]).filter(([c]) => match(c));
       if (!flagged.length) return;
       const target = flagged.find(([, i]) => i > _railCurrent) || flagged[0];
       scrollToEditorCard(target[0]);
@@ -3821,6 +3937,21 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // por completo en cada renderEditor() — un listener adjunto al nodo
     // anterior se perdería con cada re-render.
     async function generateXml() {
+      // Con preguntas incompletas el backend rechazaría el XML: se avisa
+      // aquí y se lleva al docente a la primera, en vez de mostrar un error.
+      const incomplete = refreshQuestionIssues();
+      if (incomplete > 0) {
+        buildReviewRail();
+        const first = document.querySelector('#editor-questions-container .editor-card.is-incomplete');
+        if (first) {
+          if (first.style.display === 'none') selectFilter('all');
+          scrollToEditorCard(first);
+        }
+        showToast(incomplete === 1
+          ? 'Falta completar 1 pregunta antes de aprobar'
+          : `Faltan completar ${incomplete} preguntas antes de aprobar`, 'error');
+        return;
+      }
       const { questions, answer_key } = collectEditorData();
       const payload = {
         filename: currentUploadMetadata.filename,
