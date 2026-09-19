@@ -589,15 +589,125 @@
       box-shadow: 0 0 0 3px var(--color-accent-glow);
     }
 
-    /* Barra fija de "Aprobar y Generar / Cancelar". Sin fondo: cualquier
-       fondo propio (plano o imitando los brillos del <body>) se veía como
-       un recuadro detrás de los botones. */
-    .editor-sticky-actions {
-      position: sticky;
+    /* ── PANEL DE REVISIÓN (mapa del examen + Aprobar/Cancelar) ─────────────
+       Vive FUERA de #panel-editor: la animación de entrada de las
+       secciones usa transform, y un position: fixed dentro de un ancestro
+       con transform deja de ser fijo respecto a la ventana.
+       ≥1320px: columna a la derecha del contenido (860px), sin tapar nada.
+       Más angosto: barra fija abajo; "12/55" despliega la grilla. */
+    .review-rail { display: none; }
+    body.editor-active .review-rail { display: flex; }
+    .review-rail {
+      position: fixed;
       z-index: 90;
-      padding: 14px 0;
-      margin: 0 0 18px;
-      background: transparent;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,0.12));
+    }
+    .rail-head { display: flex; flex-direction: column; gap: 8px; }
+    .rail-pos {
+      all: unset;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      font-size: 13px; font-weight: 700; color: var(--color-text);
+      font-family: var(--font-heading);
+    }
+    .rail-pos .rail-pos-short, .rail-pos .rail-warn-short { display: none; }
+    .rail-bar { height: 4px; background: var(--color-border-subtle); border-radius: var(--radius-full); overflow: hidden; }
+    #review-progress-fill { height: 100%; width: 0%; background: var(--color-accent); border-radius: var(--radius-full); transition: width 0.15s ease; }
+    .rail-grid-wrap { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+    .rail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+      gap: 5px;
+      overflow-y: auto;
+      padding: 2px;
+    }
+    .rail-item {
+      all: unset;
+      box-sizing: border-box;
+      height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11.5px; font-weight: 600;
+      color: var(--color-text-muted);
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      position: relative;
+    }
+    .rail-item:hover { border-color: var(--color-accent); color: var(--color-text); }
+    .rail-item:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+    .rail-item.needs-review { border-color: var(--color-warning); color: var(--color-warning); }
+    .rail-item.needs-review::after {
+      content: ""; position: absolute; top: 3px; right: 3px;
+      width: 5px; height: 5px; border-radius: 50%; background: var(--color-warning);
+    }
+    .rail-item.current { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
+    .rail-item.current::after { background: #fff; }
+    .rail-review-next {
+      all: unset;
+      display: none; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; color: var(--color-warning);
+      cursor: pointer;
+    }
+    .rail-review-next.visible { display: flex; }
+    .rail-review-next:hover { text-decoration: underline; }
+    .rail-actions { display: flex; flex-direction: column; gap: 8px; }
+    .rail-actions .btn { width: 100%; justify-content: center; padding: 11px 12px; font-size: 13.5px; }
+
+    @media (min-width: 1320px) {
+      .review-rail {
+        top: calc(var(--header-h, 80px) + 24px);
+        left: calc(50% + 430px + 20px);
+        width: 196px;
+        max-height: calc(100vh - var(--header-h, 80px) - 48px);
+      }
+      .rail-grid { max-height: none; flex: 1; }
+      .rail-grid-wrap { flex: 1; overflow: hidden; }
+    }
+    @media (max-width: 1319.98px) {
+      .review-rail {
+        left: 0; right: 0; bottom: 0;
+        flex-direction: row; align-items: center;
+        border-radius: 0; border-width: 1px 0 0;
+        padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+        background: var(--color-bg-alt);
+      }
+      body.editor-active .main-wrapper { padding-bottom: 110px; }
+      .rail-head { flex: 0 0 auto; }
+      .rail-pos {
+        cursor: pointer; padding: 8px 12px;
+        border: 1px solid var(--color-border); border-radius: var(--radius-md);
+        background: var(--color-surface);
+      }
+      .rail-pos .rail-pos-long { display: none; }
+      .rail-pos .rail-pos-short, .rail-pos .rail-warn-short.visible { display: inline; }
+      .rail-bar { display: none; }
+      .rail-actions { flex: 1; flex-direction: row; }
+      .rail-actions .btn-success { flex: 2; }
+      .rail-actions .btn-danger { flex: 1; }
+      .rail-grid-wrap {
+        display: none;
+        position: absolute; left: 12px; right: 12px; bottom: calc(100% + 8px);
+        max-width: 520px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: 12px;
+        box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,0.18));
+      }
+      .review-rail.grid-open .rail-grid-wrap { display: flex; }
+      .rail-grid { max-height: 45vh; }
+    }
+    @media (max-width: 480px) {
+      .rail-actions .btn-success .rail-btn-long { display: none; }
+    }
+    @media (min-width: 480.02px) {
+      .rail-actions .btn-success .rail-btn-short { display: none; }
     }
 
     /* ── EDITOR CARDS (Interactive Question Editor) ──────────────────────── */
@@ -1224,6 +1334,29 @@
 
   </main>
 
+  <!-- Panel de revisión: mapa del examen + Aprobar/Cancelar (ver .review-rail) -->
+  <aside id="review-rail" class="review-rail" aria-label="Navegación y acciones de la revisión">
+    <div class="rail-head">
+      <button type="button" class="rail-pos" onclick="toggleRailGrid()" aria-controls="review-rail-grid">
+        <span class="rail-pos-long" id="review-progress-label">Pregunta 1 de 1</span>
+        <span class="rail-pos-short" id="review-progress-short">1/1</span>
+        <span id="rail-warn-short" class="rail-warn-short" style="color:var(--color-warning);"></span>
+      </button>
+      <div class="rail-bar"><div id="review-progress-fill"></div></div>
+    </div>
+    <div class="rail-grid-wrap">
+      <div class="rail-grid" id="review-rail-grid" role="list"></div>
+      <button type="button" class="rail-review-next" id="rail-review-next" onclick="jumpToNextReview()"></button>
+    </div>
+    <div class="rail-actions">
+      <button type="button" id="btn-generate-xml" class="btn btn-success" onclick="generateXml()">
+        <i data-lucide="check-circle" style="width:17px;height:17px;"></i>
+        <span class="rail-btn-long">Aprobar y Generar XML</span><span class="rail-btn-short">Aprobar</span>
+      </button>
+      <button type="button" class="btn btn-danger" onclick="resetAll()">Cancelar</button>
+    </div>
+  </aside>
+
   <!-- Toast Notification -->
   <div id="toast" class="toast" role="alert" aria-live="polite"></div>
 
@@ -1788,6 +1921,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
       panelEditor.style.display   = name === 'editor'   ? 'block' : 'none';
       panelSuccess.style.display  = name === 'success'  ? 'block' : 'none';
       panelError.style.display    = name === 'error'    ? 'block' : 'none';
+      document.body.classList.toggle('editor-active', name === 'editor');
+      document.getElementById('review-rail')?.classList.remove('grid-open');
 
       if (name === 'upload') updateStepper(1);
       else if (name === 'editor') updateStepper(2);
@@ -2442,36 +2577,6 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const container = document.getElementById('editor-questions-container');
       container.innerHTML = '';
 
-      // Acciones principales (Aprobar y Generar / Cancelar): quedan pegadas
-      // (position: sticky) justo debajo del header al hacer scroll, para
-      // que sean accesibles sin tener que subir hasta arriba del todo en
-      // exámenes largos (100+ preguntas). El offset se mide en vivo porque
-      // la altura del header varía (el subtítulo puede ocupar 1-3 líneas
-      // según el ancho de pantalla) — un valor fijo se habría desalineado.
-      const headerH = document.querySelector('.app-header')?.offsetHeight || 0;
-      // Indicador de "cuánto falta por revisar": una barra + etiqueta que se
-      // actualiza con el scroll (ver updateReviewProgress), útil en
-      // exámenes largos donde de otro modo no hay forma de saber qué tan
-      // avanzada va la revisión sin adivinar por el largo de la barra de
-      // scroll del navegador. Sin sentido con 1 sola pregunta.
-      const actionsHtml = `<div class="editor-sticky-actions" style="top:${headerH}px;">
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <button type="button" id="btn-generate-xml" class="btn btn-success" style="flex:2;" onclick="generateXml()">
-            <i data-lucide="check-circle" style="width:18px;height:18px;"></i>
-            Aprobar y Generar Moodle XML
-          </button>
-          <button type="button" class="btn btn-danger" style="flex:1;" onclick="resetAll()">
-            Cancelar
-          </button>
-        </div>
-        ${data.questions.length > 1 ? `<div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
-          <div style="flex:1;height:4px;background:var(--color-border-subtle);border-radius:var(--radius-full);overflow:hidden;">
-            <div id="review-progress-fill" style="height:100%;width:0%;background:var(--color-accent);border-radius:var(--radius-full);"></div>
-          </div>
-          <span id="review-progress-label" style="font-size:11.5px;color:var(--color-text-subtle);white-space:nowrap;">Pregunta 1 de ${data.questions.length}</span>
-        </div>` : ''}
-      </div>`;
-
       // Aviso formal de revisión — antes se repetía idéntico en cada
       // tarjeta (ruido puro para alguien usando lector de pantalla al
       // pasar por 30-40 preguntas); ahora aparece una sola vez, arriba de
@@ -2623,14 +2728,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </div>
       </div>`;
 
-      container.innerHTML = actionsHtml + reviewReminderHtml + skippedHtml + colorNoticeHtml + panelsToggleHtml + filterHtml + addQuestionHtml + pointsToolHtml;
+      container.innerHTML = reviewReminderHtml + skippedHtml + colorNoticeHtml + panelsToggleHtml + filterHtml + addQuestionHtml + pointsToolHtml;
 
       data.questions.forEach((q, i) => {
         const keyInfo = data.answer_key[q.num] || { answer: '' };
-        let html = `<div class="editor-card" data-idx="${i}" data-qnum="${q.num}" data-qtype="${q.type}">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        const needsReview = q.data.from_table || q.data.color_review_hint || q.data.low_confidence;
+        let html = `<div class="editor-card" data-idx="${i}" data-qnum="${q.num}" data-qtype="${q.type}"${needsReview ? ' data-review="1"' : ''}>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
             <strong style="color:var(--color-accent);font-size:15px;font-family:var(--font-heading);">Pregunta ${q.num}</strong>
-            <div style="display:flex;align-items:center;gap:10px;">
+            <div style="display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;">
               ${q.data.from_table ? `<span class="type-badge" style="background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);" title="El sistema detectó una tabla/cuadro en el documento original y la convirtió automáticamente a esta pregunta de emparejamiento — revísala con cuidado antes de aprobar.">
                 <i data-lucide="table-2" style="width:12px;height:12px;vertical-align:-2px;"></i> convertida de tabla
               </span>` : ''}
@@ -2872,31 +2978,122 @@ Ahora convierte el examen adjunto a este formato.</pre>
       const activeChipEl = chipsBar && chipsBar.querySelector(`.filter-chip[data-filter="${type}"]`);
       const labelEl = document.getElementById('filter-current-label');
       if (labelEl && activeChipEl) labelEl.textContent = activeChipEl.textContent;
+      buildReviewRail();
+    }
+
+    // ── Panel de revisión (mapa del examen) ────────────────────────────────
+    // Un cuadrito por pregunta VISIBLE (respeta el filtro activo): la actual
+    // resaltada, las que traen un aviso ("confianza baja", "revisar marca de
+    // color", "convertida de tabla") en color de advertencia, y clic para
+    // saltar a ella. Se reconstruye cuando cambian las tarjetas (render,
+    // borrar, añadir, filtrar) y se actualiza con el scroll.
+    function _visibleEditorCards() {
+      return Array.from(document.querySelectorAll('#editor-questions-container .editor-card'))
+        .filter(c => c.style.display !== 'none');
+    }
+
+    function _headerBottom() {
+      return document.querySelector('.app-header')?.getBoundingClientRect().bottom || 0;
+    }
+
+    function scrollToEditorCard(card) {
+      const top = card.getBoundingClientRect().top + window.scrollY - _headerBottom() - 16;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+
+    function buildReviewRail() {
+      const rail = document.getElementById('review-rail');
+      const grid = document.getElementById('review-rail-grid');
+      if (!rail || !grid) return;
+      rail.style.setProperty('--header-h', `${document.querySelector('.app-header')?.offsetHeight || 0}px`);
+      const cards = _visibleEditorCards();
+      grid.innerHTML = cards.map((c, i) => {
+        const review = c.dataset.review === '1';
+        return `<button type="button" role="listitem" class="rail-item${review ? ' needs-review' : ''}" data-pos="${i}"
+          title="Pregunta ${c.dataset.qnum}${review ? ' — tiene un aviso para revisar' : ''}">${c.dataset.qnum}</button>`;
+      }).join('');
+      grid.querySelectorAll('.rail-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const card = _visibleEditorCards()[Number(btn.dataset.pos)];
+          if (card) scrollToEditorCard(card);
+          rail.classList.remove('grid-open');
+        });
+      });
+      const pending = cards.filter(c => c.dataset.review === '1').length;
+      const next = document.getElementById('rail-review-next');
+      next.classList.toggle('visible', pending > 0);
+      next.textContent = pending === 1 ? '⚠ 1 pregunta para revisar' : `⚠ ${pending} preguntas para revisar`;
+      next.title = 'Ir a la siguiente pregunta con aviso';
+      const warnShort = document.getElementById('rail-warn-short');
+      warnShort.classList.toggle('visible', pending > 0);
+      warnShort.textContent = `⚠${pending}`;
+      _railCurrent = -1;
       updateReviewProgress();
     }
 
-    // Indicador de progreso de revisión ("Pregunta X de N"): calcula cuál
-    // es la primera pregunta VISIBLE (respeta el filtro activo) que todavía
-    // no quedó tapada por la barra de acciones fija de arriba, y usa esa
-    // como "la que se está revisando ahora". Se llama al cargar, al
-    // filtrar, y en cada scroll (limitado a una vez por frame con
-    // requestAnimationFrame para no recalcular en cada pixel).
+    // Salta a la siguiente pregunta con aviso DESPUÉS de la actual (y vuelve
+    // a la primera al llegar al final).
+    function jumpToNextReview() {
+      const cards = _visibleEditorCards();
+      const flagged = cards.map((c, i) => [c, i]).filter(([c]) => c.dataset.review === '1');
+      if (!flagged.length) return;
+      const target = flagged.find(([, i]) => i > _railCurrent) || flagged[0];
+      scrollToEditorCard(target[0]);
+      document.getElementById('review-rail')?.classList.remove('grid-open');
+    }
+
+    // En pantallas angostas la grilla se abre como un panel sobre la barra
+    // de abajo. En escritorio siempre está visible y el botón no hace nada.
+    function toggleRailGrid() {
+      if (window.matchMedia('(min-width: 1320px)').matches) return;
+      document.getElementById('review-rail')?.classList.toggle('grid-open');
+    }
+
+    // "Pregunta X de N": la primera tarjeta visible cuyo borde superior ya
+    // pasó justo por debajo del header. Se llama al cargar, al filtrar y en
+    // cada scroll (una vez por frame, con requestAnimationFrame).
+    let _railCurrent = -1;
     function updateReviewProgress() {
-      const stickyBar = document.querySelector('.editor-sticky-actions');
-      const fill = document.getElementById('review-progress-fill');
+      const cards = _visibleEditorCards();
       const label = document.getElementById('review-progress-label');
-      if (!fill || !label) return;
-      const cards = Array.from(document.querySelectorAll('#editor-questions-container .editor-card'))
-        .filter(c => c.style.display !== 'none');
-      if (!cards.length) return;
-      const threshold = (stickyBar ? stickyBar.getBoundingClientRect().bottom : 0) + 4;
-      let current = 1;
+      const short = document.getElementById('review-progress-short');
+      const fill = document.getElementById('review-progress-fill');
+      if (!label || !cards.length) {
+        if (label) label.textContent = 'Sin preguntas';
+        if (short) short.textContent = '0/0';
+        if (fill) fill.style.width = '0%';
+        return;
+      }
+      const threshold = _headerBottom() + 24;
+      let current = 0;
       for (let i = 0; i < cards.length; i++) {
-        if (cards[i].getBoundingClientRect().top <= threshold) current = i + 1;
+        if (cards[i].getBoundingClientRect().top <= threshold) current = i;
         else break;
       }
-      label.textContent = `Pregunta ${current} de ${cards.length}`;
-      fill.style.width = `${Math.round((current / cards.length) * 100)}%`;
+      // Al final de la página, la última tarjeta puede no llegar nunca
+      // arriba del todo: se da por "actual" la última.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) current = cards.length - 1;
+      // Con un filtro activo o preguntas borradas, el número de la pregunta
+      // ya no coincide con su posición en la lista: se muestran ambos.
+      const qnum = cards[current].dataset.qnum;
+      label.textContent = String(current + 1) === qnum
+        ? `Pregunta ${qnum} de ${cards.length}`
+        : `Pregunta ${qnum} · ${current + 1} de ${cards.length}`;
+      if (short) short.textContent = `${current + 1}/${cards.length}`;
+      fill.style.width = `${Math.round(((current + 1) / cards.length) * 100)}%`;
+      if (current !== _railCurrent) {
+        _railCurrent = current;
+        const grid = document.getElementById('review-rail-grid');
+        grid?.querySelectorAll('.rail-item.current').forEach(b => b.classList.remove('current'));
+        const item = grid?.querySelector(`.rail-item[data-pos="${current}"]`);
+        if (item) {
+          item.classList.add('current');
+          // Mantiene visible el cuadrito actual dentro de la grilla (con 150
+          // preguntas la grilla tiene su propio scroll), sin mover la página.
+          const g = grid.getBoundingClientRect(), r = item.getBoundingClientRect();
+          if (r.top < g.top || r.bottom > g.bottom) grid.scrollTop += r.top - g.top - g.height / 2;
+        }
+      }
     }
     let _reviewProgressTicking = false;
     window.addEventListener('scroll', () => {
@@ -2904,6 +3101,20 @@ Ahora convierte el examen adjunto a este formato.</pre>
       _reviewProgressTicking = true;
       requestAnimationFrame(() => { updateReviewProgress(); _reviewProgressTicking = false; });
     }, { passive: true });
+    // La altura del header cambia con el ancho (el subtítulo ocupa 1-3
+    // líneas): al redimensionar se recoloca el panel de revisión.
+    window.addEventListener('resize', () => {
+      if (document.body.classList.contains('editor-active')) buildReviewRail();
+    });
+    // En pantallas angostas la grilla abierta se cierra con Escape o con un
+    // clic fuera del panel, como cualquier menú desplegable.
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') document.getElementById('review-rail')?.classList.remove('grid-open');
+    });
+    document.addEventListener('click', e => {
+      const rail = document.getElementById('review-rail');
+      if (rail?.classList.contains('grid-open') && !rail.contains(e.target)) rail.classList.remove('grid-open');
+    });
 
     // ── Panel "Distribuir puntos" ──────────────────────────────────────────
     function togglePointsToolMenu() {
