@@ -269,7 +269,7 @@ PDF/TXT → Extracción (texto + color + tablas) → [GEMINI] → Parser / Adapt
 
 - el texto que recibe el modelo lleva esas marcas anotadas (`⟦rojo⟧Lista (list)⟦/rojo⟧`, `⟦resaltado⟧…`, `⟦subrayado⟧…`, `⟦negrita⟧…`) y las tablas con su estructura (`| Evento | … | x |`);
 - después, `mark_resolver.py` decide en código las respuestas marcadas. El modelo solo estructura (qué es enunciado, qué es opción). Una marca se aplica solo si funciona como sistema de respuestas (algunas opciones marcadas, no todas, en al menos 2 preguntas y el 30 % de las ubicadas): así la negrita de los títulos o una palabra destacada no reemplaza la clave;
-- el editor dice de dónde salió cada respuesta: un aviso corto arriba ("Respuestas leídas del texto en rojo (20 preguntas). Revísalas antes de aprobar."), la etiqueta **respuesta por marca** en esas preguntas y **revisar marca** en las que la IA tuvo que interpretar.
+- el editor dice de dónde salió cada respuesta: un aviso corto arriba ("Respuestas identificadas por color. Revísalas antes de aprobar."), la etiqueta **respuesta por marca** en esas preguntas y **revisar marca** en las que la IA tuvo que interpretar.
 
 **Progreso en vivo.** La llamada a Gemini se hace por streaming (SSE) y el backend va informando al navegador cuántas preguntas lleva procesadas (`/api/parse_stream`, `/api/normalize_with_ai_stream`), así la pantalla de carga muestra "12 de ~40 preguntas procesadas" y el tiempo restante real.
 

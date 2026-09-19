@@ -46,36 +46,27 @@ logger = logging.getLogger(__name__)
 # Aviso genérico cuando el PDF tiene texto en color pero todavía no se sabe
 # (o no se pudo determinar) si ese color marca respuestas. _marks_notice lo
 # reemplaza por uno concreto cuando las marcas se resolvieron en código.
-COLOR_MARKS_NOTICE = (
-    "El documento tiene texto en color que no se pudo leer como marca de "
-    "respuesta. Revisa las preguntas con «revisar marca»."
-)
+COLOR_MARKS_NOTICE = "Hay marcas de color que no se pudieron leer. Revisa las preguntas con «revisar marca»."
 
-# Cómo se nombra cada marca en el aviso ("leídas del texto en rojo").
-_MARK_LABELS = {
-    "resaltado": "del resaltado",
-    "subrayado": "del subrayado",
-    "negrita": "de la negrita",
-}
+# Nombre de la marca en el aviso: cualquier color es simplemente "color".
+_MARK_LABELS = {"resaltado": "resaltado", "subrayado": "subrayado", "negrita": "negrita"}
 
 
 def _marks_notice(mark: Any, applied: int, n_table: int, n_uncertain: int,
                   fallback: Any) -> Any:
-    """Aviso corto de dónde salieron las respuestas cuando el documento las
-    marca (color, resaltado, subrayado, negrita o X en un cuadro). applied y
+    """Aviso corto cuando las respuestas salieron de marcas del documento
+    (color, resaltado, subrayado, negrita o X en un cuadro). applied y
     n_table cuentan las preguntas que llegan al editor con la respuesta
-    leída de la marca."""
-    tables = f"{n_table} emparejamiento{'s' if n_table != 1 else ''} desde un cuadro con X"
+    leída de la marca; n_uncertain no se usa en el texto (esas preguntas ya
+    llevan su propia etiqueta «revisar marca»)."""
+    kinds = []
     if mark and applied:
-        label = _MARK_LABELS.get(mark, f"del texto en {mark}")
-        head = f"Respuestas leídas {label} ({applied} pregunta{'s' if applied != 1 else ''})"
-        head += f" y {tables}." if n_table else "."
-    elif n_table:
-        head = f"Respuestas leídas de un cuadro con X ({n_table} emparejamiento{'s' if n_table != 1 else ''})."
-    else:
+        kinds.append(_MARK_LABELS.get(mark, "color"))
+    if n_table:
+        kinds.append("cuadro con X")
+    if not kinds:
         return fallback
-    tail = "Revísalas antes de aprobar" + (", sobre todo las marcadas «revisar marca»." if n_uncertain else ".")
-    return f"{head} {tail}"
+    return f"Respuestas identificadas por {' y '.join(kinds)}. Revísalas antes de aprobar."
 
 
 _COLOR_HINT_MIN_LEN = 20  # evita anclar con un enunciado demasiado corto/genérico
