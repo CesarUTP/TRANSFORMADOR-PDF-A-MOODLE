@@ -81,8 +81,43 @@ opciones.
    la muestra. Límite conocido: el camino actual solo lee las primeras 15
    páginas (`MAX_IMAGE_PAGES`).
 
+## Configuración actual (después de esta evaluación)
+
+Tras ver los tiempos, se priorizó la fidelidad: un examen de 55 preguntas
+tarda hasta ~95 s en JSON, frente a horas de carga manual. Quedó así:
+
+- **Carga normal: JSON** (`NORMALIZER_MODE=json`).
+- **"Normalizar con IA" (escaneados): texto** (`NORMALIZER_MODE_AI=text`),
+  que ahí midió 100 % contra 90 %.
+- **Marcas nuevas:** resaltado, subrayado y negrita se leen igual que el
+  color. Los sintéticos s11-s13 usan claves contrafácticas. Probado sin
+  llamar a la IA: `mark_resolver` recupera 5/5 respuestas en cada uno y
+  8/8 en el de color.
+- **Modo texto:** el lector toma el ÚLTIMO bloque A./B./C. como opciones
+  (arregla s03 también en texto).
+- **Progreso en vivo** por streaming: la pantalla muestra "12 de ~40
+  preguntas procesadas" y el tiempo restante real.
+
+**Pendiente:** la evaluación completa de esta configuración se cortó
+porque se agotó la cuota diaria del plan gratuito (ver abajo). Cuando se
+restablezca, correr:
+
+```bash
+backend/venv/bin/python dev/eval.py --tag final
+backend/venv/bin/python dev/eval.py --mode text --only s03 s11 s12 s13 --tag final_texto
+```
+
+y agregar la columna al resumen de arriba.
+
 ## Plan gratuito de Gemini
 
-La key actual está en el plan gratuito: **15 peticiones por minuto**. La
-evaluación se autolimita a 13/min (`GEMINI_MAX_RPM`), así que una corrida
-completa (45 procesamientos) tarda ~20 minutos.
+La key actual está en el plan gratuito:
+
+- **15 peticiones por minuto.** La evaluación se autolimita a 13/min
+  (`GEMINI_MAX_RPM`), así que una corrida completa (~55 procesamientos)
+  tarda ~20-30 minutos.
+- **500 peticiones por día y por modelo.** Para un docente alcanza de
+  sobra: son 500 exámenes por día. Pero ~8 evaluaciones completas en un
+  día lo agotan. Se restablece a medianoche (hora del Pacífico). Cuando se
+  agota, la app ahora lo avisa al instante en vez de reintentar durante
+  ~5 minutos.

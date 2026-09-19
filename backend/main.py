@@ -8,13 +8,15 @@ Endpoints:
 
 import json
 import logging
+import queue
 import sys
+import threading
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from lxml import etree
 
@@ -117,6 +119,69 @@ async def api_normalize_with_ai(
     """
     raw_bytes = await file.read()
     return await run_in_threadpool(normalize_document_with_ai, raw_bytes, file.filename or "upload")
+
+
+def _ndjson_progress_stream(fn, raw_bytes: bytes, filename: str) -> StreamingResponse:
+    """
+    Corre la normalización en un hilo y va enviando al navegador una línea
+    JSON por evento, a medida que ocurren:
+
+        {"type": "stage", "key": "extract"|"ai"|"review", "message": ...}
+        {"type": "progress", "done": 12, "expected": 40}
+        {"type": "result", "data": {...}}         ← lo mismo que /api/parse
+        {"type": "error", "status": 422, "detail": ...}
+        {"type": "ping"}                          ← cada 15 s sin novedades
+
+    Así la pantalla de carga muestra el avance real ("pregunta 12 de ~40")
+    en vez de un temporizador que no sabe si el proceso sigue vivo. Los
+    errores llegan como un evento más (la respuesta HTTP ya empezó con 200).
+    """
+    events: "queue.Queue" = queue.Queue()
+
+    def worker() -> None:
+        try:
+            result = fn(raw_bytes, filename, progress=events.put)
+            events.put({"type": "result", "data": result})
+        except HTTPException as exc:
+            events.put({"type": "error", "status": exc.status_code, "detail": exc.detail})
+        except Exception:  # noqa: BLE001
+            logger.exception("Error inesperado procesando '%s'", filename)
+            events.put({"type": "error", "status": 500,
+                        "detail": "Ocurrió un error inesperado al procesar el archivo."})
+        finally:
+            events.put(None)
+
+    threading.Thread(target=worker, daemon=True).start()
+
+    def lines():
+        while True:
+            try:
+                event = events.get(timeout=15)
+            except queue.Empty:
+                yield '{"type": "ping"}\n'
+                continue
+            if event is None:
+                return
+            yield json.dumps(event, ensure_ascii=False, default=str) + "\n"
+
+    return StreamingResponse(
+        lines(), media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.post("/api/parse_stream")
+async def api_parse_stream(file: UploadFile = File(...)):
+    """Igual que /api/parse, pero informando el avance (ver _ndjson_progress_stream)."""
+    raw_bytes = await file.read()
+    return _ndjson_progress_stream(parse_document, raw_bytes, file.filename or "upload")
+
+
+@app.post("/api/normalize_with_ai_stream")
+async def api_normalize_with_ai_stream(file: UploadFile = File(...)):
+    """Igual que /api/normalize_with_ai, pero informando el avance."""
+    raw_bytes = await file.read()
+    return _ndjson_progress_stream(normalize_document_with_ai, raw_bytes, file.filename or "upload")
 
 
 # ── Modelos Pydantic para Generación de XML ────────────────────────────────

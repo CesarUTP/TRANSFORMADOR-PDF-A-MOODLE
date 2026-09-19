@@ -54,10 +54,16 @@ RED = "#c00000"
 BLUE = "#1f4e9c"
 
 
-def p(text: str, style=BODY, color: str | None = None) -> Paragraph:
+def p(text: str, style=BODY, color: str | None = None, mark: str | None = None) -> Paragraph:
     t = escape(text).replace("\n", "<br/>")
     if color:
         t = f'<font color="{color}">{t}</font>'
+    if mark == "highlight":
+        t = f'<span backColor="#fff200">{t}</span>'
+    elif mark == "bold":
+        t = f'<b>{t}</b>'
+    elif mark == "underline":
+        t = f'<u>{t}</u>'
     return Paragraph(t, style)
 
 
@@ -145,7 +151,8 @@ def draw_question(story: list, n: int, q: dict, rng: random.Random, *, mark: str
             label = f"{LETTERS[i]}) {opt}"
             if mark == "asterisk" and is_ok:
                 label = f"{LETTERS[i]}) {opt} *"
-            story.append(p(label, OPT, RED if (mark == "color" and is_ok) else None))
+            style_mark = mark if (is_ok and mark in ("highlight", "bold", "underline")) else None
+            story.append(p(label, OPT, RED if (mark == "color" and is_ok) else None, style_mark))
         if q.get("unanswered"):
             return ""
         return f"{n}. " + ", ".join(LETTERS[i] for i in q["correct"])
@@ -348,6 +355,36 @@ def s10_estres():
               "y si el modelo se salta preguntas en un documento muy largo.")
 
 
+def _marked_exam(name: str, title: str, questions: list, mark: str, how: str, notes: str) -> None:
+    rng = random.Random(name)
+    story: list = []
+    header(story, title, f"Las respuestas correctas están {how}.")
+    for i, q in enumerate(questions, 1):
+        if mark == "bold" and i in (1, 4):
+            # Títulos de sección en negrita: no son respuestas.
+            story.append(p(f"Sección {1 if i == 1 else 2}: preguntas generales", HEAD))
+        draw_question(story, i, q, rng, mark=mark)
+    build_pdf(name, story)
+    write_golden(name, [golden_question(q) for q in questions], notes=notes)
+
+
+def s11_resaltado():
+    _marked_exam("s11_resaltado", "Cuestionario de Cultura General", E.RESALTADO_MC, "highlight",
+                 "resaltadas", "Respuestas marcadas con resaltado amarillo (fondo), sin clave; varias "
+                 "claves contrafácticas y una pregunta con dos correctas.")
+
+
+def s12_negrita():
+    _marked_exam("s12_negrita", "Cuestionario de Ciencias", E.NEGRITA_MC, "bold",
+                 "en negrita", "Respuestas marcadas en negrita; títulos de sección también en negrita "
+                 "(distractor); claves contrafácticas.")
+
+
+def s13_subrayado():
+    _marked_exam("s13_subrayado", "Cuestionario Mixto", E.SUBRAYADO_MC, "underline",
+                 "subrayadas", "Respuestas marcadas con subrayado; claves contrafácticas.")
+
+
 def main():
     clean = s01_limpio()
     s02_color()
@@ -359,6 +396,9 @@ def main():
     s08_asterisco()
     s09_cloze()
     s10_estres()
+    s11_resaltado()
+    s12_negrita()
+    s13_subrayado()
     for f in sorted(PDF_DIR.glob("*.pdf")):
         print(f"  {f.relative_to(ROOT)}  ({f.stat().st_size // 1024} KB)")
 

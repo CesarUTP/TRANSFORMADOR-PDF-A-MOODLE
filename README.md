@@ -208,6 +208,10 @@ Si una pregunta no tiene una respuesta indicada explícitamente en el examen ori
 
 Sube el archivo (`.pdf` o `.txt`), lo pasa por el prefiltro de Gemini si hace falta, y devuelve las preguntas ya parseadas y validadas.
 
+### `POST /api/parse_stream` y `POST /api/normalize_with_ai_stream`
+
+Igual que `/api/parse` y `/api/normalize_with_ai`, pero la respuesta es NDJSON (una línea JSON por evento) para mostrar el avance: `{"type": "stage", …}`, `{"type": "progress", "done": 12, "expected": 40}` y al final `{"type": "result", "data": …}` o `{"type": "error", "status": …, "detail": …}`. Es lo que usa la interfaz.
+
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `file` | `File` | Archivo `.pdf` o `.txt` |
@@ -261,18 +265,21 @@ PDF/TXT → Extracción (texto + color + tablas) → [GEMINI] → Parser / Adapt
         → Marcas resueltas en código → Validador → Editor → XML Builder → Moodle XML
 ```
 
-**Las marcas del PDF se leen, no se adivinan.** En un PDF digital, `extract_text()` pierde justo las marcas de respuesta más comunes: el color de una opción y la columna de la "X" en un cuadro de marcas. Sin ellas el modelo tiende a *resolver* la pregunta con su propio conocimiento. Por eso:
+**Las marcas del PDF se leen, no se adivinan.** En un PDF digital, `extract_text()` pierde justo las marcas de respuesta más comunes: el color de una opción, el resaltado, el subrayado, la negrita y la columna de la "X" en un cuadro de marcas. Sin ellas el modelo tiende a *resolver* la pregunta con su propio conocimiento. Por eso:
 
-- el texto que recibe el modelo lleva el color anotado (`⟦rojo⟧Lista (list)⟦/rojo⟧`) y las tablas con su estructura (`| Evento | … | x |`);
-- después, `mark_resolver.py` decide en código las respuestas marcadas por color o por tabla. El modelo solo estructura (qué es enunciado, qué es opción).
+- el texto que recibe el modelo lleva esas marcas anotadas (`⟦rojo⟧Lista (list)⟦/rojo⟧`, `⟦resaltado⟧…`, `⟦subrayado⟧…`, `⟦negrita⟧…`) y las tablas con su estructura (`| Evento | … | x |`);
+- después, `mark_resolver.py` decide en código las respuestas marcadas. El modelo solo estructura (qué es enunciado, qué es opción).
+
+**Progreso en vivo.** La llamada a Gemini se hace por streaming (SSE) y el backend va informando al navegador cuántas preguntas lleva procesadas (`/api/parse_stream`, `/api/normalize_with_ai_stream`), así la pantalla de carga muestra "12 de ~40 preguntas procesadas" y el tiempo restante real.
 
 Se controla con variables de entorno (o un archivo `.env`):
 
 | Variable | Por defecto | Qué hace |
 |---|---|---|
 | `GEMINI_API_KEY` | — | Key de Google AI Studio (ver `.env.example`) |
-| `ENRICH_PDF_TEXT` | `1` | Color y tablas en el texto + marcas resueltas en código |
-| `NORMALIZER_MODE` | `text` | `json`: la IA devuelve JSON con esquema en vez del formato de texto. Corrige dos errores silenciosos del modo texto, pero tarda ~3.5× más (ver `dev/eval_results/RESULTADOS.md`) |
+| `ENRICH_PDF_TEXT` | `1` | Marcas (color, resaltado, subrayado, negrita, tablas) en el texto + resueltas en código |
+| `NORMALIZER_MODE` | `json` | Carga normal. `json`: la IA devuelve JSON con esquema (más fiel; un examen de 55 preguntas tarda hasta ~1,5 min). `text`: formato de texto propio (2-5× más rápido) |
+| `NORMALIZER_MODE_AI` | `text` | Botón "Normalizar con IA" (escaneados), donde el modo texto midió mejor |
 
 | Caso | Acción |
 |------|--------|
@@ -280,7 +287,7 @@ Se controla con variables de entorno (o un archivo `.env`):
 | El documento **no tiene** el formato estándar | Gemini reformatea **solo la estructura**, conservando preguntas y respuestas tal cual están |
 | El documento **no es una prueba real** (presentación, manual, artículo, apuntes, etc.) | Gemini responde con un centinela interno (`NO_ES_UNA_PRUEBA`); el backend lo detecta y responde `422` sin generar ninguna pregunta |
 | Una pregunta **no tiene respuesta marcada** en el original | Se marca `SIN_RESPUESTA` — el sistema bloquea el XML en vez de adivinar |
-| La API de Gemini **no está disponible** | Reintenta 3 veces (10s de espera entre intentos) antes de devolver error; una llamada colgada se corta a los 180 s |
+| La API de Gemini **no está disponible** | Reintenta 3 veces (10s de espera entre intentos) antes de devolver error; una llamada colgada se corta (180 s en modo texto, 300 s en JSON) |
 | Se alcanzó el **límite de peticiones por minuto** (429) | Espera el tiempo que indica Google y reintenta |
 
 ---

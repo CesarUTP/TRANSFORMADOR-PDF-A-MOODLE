@@ -1,6 +1,7 @@
 """
 mark_resolver.py — Resuelve en CÓDIGO las respuestas marcadas en un PDF
-digital (texto en color y cuadros de marcas), sin depender del modelo.
+digital (texto en color, resaltado, subrayado o negrita, y cuadros de
+marcas), sin depender del modelo.
 
 Por qué existe (medido con dev/eval.py): aun viendo la marca en el texto
 que recibe (⟦rojo⟧Java⟦/rojo⟧, o la "X" en su columna de la tabla), el
@@ -72,9 +73,10 @@ def _lines(pages: List[str]) -> List[_Line]:
 
 
 def _mark_color(lines: List[_Line]) -> Optional[str]:
-    """El color que el documento usa para marcar respuestas: el más
-    frecuente entre líneas cortas que parecen opciones (los títulos en
-    color son pocos y largos o terminan en ":"/"?")."""
+    """La marca que el documento usa para señalar respuestas (un color, o
+    resaltado/subrayado/negrita): la más frecuente entre líneas cortas que
+    parecen opciones (los títulos marcados son pocos y largos o terminan
+    en ":"/"?")."""
     counts = Counter(
         ln.colors for ln in lines
         if ln.colors and len(ln.plain) <= 140 and not ln.plain.rstrip().endswith(("?", ":"))
@@ -149,7 +151,9 @@ def resolve_color_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, D
         if not options or any(v is None for v in found.values()):
             continue
         marked = [options[L] for L, i in sorted(found.items()) if lines[i].colors == color]
-        if not marked:
+        # Sin marca, o con TODAS las opciones marcadas (ej. un examen que
+        # pone todas las opciones en negrita): eso no señala una respuesta.
+        if not marked or len(marked) == len(options):
             continue
         new_answer = " | ".join(marked)
         entry = answer_key.setdefault(q["num"], {"type": "multichoice"})

@@ -1120,7 +1120,12 @@
           <i data-lucide="loader-2" id="spinner-icon" style="width:36px;height:36px;color:var(--color-accent);animation:spinSlow 1.2s linear infinite;"></i>
         </div>
         <h3 id="progress-title" style="font-family:var(--font-heading);font-size:22px;font-weight:800;margin-bottom:8px;">Procesando documento…</h3>
-        <p id="progress-subtitle" style="font-size:14.5px;color:var(--color-text-muted);margin-bottom:32px;">Extrayendo texto del examen...</p>
+        <p id="progress-subtitle" style="font-size:14.5px;color:var(--color-text-muted);margin-bottom:6px;">Extrayendo texto del examen...</p>
+        <!-- Avance real que informa el backend ("12 de ~40 preguntas
+             procesadas"). aria-live="off": se actualiza varias veces por
+             segundo y no debe leerse en voz alta cada vez; el subtítulo de
+             arriba (etapa) sí se anuncia. -->
+        <p id="progress-detail" aria-live="off" style="font-size:12.5px;color:var(--color-text-subtle);min-height:18px;margin-bottom:22px;font-variant-numeric:tabular-nums;"></p>
         
         <div style="height:8px;background:var(--color-bg);border-radius:var(--radius-full);overflow:hidden;max-width:480px;margin:0 auto;border:1px solid var(--color-border-subtle);">
           <div id="progress-bar-fill" style="height:100%;width:100%;transform:scaleX(0);transform-origin:left;background:var(--color-accent-gradient);border-radius:var(--radius-full);transition:transform 0.4s ease-out;"></div>
@@ -3514,8 +3519,34 @@ Ahora convierte el examen adjunto a este formato.</pre>
       lucide.createIcons();
     }
 
-    // Conversion Step 1: Parse
-    async function runConversion(ptsVal, kind = 'text') {
+    // Lee la respuesta de /api/*_stream: una línea JSON por evento
+    // (etapa, avance, resultado o error). Devuelve el evento final
+    // ("result" o "error") y va actualizando la pantalla de carga con el
+    // avance real mientras llega.
+    async function readProgressStream(res) {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl;
+        while ((nl = buffer.indexOf('\n')) >= 0) {
+          const line = buffer.slice(0, nl).trim();
+          buffer = buffer.slice(nl + 1);
+          if (!line) continue;
+          let ev;
+          try { ev = JSON.parse(line); } catch (_) { continue; }
+          if (ev.type === 'stage') onProgressStage(ev);
+          else if (ev.type === 'progress') onProgressCount(ev);
+          else if (ev.type === 'result' || ev.type === 'error') return ev;
+        }
+      }
+      return { type: 'error', status: 0, detail: 'La conexión con el servidor se cortó antes de terminar. Intenta de nuevo.' };
+    }
+
+    async function runStreamingConversion(endpoint, kind, ptsVal) {
       showPanel('progress');
       startProgress(kind);
 
@@ -3523,21 +3554,31 @@ Ahora convierte el examen adjunto a este formato.</pre>
       formData.append('file', selectedFile);
 
       try {
-        const res = await fetch('/api/parse', { method: 'POST', body: formData });
-        stopProgress(res.ok);
-
-        if (!res.ok) {
+        const res = await fetch(endpoint, { method: 'POST', body: formData });
+        if (!res.ok || !res.body) {
+          stopProgress(false);
           let errMsg = friendlyHttpError(res.status);
           try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
           showError(errMsg);
           return;
         }
-
-        goToEditorWithParsedData(await res.json(), ptsVal);
+        const final = await readProgressStream(res);
+        if (final.type === 'error') {
+          stopProgress(false);
+          showError(final.detail || friendlyHttpError(final.status));
+          return;
+        }
+        stopProgress(true);
+        goToEditorWithParsedData(final.data, ptsVal);
       } catch (err) {
         stopProgress(false);
         showError("No se pudo conectar con el servidor backend: " + err.message);
       }
+    }
+
+    // Conversion Step 1: Parse
+    function runConversion(ptsVal, kind = 'text') {
+      return runStreamingConversion('/api/parse_stream', kind, ptsVal);
     }
 
     // Alternativa in-app al flujo externo de "copia este prompt y pégalo en
@@ -3545,29 +3586,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
     // visualmente (ver /api/normalize_with_ai) — tarda más que una
     // conversión normal porque manda todas las páginas, no solo las que
     // tienen imágenes detectadas.
-    async function runNormalizeWithAI(ptsVal) {
-      showPanel('progress');
-      startProgress('normalize');
-
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      try {
-        const res = await fetch('/api/normalize_with_ai', { method: 'POST', body: formData });
-        stopProgress(res.ok);
-
-        if (!res.ok) {
-          let errMsg = friendlyHttpError(res.status);
-          try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
-          showError(errMsg);
-          return;
-        }
-
-        goToEditorWithParsedData(await res.json(), ptsVal);
-      } catch (err) {
-        stopProgress(false);
-        showError("No se pudo conectar con el servidor backend: " + err.message);
-      }
+    function runNormalizeWithAI(ptsVal) {
+      return runStreamingConversion('/api/normalize_with_ai_stream', 'normalize', ptsVal);
     }
 
     btnConvert.addEventListener('click', async () => {
@@ -3898,6 +3918,97 @@ Ahora convierte el examen adjunto a este formato.</pre>
     let progressKind = 'text';
     let progressEstimatedTotal = TIMING_DEFAULTS.text;
 
+    // Avance REAL que informa el backend (ver readProgressStream). Mientras
+    // no llegue ningún evento se usa la secuencia estimada de siempre; en
+    // cuanto llega uno, la pantalla pasa a reflejar lo que de verdad ocurre.
+    let progressReal = false;
+    let aiStartTime = 0;
+    let aiExpected = 0;
+    let aiDone = 0;
+    // Segundos por pregunta medidos en la evaluación (dev/eval_results):
+    // JSON ~0.7, texto ~0.3; con todas las páginas como imagen, más.
+    const SECONDS_PER_QUESTION_DEFAULTS = { json: 0.75, text: 0.35, normalize: 1.2 };
+    const SPQ_KEY = 'moodle_seconds_per_question_v1';
+
+    function _spqKey() {
+      return progressKind === 'normalize' ? 'normalize' : (window._aiMode || 'json');
+    }
+    function _getSecondsPerQuestion() {
+      try {
+        const list = (JSON.parse(localStorage.getItem(SPQ_KEY)) || {})[_spqKey()];
+        if (list && list.length) return list.reduce((a, b) => a + b, 0) / list.length;
+      } catch (_) {}
+      return SECONDS_PER_QUESTION_DEFAULTS[_spqKey()] || 0.75;
+    }
+    function _recordSecondsPerQuestion(value) {
+      try {
+        const all = JSON.parse(localStorage.getItem(SPQ_KEY)) || {};
+        const list = all[_spqKey()] || [];
+        list.push(value);
+        while (list.length > TIMING_HISTORY_MAX) list.shift();
+        all[_spqKey()] = list;
+        localStorage.setItem(SPQ_KEY, JSON.stringify(all));
+      } catch (_) {}
+    }
+    function _setProgressBar(pct) {
+      document.getElementById('progress-bar-fill').style.transform = `scaleX(${Math.min(pct, 99) / 100})`;
+    }
+    function _setProgressDetail(text) {
+      document.getElementById('progress-detail').textContent = text;
+    }
+
+    function onProgressStage(ev) {
+      progressReal = true;
+      const elapsedSec = (Date.now() - progressStartTime) / 1000;
+      if (ev.message) document.getElementById('progress-subtitle').textContent = ev.message;
+      if (ev.key === 'extract') {
+        _setProgressBar(4);
+        _setProgressDetail('');
+      } else if (ev.key === 'ai') {
+        window._aiMode = ev.mode || 'json';
+        aiStartTime = Date.now();
+        aiExpected = ev.expected || 0;
+        aiDone = 0;
+        _setProgressBar(8);
+        if (aiExpected > 0) {
+          _setProgressDetail(`Se detectaron ~${aiExpected} preguntas`);
+          progressEstimatedTotal = elapsedSec + 3 + aiExpected * _getSecondsPerQuestion();
+        } else {
+          _setProgressDetail(ev.images ? `Leyendo ${ev.images} página(s) como imagen` : '');
+        }
+      } else if (ev.key === 'review') {
+        _setProgressBar(96);
+        _setProgressDetail(aiDone ? `${aiDone} preguntas procesadas · verificando…` : 'Verificando…');
+        progressEstimatedTotal = elapsedSec + 1;
+      }
+    }
+
+    function onProgressCount(ev) {
+      progressReal = true;
+      aiDone = ev.done || 0;
+      if (ev.expected) aiExpected = ev.expected;
+      const now = Date.now();
+      const elapsedSec = (now - progressStartTime) / 1000;
+      const aiElapsed = (now - aiStartTime) / 1000;
+      // La estimación inicial se corrige con el ritmo REAL de esta
+      // conversión en cuanto hay un par de preguntas para medirlo.
+      const measured = aiDone >= 2 ? aiElapsed / aiDone : null;
+      const spq = measured ?? _getSecondsPerQuestion();
+      const total = aiExpected > 0 ? Math.max(aiExpected, aiDone) : 0;
+      if (total > 0) {
+        progressEstimatedTotal = elapsedSec + Math.max(total - aiDone, 0) * spq + 1.5;
+        _setProgressBar(8 + 86 * Math.min(aiDone / total, 1));
+        // El total es aproximado: si el documento resulta tener bastantes
+        // más preguntas de las estimadas, se deja de mostrar un "de ~N"
+        // que ya no es cierto.
+        _setProgressDetail(aiExpected && aiDone <= aiExpected * 1.25
+          ? `${aiDone} de ~${aiExpected} preguntas procesadas`
+          : `${aiDone} preguntas procesadas`);
+      } else {
+        _setProgressDetail(`${aiDone} preguntas procesadas`);
+      }
+    }
+
     function startProgress(kind = 'text') {
       const pSubtitle = document.getElementById('progress-subtitle');
       const pFill = document.getElementById('progress-bar-fill');
@@ -3913,6 +4024,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
       progressKind = kind;
       progressStartTime = Date.now();
       progressEstimatedTotal = _getEstimatedDuration(kind);
+      progressReal = false;
+      aiStartTime = 0;
+      aiExpected = 0;
+      aiDone = 0;
+      _setProgressDetail('');
 
       document.getElementById('progress-timer-row').style.display = 'flex';
       pFill.style.transform = 'scaleX(0)';
@@ -3923,11 +4039,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
       progressInterval = setInterval(() => {
         const elapsedSec = (Date.now() - progressStartTime) / 1000;
 
-        let pct = Math.min(elapsedSec * 7, 92);
-        pFill.style.transform = `scaleX(${pct / 100})`;
-        const stage = sequence.slice().reverse().find(s => elapsedSec >= s.time);
-        if (stage && pSubtitle.textContent !== stage.text) {
-          pSubtitle.textContent = stage.text;
+        // Sin eventos del backend todavía: secuencia estimada de siempre.
+        // Con eventos, la barra y el texto los maneja onProgress*.
+        if (!progressReal) {
+          let pct = Math.min(elapsedSec * 7, 92);
+          pFill.style.transform = `scaleX(${pct / 100})`;
+          const stage = sequence.slice().reverse().find(s => elapsedSec >= s.time);
+          if (stage && pSubtitle.textContent !== stage.text) {
+            pSubtitle.textContent = stage.text;
+          }
         }
 
         // Si ya vamos por el 90% del tiempo estimado y el servidor sigue
@@ -3953,6 +4073,9 @@ Ahora convierte el examen adjunto a este formato.</pre>
         // camino (ej. error de red) no refleja cuánto tarda una conversión
         // real de este tipo, y contaminaría el promedio hacia abajo.
         _recordDuration(progressKind, finalElapsed);
+        if (aiDone >= 3 && aiStartTime) {
+          _recordSecondsPerQuestion((Date.now() - aiStartTime) / 1000 / aiDone);
+        }
       }
     }
 

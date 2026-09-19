@@ -177,3 +177,47 @@ def long_exam(n: int = 60) -> list:
             qs.append({"type": "multichoice", "stem": f"¿Cuánto es {a} + {b}?",
                        "options": opts, "correct": [opts.index(str(s))]})
     return qs
+
+
+# ── Marcas por resaltado / negrita / subrayado (con claves contrafácticas) ──
+# Mismo propósito que COLOR_MC: la marca del docente debe leerse, no
+# deducirse. Los títulos de sección también van en negrita en el examen de
+# negrita, para comprobar que no se confunden con respuestas.
+RESALTADO_MC = [
+    {"type": "multichoice", "stem": "¿Cuál es la capital de Australia?",
+     "options": ["Sídney", "Canberra", "Melbourne", "Perth"], "correct": [0]},  # ≠ (real: Canberra)
+    {"type": "multichoice", "stem": "¿Cuántos lados tiene un hexágono?",
+     "options": ["Cinco", "Seis", "Siete", "Ocho"], "correct": [1]},
+    {"type": "multichoice", "stem": "¿Cuáles de estos son números primos?",
+     "options": ["4", "7", "9", "11"], "correct": [0, 2]},  # ≠ (real: 7 y 11)
+    {"type": "multichoice", "stem": "¿Qué planeta es conocido como el planeta rojo?",
+     "options": ["Venus", "Marte", "Júpiter", "Mercurio"], "correct": [2]},  # ≠ (real: Marte)
+    {"type": "multichoice", "stem": "¿Cuál es el río más largo de América del Sur?",
+     "options": ["Amazonas", "Paraná", "Orinoco", "Magdalena"], "correct": [0]},
+]
+
+NEGRITA_MC = [
+    {"type": "multichoice", "stem": "¿Qué órgano produce la insulina?",
+     "options": ["Hígado", "Páncreas", "Riñón", "Estómago"], "correct": [0]},  # ≠ (real: páncreas)
+    {"type": "multichoice", "stem": "¿Cuál es el símbolo químico del oro?",
+     "options": ["Ag", "Au", "Fe", "Or"], "correct": [1]},
+    {"type": "multichoice", "stem": "¿Cuáles son colores primarios en el modelo RGB?",
+     "options": ["Rojo", "Amarillo", "Verde", "Violeta"], "correct": [1, 3]},  # ≠ (real: rojo y verde)
+    {"type": "multichoice", "stem": "¿En qué continente está Egipto?",
+     "options": ["Asia", "África", "Europa", "Oceanía"], "correct": [0]},  # ≠ (real: África)
+    {"type": "multichoice", "stem": "¿Cuántos huesos tiene aproximadamente el cuerpo humano adulto?",
+     "options": ["106", "206", "306", "406"], "correct": [1]},
+]
+
+SUBRAYADO_MC = [
+    {"type": "multichoice", "stem": "¿Quién escribió Don Quijote de la Mancha?",
+     "options": ["Lope de Vega", "Miguel de Cervantes", "Garcilaso", "Góngora"], "correct": [0]},  # ≠ (real: Cervantes)
+    {"type": "multichoice", "stem": "¿Cuál es el estado del agua a -10 °C?",
+     "options": ["Líquido", "Sólido", "Gaseoso", "Plasma"], "correct": [1]},
+    {"type": "multichoice", "stem": "¿Cuáles de estos animales son reptiles?",
+     "options": ["Iguana", "Rana", "Tortuga", "Salamandra"], "correct": [1, 3]},  # ≠ (real: iguana y tortuga)
+    {"type": "multichoice", "stem": "¿Cuál es la unidad de la fuerza en el SI?",
+     "options": ["Joule", "Newton", "Watt", "Pascal"], "correct": [2]},  # ≠ (real: Newton)
+    {"type": "multichoice", "stem": "¿Cuántos minutos hay en dos horas?",
+     "options": ["60", "90", "120", "150"], "correct": [2]},
+]

@@ -1,0 +1,76 @@
+{
+  "source": "synthetic",
+  "reviewed": true,
+  "file": "synthetic/s13_subrayado.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Respuestas marcadas con subrayado; claves contrafácticas.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Quién escribió Don Quijote de la Mancha?",
+      "answers": [
+        "Lope de Vega"
+      ],
+      "options": [
+        "Lope de Vega",
+        "Miguel de Cervantes",
+        "Garcilaso",
+        "Góngora"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el estado del agua a -10 °C?",
+      "answers": [
+        "Sólido"
+      ],
+      "options": [
+        "Líquido",
+        "Sólido",
+        "Gaseoso",
+        "Plasma"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estos animales son reptiles?",
+      "answers": [
+        "Rana",
+        "Salamandra"
+      ],
+      "options": [
+        "Iguana",
+        "Rana",
+        "Tortuga",
+        "Salamandra"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la unidad de la fuerza en el SI?",
+      "answers": [
+        "Watt"
+      ],
+      "options": [
+        "Joule",
+        "Newton",
+        "Watt",
+        "Pascal"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuántos minutos hay en dos horas?",
+      "answers": [
+        "120"
+      ],
+      "options": [
+        "60",
+        "90",
+        "120",
+        "150"
+      ]
+    }
+  ]
+}

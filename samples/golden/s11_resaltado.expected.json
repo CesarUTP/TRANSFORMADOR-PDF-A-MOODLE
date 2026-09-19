@@ -1,0 +1,76 @@
+{
+  "source": "synthetic",
+  "reviewed": true,
+  "file": "synthetic/s11_resaltado.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Respuestas marcadas con resaltado amarillo (fondo), sin clave; varias claves contrafácticas y una pregunta con dos correctas.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la capital de Australia?",
+      "answers": [
+        "Sídney"
+      ],
+      "options": [
+        "Sídney",
+        "Canberra",
+        "Melbourne",
+        "Perth"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuántos lados tiene un hexágono?",
+      "answers": [
+        "Seis"
+      ],
+      "options": [
+        "Cinco",
+        "Seis",
+        "Siete",
+        "Ocho"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estos son números primos?",
+      "answers": [
+        "4",
+        "9"
+      ],
+      "options": [
+        "4",
+        "7",
+        "9",
+        "11"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué planeta es conocido como el planeta rojo?",
+      "answers": [
+        "Júpiter"
+      ],
+      "options": [
+        "Venus",
+        "Marte",
+        "Júpiter",
+        "Mercurio"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el río más largo de América del Sur?",
+      "answers": [
+        "Amazonas"
+      ],
+      "options": [
+        "Amazonas",
+        "Paraná",
+        "Orinoco",
+        "Magdalena"
+      ]
+    }
+  ]
+}

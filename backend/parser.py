@@ -156,9 +156,20 @@ def extract_question_text(text: str, q_num: int) -> Optional[str]:
 
 def parse_multichoice(q_text: str) -> Optional[dict]:
     """Parse a multichoice question block."""
-    a_match = re.search(r'\nA\.\s', q_text)
-    if not a_match:
+    # Las opciones son el ÚLTIMO bloque "A. / B. / C..." de la pregunta, no
+    # el primero: un enunciado puede traer su propia lista rotulada
+    # ("Considera las afirmaciones:\nA. ...\nB. ...\n¿Cuál es correcta?"
+    # seguido de las opciones A. B. C.). Tomar la primera "A." cortaba el
+    # enunciado en silencio y mezclaba esas afirmaciones con las opciones
+    # (medido en dev/eval.py, samples/synthetic/s03). Se usa la última "A."
+    # que tenga al menos una "B." después.
+    a_positions = [m for m in re.finditer(r'\nA\.\s', q_text)
+                   if re.search(r'\nB\.\s', q_text[m.end():])]
+    if not a_positions:
+        a_positions = list(re.finditer(r'\nA\.\s', q_text))
+    if not a_positions:
         return None
+    a_match = a_positions[-1]
 
     stem = q_text[:a_match.start()].strip()
     stem = re.sub(r'^Afirmación:\s*', '', stem).strip()
@@ -167,7 +178,7 @@ def parse_multichoice(q_text: str) -> Optional[dict]:
     # No limitado a A-D: algunos exámenes traen 5+ opciones (E, F...); se
     # descartaban en silencio si el patrón solo reconocía hasta D.
     opt_pattern = r'\n([A-Z])\.\s+(.*?)(?=\n[A-Z]\.\s|\n*$)'
-    for match in re.finditer(opt_pattern, q_text, re.DOTALL):
+    for match in re.finditer(opt_pattern, q_text[a_match.start():], re.DOTALL):
         letter = match.group(1)
         opt_text = match.group(2).strip()
         opt_text = re.sub(r'\n\s*', ' ', opt_text)

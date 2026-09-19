@@ -4,6 +4,7 @@ Supports .pdf (via pdfplumber) and .txt (direct UTF-8 read).
 """
 import pdfplumber
 import io
+import re
 from typing import List
 from PIL import Image
 
@@ -160,6 +161,59 @@ def _render_table(rows) -> str:
     return "[Tabla]\n" + "\n".join(out) + "\n[/Tabla]"
 
 
+_BOLD_FONT = re.compile(r"bold|black|heavy|semibold|demibold", re.IGNORECASE)
+
+
+def _is_marker_fill(color) -> bool:
+    """Relleno "de marcador": un color con tono (amarillo, verde, celeste…),
+    no blanco ni gris — el sombreado gris de una celda o un encabezado no
+    es una marca de respuesta."""
+    if not isinstance(color, (tuple, list)) or len(color) != 3:
+        return False
+    r, g, b = (float(x) for x in color)
+    return max(abs(r - g), abs(g - b), abs(r - b)) > 0.15
+
+
+def _highlight_boxes(page) -> List[tuple]:
+    """Cajas (x0, top, x1, bottom) de resaltado: rectángulos rellenos de
+    color detrás del texto (así exporta Word el resaltado) y anotaciones
+    de resaltado hechas con un lector de PDF."""
+    area = float(page.width * page.height) or 1.0
+    boxes = []
+    for r in page.rects:
+        if r.get("fill") and _is_marker_fill(r.get("non_stroking_color")) \
+                and (r["width"] * r["height"]) / area < 0.3:
+            boxes.append((r["x0"], r["top"], r["x1"], r["bottom"]))
+    for a in page.annots or []:
+        subtype = str((a.get("data") or {}).get("Subtype", "")).lower()
+        if "highlight" in subtype:
+            boxes.append((a["x0"], a["top"], a["x1"], a["bottom"]))
+    return boxes
+
+
+def _underline_segments(page) -> List[tuple]:
+    """Segmentos horizontales finos (x0, x1, y): líneas o rectángulos de
+    menos de 1.5 pt de alto, que es como se dibuja un subrayado."""
+    segs = [(l["x0"], l["x1"], l["top"]) for l in page.lines if abs(l["top"] - l["bottom"]) < 1.5]
+    segs += [(r["x0"], r["x1"], r["top"]) for r in page.rects if r["height"] < 1.5 and r["width"] > 3]
+    return segs
+
+
+def _word_style(word: dict, highlights: List[tuple], underlines: List[tuple]) -> str | None:
+    """Marca de estilo de una palabra (sin contar el color de texto)."""
+    if highlights and any(_in_bbox(word, b) for b in highlights):
+        return "resaltado"
+    if underlines:
+        width = (word["x1"] - word["x0"]) or 1.0
+        for x0, x1, y in underlines:
+            overlap = min(x1, word["x1"]) - max(x0, word["x0"])
+            if overlap >= 0.6 * width and word["bottom"] - 1 <= y <= word["bottom"] + 3:
+                return "subrayado"
+    if _BOLD_FONT.search(str(word.get("fontname", ""))):
+        return "negrita"
+    return None
+
+
 def _enriched_page_text(page) -> str:
     """
     Texto de UNA página reconstruido desde las palabras de pdfplumber, con
@@ -173,6 +227,9 @@ def _enriched_page_text(page) -> str:
       lugar donde están. En texto plano la "X" de un cuadro de marcas
       quedaba al final de la fila, sin saber de qué columna era, y el
       modelo adivinaba la columna por el significado (REGLA 10).
+    - Resaltado, subrayado y negrita: igual que el color, como
+      ⟦resaltado⟧…⟦/resaltado⟧, ⟦subrayado⟧… y ⟦negrita⟧… (prioridad:
+      color > resaltado > subrayado > negrita, una sola marca por palabra).
 
     Las líneas se agrupan por altura igual que lo hace pdfplumber.
     """
@@ -187,8 +244,10 @@ def _enriched_page_text(page) -> str:
     except Exception:  # noqa: BLE001 — una tabla rara no debe tumbar la extracción
         tables = []
 
-    words = page.extract_words(extra_attrs=["non_stroking_color"], keep_blank_chars=False)
+    words = page.extract_words(extra_attrs=["non_stroking_color", "fontname"], keep_blank_chars=False)
     words = [w for w in words if not any(_in_bbox(w, bbox) for bbox, _ in tables)]
+    highlights = _highlight_boxes(page)
+    underlines = _underline_segments(page)
 
     blocks = []  # (top, texto)
     for line in cluster_objects(words, "top", tolerance=3):
@@ -198,6 +257,7 @@ def _enriched_page_text(page) -> str:
         for w in line:
             color = w.get("non_stroking_color")
             name = _color_name(color) if _char_has_color({"text": w["text"], "non_stroking_color": color}) else None
+            name = name or _word_style(w, highlights, underlines)
             if name != current:
                 if current:
                     parts[-1] += f"⟦/{current}⟧"
@@ -215,6 +275,10 @@ def _enriched_page_text(page) -> str:
 
 def _page_needs_enrichment(page) -> bool:
     if any(_char_has_color(ch) for ch in page.chars):
+        return True
+    if _highlight_boxes(page) or _underline_segments(page):
+        return True
+    if any(_BOLD_FONT.search(str(ch.get("fontname", ""))) for ch in page.chars):
         return True
     try:
         return bool(page.find_tables())

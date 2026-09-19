@@ -1,0 +1,76 @@
+{
+  "source": "synthetic",
+  "reviewed": true,
+  "file": "synthetic/s12_negrita.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "notes": "Respuestas marcadas en negrita; títulos de sección también en negrita (distractor); claves contrafácticas.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Qué órgano produce la insulina?",
+      "answers": [
+        "Hígado"
+      ],
+      "options": [
+        "Hígado",
+        "Páncreas",
+        "Riñón",
+        "Estómago"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el símbolo químico del oro?",
+      "answers": [
+        "Au"
+      ],
+      "options": [
+        "Ag",
+        "Au",
+        "Fe",
+        "Or"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles son colores primarios en el modelo RGB?",
+      "answers": [
+        "Amarillo",
+        "Violeta"
+      ],
+      "options": [
+        "Rojo",
+        "Amarillo",
+        "Verde",
+        "Violeta"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿En qué continente está Egipto?",
+      "answers": [
+        "Asia"
+      ],
+      "options": [
+        "Asia",
+        "África",
+        "Europa",
+        "Oceanía"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuántos huesos tiene aproximadamente el cuerpo humano adulto?",
+      "answers": [
+        "206"
+      ],
+      "options": [
+        "106",
+        "206",
+        "306",
+        "406"
+      ]
+    }
+  ]
+}

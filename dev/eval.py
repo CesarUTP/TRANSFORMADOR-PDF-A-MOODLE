@@ -396,7 +396,9 @@ def print_table(summaries: list, goldens: dict) -> None:
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--mode", default=os.environ.get("NORMALIZER_MODE", "text"))
+    ap.add_argument("--mode", default=os.environ.get("NORMALIZER_MODE", "json"),
+                    help="modo de la carga normal (json por defecto, igual que la app). "
+                         "'Normalizar con IA' usa NORMALIZER_MODE_AI (texto por defecto).")
     ap.add_argument("--enrich", action=argparse.BooleanOptionalAction, default=True,
                     help="ENRICH_PDF_TEXT: color y tablas en el texto + marcas resueltas en código "
                          "(activo por defecto, igual que en la app; --no-enrich para desactivarlo)")

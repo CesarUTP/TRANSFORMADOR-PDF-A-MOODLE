@@ -13,11 +13,11 @@ bloquean); main.py las corre en threadpool.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import HTTPException
 
-from config import ENRICH_PDF_TEXT, NORMALIZER_MODE
+from config import ENRICH_PDF_TEXT, NORMALIZER_MODE, NORMALIZER_MODE_AI
 from extractor import (
     extract_pages_text,
     extract_pages_text_enriched,
@@ -38,6 +38,7 @@ from validator import (
     partition_questions,
     pre_validate_raw_text,
     estimate_question_count,
+    estimate_expected_questions,
 )
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,27 @@ COLOR_MARKS_NOTICE = (
 )
 
 _COLOR_HINT_MIN_LEN = 20  # evita anclar con un enunciado demasiado corto/genérico
+
+# Recibe eventos de avance para la pantalla de carga (ver main.py, los
+# endpoints *_stream). Nunca es obligatorio: sin él, el flujo es idéntico.
+ProgressCallback = Optional[Callable[[Dict[str, Any]], None]]
+
+
+def _emit(progress: ProgressCallback, **event: Any) -> None:
+    if progress is None:
+        return
+    try:
+        progress(event)
+    except Exception:  # noqa: BLE001 — un aviso de progreso nunca debe romper la conversión
+        logger.debug("No se pudo emitir un evento de progreso", exc_info=True)
+
+
+def _ai_progress(progress: ProgressCallback, expected: int):
+    """Adapta el conteo de preguntas que reporta formatter al evento que
+    consume la pantalla de carga."""
+    if progress is None:
+        return None
+    return lambda done: _emit(progress, type="progress", done=done, expected=expected)
 
 
 def _tag_color_review_hints(valid_questions: List[Dict[str, Any]], colored_pages_text: List[str]) -> None:
@@ -80,7 +102,7 @@ def _tag_color_review_hints(valid_questions: List[Dict[str, Any]], colored_pages
             q["data"]["color_review_hint"] = True
 
 
-def parse_document(raw_bytes: bytes, filename: str) -> Dict[str, Any]:
+def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback = None) -> Dict[str, Any]:
     """Flujo de /api/parse: texto (+ imágenes de páginas con imagen incrustada)."""
     suffix = Path(filename).suffix.lower()
     if suffix not in (".pdf", ".txt"):
@@ -93,6 +115,7 @@ def parse_document(raw_bytes: bytes, filename: str) -> Dict[str, Any]:
     # Las imágenes son solo de páginas que de verdad tienen una incrustada
     # (código en captura, texto marcado por color) — no se renderiza el
     # documento completo.
+    _emit(progress, type="stage", key="extract", message="Leyendo el documento…")
     page_images: list = []
     try:
         if suffix == ".pdf":
@@ -143,16 +166,24 @@ def parse_document(raw_bytes: bytes, filename: str) -> Dict[str, Any]:
     # ── Gemini prefiltro: normalizar estructura ──────────────────────────
     marks = _deterministic_marks(raw_bytes) if suffix == ".pdf" else None
 
+    expected = estimate_expected_questions(full_text)
+    _emit(progress, type="stage", key="ai", mode=NORMALIZER_MODE, expected=expected,
+          images=len(page_images), message="La IA está ordenando las preguntas…")
+    on_ai = _ai_progress(progress, expected)
+
     if NORMALIZER_MODE == "json":
         model_text = _model_text_json(raw_bytes, marks) if suffix == ".pdf" else full_text
+        payload = extract_structured(model_text, page_images, progress=on_ai)
+        _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
         return _finalize_structured(
-            filename, extract_structured(model_text, page_images),
+            filename, payload,
             estimated_question_count, colored_pages_text, color_marks_notice,
             _colored_pages(raw_bytes) if suffix == ".pdf" else [], marks,
         )
 
     model_text = "\n".join(marks[0]) if marks else full_text
-    reformatted_text, was_reformatted = verify_and_format(model_text, page_images)
+    reformatted_text, was_reformatted = verify_and_format(model_text, page_images, progress=on_ai)
+    _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
 
     return finalize_parse_response(
         filename, full_text, reformatted_text, was_reformatted,
@@ -160,7 +191,7 @@ def parse_document(raw_bytes: bytes, filename: str) -> Dict[str, Any]:
     )
 
 
-def normalize_document_with_ai(raw_bytes: bytes, filename: str) -> Dict[str, Any]:
+def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: ProgressCallback = None) -> Dict[str, Any]:
     """
     Flujo de /api/normalize_with_ai: renderiza el documento COMPLETO como
     imágenes y deja que Gemini lo lea visualmente, sin depender de que el
@@ -174,6 +205,7 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str) -> Dict[str, Any
             detail="Normalizar con IA solo aplica a archivos .pdf (un .txt ya es texto plano).",
         )
 
+    _emit(progress, type="stage", key="extract", message="Preparando las páginas del documento…")
     try:
         full_text = extract_text_from_pdf(raw_bytes)
         page_images = render_all_pages_as_images(raw_bytes)
@@ -200,15 +232,25 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str) -> Dict[str, Any
     estimated_question_count = estimate_question_count(full_text)
 
     marks = _deterministic_marks(raw_bytes)
-    if NORMALIZER_MODE == "json":
+    # En un escaneado no hay texto del que estimar cuántas preguntas vienen:
+    # expected=0 y la pantalla muestra solo el avance, sin "de ~N".
+    expected = estimate_expected_questions(full_text) if full_text.strip() else 0
+    _emit(progress, type="stage", key="ai", mode=NORMALIZER_MODE_AI, expected=expected,
+          images=len(page_images), message="La IA está leyendo las páginas del documento…")
+    on_ai = _ai_progress(progress, expected)
+
+    if NORMALIZER_MODE_AI == "json":
         model_text = _model_text_json(raw_bytes, marks)
+        payload = extract_structured(model_text, page_images, progress=on_ai)
+        _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
         return _finalize_structured(
-            filename, extract_structured(model_text, page_images),
+            filename, payload,
             estimated_question_count, colored_pages_text, color_marks_notice,
             _colored_pages(raw_bytes), marks,
         )
 
-    reformatted_text, was_reformatted = verify_and_format(full_text, page_images)
+    reformatted_text, was_reformatted = verify_and_format(full_text, page_images, progress=on_ai)
+    _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
 
     return finalize_parse_response(
         filename, full_text, reformatted_text, was_reformatted,

@@ -64,6 +64,10 @@ GEMINI_MAX_RETRIES: int = 3
 # largo probado (19 páginas, 55 preguntas) responde en < 60 s, así que
 # 180 s deja margen de sobra y convierte el cuelgue en un reintento rápido.
 GEMINI_REQUEST_TIMEOUT_SECONDS: int = 180
+# El modo JSON genera ~3x más texto: el examen más lento medido (55
+# preguntas largas) tardó hasta 112 s, así que se le da más margen para
+# que un examen algo más grande no se convierta en un error por el corte.
+GEMINI_REQUEST_TIMEOUT_SECONDS_JSON: int = 300
 GEMINI_RETRY_WAIT_SECONDS: int = 10
 
 # temperature=0: la respuesta se genera de forma lo más determinista posible
@@ -295,7 +299,7 @@ REGLA 8 — RESPUESTAS MARCADAS SOLO POR COLOR (cuando recibas imágenes del doc
 - Si en las imágenes una opción aparece en un color de texto distinto al resto (ej. texto rojo mientras las demás opciones están en negro — puede ser cualquier color, no asumas que siempre es rojo), eso cuenta como una marca explícita de respuesta correcta, igual que un "✓" o un asterisco. Identifica el color que se usa de forma consistente como marca en el documento y trátalo como tal.
 - Antes de escribir la respuesta de CADA pregunta con opciones en imagen, revisa una por una TODAS sus opciones sin saltarte ninguna — no te detengas en la primera que encuentres marcada. Si MÁS DE UNA opción de la misma pregunta está marcada con ese color, es una pregunta de selección múltiple con VARIAS respuestas correctas a la vez — sigue exactamente REGLA 1 (sepáralas con " | " en RESPUESTAS, con el texto completo de cada una). Omitir una de las marcadas es un error tan grave como no detectar ninguna — vuelve a mirar la imagen completa de esa pregunta antes de responder si tienes cualquier duda.
 
-- Si en el TEXTO recibido aparecen tramos envueltos como ⟦rojo⟧…⟦/rojo⟧ (o con otro color: ⟦azul⟧, ⟦verde⟧…), ese texto está escrito en ese color en el documento original. Aplica esta misma regla: identifica qué color se usa de forma consistente para marcar OPCIONES de respuesta (normalmente distinto al de los títulos o encabezados, que también pueden venir en color y NO son respuestas) y trata cada opción en ese color como marcada. Si una pregunta tiene varias opciones en ese color, todas son correctas.
+- Si en el TEXTO recibido aparecen tramos envueltos como ⟦rojo⟧…⟦/rojo⟧ (o con otro color: ⟦azul⟧, ⟦verde⟧…), ese texto está escrito en ese color en el documento original. Lo mismo con ⟦resaltado⟧…⟦/resaltado⟧ (fondo de marcador), ⟦subrayado⟧…⟦/subrayado⟧ y ⟦negrita⟧…⟦/negrita⟧. Aplica esta misma regla: identifica qué marca se usa de forma consistente para señalar OPCIONES de respuesta (los títulos o encabezados también pueden venir en color o en negrita y NO son respuestas) y trata cada opción con esa marca como marcada. Si una pregunta tiene varias opciones con esa marca, todas son correctas; si TODAS sus opciones la tienen, esa marca no indica la respuesta.
 
 REGLA 9 — CÓDIGO MOSTRADO COMO IMAGEN (cuando recibas imágenes del documento):
 - Si una pregunta hace referencia a un fragmento de código que aparece como imagen (captura de un editor con resaltado de sintaxis), TRANSCRIBE ese código EXACTAMENTE como aparece (mismas líneas, misma indentación, sin corregir errores de sintaxis que pueda tener a propósito) dentro del enunciado de la pregunta correspondiente, en texto plano.
@@ -337,9 +341,16 @@ Responde ÚNICAMENTE con el texto convertido. Sin explicaciones ni markdown.
 # el texto enriquecido, "json" empata en exactitud general y además
 # elimina dos errores silenciosos del modo texto (enunciados cortados por
 # su propia lista A./B., y respuestas inventadas desde un banco de
-# palabras), pero tarda ~3.5x más. Queda en "text" por defecto hasta que
-# se decida ese balance.
-NORMALIZER_MODE: str = os.environ.get("NORMALIZER_MODE", "text").strip().lower()
+# palabras). Tarda 2-5x más (un examen de 55 preguntas: hasta ~95 s), lo
+# que se consideró aceptable frente a cargar el examen a mano. Es el modo
+# de la carga normal (/api/parse).
+NORMALIZER_MODE: str = os.environ.get("NORMALIZER_MODE", "json").strip().lower()
+
+# Modo de "Normalizar con IA" (/api/normalize_with_ai: todas las páginas
+# como imagen, pensado para escaneados). Ahí el modo texto midió 100 % y
+# el JSON 90 % (resolvió una pregunta por su cuenta), así que se queda en
+# texto.
+NORMALIZER_MODE_AI: str = os.environ.get("NORMALIZER_MODE_AI", "text").strip().lower()
 
 # Enriquece el texto de las páginas con color o tablas antes de mandarlo al
 # modelo (extractor.extract_pages_text_enriched): anota las palabras en
@@ -567,7 +578,7 @@ REGLA 8 — RESPUESTAS MARCADAS SOLO POR COLOR (cuando recibas imágenes del doc
 - Si en las imágenes una opción aparece en un color de texto distinto al resto (ej. texto rojo mientras las demás opciones están en negro — puede ser cualquier color, no asumas que siempre es rojo), eso cuenta como una marca explícita de respuesta correcta, igual que un "✓" o un asterisco. Identifica el color que se usa de forma consistente como marca en el documento y trátalo como tal.
 - Antes de marcar la respuesta de CADA pregunta con opciones en imagen, revisa una por una TODAS sus opciones sin saltarte ninguna — no te detengas en la primera que encuentres marcada. Si MÁS DE UNA opción de la misma pregunta está marcada con ese color, es una pregunta con VARIAS respuestas correctas — marca correcta=true en cada una (REGLA 1). Omitir una de las marcadas es un error tan grave como no detectar ninguna.
 
-- Si en el TEXTO recibido aparecen tramos envueltos como ⟦rojo⟧…⟦/rojo⟧ (o con otro color: ⟦azul⟧, ⟦verde⟧…), ese texto está escrito en ese color en el documento original. Aplica esta misma regla: identifica qué color se usa de forma consistente para marcar OPCIONES de respuesta (normalmente distinto al de los títulos o encabezados, que también pueden venir en color y NO son respuestas) y trata cada opción en ese color como marcada. Si una pregunta tiene varias opciones en ese color, todas son correctas.
+- Si en el TEXTO recibido aparecen tramos envueltos como ⟦rojo⟧…⟦/rojo⟧ (o con otro color: ⟦azul⟧, ⟦verde⟧…), ese texto está escrito en ese color en el documento original. Lo mismo con ⟦resaltado⟧…⟦/resaltado⟧ (fondo de marcador), ⟦subrayado⟧…⟦/subrayado⟧ y ⟦negrita⟧…⟦/negrita⟧. Aplica esta misma regla: identifica qué marca se usa de forma consistente para señalar OPCIONES de respuesta (los títulos o encabezados también pueden venir en color o en negrita y NO son respuestas) y trata cada opción con esa marca como marcada. Si una pregunta tiene varias opciones con esa marca, todas son correctas; si TODAS sus opciones la tienen, esa marca no indica la respuesta.
 
 REGLA 9 — CÓDIGO MOSTRADO COMO IMAGEN (cuando recibas imágenes del documento):
 - Si una pregunta hace referencia a un fragmento de código que aparece como imagen (captura de un editor con resaltado de sintaxis), TRANSCRIBE ese código EXACTAMENTE como aparece (mismas líneas, misma indentación, sin corregir errores de sintaxis que pueda tener a propósito) dentro del enunciado de la pregunta correspondiente, en texto plano.
