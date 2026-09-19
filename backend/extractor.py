@@ -4,9 +4,18 @@ Supports .pdf (via pdfplumber) and .txt (direct UTF-8 read).
 """
 import pdfplumber
 import io
+import logging
 import re
 from typing import List
 from PIL import Image
+
+# pdfminer (debajo de pdfplumber) avisa "CropBox missing from /Page,
+# defaulting to MediaBox" por cada página de cada lectura: es normal en PDFs
+# exportados desde Word/Docs, usa el tamaño completo de la página (lo
+# correcto) y no afecta la extracción. Como el PDF se recorre varias veces
+# por examen, llenaba la consola con decenas de líneas iguales. Sus errores
+# reales se siguen mostrando.
+logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 # Tope de páginas que se renderizan como imagen y se envían a Gemini. Un
 # examen extremo con decenas de páginas con imágenes no debe disparar el
