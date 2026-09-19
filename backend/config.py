@@ -43,18 +43,20 @@ def _load_dotenv() -> None:
 _load_dotenv()
 
 # ── Gemini API ──────────────────────────────────────────────────────────────
-# La key se lee de la variable de entorno GEMINI_API_KEY (o de un .env
-# local, ver _load_dotenv). El fallback de abajo es TEMPORAL: la key está
-# commiteada en el historial del repo, así que debe rotarse en Google AI
-# Studio; una vez configurada la nueva por entorno/.env, este fallback se
-# elimina. Se deja mientras tanto para no romper el ejecutable empaquetado.
-_LEGACY_FALLBACK_KEY = "AIzaSyD-O2eEgokFLV-XZmcmH7-hBmsLRdfWOXE"
-GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "") or _LEGACY_FALLBACK_KEY
-if GEMINI_API_KEY == _LEGACY_FALLBACK_KEY:
-    _logger.warning(
-        "GEMINI_API_KEY no configurada: usando la key de respaldo commiteada en el "
-        "repo. Rótala y configúrala en un archivo .env (ver .env.example)."
-    )
+# La key se lee de la variable de entorno GEMINI_API_KEY o de un archivo
+# .env (ver _load_dotenv y .env.example). Nunca va en el código: la
+# anterior quedó en el historial del repo y hubo que rotarla.
+GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "").strip()
+# Mensaje único para cuando falta: lo muestra la app tal cual (ver
+# formatter._generate_with_retries), así el usuario sabe qué hacer en vez
+# de ver un error técnico de la API.
+MISSING_API_KEY_MESSAGE = (
+    "Falta configurar la clave de la IA (GEMINI_API_KEY). Crea un archivo .env "
+    "junto al programa con la línea GEMINI_API_KEY=tu_clave — puedes obtenerla "
+    "gratis en https://aistudio.google.com/apikey (ver .env.example)."
+)
+if not GEMINI_API_KEY:
+    _logger.warning(MISSING_API_KEY_MESSAGE)
 GEMINI_MODEL_NAME: str = "gemini-3.1-flash-lite"
 GEMINI_MAX_RETRIES: int = 3
 # Tiempo máximo de UNA llamada a Gemini. Sin esto, una petición que se

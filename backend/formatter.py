@@ -29,6 +29,7 @@ from PIL import Image
 
 from config import (
     GEMINI_API_KEY,
+    MISSING_API_KEY_MESSAGE,
     GEMINI_MODEL_NAME,
     GEMINI_MAX_RETRIES,
     GEMINI_REQUEST_TIMEOUT_SECONDS,
@@ -411,6 +412,9 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
     # gastar los reintentos normales esperando la cuota.
     quota_waits_left = 5
     overload_waits = list(_OVERLOAD_WAITS)
+
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=503, detail=MISSING_API_KEY_MESSAGE)
 
     attempt = 0
     while attempt < max_retries:

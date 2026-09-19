@@ -60,10 +60,11 @@ el Bloc de notas, como administrador, con una sola línea:
 Guárdalo con el nombre exacto ".env" (tipo "Todos los archivos", para
 que no quede como ".env.txt").
 
-Mientras no exista ese archivo, el ejecutable usa una clave de respaldo
-que viene dentro del programa. Esa clave está en el historial del
-repositorio y hay que reemplazarla: no compartas el instalador fuera de
-tu control directo hasta hacerlo.
+Sin ese archivo la app abre igual, pero al convertir un examen avisa
+que falta configurar la clave. El ejecutable NO trae ninguna clave
+dentro: cada PC donde se instale necesita su propio .env.
+
+La clave se obtiene gratis en https://aistudio.google.com/apikey
 
 La app se queda cargando (splash) y nunca abre
 ------------------------------------------------
