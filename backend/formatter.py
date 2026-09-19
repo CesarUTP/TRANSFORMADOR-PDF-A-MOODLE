@@ -26,18 +26,6 @@ from typing import Callable, List, Optional
 import requests
 from fastapi import HTTPException
 from PIL import Image
-from google.api_core import exceptions as google_exceptions
-from google.api_core.exceptions import (
-    ResourceExhausted,
-    TooManyRequests,
-    NotFound,
-    InvalidArgument,
-    PermissionDenied,
-    Unauthenticated,
-    BadRequest,
-    ServiceUnavailable,
-    InternalServerError,
-)
 
 from config import (
     GEMINI_API_KEY,
@@ -123,10 +111,39 @@ def _record_call(result: "_GenResult", seconds: float) -> None:
         _call_log.entries = []
     _call_log.entries.append(entry)
 
-# Errores que NO se arreglan reintentando (modelo inexistente, API key
-# inválida, petición mal formada): fallar de inmediato con un mensaje claro
-# en vez de agotar los 3 reintentos con 10s de espera cada uno para nada.
-_NON_RETRYABLE_ERRORS = (NotFound, InvalidArgument, PermissionDenied, Unauthenticated, BadRequest)
+# ── Errores HTTP de la API de Gemini ─────────────────────────────────────────
+# Tres familias, según qué conviene hacer con cada una (ver
+# _generate_with_retries). El texto de la excepción lleva el cuerpo completo
+# de la respuesta de Google: ahí vienen "Please retry in 38s" y el nombre de
+# la cuota agotada ("...PerDay...").
+
+class GeminiHTTPError(Exception):
+    def __init__(self, code: int, body: str):
+        self.code = code
+        super().__init__(f"{code} {body}")
+
+
+class GeminiQuotaError(GeminiHTTPError):
+    """429: cuota por minuto o por día agotada."""
+
+
+class GeminiOverloadedError(GeminiHTTPError):
+    """500/502/503/504: Google saturado o con un error interno."""
+
+
+class GeminiRejectedError(GeminiHTTPError):
+    """400/401/403/404: modelo inexistente, API key inválida o petición
+    mal formada. No se arregla reintentando: se falla de inmediato."""
+
+
+def _http_error(code: int, body: str) -> GeminiHTTPError:
+    if code == 429:
+        return GeminiQuotaError(code, body)
+    if code in (500, 502, 503, 504):
+        return GeminiOverloadedError(code, body)
+    if code in (400, 401, 403, 404):
+        return GeminiRejectedError(code, body)
+    return GeminiHTTPError(code, body)
 
 
 # ── Llamada REST con streaming ──────────────────────────────────────────────
@@ -161,9 +178,8 @@ def _stream_generate(body: dict, timeout: int, on_text: Optional[Callable[[str],
     """
     Una llamada a streamGenerateContent (SSE). Va acumulando el texto y
     llama a on_text(texto_acumulado) con cada fragmento. Los errores HTTP se
-    convierten en las mismas excepciones de google.api_core que lanzaba el
-    SDK (TooManyRequests, InvalidArgument…), así el manejo de reintentos de
-    más abajo no cambia.
+    convierten en GeminiQuotaError / GeminiOverloadedError /
+    GeminiRejectedError para el manejo de reintentos de más abajo.
     """
     url = f"{_API_BASE}/models/{GEMINI_MODEL_NAME}:streamGenerateContent?alt=sse"
     deadline = time.monotonic() + timeout
@@ -177,7 +193,11 @@ def _stream_generate(body: dict, timeout: int, on_text: Optional[Callable[[str],
         timeout=(20, min(timeout, 120)),
     )
     if resp.status_code != 200:
-        raise google_exceptions.from_http_response(resp)
+        try:
+            body = resp.text
+        finally:
+            resp.close()
+        raise _http_error(resp.status_code, body)
     # El stream SSE llega como "text/event-stream" sin charset, y requests
     # asume ISO-8859-1 en ese caso: las tildes salían como "Â¿CuÃ¡nto" en
     # vez de "¿Cuánto" (lo detectó dev/eval.py). La API siempre responde
@@ -196,8 +216,7 @@ def _stream_generate(body: dict, timeout: int, on_text: Optional[Callable[[str],
                 # Un error que llega DENTRO del stream (ya con status 200),
                 # típicamente la sobrecarga del modelo a mitad de respuesta.
                 err = event["error"]
-                raise google_exceptions.from_http_status(
-                    int(err.get("code") or 500), err.get("message") or "error en el stream")
+                raise _http_error(int(err.get("code") or 500), json.dumps(err, ensure_ascii=False))
             block = (event.get("promptFeedback") or {}).get("blockReason") or block
             for cand in event.get("candidates") or []:
                 for part in (cand.get("content") or {}).get("parts") or []:
@@ -407,7 +426,7 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
             _record_call(result, time.monotonic() - t0)
             return parse(result)
 
-        except (ResourceExhausted, TooManyRequests) as exc:
+        except GeminiQuotaError as exc:
             if "PerDay" in str(exc):
                 # Cuota DIARIA agotada (el plan gratuito admite 500
                 # peticiones por día y por modelo): esperar un minuto no
@@ -435,7 +454,7 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
             _notify(on_retry, f"Límite por minuto del servicio de IA alcanzado: se continúa en {delay:.0f} s…")
             time.sleep(delay)
 
-        except (ServiceUnavailable, InternalServerError) as exc:
+        except GeminiOverloadedError as exc:
             # Google saturado o con un error interno: no es un problema del
             # documento, así que tiene su propio contador y esperas crecientes.
             if not overload_waits:
@@ -459,7 +478,7 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
             # transitorio de Gemini, así que no debe reintentarse ni
             # convertirse en un 503 genérico por el "except Exception" de abajo.
             raise
-        except _NON_RETRYABLE_ERRORS as exc:
+        except GeminiRejectedError as exc:
             logger.error(
                 "Gemini prefiltro: error no recuperable (%s). No se reintenta. Detalle: %s",
                 type(exc).__name__, exc,
@@ -469,7 +488,7 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
                 detail=(
                     "El servicio de IA rechazó la solicitud (posible configuración "
                     "inválida del modelo o de la API key). Contacta al administrador "
-                    f"del sistema. Detalle técnico: {type(exc).__name__}."
+                    f"del sistema. Detalle técnico: error HTTP {exc.code}."
                 ),
             )
         except Exception as exc:

@@ -22,6 +22,16 @@ Requisitos en la PC con Windows (una sola vez)
 2. Inno Setup (gratis, cualquier versión) — https://jrsoftware.org/isdl.php
    Instálalo con las opciones por defecto.
 
+Antes de copiar: actualiza esta carpeta
+------------------------------------------------
+Esta carpeta lleva una COPIA del código. Antes de llevarla a Windows,
+en la máquina de desarrollo corre:
+
+    backend/venv/bin/python dev/sync_ejecutable.py
+
+Copia aquí la versión actual de backend/, frontend/ y launcher.py. Si te
+lo saltas, el instalador sale con código viejo.
+
 Pasos
 ------------------------------------------------
 1. Copia esta carpeta completa ("ejecutable") a la PC con Windows.
@@ -38,13 +48,22 @@ Escritorio, tiene su propio ícono, y se desinstala desde "Agregar o
 quitar programas" — quien lo instale NO necesita tener Python ni nada
 más instalado.
 
-Nota sobre la clave de Gemini
+Clave de Gemini (API key)
 ------------------------------------------------
-El ejecutable incluye la misma clave de API de Gemini que usas en
-desarrollo (sigue pendiente moverla a configuración, como ya
-habíamos hablado). Si vas a compartir este instalador con alguien
-fuera de tu control directo, ten en cuenta que esa clave queda
-embebida dentro del .exe.
+La app lee la clave de un archivo ".env" ubicado junto a
+"ConvertidorMoodle.exe" (en la carpeta donde quedó instalada, por
+defecto C:\Program Files\Conversor a Moodle XML). Créalo con
+el Bloc de notas, como administrador, con una sola línea:
+
+    GEMINI_API_KEY=tu_clave_aqui
+
+Guárdalo con el nombre exacto ".env" (tipo "Todos los archivos", para
+que no quede como ".env.txt").
+
+Mientras no exista ese archivo, el ejecutable usa una clave de respaldo
+que viene dentro del programa. Esa clave está en el historial del
+repositorio y hay que reemplazarla: no compartas el instalador fuera de
+tu control directo hasta hacerlo.
 
 La app se queda cargando (splash) y nunca abre
 ------------------------------------------------

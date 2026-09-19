@@ -584,7 +584,6 @@ def pre_validate_raw_text(text: str) -> None:
     Verifica que:
       - El texto no esté vacío y tenga una longitud mínima (ej. 100 caracteres).
       - Contenga indicios de preguntas (ej. la palabra 'pregunta' o numeraciones)
-      - Contenga indicios de clave de respuestas (ej. 'respuestas' o 'respuesta').
     """
     text_clean = text.strip()
     if len(text_clean) < 100:
@@ -603,14 +602,15 @@ def pre_validate_raw_text(text: str) -> None:
         or re.search(r'(?:^|\n)\s*[1-5]\s*[.\)\-:]', text_clean) is not None
     )
     
-    # Comprobar si tiene sección de respuestas o respuestas correctas
-    has_answers = "respuestas" in lower_text or "respuesta" in lower_text or "correcta" in lower_text
-
+    # Ya NO se exige una palabra como "respuesta" o "correcta": un examen
+    # real puede marcar las respuestas en rojo, con un asterisco o con una
+    # clave titulada "CLAVE" / "Solucionario", sin usar nunca esa palabra —
+    # y se rechazaba entero antes de llegar a la IA (lo detectó el set de
+    # regresión, samples/golden/s04). Un examen sin ninguna respuesta
+    # marcada tampoco debe bloquearse aquí: el modo tolerante deja esas
+    # preguntas como "rescatables" para marcarlas a mano en el editor.
     if not has_questions:
         raise ValueError("No se encontraron indicios de preguntas en el documento (ej. 'Pregunta N:' o numeraciones).")
-
-    if not has_answers:
-        raise ValueError("No se encontraron indicios de la sección de respuestas en el documento (ej. 'RESPUESTAS').")
 
 
 def estimate_question_count(raw_text: str) -> int:
@@ -629,3 +629,44 @@ def estimate_question_count(raw_text: str) -> int:
     """
     matches = re.findall(r'(?:^|\n)\s*\d{1,3}\s*[.\)]\s', raw_text)
     return len(matches)
+
+
+def estimate_expected_questions(raw_text: str) -> int:
+    """
+    Estimación del número de preguntas ANTES de llamar a la IA, para que la
+    pantalla de carga pueda decir "pregunta 12 de ~40" y calcular el tiempo
+    restante. A diferencia de estimate_question_count (un techo, que cuenta
+    cualquier línea numerada), busca la secuencia 1, 2, 3… N más larga de
+    números de pregunta: una clave al final repite los mismos números (no
+    los duplica) y un número suelto (un año, una opción numerada) no
+    extiende la secuencia. Sin numeración, cuenta los enunciados que
+    terminan en "?". Es aproximada a propósito (se muestra con "~"):
+    exacta en 14 de 16 exámenes del set de regresión, y el mayor desvío
+    medido fue de ±30 %.
+    """
+    nums = {int(n) for n in re.findall(r"(?im)^\s*pregunta\s*(\d{1,3})\b", raw_text)}
+    nums |= {int(n) for n in re.findall(r"(?m)^\s*(\d{1,3})\s*[.):\-]", raw_text)}
+    k = 0
+    while k + 1 in nums:
+        k += 1
+    lines = [ln.strip() for ln in raw_text.splitlines()]
+    question_marks = sum(1 for ln in lines if ln.endswith("?"))
+    if not k:
+        return question_marks
+    # Preguntas SIN número intercaladas entre las numeradas (medido en
+    # Computación: 27 numeradas + 6 sueltas tras la 13, y la pantalla
+    # decía "de ~27" hasta que llegaba a 33). Un "?" cuenta como pregunta
+    # aparte solo si la pregunta numerada anterior ya se cerró con su
+    # propio "?"; si no, es la segunda línea de ese mismo enunciado. Una
+    # opción rotulada ("A. ¿Cómo…") abre su propio bloque por la misma
+    # razón: su "?" en la línea siguiente no es una pregunta nueva.
+    numbered = re.compile(r"(?i)^(?:pregunta\s*\d{1,3}\b|\d{1,3}\s*[.):\-]|[a-z]\s*[.)]\s)")
+    extra, closed = 0, True
+    for ln in lines:
+        if numbered.match(ln):
+            closed = ln.endswith("?")
+        elif ln.endswith("?"):
+            if closed:
+                extra += 1
+            closed = True
+    return max(k + extra, question_marks)

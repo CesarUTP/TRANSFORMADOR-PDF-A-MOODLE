@@ -35,9 +35,15 @@ cmd = [
     "--collect-all", "pdfminer",
     "--collect-all", "lxml",
     "--collect-all", "python_multipart",
-    "--collect-all", "google.generativeai",
-    "--collect-all", "google.api_core",
-    "--collect-all", "grpc",
+    # ── Llamada a Gemini: API REST directa con requests (formatter.py), sin
+    # el SDK de Google. Como backend/ va como datos, requests y su cadena
+    # (certificados HTTPS incluidos) hay que declararlos a mano: antes
+    # entraban de rebote con google.generativeai ──────────────────────────
+    "--collect-all", "requests",
+    "--collect-all", "urllib3",
+    "--collect-all", "certifi",
+    "--collect-all", "charset_normalizer",
+    "--collect-all", "idna",
     # ── PyWebView y su backend para Windows (Edge Chromium) ─────────────
     "--collect-all", "webview",
     "--hidden-import", "webview.platforms.winforms",

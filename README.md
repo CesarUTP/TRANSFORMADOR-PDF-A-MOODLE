@@ -11,15 +11,19 @@ Corre como una app de escritorio nativa (Windows/macOS, vía `pywebview`) — no
 - **7 tipos de pregunta Moodle**: opción múltiple, verdadero/falso, emparejamiento, completar (Cloze), ensayo, respuesta corta y numérica.
 - **Respuestas múltiples**: tanto en opción múltiple como en cada espacio de una pregunta Cloze, se puede marcar más de una opción como correcta a la vez.
 - **Prefiltro de IA**: si el examen no viene en el formato esperado (numeración distinta, respuestas marcadas con ✓, claves de emparejamiento sueltas, etc.), Gemini lo normaliza automáticamente antes de procesarlo — sin inventar ni resolver ninguna respuesta que no esté indicada en el original.
-- **Validación de que el archivo sea realmente una prueba**: antes de convertir nada, el sistema evalúa si el documento tiene preguntas y una clave de respuestas reales. Si le suben una presentación, un manual, un artículo o cualquier otro documento que no sea una evaluación, lo rechaza con un mensaje claro en vez de inventar preguntas a partir de su contenido.
+- **Respuestas leídas del documento, no adivinadas**: la clave al final, o las marcas del propio examen (texto en color, resaltado, subrayado, negrita, ✓ y cuadros con X). En un PDF digital las marcas se leen del archivo en código; si una pregunta no tiene respuesta marcada, queda señalada para completarla, nunca se inventa.
+- **PDF escaneados**: "Normalizar con IA" lee las páginas como imagen (hasta 15).
+- **Validación de que el archivo sea realmente una prueba**: antes de convertir nada, el sistema evalúa si el documento tiene preguntas con respuesta reales. Si le suben una presentación, un manual, un artículo o cualquier otro documento que no sea una evaluación, lo rechaza con un mensaje claro en vez de inventar preguntas a partir de su contenido.
 - **Editor de revisión interactivo**: antes de generar el XML final, se pueden inspeccionar y editar todas las preguntas.
   - Filtro por tipo (los 7 tipos soportados), con conteo en vivo y color propio por tipo.
   - Menú de "Añadir nueva pregunta" colapsable: se despliega en un clic y vuelve a cerrarse solo al elegir un tipo.
-  - Panel de revisión a la derecha (abajo en pantallas angostas): mapa del examen con la pregunta actual, las que tienen avisos y clic para saltar, más los botones **Aprobar** / **Cancelar**, siempre a la vista.
+  - Panel de revisión a la derecha (abajo en pantallas angostas): mapa del examen con la pregunta actual, las **incompletas en rojo** (falta enunciado, opciones, respuesta correcta o una pareja; se revisa en vivo) y las que conviene revisar en naranja, con clic para saltar, más los botones **Aprobar** / **Cancelar**. Aprobar no avanza mientras haya incompletas.
+  - Distribución de puntos equitativa o por tipo (con pesos), que siempre suma exacto el total.
   - Checkboxes para respuestas múltiples y un constructor visual para preguntas Cloze (sin escribir la sintaxis de corchetes a mano).
 - **Resumen visual del resultado**: al terminar, una tarjeta por cada tipo de pregunta *presente* en el examen (no se muestran tipos con 0 preguntas) y una gráfica de pastel con la distribución de los puntos totales por tipo.
 - **Historial de conversiones**: cada examen convertido queda guardado localmente y se puede volver a descargar.
-- **100% local**: el procesamiento del documento ocurre en tu equipo. La IA solo recibe el texto ya extraído, únicamente para normalizar su estructura.
+- **Procesamiento local**: el documento se procesa en tu equipo. Al servicio de IA solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas en imágenes o PDF escaneados).
+- **Progreso en vivo**: la pantalla de carga muestra por qué pregunta va la IA y el tiempo restante.
 
 ---
 
@@ -66,24 +70,17 @@ Conversor a Moodle XML/
 │   ├── synthetic/        ← Exámenes sintéticos (generados por dev/synthetic/)
 │   └── golden/           ← Resultado esperado de cada uno (set de regresión)
 │
-├── dev/
+├── dev/                  ← Solo desarrollo y pruebas (no va en el instalador)
 │   ├── eval.py           ← Evaluación de la normalización contra samples/golden/
 │   ├── compare.py        ← Compara resultados de eval.py lado a lado
 │   ├── synthetic/        ← Generador de los exámenes sintéticos
-│   └── eval_results/     ← Resultados guardados (ver RESULTADOS.md)
-│
-├── samples/              ← Exámenes de ejemplo para probar la app manualmente
-│   ├── Parcial_Historia_Geografia.pdf
-│   └── parcial n.1.pdf
-│
-├── dev/                  ← Scripts y datos usados solo en desarrollo/pruebas
-│   ├── create_exam_pdf.py
-│   ├── list_models.py
-│   ├── run_test.py
-│   └── test_webview.py
+│   ├── eval_results/     ← Resultados guardados (ver RESULTADOS.md)
+│   ├── sync_ejecutable.py ← Copia el código actual a ejecutable/ (antes de armar el instalador)
+│   ├── list_models.py    ← Lista los modelos de Gemini disponibles para la API key
+│   └── create_exam_pdf.py, run_test.py, test_webview.py
 │
 └── ejecutable/           ← Todo lo necesario para generar el instalador de Windows
-    ├── backend/ frontend/ assets/ launcher.py  ← copia autosuficiente del código fuente
+    ├── backend/ frontend/ assets/ launcher.py  ← copia del código (se actualiza con dev/sync_ejecutable.py)
     ├── build.py           ← compila el .exe con PyInstaller
     ├── installer.iss      ← script de Inno Setup (icono, accesos directos, desinstalador)
     ├── build_windows.bat  ← un solo doble clic que hace todo el proceso
@@ -249,10 +246,13 @@ python-multipart==0.0.20
 pdfplumber==0.11.6
 lxml>=5.3.2
 pydantic>=2.11.3
-google-generativeai==0.8.3
+requests>=2.31
+Pillow>=10.0
 ```
 
-Además, para la app de escritorio: `pywebview` (no incluida en `requirements.txt` porque no hace falta para correr solo el backend).
+La llamada a Gemini se hace directo contra su API REST con `requests` (streaming SSE), sin el SDK de Google: el SDK no entregaba la respuesta por partes (sin eso no hay progreso en vivo) y sumaba decenas de MB al ejecutable (`grpc`, `protobuf`…).
+
+Además, para la app de escritorio: `pywebview` (no incluida en `requirements.txt` porque no hace falta para correr solo el backend). Para `dev/eval.py` y los exámenes sintéticos: `dev/requirements-dev.txt`.
 
 ---
 
@@ -296,7 +296,7 @@ Se controla con variables de entorno (o un archivo `.env`):
 
 ---
 
-> **Nota de privacidad:** El procesamiento del documento (extracción, parseo, generación del XML) ocurre localmente. El prefiltro de IA solo envía el texto ya extraído a la API de Google, únicamente para normalizar su estructura — nunca las respuestas correctas por separado, ni ningún otro dato.
+> **Nota de privacidad:** El procesamiento del documento (extracción, parseo, generación del XML) ocurre localmente. A la API de Google (Gemini) se envía, únicamente para ordenar las preguntas, el texto extraído y, cuando hace falta, imágenes de algunas páginas: las que tienen imágenes incrustadas (código en captura, marcas dentro de una imagen) o todas, hasta 15, en un PDF escaneado. No se envía ningún otro dato.
 
 ---
 
@@ -315,9 +315,14 @@ La causa más común: un módulo que usa `backend/` (fastapi, uvicorn,
 sqlite3, etc.) no quedó incluido en el `.exe`. Como PyInstaller trata
 la carpeta `backend/` como datos copiados tal cual (vía `--add-data`)
 y no como código que analiza, no detecta automáticamente sus imports
-— hay que declararlos a mano con `--hidden-import` en
-[`ejecutable/build.py`](ejecutable/build.py) y volver a compilar. Ver
+— hay que declararlos a mano con `--hidden-import` o `--collect-all` en
+[`ejecutable/build.py`](ejecutable/build.py) (y en [`build.py`](build.py)) y volver a compilar. Ver
 [`ejecutable/LEEME_WINDOWS.txt`](ejecutable/LEEME_WINDOWS.txt) para más detalle.
+
+Otra causa: haber armado el instalador con una copia vieja del código.
+`ejecutable/` lleva su propia copia de `backend/`, `frontend/` y
+`launcher.py`; antes de llevarla a Windows, corre
+`backend/venv/bin/python dev/sync_ejecutable.py`.
 
 ---
 
