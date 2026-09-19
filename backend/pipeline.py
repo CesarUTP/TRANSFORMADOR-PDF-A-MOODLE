@@ -47,51 +47,35 @@ logger = logging.getLogger(__name__)
 # (o no se pudo determinar) si ese color marca respuestas. _marks_notice lo
 # reemplaza por uno concreto cuando las marcas se resolvieron en código.
 COLOR_MARKS_NOTICE = (
-    "El documento tiene texto en color, pero el sistema no encontró un "
-    "patrón claro de respuestas marcadas, así que las marcas las interpretó "
-    "la IA. Revisa las preguntas con el aviso «revisar marca» antes de aprobar."
+    "El documento tiene texto en color que no se pudo leer como marca de "
+    "respuesta. Revisa las preguntas con «revisar marca»."
 )
 
-# (cómo se dice "marcadas ___", cómo se nombra la marca en una frase)
+# Cómo se nombra cada marca en el aviso ("leídas del texto en rojo").
 _MARK_LABELS = {
-    "resaltado": ("con resaltado", "el resaltado"),
-    "subrayado": ("con subrayado", "el subrayado"),
-    "negrita": ("en negrita", "la negrita"),
+    "resaltado": "del resaltado",
+    "subrayado": "del subrayado",
+    "negrita": "de la negrita",
 }
 
 
 def _marks_notice(mark: Any, applied: int, n_table: int, n_uncertain: int,
                   fallback: Any) -> Any:
-    """Aviso que explica de dónde salieron las respuestas cuando el
-    documento las marca (color, resaltado, subrayado, negrita o X en un
-    cuadro) en vez de traer una clave. applied y n_table cuentan las
-    preguntas que llegan al editor con la respuesta leída de la marca."""
-    parts: List[str] = []
+    """Aviso corto de dónde salieron las respuestas cuando el documento las
+    marca (color, resaltado, subrayado, negrita o X en un cuadro). applied y
+    n_table cuentan las preguntas que llegan al editor con la respuesta
+    leída de la marca."""
+    tables = f"{n_table} emparejamiento{'s' if n_table != 1 else ''} desde un cuadro con X"
     if mark and applied:
-        label, article = _MARK_LABELS.get(mark, (f"en {mark}", f"el {mark}"))
-        parts.append(
-            f"Las respuestas correctas de este documento están marcadas {label}. "
-            f"En {applied} pregunta{'s' if applied != 1 else ''} el sistema leyó esa marca "
-            f"directamente del PDF y usó las opciones marcadas como respuesta, sin que la IA la interprete. "
-            f"Revísalas antes de aprobar: si el documento también usa {article} para otras "
-            f"cosas (títulos, palabras destacadas), alguna respuesta podría haber quedado mal."
-        )
-        if n_uncertain:
-            parts.append(
-                f"Las {n_uncertain} con el aviso «revisar marca» son las que no se pudieron leer con certeza."
-                if n_uncertain != 1 else
-                "La que tiene el aviso «revisar marca» es la que no se pudo leer con certeza."
-            )
-    if n_table:
-        parts.append(
-            f"{n_table} pregunta{'s' if n_table != 1 else ''} de emparejamiento se "
-            f"{'armaron' if n_table != 1 else 'armó'} desde un cuadro marcado con X, "
-            f"uniendo cada fila con la columna de su X"
-            + ("." if parts else ": revisa que cada pareja haya quedado bien antes de aprobar.")
-        )
-    if not parts:
+        label = _MARK_LABELS.get(mark, f"del texto en {mark}")
+        head = f"Respuestas leídas {label} ({applied} pregunta{'s' if applied != 1 else ''})"
+        head += f" y {tables}." if n_table else "."
+    elif n_table:
+        head = f"Respuestas leídas de un cuadro con X ({n_table} emparejamiento{'s' if n_table != 1 else ''})."
+    else:
         return fallback
-    return " ".join(parts)
+    tail = "Revísalas antes de aprobar" + (", sobre todo las marcadas «revisar marca»." if n_uncertain else ".")
+    return f"{head} {tail}"
 
 
 _COLOR_HINT_MIN_LEN = 20  # evita anclar con un enunciado demasiado corto/genérico
