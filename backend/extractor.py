@@ -144,20 +144,53 @@ def _color_name(rgb) -> str:
     return "morado"
 
 
-def _annotated_page_text(page) -> str:
+def _in_bbox(word: dict, bbox) -> bool:
+    x0, top, x1, bottom = bbox
+    cx, cy = (word["x0"] + word["x1"]) / 2, (word["top"] + word["bottom"]) / 2
+    return x0 <= cx <= x1 and top <= cy <= bottom
+
+
+def _render_table(rows) -> str:
+    """Tabla como filas "| celda | celda |" (celdas vacías incluidas: la
+    columna en la que está cada marca es justamente la información)."""
+    out = []
+    for row in rows:
+        cells = [" ".join(str(c or "").split()) for c in row]
+        out.append("| " + " | ".join(cells) + " |")
+    return "[Tabla]\n" + "\n".join(out) + "\n[/Tabla]"
+
+
+def _enriched_page_text(page) -> str:
     """
-    Texto de UNA página con cada tramo de texto en color envuelto como
-    ⟦rojo⟧texto⟦/rojo⟧. extract_text() descarta el color, así que una
-    respuesta marcada en rojo llegaba al modelo como texto normal —
-    invisible — y el modelo terminaba resolviendo la pregunta por su
-    cuenta (ver REGLA 8). Se reconstruyen las líneas desde las palabras
-    (mismo agrupamiento por altura que usa pdfplumber) para poder marcar
-    exactamente qué palabras tienen color.
+    Texto de UNA página reconstruido desde las palabras de pdfplumber, con
+    dos datos que extract_text() pierde y que son justamente las marcas de
+    respuesta más comunes en un PDF digital:
+
+    - Color: cada tramo en color va envuelto como ⟦rojo⟧texto⟦/rojo⟧. Sin
+      esto, una respuesta marcada en rojo llegaba al modelo como texto
+      normal y el modelo terminaba resolviendo la pregunta por su cuenta.
+    - Tablas: se insertan con su estructura ("| celda | celda |") en el
+      lugar donde están. En texto plano la "X" de un cuadro de marcas
+      quedaba al final de la fila, sin saber de qué columna era, y el
+      modelo adivinaba la columna por el significado (REGLA 10).
+
+    Las líneas se agrupan por altura igual que lo hace pdfplumber.
     """
     from pdfplumber.utils import cluster_objects
 
+    tables = []
+    try:
+        for t in page.find_tables():
+            rows = t.extract()
+            if rows and len(rows) >= 2 and max(len(r) for r in rows) >= 2:
+                tables.append((t.bbox, rows))
+    except Exception:  # noqa: BLE001 — una tabla rara no debe tumbar la extracción
+        tables = []
+
     words = page.extract_words(extra_attrs=["non_stroking_color"], keep_blank_chars=False)
-    lines_out: List[str] = []
+    words = [w for w in words if not any(_in_bbox(w, bbox) for bbox, _ in tables)]
+
+    blocks = []  # (top, texto)
     for line in cluster_objects(words, "top", tolerance=3):
         line = sorted(line, key=lambda w: w["x0"])
         parts: List[str] = []
@@ -168,34 +201,55 @@ def _annotated_page_text(page) -> str:
             if name != current:
                 if current:
                     parts[-1] += f"⟦/{current}⟧"
-                if name:
-                    parts.append(f"⟦{name}⟧{w['text']}")
-                else:
-                    parts.append(w["text"])
+                parts.append(f"⟦{name}⟧{w['text']}" if name else w["text"])
                 current = name
             else:
                 parts.append(w["text"])
         if current:
             parts[-1] += f"⟦/{current}⟧"
-        lines_out.append(" ".join(parts))
-    return "\n".join(lines_out)
+        blocks.append((min(w["top"] for w in line), " ".join(parts)))
+    for bbox, rows in tables:
+        blocks.append((bbox[1], _render_table(rows)))
+    return "\n".join(text for _, text in sorted(blocks, key=lambda b: b[0]))
 
 
-def extract_pages_text_with_color_marks(file_bytes: bytes) -> List[str]:
+def _page_needs_enrichment(page) -> bool:
+    if any(_char_has_color(ch) for ch in page.chars):
+        return True
+    try:
+        return bool(page.find_tables())
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def extract_pages_text_enriched(file_bytes: bytes) -> List[str]:
     """
-    Como extract_pages_text, pero en las páginas que usan texto de color
-    ese texto va anotado con ⟦color⟧…⟦/color⟧ (ver _annotated_page_text).
-    Las páginas sin color salen exactamente igual que con extract_text,
-    para no cambiar nada en los documentos que no usan color.
+    Como extract_pages_text, pero las páginas con texto de color o con
+    tablas salen enriquecidas (ver _enriched_page_text). Las demás salen
+    exactamente igual que con extract_text, para no cambiar nada en los
+    documentos que no usan ninguna de las dos cosas.
     """
     pages: List[str] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
-            if any(_char_has_color(ch) for ch in page.chars):
-                pages.append(_annotated_page_text(page))
-            else:
-                pages.append(page.extract_text() or "")
+            pages.append(_enriched_page_text(page) if _page_needs_enrichment(page) else (page.extract_text() or ""))
     return pages
+
+
+def extract_tables(file_bytes: bytes) -> List[List[List[str]]]:
+    """Todas las tablas del PDF (filas de celdas), para resolver cuadros de
+    marcas en código (ver mark_resolver.resolve_table_marks)."""
+    tables: List[List[List[str]]] = []
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        for page in pdf.pages:
+            try:
+                for t in page.extract_tables():
+                    rows = [[" ".join(str(c or "").split()) for c in row] for row in t]
+                    if len(rows) >= 2:
+                        tables.append(rows)
+            except Exception:  # noqa: BLE001
+                continue
+    return tables
 
 
 def get_colored_page_numbers(file_bytes: bytes) -> List[int]:

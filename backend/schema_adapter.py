@@ -44,16 +44,94 @@ def _line(s: Any) -> str:
     return " ".join(str(s or "").split())
 
 
+# ── Resolución determinista de la clave ─────────────────────────────────────
+# Cuando el documento trae una clave separada ("RESPUESTAS: 1. c"), el
+# modelo solo COPIA ese texto en clave_texto y la respuesta se resuelve
+# aquí, en código. Motivo (medido en dev/eval.py, s01): aun con la clave
+# explícita "c) Saturno" y la instrucción de no corregirla, el modelo
+# marcaba "Júpiter" — su propio conocimiento le ganaba a la clave. Copiar
+# un texto es una tarea que no invita a "corregir"; interpretarlo, sí.
+
+def _norm(s: Any) -> str:
+    return " ".join(str(s or "").lower().split()).strip(" .)")
+
+
+_QNUM_PREFIX = re.compile(r"^\s*\d{1,3}\s*[.)]\s+(?=\S)")
+
+
+def _clave(q: dict) -> str:
+    """clave_texto sin el número de la pregunta que a veces antepone el
+    modelo al copiar la línea de la clave ("9. 50" → "50", "1. c" → "c").
+    No aplica a emparejamiento, donde "1-b" es parte de la respuesta."""
+    raw = str(q.get("clave_texto") or "").strip()
+    if q.get("tipo") == "matching":
+        return raw
+    return _QNUM_PREFIX.sub("", raw, count=1)
+
+
+def _key_letters(clave: str) -> List[str]:
+    """ "c" / "b, d" / "C." / "b y d" → ["c"] / ["b", "d"]. [] si la clave
+    no es una lista de rótulos sueltos (ej. trae el texto de la opción)."""
+    tokens = re.split(r"\s*(?:,|;|/|\||\by\b|\be\b|\s)\s*", clave.strip())
+    tokens = [t.strip(" .)(") for t in tokens if t.strip(" .)(")]
+    if tokens and all(re.fullmatch(r"[A-Za-z]|\d{1,2}", t) for t in tokens):
+        return [t.lower() for t in tokens]
+    return []
+
+
+def _resolve_mc_from_key(clave: str, opts: List[dict]) -> List[int]:
+    """Índices de las opciones que indica la clave literal; [] si no se
+    puede resolver con certeza (entonces se usa lo que marcó el modelo)."""
+    clave = (clave or "").strip()
+    if not clave or not opts:
+        return []
+    labels = [_norm(o.get("letra_original")) for o in opts]
+    letters = _key_letters(clave)
+    if not letters:
+        # "C. Rusia" / "c) Ambas": rótulo + texto → vale si ambos coinciden.
+        m = re.match(r"^\s*([A-Za-z]|\d{1,2})\s*[.)\-:]\s*(.+)$", clave)
+        if m:
+            letters = [m.group(1).lower()]
+            idx = _index_for_label(letters[0], labels, len(opts))
+            if idx is not None and _norm(opts[idx].get("texto")) == _norm(m.group(2)):
+                return [idx]
+            letters = []
+        # Clave con el texto de la(s) opción(es).
+        wanted = [_norm(x) for x in re.split(r"\s*\|\s*", clave) if x.strip()]
+        hits = [i for i, o in enumerate(opts) if _norm(o.get("texto")) in wanted]
+        return hits if len(hits) == len(wanted) else []
+    idxs = [_index_for_label(L, labels, len(opts)) for L in letters]
+    return idxs if all(i is not None for i in idxs) else []
+
+
+def _index_for_label(label: str, labels: List[str], n: int):
+    if label in labels:
+        return labels.index(label)
+    # Opciones sin rótulo propio: la letra de la clave es su posición (a=1).
+    if not any(labels) and len(label) == 1 and label.isalpha():
+        i = ord(label) - ord("a")
+        return i if 0 <= i < n else None
+    return None
+
+
 def _multichoice(q: dict) -> Tuple[dict, str]:
-    opts = [o for o in (q.get("opciones") or []) if str(o.get("texto", "")).strip()]
-    options = {_LETTERS[i]: _line(o["texto"]) for i, o in enumerate(opts[:len(_LETTERS)])}
-    correct = [options[_LETTERS[i]] for i, o in enumerate(opts[:len(_LETTERS)]) if o.get("correcta")]
-    answer = " | ".join(correct) if (correct and q.get("respuesta_marcada", True)) else SIN_RESPUESTA
+    opts = [o for o in (q.get("opciones") or []) if str(o.get("texto", "")).strip()][:len(_LETTERS)]
+    options = {_LETTERS[i]: _line(o["texto"]) for i, o in enumerate(opts)}
+    from_key = _resolve_mc_from_key(_clave(q), opts)
+    if from_key:
+        correct = [options[_LETTERS[i]] for i in from_key]
+    else:
+        correct = [options[_LETTERS[i]] for i, o in enumerate(opts) if o.get("correcta")]
+        if not q.get("respuesta_marcada", True):
+            correct = []
+    answer = " | ".join(correct) if correct else SIN_RESPUESTA
     return {"stem": _text(q.get("enunciado")), "options": options}, answer
 
 
 def _truefalse(q: dict) -> Tuple[dict, str]:
-    raw = str(q.get("respuesta_texto") or "").strip()
+    raw = _clave(q) or str(q.get("respuesta_texto") or "").strip()
+    if _clave(q):
+        q = {**q, "respuesta_marcada": True}
     first = raw.split()[0].strip(".,;:()").lower() if raw else ""
     answer = _TF.get(first, SIN_RESPUESTA) if q.get("respuesta_marcada", True) else SIN_RESPUESTA
     return {"stem": _text(q.get("enunciado"))}, answer
@@ -65,7 +143,12 @@ def _matching(q: dict) -> Tuple[dict, str, Dict[str, str]]:
     col_a = {str(i + 1): t for i, t in enumerate(left)}
     col_b = {_LETTERS[i].lower(): t for i, t in enumerate(right[:len(_LETTERS)])}
     pairs: Dict[str, str] = {}
-    for p in q.get("parejas") or []:
+    # Clave compacta del documento ("1-b, 2-a"): se aplica tal cual, en
+    # código, si todos los pares caen dentro de las columnas.
+    key_pairs = re.findall(r"(\d+)\s*[-.→:]\s*([A-Za-z])\b", str(q.get("clave_texto") or ""))
+    if key_pairs and all(1 <= int(n) <= len(left) and ord(L.lower()) - 96 <= len(col_b) for n, L in key_pairs):
+        pairs = {str(int(n)): L.lower() for n, L in key_pairs}
+    for p in ([] if pairs else (q.get("parejas") or [])):
         li, ri = p.get("izquierda"), p.get("derecha")
         if isinstance(li, int) and isinstance(ri, int) and 1 <= li <= len(left) and 1 <= ri <= len(col_b):
             pairs[str(li)] = _LETTERS[ri - 1].lower()
@@ -112,6 +195,9 @@ def _plain(q: dict, qtype: str) -> Tuple[dict, str]:
     stem = _text(q.get("enunciado"))
     if qtype == "essay":
         return {"stem": stem}, "respuesta abierta, se califica manualmente"
+    key = _clave(q)
+    if key:
+        return {"stem": stem}, key
     raw = str(q.get("respuesta_texto") or "").strip()
     if not raw or not q.get("respuesta_marcada", True):
         return {"stem": stem}, SIN_RESPUESTA

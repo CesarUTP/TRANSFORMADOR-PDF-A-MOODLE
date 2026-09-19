@@ -17,10 +17,11 @@ from typing import Any, Dict, List
 
 from fastapi import HTTPException
 
-from config import ANNOTATE_COLOR_MARKS, NORMALIZER_MODE
+from config import ENRICH_PDF_TEXT, NORMALIZER_MODE
 from extractor import (
     extract_pages_text,
-    extract_pages_text_with_color_marks,
+    extract_pages_text_enriched,
+    extract_tables,
     get_colored_page_numbers,
     join_pages_with_markers,
     extract_text_and_images_from_pdf,
@@ -31,6 +32,7 @@ from extractor import (
 )
 from formatter import verify_and_format, extract_structured
 from schema_adapter import adapt
+from mark_resolver import resolve_color_marks, resolve_table_marks
 from parser import parse_answer_key, build_questions
 from validator import (
     partition_questions,
@@ -139,22 +141,22 @@ def parse_document(raw_bytes: bytes, filename: str) -> Dict[str, Any]:
     estimated_question_count = estimate_question_count(full_text)
 
     # ── Gemini prefiltro: normalizar estructura ──────────────────────────
+    marks = _deterministic_marks(raw_bytes) if suffix == ".pdf" else None
+
     if NORMALIZER_MODE == "json":
-        model_text = _model_text_json(raw_bytes, colored_pages_text) if suffix == ".pdf" else full_text
+        model_text = _model_text_json(raw_bytes, marks) if suffix == ".pdf" else full_text
         return _finalize_structured(
             filename, extract_structured(model_text, page_images),
             estimated_question_count, colored_pages_text, color_marks_notice,
-            _colored_pages(raw_bytes) if suffix == ".pdf" else [],
+            _colored_pages(raw_bytes) if suffix == ".pdf" else [], marks,
         )
 
-    model_text = full_text
-    if suffix == ".pdf" and ANNOTATE_COLOR_MARKS and colored_pages_text:
-        model_text = "\n".join(extract_pages_text_with_color_marks(raw_bytes))
+    model_text = "\n".join(marks[0]) if marks else full_text
     reformatted_text, was_reformatted = verify_and_format(model_text, page_images)
 
     return finalize_parse_response(
         filename, full_text, reformatted_text, was_reformatted,
-        estimated_question_count, colored_pages_text, color_marks_notice,
+        estimated_question_count, colored_pages_text, color_marks_notice, marks,
     )
 
 
@@ -197,20 +199,34 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str) -> Dict[str, Any
     # por definición — toda la lectura depende de las imágenes.
     estimated_question_count = estimate_question_count(full_text)
 
+    marks = _deterministic_marks(raw_bytes)
     if NORMALIZER_MODE == "json":
-        model_text = _model_text_json(raw_bytes, colored_pages_text)
+        model_text = _model_text_json(raw_bytes, marks)
         return _finalize_structured(
             filename, extract_structured(model_text, page_images),
             estimated_question_count, colored_pages_text, color_marks_notice,
-            _colored_pages(raw_bytes),
+            _colored_pages(raw_bytes), marks,
         )
 
     reformatted_text, was_reformatted = verify_and_format(full_text, page_images)
 
     return finalize_parse_response(
         filename, full_text, reformatted_text, was_reformatted,
-        estimated_question_count, colored_pages_text, color_marks_notice,
+        estimated_question_count, colored_pages_text, color_marks_notice, marks,
     )
+
+
+def _deterministic_marks(raw_bytes: bytes):
+    """(páginas enriquecidas, tablas) si ENRICH_PDF_TEXT está activo, o
+    None. Se calcula una vez y sirve para el texto que va al modelo y para
+    resolver las marcas en código después (mark_resolver)."""
+    if not ENRICH_PDF_TEXT:
+        return None
+    try:
+        return extract_pages_text_enriched(raw_bytes), extract_tables(raw_bytes)
+    except Exception as exc:  # noqa: BLE001 — sin enriquecer, el flujo sigue igual que antes
+        logger.warning("No se pudo enriquecer el texto del PDF: %s", exc)
+        return None
 
 
 def finalize_parse_response(
@@ -221,6 +237,7 @@ def finalize_parse_response(
     estimated_question_count: int,
     colored_pages_text: List[str],
     color_marks_notice: Any,
+    marks=None,
 ) -> Dict[str, Any]:
     """
     Cola común de ambos flujos: ya con el texto reformateado por Gemini, de
@@ -262,15 +279,15 @@ def finalize_parse_response(
 
     return _finalize_common(
         filename, questions, effective_answer_key, was_reformatted,
-        estimated_question_count, colored_pages_text, color_marks_notice,
+        estimated_question_count, colored_pages_text, color_marks_notice, marks,
     )
 
 
-def _model_text_json(raw_bytes: bytes, colored_pages_text: List[str]) -> str:
-    """Texto para el modo JSON: por página con "[Página N]", y con las
-    marcas de color anotadas si ANNOTATE_COLOR_MARKS está activo."""
-    if ANNOTATE_COLOR_MARKS and colored_pages_text:
-        return join_pages_with_markers(extract_pages_text_with_color_marks(raw_bytes))
+def _model_text_json(raw_bytes: bytes, marks) -> str:
+    """Texto para el modo JSON: por página con "[Página N]", y enriquecido
+    (color y tablas) si ENRICH_PDF_TEXT está activo."""
+    if marks:
+        return join_pages_with_markers(marks[0])
     return join_pages_with_markers(extract_pages_text(raw_bytes))
 
 
@@ -288,6 +305,7 @@ def _finalize_structured(
     colored_pages_text: List[str],
     color_marks_notice: Any,
     colored_page_numbers: List[int] = (),
+    marks=None,
 ) -> Dict[str, Any]:
     """Modo JSON: la salida del modelo ya viene estructurada; el adaptador
     la deja en la misma forma que produce parser.py en el modo texto."""
@@ -308,7 +326,7 @@ def _finalize_structured(
         )
     return _finalize_common(
         filename, questions, answer_key, True,
-        estimated_question_count, colored_pages_text, color_marks_notice,
+        estimated_question_count, colored_pages_text, color_marks_notice, marks,
     )
 
 
@@ -320,9 +338,17 @@ def _finalize_common(
     estimated_question_count: int,
     colored_pages_text: List[str],
     color_marks_notice: Any,
+    marks=None,
 ) -> Dict[str, Any]:
-    """Cola compartida por ambos modos: modo tolerante, avisos y recorte de
-    la clave a las preguntas válidas."""
+    """Cola compartida por ambos modos: marcas resueltas en código, modo
+    tolerante, avisos y recorte de la clave a las preguntas válidas."""
+    if marks:
+        pages, tables = marks
+        n_color = resolve_color_marks(questions, effective_answer_key, pages) if colored_pages_text else 0
+        n_table = resolve_table_marks(questions, effective_answer_key, tables) if tables else 0
+        if n_color or n_table:
+            logger.info("Marcas resueltas en código: %d por color, %d por tabla.", n_color, n_table)
+
     # Modo Tolerante: separar preguntas válidas de las que hay que omitir
     # en vez de bloquear TODA la conversión por una sola pregunta
     # problemática — el usuario revisa lo válido en el editor, y ve un

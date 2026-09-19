@@ -30,6 +30,7 @@ from config import (
     GEMINI_API_KEY,
     GEMINI_MODEL_NAME,
     GEMINI_MAX_RETRIES,
+    GEMINI_REQUEST_TIMEOUT_SECONDS,
     GEMINI_RETRY_WAIT_SECONDS,
     GEMINI_TEMPERATURE,
     GEMINI_SIN_RESPUESTA_THRESHOLD,
@@ -256,7 +257,9 @@ def _generate_with_retries(model, content, input_chars: int, parse):
             )
             _throttle()
             t0 = time.monotonic()
-            response = model.generate_content(content)
+            response = model.generate_content(
+                content, request_options={"timeout": GEMINI_REQUEST_TIMEOUT_SECONDS},
+            )
             _record_call(response, time.monotonic() - t0)
             return parse(response)
 
@@ -370,16 +373,22 @@ def extract_structured(raw_text: str, page_images: Optional[List[Image.Image]] =
 
     quality_attempts = GEMINI_MAX_QUALITY_ATTEMPTS if page_images else 1
     best: Optional[dict] = None
-    best_ratio = 1.1
+    best_score = None
     for quality_attempt in range(1, quality_attempts + 1):
         data = _generate_with_retries(model, content, len(raw_text), _parse_structured_response)
         ratio = _unanswered_ratio(data) if page_images else 0.0
+        n = len(data.get("preguntas") or [])
         logger.info(
-            "Gemini prefiltro (JSON): intento de calidad %d/%d - sin respuesta %.2f",
-            quality_attempt, quality_attempts, ratio,
+            "Gemini prefiltro (JSON): intento de calidad %d/%d - %d preguntas, sin respuesta %.2f",
+            quality_attempt, quality_attempts, n, ratio,
         )
-        if ratio < best_ratio:
-            best, best_ratio = data, ratio
+        # Se elige primero por CANTIDAD de preguntas y solo después por
+        # menos "sin respuesta": elegir solo por el ratio premiaba al
+        # intento que omitía las preguntas sin marca — el ratio baja
+        # justamente porque esas preguntas desaparecen.
+        score = (n, -ratio)
+        if best_score is None or score > best_score:
+            best, best_score = data, score
         if ratio <= GEMINI_SIN_RESPUESTA_THRESHOLD:
             break
     return best

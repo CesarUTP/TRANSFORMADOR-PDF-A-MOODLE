@@ -2671,10 +2671,18 @@ Ahora convierte el examen adjunto a este formato.</pre>
         if (q.type === 'multichoice') {
           const optEntries = Object.entries(q.data.options || {});
           const answerTargets = (keyInfo.answer || '').split('|').map(s => s.trim().toLowerCase()).filter(Boolean);
+          // Un objetivo de la clave que coincide EXACTO con el texto de
+          // alguna opción es esa opción y NINGUNA otra: con opciones
+          // A: Python / B: Java / C: JavaScript / D: C y la respuesta
+          // "Java | C", antes se marcaban también JavaScript (por la letra
+          // C, y porque "java" está contenido en "javascript").
+          const allOptTexts = optEntries.map(([, txt]) => txt.trim().toLowerCase());
           const isOptCorrect = (letter, optText) => {
             const optClean = optText.trim().toLowerCase();
             return answerTargets.some(t => {
-              if (t === letter.toLowerCase() || t === optClean) return true;
+              if (t === optClean) return true;
+              if (allOptTexts.includes(t)) return false;
+              if (t === letter.toLowerCase()) return true;
               // Fallback de coincidencia parcial: solo para respuestas largas
               // (la clave trae el texto completo de la opción en vez de su
               // letra). Con fragmentos cortos (ej. una sola letra) esto

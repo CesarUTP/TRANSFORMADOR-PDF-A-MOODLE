@@ -1,0 +1,470 @@
+{
+ "mode": "json",
+ "enrich": true,
+ "runs": 3,
+ "date": "2026-09-18T20:15:45",
+ "docs": {
+  "s02_color_sin_imagenes": {
+   "summary": {
+    "doc": "s02_color_sin_imagenes",
+    "runs": 3,
+    "esperadas": 8,
+    "exactitud": 1.0,
+    "exactitud_min": 1.0,
+    "exactitud_max": 1.0,
+    "completas": 8,
+    "completas_min": 8,
+    "completas_max": 8,
+    "encontradas": 8,
+    "encontradas_min": 8,
+    "encontradas_max": 8,
+    "utilizables": 8,
+    "utilizables_min": 8,
+    "utilizables_max": 8,
+    "tipo_ok": 8,
+    "tipo_ok_min": 8,
+    "tipo_ok_max": 8,
+    "enunciado_ok": 8,
+    "enunciado_ok_min": 8,
+    "enunciado_ok_max": 8,
+    "respuesta_ok": 8,
+    "respuesta_ok_min": 8,
+    "respuesta_ok_max": 8,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 0,
+    "omitidas_min": 0,
+    "omitidas_max": 0,
+    "seconds": 72.5,
+    "seconds_min": 53.9,
+    "seconds_max": 86.6,
+    "prompt_tokens": 4875,
+    "prompt_tokens_min": 4875,
+    "prompt_tokens_max": 4875,
+    "output_tokens": 2192,
+    "output_tokens_min": 2192,
+    "output_tokens_max": 2192,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 53.9,
+     "prompt_tokens": 4875,
+     "output_tokens": 2192,
+     "gemini_calls": 1,
+     "esperadas": 8,
+     "problemas": [],
+     "encontradas": 8,
+     "utilizables": 8,
+     "tipo_ok": 8,
+     "enunciado_ok": 8,
+     "respuesta_ok": 8,
+     "inventadas": 0,
+     "completas": 8,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de los siguientes son tipos de datos primitivos en Python?",
+       "options": [
+        "Entero (int)",
+        "Lista (list)",
+        "Cadena de caracteres (string)",
+        "Diccionario (dict)"
+       ],
+       "answers": [
+        "Lista (list)",
+        "Diccionario (dict)"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estructura de datos no permite elementos duplicados?",
+       "options": [
+        "Lista (list)",
+        "Tupla (tuple)",
+        "Conjunto (set)",
+        "Cadena (str)"
+       ],
+       "answers": [
+        "Lista (list)"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es una característica de una tupla en Python?",
+       "options": [
+        "Es inmutable, sus elementos no pueden modificarse después de su creación",
+        "Solo puede contener números",
+        "Se define con llaves {}",
+        "No admite índices"
+       ],
+       "answers": [
+        "Es inmutable, sus elementos no pueden modificarse después de su creación"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos lenguajes son de tipado dinámico?",
+       "options": [
+        "Python",
+        "Java",
+        "JavaScript",
+        "C"
+       ],
+       "answers": [
+        "Java",
+        "C"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué palabra reservada se usa para definir una función en Python?",
+       "options": [
+        "func",
+        "def",
+        "function",
+        "lambda"
+       ],
+       "answers": [
+        "func"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime la instrucción print(3 > 5)?",
+       "options": [
+        "True",
+        "False",
+        "None",
+        "Error"
+       ],
+       "answers": [
+        "True"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué operador calcula el residuo de una división?",
+       "options": [
+        "/",
+        "//",
+        "%",
+        "**"
+       ],
+       "answers": [
+        "%"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de los siguientes son bucles en Python?",
+       "options": [
+        "for",
+        "repeat",
+        "while",
+        "loop"
+       ],
+       "answers": [
+        "repeat",
+        "loop"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 77.0,
+     "prompt_tokens": 4875,
+     "output_tokens": 2192,
+     "gemini_calls": 1,
+     "esperadas": 8,
+     "problemas": [],
+     "encontradas": 8,
+     "utilizables": 8,
+     "tipo_ok": 8,
+     "enunciado_ok": 8,
+     "respuesta_ok": 8,
+     "inventadas": 0,
+     "completas": 8,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de los siguientes son tipos de datos primitivos en Python?",
+       "options": [
+        "Entero (int)",
+        "Lista (list)",
+        "Cadena de caracteres (string)",
+        "Diccionario (dict)"
+       ],
+       "answers": [
+        "Lista (list)",
+        "Diccionario (dict)"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estructura de datos no permite elementos duplicados?",
+       "options": [
+        "Lista (list)",
+        "Tupla (tuple)",
+        "Conjunto (set)",
+        "Cadena (str)"
+       ],
+       "answers": [
+        "Lista (list)"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es una característica de una tupla en Python?",
+       "options": [
+        "Es inmutable, sus elementos no pueden modificarse después de su creación",
+        "Solo puede contener números",
+        "Se define con llaves {}",
+        "No admite índices"
+       ],
+       "answers": [
+        "Es inmutable, sus elementos no pueden modificarse después de su creación"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos lenguajes son de tipado dinámico?",
+       "options": [
+        "Python",
+        "Java",
+        "JavaScript",
+        "C"
+       ],
+       "answers": [
+        "Java",
+        "C"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué palabra reservada se usa para definir una función en Python?",
+       "options": [
+        "func",
+        "def",
+        "function",
+        "lambda"
+       ],
+       "answers": [
+        "func"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime la instrucción print(3 > 5)?",
+       "options": [
+        "True",
+        "False",
+        "None",
+        "Error"
+       ],
+       "answers": [
+        "True"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué operador calcula el residuo de una división?",
+       "options": [
+        "/",
+        "//",
+        "%",
+        "**"
+       ],
+       "answers": [
+        "%"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de los siguientes son bucles en Python?",
+       "options": [
+        "for",
+        "repeat",
+        "while",
+        "loop"
+       ],
+       "answers": [
+        "repeat",
+        "loop"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 86.6,
+     "prompt_tokens": 4875,
+     "output_tokens": 2192,
+     "gemini_calls": 1,
+     "esperadas": 8,
+     "problemas": [],
+     "encontradas": 8,
+     "utilizables": 8,
+     "tipo_ok": 8,
+     "enunciado_ok": 8,
+     "respuesta_ok": 8,
+     "inventadas": 0,
+     "completas": 8,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de los siguientes son tipos de datos primitivos en Python?",
+       "options": [
+        "Entero (int)",
+        "Lista (list)",
+        "Cadena de caracteres (string)",
+        "Diccionario (dict)"
+       ],
+       "answers": [
+        "Lista (list)",
+        "Diccionario (dict)"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estructura de datos no permite elementos duplicados?",
+       "options": [
+        "Lista (list)",
+        "Tupla (tuple)",
+        "Conjunto (set)",
+        "Cadena (str)"
+       ],
+       "answers": [
+        "Lista (list)"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es una característica de una tupla en Python?",
+       "options": [
+        "Es inmutable, sus elementos no pueden modificarse después de su creación",
+        "Solo puede contener números",
+        "Se define con llaves {}",
+        "No admite índices"
+       ],
+       "answers": [
+        "Es inmutable, sus elementos no pueden modificarse después de su creación"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos lenguajes son de tipado dinámico?",
+       "options": [
+        "Python",
+        "Java",
+        "JavaScript",
+        "C"
+       ],
+       "answers": [
+        "Java",
+        "C"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué palabra reservada se usa para definir una función en Python?",
+       "options": [
+        "func",
+        "def",
+        "function",
+        "lambda"
+       ],
+       "answers": [
+        "func"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime la instrucción print(3 > 5)?",
+       "options": [
+        "True",
+        "False",
+        "None",
+        "Error"
+       ],
+       "answers": [
+        "True"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué operador calcula el residuo de una división?",
+       "options": [
+        "/",
+        "//",
+        "%",
+        "**"
+       ],
+       "answers": [
+        "%"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de los siguientes son bucles en Python?",
+       "options": [
+        "for",
+        "repeat",
+        "while",
+        "loop"
+       ],
+       "answers": [
+        "repeat",
+        "loop"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

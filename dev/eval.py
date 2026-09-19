@@ -52,11 +52,11 @@ GOLDEN_DIR = SAMPLES / "golden"
 RESULTS_DIR = ROOT / "dev" / "eval_results"
 
 
-def _setup_backend(mode: str, color: bool = False):
+def _setup_backend(mode: str, enrich: bool = False):
     # El modo se fija por entorno ANTES de importar el backend, para que
     # config.py lo lea igual que lo haría la app.
     os.environ["NORMALIZER_MODE"] = mode
-    os.environ["ANNOTATE_COLOR_MARKS"] = "1" if color else "0"
+    os.environ["ENRICH_PDF_TEXT"] = "1" if enrich else "0"
     # Plan gratuito de Gemini: 15 peticiones/min por modelo. La evaluación
     # corre varios documentos en paralelo, así que espacia TODAS las
     # llamadas del proceso por debajo de ese límite (ver formatter._throttle).
@@ -144,8 +144,11 @@ def canonical_from_response(res: dict) -> list:
             c["stem"] = d.get("stem", "")
             c["options"] = [opts[k] for k in sorted(opts)]
             got = []
+            texts = {v.strip().lower() for v in opts.values()}
             for part in [x.strip() for x in ans.split("|") if x.strip()]:
-                if len(part) == 1 and part.upper() in opts:
+                # Igual que xml_builder: el texto exacto de una opción gana a
+                # la letra ("C" puede ser la opción cuyo texto es "C").
+                if len(part) == 1 and part.upper() in opts and part.lower() not in texts:
                     got.append(opts[part.upper()])
                 else:
                     got.append(part)
@@ -394,7 +397,9 @@ def print_table(summaries: list, goldens: dict) -> None:
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--mode", default=os.environ.get("NORMALIZER_MODE", "text"))
-    ap.add_argument("--color", action="store_true", help="activa ANNOTATE_COLOR_MARKS (fase 3)")
+    ap.add_argument("--enrich", action=argparse.BooleanOptionalAction, default=True,
+                    help="ENRICH_PDF_TEXT: color y tablas en el texto + marcas resueltas en código "
+                         "(activo por defecto, igual que en la app; --no-enrich para desactivarlo)")
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--workers", type=int, default=3)
     ap.add_argument("--only", nargs="*")
@@ -403,7 +408,7 @@ def main():
     ap.add_argument("--tag", default="", help="sufijo para el archivo de resultados")
     args = ap.parse_args()
 
-    pipeline, formatter = _setup_backend(args.mode, args.color)
+    pipeline, formatter = _setup_backend(args.mode, args.enrich)
 
     if args.bootstrap_real:
         bootstrap_real(pipeline, formatter)
@@ -414,7 +419,7 @@ def main():
         sys.exit("No hay golden que coincida.")
     by_name = {g["name"]: g for g in goldens}
     tasks = [(g["name"], k) for g in goldens for k in range(args.runs)]
-    print(f"Modo '{args.mode}'{' + color' if args.color else ''}: {len(goldens)} documentos × {args.runs} corridas = {len(tasks)} ejecuciones "
+    print(f"Modo '{args.mode}'{' + enriquecido' if args.enrich else ''}: {len(goldens)} documentos × {args.runs} corridas = {len(tasks)} ejecuciones "
           f"({args.workers} en paralelo)\n", flush=True)
 
     outcomes: dict = {g["name"]: [None] * args.runs for g in goldens}
@@ -426,7 +431,7 @@ def main():
             o = outcomes[n][k]
             print(f"  [{i:>3}/{len(tasks)}] {n} corrida {k + 1}: {o['status']} en {o['seconds']}s", flush=True)
 
-    report = {"mode": args.mode, "color": args.color, "runs": args.runs, "date": dt.datetime.now().isoformat(timespec="seconds"),
+    report = {"mode": args.mode, "enrich": args.enrich, "runs": args.runs, "date": dt.datetime.now().isoformat(timespec="seconds"),
               "docs": {}}
     summaries = []
     for name, outs in outcomes.items():
@@ -435,7 +440,10 @@ def main():
         summaries.append(summ)
         report["docs"][name] = {
             "summary": summ,
-            "runs": [{**s, "detail": o.get("detail", "")} for s, o in zip(scored, outs)],
+            # "predicted": lo que devolvió el pipeline, ya en forma canónica —
+            # para poder depurar un fallo sin volver a gastar una llamada.
+            "runs": [{**s, "detail": o.get("detail", ""), "predicted": o.get("predicted", [])}
+                     for s, o in zip(scored, outs)],
         }
 
     print()
@@ -443,7 +451,7 @@ def main():
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = dt.datetime.now().strftime("%Y%m%d_%H%M")
-    out = RESULTS_DIR / f"{stamp}_{args.mode}{'_color' if args.color else ''}{('_' + args.tag) if args.tag else ''}.json"
+    out = RESULTS_DIR / f"{stamp}_{args.mode}{'_enrich' if args.enrich else ''}{('_' + args.tag) if args.tag else ''}.json"
     out.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"\nDetalle por pregunta: {out.relative_to(ROOT)}")
 

@@ -249,15 +249,21 @@ def build_xml(
             for target in [t.strip() for t in correct_answer.split('|') if t.strip()]:
                 ca_clean = target.lower()
                 match_letter = None
-                # Priority 1: exact match (letter or full option text). Checked
-                # across ALL options before any fuzzy fallback, so an early
-                # substring false-positive can't shadow the real exact match
-                # that happens to sit in a later option.
+                # Priority 1: exact match, checked across ALL options before
+                # any fuzzy fallback. The full option TEXT wins over the
+                # letter: with options {A: Python, B: Java, C: JavaScript,
+                # D: C}, the answer "C" is the option whose text is "C" (D),
+                # not option C. Comparing letter-or-text option by option
+                # used to hit C first and mark JavaScript as correct.
                 for letter, opt_text in options.items():
-                    opt_clean = opt_text.strip().lower()
-                    if ca_clean == letter.lower() or ca_clean == opt_clean:
+                    if ca_clean == opt_text.strip().lower():
                         match_letter = letter
                         break
+                if match_letter is None:
+                    for letter in options:
+                        if ca_clean == letter.lower():
+                            match_letter = letter
+                            break
                 # Priority 2: fuzzy substring match, only as a last resort —
                 # e.g. Gemini truncated/paraphrased the option text slightly.
                 if match_letter is None:

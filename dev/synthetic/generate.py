@@ -256,7 +256,7 @@ def s04_tabla():
     data = [["Situación"] + E.TABLA["columns"]]
     for row, col in E.TABLA["rows"]:
         data.append([row] + ["X" if j == col else "" for j in range(len(E.TABLA["columns"]))])
-    tbl = Table(data, colWidths=[6.2 * cm] + [2.4 * cm] * len(E.TABLA["columns"]))
+    tbl = Table(data, colWidths=[8.2 * cm] + [2.2 * cm] * len(E.TABLA["columns"]))
     tbl.setStyle(TableStyle([
         ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
         ("FONT", (0, 0), (-1, 0), "Helvetica-Bold", 9),

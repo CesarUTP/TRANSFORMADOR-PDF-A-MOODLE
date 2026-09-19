@@ -57,6 +57,13 @@ if GEMINI_API_KEY == _LEGACY_FALLBACK_KEY:
     )
 GEMINI_MODEL_NAME: str = "gemini-3.1-flash-lite"
 GEMINI_MAX_RETRIES: int = 3
+# Tiempo máximo de UNA llamada a Gemini. Sin esto, una petición que se
+# queda colgada del lado de Google esperaba el timeout por defecto del SDK
+# (~10 min) antes de reintentar — visto en la evaluación: corridas de
+# ~700 s en documentos que normalmente tardan 10-40 s. El examen real más
+# largo probado (19 páginas, 55 preguntas) responde en < 60 s, así que
+# 180 s deja margen de sobra y convierte el cuelgue en un reintento rápido.
+GEMINI_REQUEST_TIMEOUT_SECONDS: int = 180
 GEMINI_RETRY_WAIT_SECONDS: int = 10
 
 # temperature=0: la respuesta se genera de forma lo más determinista posible
@@ -272,6 +279,7 @@ REGLA 6 — CERO ALUCINACIONES Y CERO RESOLUCIÓN DE PREGUNTAS:
 - Eres un PARSER/TRANSCRIPTOR técnico. NO un solucionador de exámenes.
 - BAJO NINGUNA CIRCUNSTANCIA debes resolver las preguntas o inventar respuestas.
 - Tu única fuente de respuestas es lo que esté marcado explícitamente en el texto original (con marcas "✓", "X", círculos, negritas, asteriscos, un color de texto distinto al resto — ver REGLA 8 — o una sección de respuestas del original).
+- La clave o marca del documento MANDA, aunque te parezca incorrecta: si el documento indica como correcta una opción que tú crees errónea (ej. marca "Saturno" como el planeta más grande), transcribe EXACTAMENTE lo que indica el documento. NUNCA "corrijas" la clave con tu propio conocimiento — tu trabajo es copiar lo que el docente marcó, no evaluarlo.
 - Un banco de opciones o palabras clave (ej: "Palabras clave: Los Andes | Pacífico | Amazonas") NO son respuestas correctas. Si el examen original solo tiene un banco de opciones pero no indica cuál va en cada espacio en blanco, la pregunta NO tiene respuestas indicadas. En ese caso, debes usar "SIN_RESPUESTA" tanto en la pregunta como en las RESPUESTAS.
 - En preguntas de emparejamiento (matching), si hay elementos de la Columna A que no tienen su pareja correspondiente especificada en la clave/lista de respuestas del original, NO intentes emparejarlos. No adivines ni resuelvas el par faltante. Transcribe únicamente las parejas dadas de forma explícita en el original.
 - Si no hay respuesta explícitamente indicada para una pregunta, coloca "SIN_RESPUESTA".
@@ -296,6 +304,7 @@ REGLA 10 — TABLAS/CUADROS DE UNA SOLA MARCA POR FILA (CONVERTIBLES A EMPAREJAM
 - Si encuentras una tabla donde cada fila tiene una descripción y varias columnas de categorías, con UNA sola celda marcada (x/X) por fila indicando a qué columna pertenece esa fila, conviértela a una pregunta de emparejamiento: Columna A = las descripciones de cada fila, Columna B = los nombres de columna que tengan al menos una marca, y la clave es cada fila emparejada con el nombre de su columna marcada.
 - Conviértela usando el formato normal de REGLA 2 (emparejamiento). Al principio del enunciado de esa pregunta, antes de "Columna A:", agrega la línea exacta "[TABLA_CONVERTIDA]" (sin nada más en esa línea) para que el sistema sepa que se originó de una tabla.
 
+- Si la tabla te llega como un bloque [Tabla] … [/Tabla] con filas "| celda | celda |", la primera fila son los nombres de las columnas y cada fila siguiente tiene sus celdas EN ORDEN: la columna de la marca (x/X) es la posición de la celda donde aparece — usa esa posición, nunca deduzcas la columna por el significado de la descripción.
 REGLA 11 — TRANSCRIPCIÓN DE IMAGEN NO LOGRADA (cuando recibas imágenes del documento):
 - Si genuinamente no puedes leer con confianza el contenido de una imagen que una pregunta necesita (código, texto o marca de color borrosos, cortados, de muy baja resolución, o ilegibles por cualquier motivo), NO inventes ni adivines ese contenido bajo ninguna circunstancia.
 - En ese caso, agrega la línea exacta "{TRANSCRIPTION_FAILED_MARKER}" al inicio del enunciado de esa pregunta, y usa "SIN_RESPUESTA" en RESPUESTAS para esa pregunta — aunque creas ver algo parecido a una marca, si no la puedes leer con confianza no es fiable adivinar.
@@ -324,16 +333,22 @@ Responde ÚNICAMENTE con el texto convertido. Sin explicaciones ni markdown.
 #         (decodificación con esquema: no puede emitir una forma inválida)
 #         y schema_adapter.py lo convierte a lo que ya consume el editor.
 # Se elige por entorno para poder evaluar ambos lado a lado con
-# dev/eval.py --mode; el default se cambia solo cuando la evaluación
-# demuestre que "json" es igual o mejor (ver samples/golden/README.md).
+# dev/eval.py --mode. Resultado (ver dev/eval_results/RESULTADOS.md): con
+# el texto enriquecido, "json" empata en exactitud general y además
+# elimina dos errores silenciosos del modo texto (enunciados cortados por
+# su propia lista A./B., y respuestas inventadas desde un banco de
+# palabras), pero tarda ~3.5x más. Queda en "text" por defecto hasta que
+# se decida ese balance.
 NORMALIZER_MODE: str = os.environ.get("NORMALIZER_MODE", "text").strip().lower()
 
-# Anota en el texto que se manda al modelo las palabras que en el PDF están
-# en color (⟦rojo⟧…⟦/rojo⟧). extract_text() descarta el color, así que en
-# un PDF digital con las respuestas marcadas en rojo el modelo no veía la
-# marca y terminaba resolviendo las preguntas por su cuenta. Con esto la
-# marca viaja en el propio texto, sin depender de imágenes.
-ANNOTATE_COLOR_MARKS: bool = os.environ.get("ANNOTATE_COLOR_MARKS", "0").strip() in ("1", "true", "yes")
+# Enriquece el texto de las páginas con color o tablas antes de mandarlo al
+# modelo (extractor.extract_pages_text_enriched): anota las palabras en
+# color (⟦rojo⟧…⟦/rojo⟧) e inserta las tablas con su estructura. Son las
+# marcas de respuesta más comunes de un PDF digital y extract_text() las
+# pierde: sin esto el modelo no veía la marca y terminaba resolviendo.
+# Activo por defecto desde la evaluación de la fase 3 (dev/eval_results):
+# sintéticos 87 % → 98 %, reales sin cambios, mismo tiempo de respuesta.
+ENRICH_PDF_TEXT: bool = os.environ.get("ENRICH_PDF_TEXT", "1").strip() in ("1", "true", "yes")
 
 # Tope de tokens de salida para el modo JSON: el JSON es más largo que el
 # formato de texto (~50 % en las pruebas), y un examen largo puede
@@ -344,10 +359,11 @@ GEMINI_MAX_OUTPUT_TOKENS: int = 65536
 _OPCION_SCHEMA = {
     "type": "object",
     "properties": {
+        "letra_original": {"type": "string"},
         "texto": {"type": "string"},
         "correcta": {"type": "boolean"},
     },
-    "required": ["texto", "correcta"],
+    "required": ["letra_original", "texto", "correcta"],
 }
 
 RESPONSE_SCHEMA: dict = {
@@ -391,6 +407,7 @@ RESPONSE_SCHEMA: dict = {
                             "required": ["marcador", "opciones"],
                         },
                     },
+                    "clave_texto": {"type": "string"},
                     "respuesta_texto": {"type": "string"},
                     "respuesta_marcada": {"type": "boolean"},
                     "origen_tabla": {"type": "boolean"},
@@ -405,7 +422,7 @@ RESPONSE_SCHEMA: dict = {
                 # libre ("c) Ambas"). Los que no aplican al tipo van vacíos
                 # ([] / "" / false / 0).
                 "required": ["orden", "tipo", "enunciado", "opciones", "items_izquierda",
-                             "items_derecha", "parejas", "huecos", "respuesta_texto",
+                             "items_derecha", "parejas", "huecos", "clave_texto", "respuesta_texto",
                              "respuesta_marcada", "origen_tabla", "pagina", "confianza"],
             },
         },
@@ -443,6 +460,21 @@ tenga errores de tipeo), responde es_examen=true y continúa con las
 reglas de abajo.
 
 ══════════════════════════════════════════════════════
+COMPLETITUD — TODAS LAS PREGUNTAS, SIEMPRE
+══════════════════════════════════════════════════════
+"preguntas" debe contener CADA pregunta del documento, sin excepción,
+incluidas:
+- las que NO tienen ninguna respuesta marcada (van con respuesta_marcada=false);
+- las abiertas o de desarrollo ("Explica…", "Crea un ciclo…", "Escribe…");
+- las que piden el resultado de un código que está en una imagen, aunque
+  no traigan opciones ni respuesta;
+- las que no tienen número en el original.
+Omitir una pregunta porque no está marcada su respuesta, porque es abierta
+o porque no la entiendes del todo es un error GRAVE: el docente la
+completa después en el editor. Antes de responder, recorre el documento
+de principio a fin y verifica que no te saltaste ninguna.
+
+══════════════════════════════════════════════════════
 ESTRUCTURA DE CADA PREGUNTA (campo "preguntas")
 ══════════════════════════════════════════════════════
 Todos los campos van SIEMPRE presentes; los que no aplican al tipo de la
@@ -452,8 +484,10 @@ pregunta van vacíos ([] en listas, "" en textos, false, 0).
 - enunciado: el texto de la pregunta, COMPLETO (si el enunciado contiene su
   propia lista, ej. "Considera las afirmaciones: A. ... B. ...", esa lista
   es parte del enunciado y va entera aquí — no son las opciones).
-- opciones (multichoice): TODAS las opciones, sin la letra, en el orden
-  original, con correcta=true en CADA una que el documento marque. Una
+- opciones (multichoice): TODAS las opciones, en el orden original, con
+  correcta=true en CADA una que el documento marque. En cada opción,
+  letra_original es el rótulo tal como aparece antes de ella ("a", "B",
+  "1"...; vacío si no tiene) y texto es la opción SIN ese rótulo. Una
   pregunta multichoice NUNCA lleva opciones vacías ni la respuesta en
   respuesta_texto: las opciones van aquí, no dentro del enunciado.
 - items_izquierda / items_derecha (matching): los elementos de la Columna A
@@ -464,6 +498,13 @@ pregunta van vacíos ([] en listas, "" en textos, false, 0).
 - huecos (cloze): uno por espacio en blanco, en orden, con marcador "A",
   "B"... y todas sus opciones con correcta=true en la(s) correcta(s). En el
   enunciado, escribe [A], [B]... exactamente donde va cada espacio.
+- clave_texto: si el documento trae una clave/solucionario SEPARADO de la
+  pregunta (ej. una tabla "RESPUESTAS" o "CLAVE" al final), COPIA aquí
+  literalmente lo que esa clave dice para esta pregunta, sin interpretarlo
+  ni corregirlo y sin el número de la pregunta (ej. "c", "b, d", "V",
+  "Falso", "1-b, 2-a, 3-c", "60").
+  Vacío si la respuesta se marca en la propia pregunta (color, ✓, *) o si
+  no hay clave.
 - respuesta_texto: la respuesta de truefalse ("Verdadero"/"Falso"),
   shortanswer (el texto exacto) y numerical (solo el número).
 - respuesta_marcada: true si el documento indica explícitamente la
@@ -479,6 +520,7 @@ REGLAS DE CONVERSIÓN — LEE CADA UNA CON CUIDADO
 ══════════════════════════════════════════════════════
 
 REGLA 1 — SELECCIÓN MÚLTIPLE:
+- Una pregunta seguida de 2 o más líneas cortas que son alternativas de respuesta ES multichoice, aunque esas alternativas NO tengan letra (A., a), 1.) — es muy común que vengan una por línea, sin rótulo, debajo del enunciado, o numeradas por error como si fueran preguntas (ver REGLA 7). Esas líneas van en "opciones"; no metas las alternativas dentro del enunciado. (Las preguntas que NO traen alternativas — "Explica…", "Crea un programa que…", "¿Cuál sería el resultado de este código?" sin opciones — siguen siendo preguntas y DEBEN aparecer, como essay/shortanswer/numerical según la REGLA 12.)
 - Conserva TODAS las opciones del original (lo más común son 4, pero si el examen original trae 5, 6 o más, consérvalas todas; nunca elimines ni trunques opciones para forzar exactamente 4).
 - Marca correcta=true en la opción que el documento indique como correcta.
 - Si la pregunta acepta MÁS DE UNA respuesta correcta a la vez (el original dice algo como "selecciona todas las que correspondan" o marca varias opciones como correctas), marca correcta=true en CADA una. Si tiene una sola respuesta correcta (el caso más común), marca solo esa.
@@ -510,6 +552,7 @@ REGLA 6 — CERO ALUCINACIONES Y CERO RESOLUCIÓN DE PREGUNTAS:
 - Eres un PARSER/TRANSCRIPTOR técnico. NO un solucionador de exámenes.
 - BAJO NINGUNA CIRCUNSTANCIA debes resolver las preguntas o inventar respuestas. Aunque sepas cuál es la respuesta correcta, si el documento no la marca, NO la marques.
 - Tu única fuente de respuestas es lo que esté marcado explícitamente en el documento original (con marcas "✓", "X", círculos, negritas, asteriscos, un color de texto distinto al resto — ver REGLA 8 — o una sección/clave de respuestas del original).
+- La clave o marca del documento MANDA, aunque te parezca incorrecta: si el documento indica como correcta una opción que tú crees errónea (ej. marca "Saturno" como el planeta más grande), transcribe EXACTAMENTE lo que indica el documento. NUNCA "corrijas" la clave con tu propio conocimiento — tu trabajo es copiar lo que el docente marcó, no evaluarlo.
 - Un banco de opciones o palabras clave (ej: "Palabras clave: Los Andes | Pacífico | Amazonas") NO son respuestas correctas. Si el examen original solo tiene un banco de opciones pero no indica cuál va en cada espacio en blanco, la pregunta NO tiene respuestas indicadas: respuesta_marcada=false.
 - En preguntas de emparejamiento, si hay elementos de la Columna A que no tienen su pareja correspondiente especificada en el original, NO los emparejes. No adivines ni resuelvas el par faltante.
 - Si una instrucción de Moodle original viene en el texto, elimínala y deja solo el contenido.
@@ -517,7 +560,7 @@ REGLA 6 — CERO ALUCINACIONES Y CERO RESOLUCIÓN DE PREGUNTAS:
 REGLA 7 — NUMERACIÓN ORIGINAL POCO CONFIABLE (PERO EL ORDEN SÍ IMPORTA):
 - El documento puede traer numeración incompleta, repetida, fuera de orden, o mezclada con la numeración de las propias opciones de respuesta (ej. un editor de texto que auto-numeró tanto la pregunta como sus opciones como si fueran un solo listado). NO confíes en los números originales.
 - Identifica cada pregunta por su CONTENIDO semántico: un enunciado que plantea algo a responder (termina en "?", o es una instrucción como "Crea un diccionario que contenga...", "Indica el resultado de..."), seguido de sus opciones/respuesta. Una línea corta que es claramente una OPCIÓN de respuesta (un término, un valor, un nombre de estructura) NUNCA es una pregunta nueva, aunque el documento original la haya numerado como si lo fuera.
-- "orden" es SIEMPRE tu propia numeración secuencial limpia (1, 2, 3...) sin huecos ni repeticiones. No omitas ninguna pregunta real del documento solo porque le faltaba número — dale tú uno.
+- "orden" es SIEMPRE tu propia numeración secuencial limpia (1, 2, 3...) sin huecos ni repeticiones. No omitas ninguna pregunta real del documento solo porque le faltaba número — dale tú uno. Es frecuente que a partir de cierto punto el documento deje de numerar las preguntas (siguen apareciendo enunciados con "¿...?" seguidos de sus alternativas, sin número delante): cada uno de esos enunciados es una pregunta más y debe aparecer.
 - Las preguntas deben salir en el mismo orden en que aparecen en el documento original, de principio a fin (arriba hacia abajo, página por página). Nunca agrupes ni muevas una pregunta a otra posición.
 
 REGLA 8 — RESPUESTAS MARCADAS SOLO POR COLOR (cuando recibas imágenes del documento):
@@ -532,6 +575,7 @@ REGLA 9 — CÓDIGO MOSTRADO COMO IMAGEN (cuando recibas imágenes del documento
 REGLA 10 — TABLAS/CUADROS DE UNA SOLA MARCA POR FILA (CONVERTIBLES A EMPAREJAMIENTO):
 - Si encuentras una tabla donde cada fila tiene una descripción y varias columnas de categorías, con UNA sola celda marcada (x/X) por fila indicando a qué columna pertenece esa fila, conviértela a una pregunta de emparejamiento: items_izquierda = las descripciones de cada fila, items_derecha = los nombres de columna que tengan al menos una marca, y parejas = cada fila con su columna marcada. Pon origen_tabla=true.
 
+- Si la tabla te llega como un bloque [Tabla] … [/Tabla] con filas "| celda | celda |", la primera fila son los nombres de las columnas y cada fila siguiente tiene sus celdas EN ORDEN: la columna de la marca (x/X) es la posición de la celda donde aparece — usa esa posición, nunca deduzcas la columna por el significado de la descripción.
 REGLA 11 — TRANSCRIPCIÓN DE IMAGEN NO LOGRADA (cuando recibas imágenes del documento):
 - Si genuinamente no puedes leer con confianza el contenido de una imagen que una pregunta necesita (código, texto o marca de color borrosos, cortados, de muy baja resolución, o ilegibles por cualquier motivo), NO inventes ni adivines ese contenido bajo ninguna circunstancia.
 - En ese caso pon confianza="baja" y respuesta_marcada=false — aunque creas ver algo parecido a una marca, si no la puedes leer con confianza no es fiable adivinar.
@@ -545,4 +589,23 @@ REGLA 12 — ENSAYO, RESPUESTA CORTA Y NUMÉRICA (se ven igual que cierto/falso:
 - essay NUNCA tiene una respuesta correcta que resolver: respuesta_marcada=true y respuesta_texto vacío.
 - Para numerical, respuesta_texto es SOLO el número tal como está en el original (ej. "60"). Si el original lo escribió en palabras ("sesenta") o con una unidad, transcríbelo exactamente como aparece — NO lo conviertas ni inventes un valor.
 - Ante la duda genuina entre truefalse/essay/shortanswer/numerical para una pregunta puntual, prioriza la lectura más natural de la intención del enunciado.
+
+══════════════════════════════════════════════════════
+EJEMPLO (solo para mostrar la forma; no es parte del documento)
+══════════════════════════════════════════════════════
+Si el documento dice:
+    7. ¿Qué estructura permite elementos duplicados?
+    Conjunto (set)
+    ⟦rojo⟧Lista (list)⟦/rojo⟧
+    Diccionario (dict)
+    ¿Qué palabra reservada define una función?
+    def
+    func
+    CLAVE: 1. func
+    8. Explica para qué sirve un bucle while.
+la primera pregunta es multichoice con opciones ["Conjunto (set)", "Lista (list)",
+"Diccionario (dict)"] y correcta=true en "Lista (list)"; la segunda (aunque no tenga
+número) también es multichoice, con opciones ["def", "func"] y correcta=true en "func"
+porque así lo indica la clave del documento — aunque tú sepas que es "def" (y su
+clave_texto es "func"). La tercera no tiene alternativas: es essay, y también va.
 """

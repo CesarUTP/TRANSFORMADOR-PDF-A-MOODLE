@@ -97,7 +97,7 @@ TABLA = {
         ["Saber si un número es mayor que otro", 1],
         ["Exigir que se cumplan dos condiciones a la vez", 2],
         ["Guardar un valor dentro de una variable", 3],
-        ["Sumar dos cantidades", 0],
+        ["Sumar dos cantidades", 2],  # ≠ (real: Aritmético) — detecta columna deducida por significado
     ],
 }
 TABLA_EXTRA = [
