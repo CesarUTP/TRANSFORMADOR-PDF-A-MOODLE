@@ -985,8 +985,15 @@
       padding: 0 24px;
       border-bottom: 1px solid var(--color-border);
       background: var(--color-tabstrip-bg);
+      /* En pantallas angostas las 5 pestañas no caben: se desplazan de lado
+         en vez de cortarse. */
+      overflow-x: auto;
+      scrollbar-width: none;
     }
+    .modal-tabs::-webkit-scrollbar { display: none; }
     .modal-tab {
+      flex-shrink: 0;
+      white-space: nowrap;
       padding: 12px 18px;
       font-size: 13.5px;
       font-weight: 700;
@@ -1388,11 +1395,15 @@
       <div class="modal-tabs">
         <button class="modal-tab active" data-tab="about">
           <i data-lucide="target" style="width:15px;height:15px;"></i>
-          ¿Qué es esto?
+          ¿Qué es?
+        </button>
+        <button class="modal-tab" data-tab="review">
+          <i data-lucide="list-checks" style="width:15px;height:15px;"></i>
+          Revisión
         </button>
         <button class="modal-tab" data-tab="format">
           <i data-lucide="file-code" style="width:15px;height:15px;"></i>
-          Formato del Examen
+          Formato
         </button>
         <button class="modal-tab" data-tab="prompt">
           <i data-lucide="bot" style="width:15px;height:15px;"></i>
@@ -1400,7 +1411,7 @@
         </button>
         <button class="modal-tab" data-tab="moodle">
           <i data-lucide="graduation-cap" style="width:15px;height:15px;"></i>
-          Importar a Moodle
+          Importar
         </button>
       </div>
 
@@ -1415,7 +1426,7 @@
                 Moodle no permite pegar un examen en formato "normal" y ya está: cada pregunta debe cargarse a mano en el banco de preguntas, o construirse a mano en un XML con una sintaxis estricta y poco intuitiva. Hacerlo manualmente para un examen de 30-40 preguntas —especialmente con emparejamientos y respuestas de completar— es lento y fácil de arruinar con un error de tipeo.
               </p>
               <p style="font-size:14px;line-height:1.7;color:var(--color-text);margin-top:10px;">
-                Este sistema toma tu examen tal como ya lo tienes (PDF o TXT), lo interpreta con ayuda de IA, y genera directamente el archivo <strong>Moodle XML</strong> listo para importar en <em>Banco de preguntas → Importar</em>. Lo que antes tomaba horas de carga manual, aquí toma segundos.
+                Este sistema toma tu examen tal como ya lo tienes (PDF o TXT), lo interpreta con ayuda de IA, y genera directamente el archivo <strong>Moodle XML</strong> listo para importar en <em>Banco de preguntas → Importar</em>. Lo que antes tomaba horas de carga manual, aquí se reduce a revisar y aprobar.
               </p>
             </div>
 
@@ -1424,11 +1435,37 @@
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="check-circle-2" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Úsalo para pruebas parciales, quices o evaluaciones formativas</strong> de colegio, universidad o cualquier otro nivel, siempre que ya contengan preguntas de <strong style="color:var(--color-text);">selección múltiple, cierto/falso, emparejamiento, completar, ensayo, respuesta corta o numérica</strong> con su clave de respuestas — los 7 tipos que el sistema reconoce.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Pruebas, parciales y quices en PDF o TXT</strong> con preguntas de <strong style="color:var(--color-text);">opción múltiple, verdadero/falso, emparejamiento, completar, ensayo, respuesta corta o numérica</strong>. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="scan-line" style="width:16px;height:16px;color:var(--color-cl);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">PDF escaneados.</strong> Si el PDF es una foto o un escaneo (sin texto seleccionable), el sistema lo avisa y ofrece <strong style="color:var(--color-text);">Normalizar con IA</strong>, que lee las páginas como imagen (hasta 15).</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="x-circle" style="width:16px;height:16px;color:var(--color-error);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">No subas presentaciones de diapositivas, listas de vocabulario, apuntes de clase</strong> ni ningún documento que no esté organizado como preguntas con respuesta. El sistema no inventa preguntas: solo transcribe las que ya existen en tu documento, así que si no las hay, el resultado no será el esperado.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">No sirve para presentaciones, apuntes o listas de vocabulario.</strong> El sistema no inventa preguntas: solo transcribe las que ya están en el documento.</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">¿Cómo reconoce la respuesta correcta?</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="list-ordered" style="width:16px;height:16px;color:var(--color-mc);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Clave de respuestas</strong> al final del documento, con la letra (“1. c”) o el texto de la opción.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="highlighter" style="width:16px;height:16px;color:var(--color-warning);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Marcas en el propio examen:</strong> texto en color (rojo, azul, verde…), resaltado, subrayado, negrita, o un ✓ / asterisco junto a la opción. En un PDF digital estas marcas se leen directamente del archivo, no las adivina la IA.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="table-2" style="width:16px;height:16px;color:var(--color-mt);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Cuadros con X,</strong> donde cada fila se une con la columna marcada (se convierten en emparejamiento).</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="help-circle" style="width:16px;height:16px;color:var(--color-text-subtle);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Si una pregunta no tiene respuesta marcada,</strong> el sistema no la inventa: queda señalada para que la completes en la revisión.</span>
                 </div>
               </div>
             </div>
@@ -1437,20 +1474,91 @@
               <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">¿Por qué usarlo en vez de cargar a mano?</p>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <i data-lucide="shield-check" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Validación estricta antes de generar el XML.</strong> El sistema verifica que cada pregunta cumpla el formato que Moodle espera —incluyendo que cada par de un emparejamiento corresponda realmente a la respuesta correcta, no solo que "la cantidad cuadre"— y te avisa con un error claro si algo no cierra, en vez de dejarte importar un examen roto sin saberlo.</span>
-                </div>
-                <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <i data-lucide="sparkles" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Prefiltro con IA.</strong> No necesitas que tu examen esté perfectamente formateado: un modelo de IA normaliza la estructura del texto antes de procesarlo, así que puedes partir de un documento casi cualquiera y aun así obtener un resultado limpio.</span>
+                  <i data-lucide="zap" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Rápido.</strong> Un examen de 40 preguntas queda listo para revisar en menos de un minuto, con el avance en pantalla.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="edit-3" style="width:16px;height:16px;color:var(--color-mt);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Revisión antes de descargar.</strong> Nunca genera el XML a ciegas: siempre puedes inspeccionar y corregir cada pregunta detectada antes de aprobar la conversión final.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Siempre revisas antes de descargar.</strong> Cada pregunta se puede corregir, y el sistema te señala las incompletas y las que conviene mirar dos veces.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="shield-check" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">El XML sale válido.</strong> Antes de generarlo se verifica que cada pregunta cumpla lo que Moodle exige, así no importas un examen roto sin saberlo.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="lock" style="width:16px;height:16px;color:var(--color-cl);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Procesamiento local.</strong> Tu examen se procesa en tu propio equipo; solo el texto extraído se envía a la IA para normalizar la estructura, nunca el archivo original.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Tu archivo se procesa en tu equipo.</strong> Al servicio de IA solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas en imágenes o PDF escaneados).</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Tab: Revisar preguntas -->
+        <div class="tab-panel" id="modal-panel-review">
+          <div style="display:flex;flex-direction:column;gap:16px;">
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Panel de navegación</p>
+              <p style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);margin-bottom:10px;">A la derecha (o abajo, en pantallas pequeñas) hay un cuadro por pregunta. Haz clic en uno para ir a esa pregunta.</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span style="width:22px;height:22px;border-radius:6px;flex-shrink:0;margin-top:1px;background:var(--color-accent);"></span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Azul:</strong> la pregunta que estás viendo.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span style="width:22px;height:22px;border-radius:6px;flex-shrink:0;margin-top:1px;border:1.5px solid var(--color-error);background:var(--color-error-bg);"></span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Rojo: incompleta.</strong> Falta el enunciado, opciones, la respuesta correcta o una pareja. La tarjeta dice qué falta, y <strong style="color:var(--color-text);">Aprobar</strong> no avanza hasta completarlas.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span style="width:22px;height:22px;border-radius:6px;flex-shrink:0;margin-top:1px;border:1.5px solid var(--color-warning);"></span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Naranja: para revisar.</strong> Está completa, pero conviene compararla con el documento original.</span>
+                </div>
+              </div>
+              <p style="font-size:12.5px;color:var(--color-text-subtle);margin-top:10px;">Los contadores “✕ incompletas” y “⚠ para revisar” te llevan a la siguiente de cada tipo.</p>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Etiquetas de cada pregunta</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span class="type-badge" style="flex-shrink:0;background:transparent;color:var(--color-text-subtle);border:1px solid var(--color-border);"><i data-lucide="highlighter" style="width:12px;height:12px;vertical-align:-2px;"></i> respuesta por marca</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">La respuesta se tomó de la marca del documento (color, resaltado, subrayado, negrita o X).</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span class="type-badge" style="flex-shrink:0;background:var(--color-cl-bg);color:var(--color-cl);border:1px solid var(--color-cl-border);"><i data-lucide="palette" style="width:12px;height:12px;vertical-align:-2px;"></i> revisar marca</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">El documento tiene marcas en esa página, pero no se pudieron leer con certeza.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span class="type-badge" style="flex-shrink:0;background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);"><i data-lucide="eye-off" style="width:12px;height:12px;vertical-align:-2px;"></i> confianza baja</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">La pregunta depende de una imagen (código, marca) que la IA no leyó con total claridad.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span class="type-badge" style="flex-shrink:0;background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);"><i data-lucide="table-2" style="width:12px;height:12px;vertical-align:-2px;"></i> convertida de tabla</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">Un cuadro del documento se convirtió en emparejamiento.</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Otras herramientas</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="scale" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Distribuir puntos:</strong> <em>Equitativo</em> reparte el total entre todas las preguntas; <em>Por tipo</em> usa pesos (un tipo con peso 2 vale el doble que uno con peso 1). Siempre suma exacto el total que definiste.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="filter" style="width:16px;height:16px;color:var(--color-mc);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Filtrar</strong> muestra solo un tipo de pregunta; el panel de navegación sigue ese filtro.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="plus-circle" style="width:16px;height:16px;color:var(--color-mt);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Añadir nueva pregunta</strong> si faltó alguna, de cualquiera de los 7 tipos.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="alert-triangle" style="width:16px;height:16px;color:var(--color-warning);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Preguntas que no se pudieron incluir:</strong> aparecen arriba con el motivo. Si solo les falta la respuesta, usa <em>Añadir con lo ya extraído</em> y márcala tú.</span>
                 </div>
               </div>
             </div>
@@ -1461,7 +1569,7 @@
         <!-- Tab 1: Format -->
         <div class="tab-panel" id="modal-panel-format">
           <p style="font-size:13.5px;color:var(--color-text-muted);margin-bottom:16px;">
-            El examen debe estructurarse con preguntas numeradas (<code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">Pregunta N:</code>) y finalizar con la sección obligatoria <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">RESPUESTAS</code>.
+            <strong style="color:var(--color-text);">No es obligatorio:</strong> el sistema entiende exámenes con el formato habitual. Úsalo si escribes el examen directamente en un <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">.txt</code>: preguntas con <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">Pregunta N:</code> y la sección <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">RESPUESTAS</code> al final, sin lugar a dudas.
           </p>
 
           <div style="display:flex;flex-direction:column;gap:14px;">
@@ -1517,14 +1625,14 @@ Explica con tus propias palabras las causas principales de la Revolución France
               <span class="type-badge shortanswer">6. Respuesta Corta</span>
               <div class="code-block" style="margin-top:8px;">Pregunta 6:
 ¿Cómo se llama el proceso mediante el cual las plantas convierten la luz solar en energía?</div>
-              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas que esperan una sola palabra o frase corta como respuesta. Moodle la calificará automáticamente comparando el texto, sin distinguir mayúsculas de minúsculas y aceptando también la respuesta sin tildes. Sin embargo, no cubre otras variaciones de redacción ni una tilde ubicada incorrectamente. Le recomendamos considerar estas limitaciones antes de utilizar este tipo de pregunta — si la respuesta esperada admite más variantes, use Ensayo en su lugar.</p>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas que esperan una sola palabra o frase corta como respuesta. Moodle la califica comparando el texto, sin distinguir mayúsculas y aceptando la respuesta sin tildes. No acepta otras formas de redactarla: si la respuesta admite variantes, usa Ensayo.</p>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
               <span class="type-badge numerical">7. Numérica</span>
               <div class="code-block" style="margin-top:8px;">Pregunta 7:
 ¿Cuánto es 15 multiplicado por 4?</div>
-              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas cuya respuesta es un número. En RESPUESTAS debe ir el valor numérico tal cual (ej. "60"), no escrito en palabras ni con unidades — si tu examen ya lo escribe así, tradúcelo al procesar.</p>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas cuya respuesta es un número. En RESPUESTAS va solo el número (ej. "60"), sin palabras ni unidades.</p>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border-glow);border-radius:var(--radius-md);padding:14px;">
@@ -1552,7 +1660,7 @@ Nº Tipo Respuesta correcta
         <div class="tab-panel" id="modal-panel-prompt">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <p style="font-size:13.5px;color:var(--color-text-muted);">
-              Copia este prompt y pégalo en tu IA de preferencia junto con tu examen (PDF o imagen). Guarda su respuesta como un archivo .txt y súbelo en el Paso 1.
+              <strong style="color:var(--color-text);">Alternativa, normalmente no hace falta.</strong> Si el sistema no reconoce bien tu documento, pega este prompt en tu IA de preferencia junto con el examen, guarda la respuesta como .txt y súbela en el Paso 1.
             </p>
             <button id="btn-copy-prompt" class="btn btn-ghost" style="padding:8px 14px;font-size:13px;">
               <i data-lucide="copy" id="copy-icon" style="width:14px;height:14px;"></i>
@@ -1806,6 +1914,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
     const modalTabs = document.querySelectorAll('.modal-tab');
     const modalPanels = {
       about: document.getElementById('modal-panel-about'),
+      review: document.getElementById('modal-panel-review'),
       format: document.getElementById('modal-panel-format'),
       prompt: document.getElementById('modal-panel-prompt'),
       moodle: document.getElementById('modal-panel-moodle'),
@@ -1824,6 +1933,10 @@ Ahora convierte el examen adjunto a este formato.</pre>
     function switchTab(tabId) {
       modalTabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
       Object.entries(modalPanels).forEach(([id, panel]) => panel.classList.toggle('active', id === tabId));
+      // En celular la fila de pestañas se desplaza: la elegida queda a la vista.
+      document.querySelector(`.modal-tab[data-tab="${tabId}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      const body = document.querySelector('#modal-help .modal-body');
+      if (body) body.scrollTop = 0;
     }
 
     document.getElementById('btn-help').addEventListener('click', () => openHelp('about'));
