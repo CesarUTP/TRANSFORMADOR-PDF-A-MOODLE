@@ -53,8 +53,21 @@ Conversor a Moodle XML/
 │   ├── requirements.txt  ← Dependencias Python
 │   └── venv/             ← Entorno virtual (no versionado)
 │
-├── frontend/
-│   └── index.html        ← Interfaz web (HTML + Vanilla JS)
+├── frontend/             ← Interfaz web (sin framework ni paso de compilación)
+│   ├── index.html        ← Estructura de la página
+│   ├── pruebas.html      ← Pruebas de la lógica pura (se abren en el navegador; no se empaqueta)
+│   ├── css/              ← base (tokens, reset) · componentes · editor
+│   └── js/               ← Módulos ES que el navegador carga tal cual
+│       ├── app.js        ← Punto de entrada: conecta eventos y publica en window lo que usa el HTML
+│       ├── estado.js     ← Estado compartido + aviso de cambios (suscribir/notificar)
+│       ├── dom.js, util.js
+│       ├── carga.js      ← Subir el examen y leer el progreso en vivo
+│       ├── progreso.js   ← Pantalla de carga y tiempo estimado
+│       ├── puntos.js     ← Reparto del puntaje (lógica pura, con pruebas)
+│       ├── validacion.js ← Qué le falta a una pregunta (lógica pura, con pruebas)
+│       ├── resultado.js, historial.js, navegacion.js
+│       ├── editor/       ← tarjetas · panel de revisión · filtros · paneles · cloze · puntos-ui
+│       └── ui/           ← tema · toast · modales
 │
 ├── assets/
 │   └── Icon.ico          ← Ícono del ejecutable empaquetado
@@ -240,6 +253,23 @@ Devuelve los últimos 50 exámenes convertidos (sin el contenido del XML, solo m
 ### `GET /api/history/{record_id}/download`
 
 Vuelve a descargar el XML de una conversión anterior guardada en el historial.
+
+---
+
+## Frontend
+
+Sin framework y sin `npm`: son **módulos ES** que el navegador carga
+directamente, así que editar y recargar alcanza — no hay paso de
+compilación que mantener ni que recordar antes de generar el instalador.
+El estado compartido vive en `js/estado.js`, que avisa con `notificar()`
+cuando el examen cambia; las vistas derivadas (chips de filtro, mapa de
+preguntas, contador de puntos) se suscriben en `app.js` en vez de
+refrescarse a mano desde cada sitio.
+
+La lógica que no toca el DOM (`puntos.js`, `validacion.js`) tiene pruebas
+en `frontend/pruebas.html`: se abren en el navegador
+(`http://localhost:8000/pruebas.html` con el backend corriendo) y dicen
+en el momento cuántas pasan.
 
 ---
 
