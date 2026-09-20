@@ -1,0 +1,537 @@
+/* componentes.css — piezas reutilizables: contenedores, stepper, botones,
+   zona de carga, formularios, tarjetas de resumen, modales, código y toast
+   Parte de la hoja de estilos del Conversor a Moodle XML.
+   Se cargan en orden desde index.html. */
+
+/* ── CONTAINER & CARDS ───────────────────────────────────────────────── */
+.app-header {
+  border-bottom: 1px solid var(--color-border);
+  /* Opaco a propósito (no el mismo --color-surface-card translúcido de
+     las glass-card): al ser sticky, cualquier contenido con borde
+     propio (el aviso de revisión, la barra de acciones fija de
+     "Revisar Preguntas") queda scrolleando justo debajo y se veía
+     "fantasma" a través del cristal semitransparente. Un header sólido
+     lo tapa por completo. */
+  background: var(--color-bg-alt);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  transition: border-color 0.3s;
+}
+.header-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.logo-badge {
+  width: 44px;
+  height: 44px;
+  background: var(--color-accent-gradient);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-glow);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .logo-badge:hover { transform: scale(1.05) rotate(-3deg); }
+}
+
+.brand-title {
+  font-family: var(--font-heading);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  color: var(--color-accent);
+}
+.brand-sub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.main-wrapper {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 36px 24px 80px;
+}
+
+/* ── STEPPER (UI-UX Pro Max Flow) ────────────────────────────────────── */
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 20px;
+  backdrop-filter: blur(12px);
+}
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-subtle);
+  transition: color 0.25s;
+}
+.step-item.active {
+  color: var(--color-accent);
+}
+.step-item.completed {
+  color: var(--color-success);
+}
+.step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover);
+  border: 1.5px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.25s;
+}
+.step-item.active .step-num {
+  background: var(--color-primary);
+  border-color: var(--color-accent);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.step-item.completed .step-num {
+  background: var(--color-success-solid);
+  border-color: var(--color-success-solid);
+  color: #ffffff;
+}
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: var(--color-border);
+  margin: 0 12px;
+  border-radius: 2px;
+  transition: background 0.25s;
+}
+.step-line.active {
+  background: var(--color-accent);
+}
+
+/* ── CARD COMPONENTS ─────────────────────────────────────────────────── */
+.glass-card {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.glass-card:hover {
+  border-color: var(--color-border-glow);
+}
+
+/* ── BUTTONS ─────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: none;
+  transition-property: transform, box-shadow, filter, opacity;
+  transition-duration: 0.2s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  letter-spacing: -0.1px;
+}
+.btn:active:not(:disabled) { transform: scale(0.98); }
+
+.btn-primary {
+  background: var(--color-cta-gradient);
+  color: #ffffff;
+  box-shadow: var(--shadow-glow);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Verde para acciones que avanzan/confirman (procesar examen, aprobar y
+   generar XML) — refuerza por color que es la acción positiva a tomar. */
+.btn-success {
+  background: var(--color-cta-success-gradient);
+  color: #ffffff;
+  box-shadow: var(--shadow-glow-success);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-success:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+.btn-success:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Rojo para la acción destructiva/de salida (cancelar) — por psicología
+   del color, contrasta con el verde de la acción de confirmar. */
+.btn-danger {
+  background: var(--color-cta-danger-gradient);
+  color: #ffffff;
+  box-shadow: var(--shadow-glow-danger);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-danger:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.btn-ghost {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text);
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-surface-hover);
+}
+
+.btn-icon-text {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition-property: color, border-color, background-color, filter;
+  transition-duration: 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-icon-text:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-glow);
+  background: var(--color-surface);
+}
+
+/* Punto focal: la Guía es el primer lugar donde un usuario nuevo
+   encuentra ayuda, así que se destaca del resto de la navegación
+   (que es neutra) en vez de mezclarse con ella. */
+.btn-icon-text.btn-guide {
+  background: var(--color-cta-gradient);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.btn-icon-text.btn-guide:hover {
+  color: #ffffff;
+  border-color: transparent;
+  filter: brightness(1.12);
+}
+
+/* ── DROPZONE ────────────────────────────────────────────────────────── */
+#drop-zone {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--color-dropzone-bg);
+  transition-property: border-color, background-color, transform;
+  transition-duration: 0.25s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+#drop-zone.drag-over {
+  border-color: var(--color-accent);
+  background: var(--color-accent-glow);
+  transform: scale(1.01);
+}
+@media (hover: hover) and (pointer: fine) {
+  #drop-zone:hover {
+    border-color: var(--color-accent);
+    background: var(--color-accent-glow);
+    transform: scale(1.01);
+  }
+}
+.drop-icon-wrapper {
+  width: 72px;
+  height: 72px;
+  background: var(--color-accent-glow);
+  border: 1px solid var(--color-border-glow);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+/* ── FILE PREVIEW ────────────────────────────────────────────────────── */
+#file-preview {
+  background: var(--color-accent-glow);
+  border: 1.5px solid var(--color-border-glow);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+/* ── FORM CONTROLS ───────────────────────────────────────────────────── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+.form-input {
+  background: var(--color-bg);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 14.5px;
+  font-family: inherit;
+  width: 100%;
+  outline: none;
+  transition-property: border-color, box-shadow;
+  transition-duration: 0.2s;
+}
+.form-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-glow);
+}
+
+
+/* ── STATS CARDS ─────────────────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  /* auto-fit (no auto-fill) para que, con menos de 4 tipos presentes en
+     el examen, las tarjetas restantes se repartan el ancho completo en
+     vez de dejar columnas vacías — nunca se genera una tarjeta para un
+     tipo con 0 preguntas (ver updateSuccessStats). */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px 12px;
+  text-align: center;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .stat-card:hover { transform: translateY(-3px); }
+}
+.stat-card .stat-num {
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-card .stat-label {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.stat-card .stat-grade {
+  font-size: 11px;
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+/* ── MODALS (Help & History) ──────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.modal-backdrop.open { opacity: 1; pointer-events: all; }
+.modal-box {
+  background: var(--color-surface-modal);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 720px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(20px) scale(0.96);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s;
+}
+.modal-backdrop.open .modal-box { transform: translateY(0) scale(1); }
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+.modal-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-tabstrip-bg);
+  /* En pantallas angostas las 5 pestañas no caben: se desplazan de lado
+     en vez de cortarse. */
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Con overflow, el navegador permite encogerla a 0 dentro de la
+     columna del modal: en pestañas largas (Formato, Prompt IA) la
+     cinta quedaba aplastada. */
+  flex-shrink: 0;
+}
+.modal-tabs::-webkit-scrollbar { display: none; }
+.modal-tab {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 12px 18px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-bottom: 3px solid transparent;
+  transition-property: color, border-bottom-color;
+  transition-duration: 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-tab.active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: fadeInUp 0.25s ease; }
+
+/* ── CODE BLOCKS ─────────────────────────────────────────────────────── */
+.code-block {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+/* ── TOAST ───────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px) scale(0.96);
+  background: var(--color-success-solid);
+  color: #ffffff;
+  padding: 12px 22px;
+  border-radius: var(--radius-full);
+  font-size: 13.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: min(90vw, 440px);
+  box-shadow: var(--shadow-lg);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  opacity: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+.toast.show  { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+.toast.error { background: var(--color-error-solid); }
+.toast.info  { background: var(--color-primary); }
+.toast i     { flex-shrink: 0; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .main-wrapper { padding: 20px 16px 60px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stepper { padding: 10px 12px; }
+  .step-item span { display: none; }
+}
+@media (max-width: 480px) {
+  /* El header no cabe con las 3 etiquetas de texto completas junto al
+     logo — se reduce a solo íconos (con aria-label/title ya presentes
+     para lectores de pantalla y tooltips) para evitar overflow
+     horizontal en pantallas de celular. */
+  .header-inner { padding: 14px 16px; }
+  .btn-icon-text span { display: none; }
+  .btn-icon-text { padding: 10px; }
+}

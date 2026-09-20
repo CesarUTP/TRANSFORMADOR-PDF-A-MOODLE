@@ -1,0 +1,228 @@
+/* base.css — tokens de diseño, reset, tipografía y animaciones
+   Parte de la hoja de estilos del Conversor a Moodle XML.
+   Se cargan en orden desde index.html. */
+
+/* ── DESIGN SYSTEM & TOKENS (Impeccable & Design Tokens) ──────────────── */
+:root {
+  /* Le dice al navegador de qué color pintar lo que dibuja ÉL y no el
+     CSS de esta página: las flechitas de <input type="number">, las
+     barras de scroll, el cursor de texto y el desplegable de un
+     <select>. Sin esto el navegador asume fondo claro siempre, así que
+     en modo oscuro las flechitas quedaban gris oscuro sobre el input
+     oscuro — invisibles. No se puede maquillar con CSS propio: son
+     partes internas del control. */
+  color-scheme: dark;
+
+  /* Color Palette — Dark Mode Default (Rich Deep Slate & Electric Cyan) */
+  --color-bg:             #090d16;
+  --color-bg-alt:         #0f172a;
+  --color-surface:        #131c31;
+  --color-surface-hover:  #1e293b;
+  --color-surface-card:   rgba(19, 28, 49, 0.75);
+  --color-surface-modal:  rgba(15, 23, 42, 0.88);
+  --color-dropzone-bg:    rgba(19, 28, 49, 0.25);
+  --color-tabstrip-bg:    rgba(0, 0, 0, 0.1);
+  --color-border:         rgba(255, 255, 255, 0.12);
+  --color-border-subtle:  rgba(255, 255, 255, 0.06);
+  --color-border-glow:    rgba(56, 189, 248, 0.35);
+
+  --color-text:           #f8fafc;
+  --color-text-muted:     #94a3b8;
+  --color-text-subtle:    #8f9db0;
+
+  --color-primary:        #0369a1;
+  --color-primary-hover:  #0284c7;
+  --color-primary-glow:   rgba(2, 132, 199, 0.25);
+
+  --color-accent:         #38bdf8;
+  --color-accent-gradient: linear-gradient(135deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
+  --color-accent-glow:   rgba(56, 189, 248, 0.2);
+
+  /* Gradiente dedicado para botones con texto blanco encima: a diferencia
+     de --color-accent-gradient (decorativo, para logo/marca), este se
+     mantiene lo bastante oscuro en todo su recorrido para que el texto
+     blanco cumpla WCAG AA (>=4.5:1) en cualquier punto del degradado. */
+  --color-cta-gradient: linear-gradient(135deg, #075985 0%, #0369a1 50%, #4338ca 100%);
+
+  /* Variantes CTA para acciones positivas/negativas (aprobar y generar,
+     cancelar) — mismo criterio de contraste que --color-cta-gradient:
+     se mantienen igual de oscuras en modo claro y oscuro, porque lo que
+     importa es el contraste del texto blanco contra el botón, no el
+     fondo de la página. */
+  --color-cta-success-gradient: linear-gradient(135deg, #065f46 0%, #047857 50%, #04845e 100%);
+  --color-cta-danger-gradient:  linear-gradient(135deg, #7f1d2e 0%, #be123c 50%, #e11d48 100%);
+  --shadow-glow-success: 0 8px 20px rgba(0, 0, 0, 0.35);
+  --shadow-glow-danger:  0 8px 20px rgba(0, 0, 0, 0.35);
+
+  --color-success:        #10b981;
+  --color-success-bg:     rgba(16, 185, 129, 0.12);
+  --color-success-solid:  #0c855d;
+  --color-warning:        #f59e0b;
+  --color-warning-bg:     rgba(245, 158, 11, 0.12);
+  --color-error:          #f43f5e;
+  --color-error-bg:       rgba(244, 63, 94, 0.12);
+  --color-error-solid:    #e80d33;
+
+  --color-mc:             #38bdf8;
+  --color-mc-bg:          rgba(56, 189, 248, 0.15);
+  --color-mc-border:      rgba(56, 189, 248, 0.3);
+  --color-tf:             #34d399;
+  --color-tf-bg:          rgba(52, 211, 153, 0.15);
+  --color-tf-border:      rgba(52, 211, 153, 0.3);
+  --color-mt:             #fbbf24;
+  --color-mt-bg:          rgba(251, 191, 36, 0.15);
+  --color-mt-border:      rgba(251, 191, 36, 0.3);
+  --color-cl:             #a78bfa;
+  --color-cl-bg:          rgba(167, 139, 250, 0.15);
+  --color-cl-border:      rgba(167, 139, 250, 0.3);
+  --color-es:             #f472b6;
+  --color-es-bg:          rgba(244, 114, 182, 0.15);
+  --color-es-border:      rgba(244, 114, 182, 0.3);
+  --color-sa:             #2dd4bf;
+  --color-sa-bg:          rgba(45, 212, 191, 0.15);
+  --color-sa-border:      rgba(45, 212, 191, 0.3);
+  --color-nu:             #fb923c;
+  --color-nu-bg:          rgba(251, 146, 60, 0.15);
+  --color-nu-border:      rgba(251, 146, 60, 0.3);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 8px 20px rgba(0, 0, 0, 0.35);
+
+  /* Typography */
+  --font-body: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Outfit', 'Hanken Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --color-bg:             #f1f5f9;
+  --color-bg-alt:         #e2e8f0;
+  --color-surface:        #ffffff;
+  --color-surface-hover:  #f8fafc;
+  --color-surface-card:   rgba(255, 255, 255, 0.85);
+  --color-surface-modal:  rgba(255, 255, 255, 0.94);
+  --color-dropzone-bg:    rgba(2, 132, 199, 0.05);
+  --color-tabstrip-bg:    rgba(15, 23, 42, 0.03);
+  --color-border:         #cbd5e1;
+  --color-border-subtle:  #e2e8f0;
+  --color-border-glow:    rgba(2, 132, 199, 0.3);
+
+  --color-text:           #0f172a;
+  --color-text-muted:     #475569;
+  --color-text-subtle:    #606f85;
+
+  --color-primary:        #0369a1;
+  --color-primary-hover:  #0284c7;
+  --color-primary-glow:   rgba(2, 132, 199, 0.15);
+
+  --color-accent:         #0273ae;
+  --color-accent-gradient: linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #4f46e5 100%);
+  --color-accent-glow:   rgba(2, 132, 199, 0.15);
+
+  --color-success:        #047d58;
+  --color-success-bg:     #ecfdf5;
+  --color-success-solid:  #047d58;
+  --color-warning:        #ac5f05;
+  --color-warning-bg:     #fffbeb;
+  --color-error:          #d31b44;
+  --color-error-bg:       #fff1f2;
+  --color-error-solid:    #d31b44;
+
+  --color-mc:             #0270a9;
+  --color-mc-bg:          rgba(2, 132, 199, 0.12);
+  --color-mc-border:      rgba(2, 132, 199, 0.3);
+  --color-tf:             #047854;
+  --color-tf-bg:          rgba(5, 150, 105, 0.12);
+  --color-tf-border:      rgba(5, 150, 105, 0.3);
+  --color-mt:             #a25904;
+  --color-mt-bg:          rgba(217, 119, 6, 0.12);
+  --color-mt-border:      rgba(217, 119, 6, 0.3);
+  --color-cl:             #7c3aed;
+  --color-cl-bg:          rgba(124, 58, 237, 0.12);
+  --color-cl-border:      rgba(124, 58, 237, 0.3);
+  --color-es:             #be185d;
+  --color-es-bg:          rgba(190, 24, 93, 0.12);
+  --color-es-border:      rgba(190, 24, 93, 0.3);
+  --color-sa:             #0f766e;
+  --color-sa-bg:          rgba(15, 118, 110, 0.12);
+  --color-sa-border:      rgba(15, 118, 110, 0.3);
+  --color-nu:             #c2410c;
+  --color-nu-bg:          rgba(194, 65, 12, 0.12);
+  --color-nu-border:      rgba(194, 65, 12, 0.3);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 8px 18px rgba(15, 23, 42, 0.16);
+}
+
+/* ── BASE STYLES & RESET ─────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--color-bg);
+  background-image: 
+    radial-gradient(at 0% 0%, var(--color-primary-glow) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, var(--color-accent-glow) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus visible for accessibility (WCAG AA) */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-subtle); }
+
+/* ── KEYFRAMES & ANIMATIONS (Emil Design Eng) ────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes spinSlow {
+  to { transform: rotate(360deg); }
+}
+
+.animate-fadeIn { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-scaleUp { animation: scaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Con "reducir movimiento" activado en el sistema, las secciones siguen
+   apareciendo (opacidad) para no perder la señal de cambio de estado,
+   pero sin el desplazamiento/escala que puede incomodar a quien activó
+   esa preferencia. El spinner de carga queda fuera a propósito: es la
+   única señal de "proceso en curso" en la pantalla de progreso. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fadeIn, .animate-scaleUp {
+    animation-name: fadeOnly;
+  }
+}
+@keyframes fadeOnly {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

@@ -61,6 +61,12 @@ def _frontend_dir() -> Path:
 _fe = _frontend_dir()
 if _fe.exists():
     app.mount("/static", StaticFiles(directory=str(_fe)), name="static")
+    # index.html se sirve en "/", así que sus rutas relativas ("css/base.css",
+    # "js/app.js") caen en la raíz: cada carpeta del frontend se monta ahí.
+    for _sub in ("css", "js"):
+        _dir = _fe / _sub
+        if _dir.is_dir():
+            app.mount(f"/{_sub}", StaticFiles(directory=str(_dir)), name=_sub)
 
 @app.get("/", include_in_schema=False)
 async def serve_index():

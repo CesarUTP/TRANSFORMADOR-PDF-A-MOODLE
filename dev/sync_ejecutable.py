@@ -10,9 +10,9 @@ sincronizan antes de compilar, el instalador sale con código viejo (pasó:
 quedaron días atrás, sin pipeline.py, schema_adapter.py ni mark_resolver.py).
 
 Copia solo lo que la app necesita para correr: los módulos .py de backend/,
-su requirements.txt, frontend/index.html y launcher.py. Borra de
-ejecutable/backend/ los .py que ya no existen en backend/. Nunca copia un
-.env (la API key se pone a mano junto al .exe instalado).
+su requirements.txt, todo frontend/ (index.html, css/, js/) y launcher.py.
+Borra los archivos que ya no existen en el original. Nunca copia un .env
+(la API key se pone a mano junto al ejecutable instalado).
 """
 
 import filecmp
@@ -24,15 +24,19 @@ ROOT = Path(__file__).resolve().parent.parent
 DESTS = [ROOT / "ejecutable", ROOT / "ejecutable_mac"]
 
 
+def _sources() -> list:
+    """(origen, ruta relativa) de todo lo que la app necesita."""
+    out = [(ROOT / "launcher.py", Path("launcher.py")),
+           (ROOT / "backend" / "requirements.txt", Path("backend/requirements.txt"))]
+    out += [(src, Path("backend") / src.name) for src in sorted((ROOT / "backend").glob("*.py"))]
+    out += [(src, src.relative_to(ROOT))
+            for src in sorted((ROOT / "frontend").rglob("*"))
+            if src.is_file() and not src.name.startswith(".")]
+    return out
+
+
 def _files(dest: Path):
-    return [
-        (ROOT / "launcher.py", dest / "launcher.py"),
-        (ROOT / "frontend" / "index.html", dest / "frontend" / "index.html"),
-        (ROOT / "backend" / "requirements.txt", dest / "backend" / "requirements.txt"),
-    ] + [
-        (src, dest / "backend" / src.name)
-        for src in sorted((ROOT / "backend").glob("*.py"))
-    ]
+    return [(src, dest / rel) for src, rel in _sources()]
 
 
 def sync(dest: Path) -> tuple:
@@ -42,12 +46,15 @@ def sync(dest: Path) -> tuple:
         if not dst.exists() or not filecmp.cmp(src, dst, shallow=False):
             shutil.copy2(src, dst)
             changed.append(dst.relative_to(ROOT))
-    current = {src.name for src in (ROOT / "backend").glob("*.py")}
+    # Lo que ya no existe en el original se borra de la copia (si no, un
+    # módulo renombrado seguiría viajando dentro del instalador).
+    expected = {dest / rel for _, rel in _sources()}
     removed = []
-    for stale in (dest / "backend").glob("*.py"):
-        if stale.name not in current:
-            stale.unlink()
-            removed.append(stale.relative_to(ROOT))
+    for folder, pattern in ((dest / "backend", "*.py"), (dest / "frontend", "**/*")):
+        for stale in folder.rglob(pattern) if pattern.startswith("**") else folder.glob(pattern):
+            if stale.is_file() and not stale.name.startswith(".") and stale not in expected:
+                stale.unlink()
+                removed.append(stale.relative_to(ROOT))
     return changed, removed
 
 
