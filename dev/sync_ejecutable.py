@@ -21,6 +21,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+# Archivos del frontend que son de desarrollo y no viajan en el instalador.
+SOLO_DESARROLLO = {"pruebas.html"}
 DESTS = [ROOT / "ejecutable", ROOT / "ejecutable_mac"]
 
 
@@ -31,7 +33,8 @@ def _sources() -> list:
     out += [(src, Path("backend") / src.name) for src in sorted((ROOT / "backend").glob("*.py"))]
     out += [(src, src.relative_to(ROOT))
             for src in sorted((ROOT / "frontend").rglob("*"))
-            if src.is_file() and not src.name.startswith(".")]
+            if src.is_file() and not src.name.startswith(".")
+            and src.name not in SOLO_DESARROLLO]
     return out
 
 

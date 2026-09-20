@@ -15,6 +15,14 @@
   
   <!-- Lucide Icons (versión fija: "@latest" puede romper la UI sin aviso si Lucide publica un cambio incompatible) -->
   <script src="https://unpkg.com/lucide@1.44.0/dist/umd/lucide.min.js"></script>
+  <!-- Puente temporal: estos módulos ya están separados, pero el resto del
+       JS todavía vive en un <script> clásico que los llama por su nombre
+       global. Desaparece cuando todo el frontend sea módulos. -->
+  <script type="module">
+    import { autoDistributePoints, fmtPoints, DEFAULT_TYPE_WEIGHTS } from './js/puntos.js';
+    import { questionIssues } from './js/validacion.js';
+    Object.assign(window, { autoDistributePoints, fmtPoints, DEFAULT_TYPE_WEIGHTS, questionIssues });
+  </script>
 
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/componentes.css">
@@ -2069,43 +2077,6 @@ Ahora convierte el examen adjunto a este formato.</pre>
       window.scrollTo({ top, behavior: 'smooth' });
     }
 
-    // ── Preguntas incompletas (revisión en vivo) ───────────────────────────
-    // Mismas reglas que el validador del backend (validator.py): lo que
-    // aquí se marca como incompleto es lo que haría fallar "Aprobar". Se
-    // revisa mientras el docente edita, no recién al generar el XML.
-    function questionIssues(q, key) {
-      const issues = [];
-      const d = q.data || {};
-      const ans = ((key && key.answer) || '').trim();
-      if (q.type !== 'cloze' && !(d.stem || '').trim()) issues.push('Falta el enunciado');
-      if (q.type === 'multichoice') {
-        const opts = Object.values(d.options || {});
-        const filled = opts.filter(o => (o || '').trim());
-        if (filled.length < 2) issues.push('Faltan opciones (mínimo 2)');
-        else if (filled.length < opts.length) issues.push('Hay una opción vacía');
-        if (!ans) issues.push('Falta marcar la respuesta correcta');
-      } else if (q.type === 'truefalse') {
-        if (!/^(verdadero|falso)$/i.test(ans)) issues.push('Falta elegir Verdadero o Falso');
-      } else if (q.type === 'matching') {
-        const a = d.col_a || {}, b = d.col_b || {};
-        const keys = Object.keys(a);
-        const complete = keys.filter(k => (a[k] || '').trim() && (b[String.fromCharCode(96 + Number(k))] || '').trim());
-        if (complete.length < keys.length) issues.push('Hay una pareja incompleta');
-        if (complete.length < 2) issues.push('Faltan parejas (mínimo 2)');
-      } else if (q.type === 'cloze') {
-        const text = d.text || '';
-        const blanks = text.match(/\[[A-Z]:[^\]]*\]/g) || [];
-        if (!blanks.length) issues.push('Faltan los espacios para completar');
-        else if (blanks.some(bl => !bl.slice(3, -1).trim())) issues.push('Un espacio no tiene opciones');
-        if (!text.replace(/\[[A-Z]:[^\]]*\]/g, '').trim()) issues.push('Falta el texto de la pregunta');
-      } else if (q.type === 'shortanswer') {
-        if (!ans) issues.push('Falta la respuesta');
-      } else if (q.type === 'numerical') {
-        if (!ans) issues.push('Falta la respuesta');
-        else if (isNaN(Number(ans.replace(',', '.')))) issues.push('La respuesta debe ser un número');
-      }
-      return issues;
-    }
 
     // Marca cada tarjeta (borde rojo + qué le falta) y devuelve cuántas
     // quedan incompletas. collectEditorData recorre las tarjetas en el mismo
@@ -2305,7 +2276,6 @@ Ahora convierte el examen adjunto a este formato.</pre>
       return Number.isFinite(t) && t > 0 ? t : 0;
     }
     // Formato corto y sin ceros de relleno (2.50 → "2.5", 20.00 → "20").
-    const fmtPoints = n => Number(n).toFixed(2).replace(/\.?0+$/, '');
 
     // Lee los pesos escritos en el panel "Por tipo". Es la ÚNICA lectura de
     // esos inputs: la vista previa y el botón "Aplicar" la comparten a
@@ -2552,87 +2522,6 @@ Ahora convierte el examen adjunto a este formato.</pre>
       return { questions: qs, answer_key: ak };
     }
 
-    // Pesos por defecto para "Distribuir puntos → Por tipo". Reflejan los
-    // mismos valores que TYPE_WEIGHTS en backend/config.py (el backend los
-    // usa como red de seguridad si una pregunta llega sin `points`; aquí
-    // son el punto de partida editable que ve el docente en el panel de
-    // distribución — si se cambian en un lado, conviene revisar el otro).
-    const DEFAULT_TYPE_WEIGHTS = {
-      truefalse: 1, shortanswer: 1, numerical: 1,
-      multichoice: 2, matching: 3, cloze: 3, essay: 3,
-    };
-
-    // Recalcula y SOBREESCRIBE el campo `points` de cada pregunta en
-    // `questions` (mutación en el sitio). No hay cálculo oculto: esto es
-    // exactamente lo que corre la primera vez que se parsea un examen
-    // (modo 'byType', para no cambiar el comportamiento de siempre) y lo
-    // que corre de nuevo cuando el docente pulsa "Aplicar" en el panel de
-    // distribución rápida.
-    //   mode 'equal':  total_points repartido en partes iguales entre
-    //                  TODAS las preguntas, sin importar el tipo.
-    //   mode 'byType': misma fórmula que compute_grades() en el backend
-    //                  (unit = total / Σ peso_i·cantidad_i), pero resuelta
-    //                  aquí para poder mostrarla y dejarla editar en vivo.
-    // OJO con `w[t] || 1`: en JS, 0 es "falsy", así que ese patrón convertía
-    // silenciosamente cualquier peso puesto en 0 a 1 — un docente que
-    // quisiera "que este tipo no reciba nada" no podía lograrlo, y si
-    // ponía TODOS los pesos en 0 el resultado terminaba siendo un reparto
-    // equitativo sin ningún aviso de que 0 no se había respetado. Este
-    // helper solo cae al default (1) cuando el peso no es un número válido
-    // (campo vacío o NaN) — 0 se respeta tal cual.
-    function _weightOrDefault(w, type) {
-      const v = w[type];
-      return (typeof v === 'number' && Number.isFinite(v) && v >= 0) ? v : 1;
-    }
-
-    function autoDistributePoints(questions, totalPoints, mode, weights) {
-      if (!questions || !questions.length) return;
-      const total = Number(totalPoints);
-      if (!Number.isFinite(total) || total <= 0) return;
-
-      // Peso de cada pregunta: 1 para todas en modo equitativo, o el peso
-      // de su tipo en modo "Por tipo".
-      const w = weights || DEFAULT_TYPE_WEIGHTS;
-      let shares = questions.map(q => (mode === 'equal' ? 1 : _weightOrDefault(w, q.type)));
-      let totalWeight = shares.reduce((a, b) => a + b, 0);
-      if (totalWeight <= 0) {
-        // Caso degenerado: todos los pesos en 0 (o negativos) no tiene una
-        // solución matemática (dividiría entre cero) — se cae a reparto
-        // equitativo en vez de fallar en silencio.
-        shares = questions.map(() => 1);
-        totalWeight = questions.length;
-      }
-
-      // El reparto se hace en CÉNTIMOS con el método del resto mayor, no
-      // redondeando cada pregunta por separado. Redondear una por una hacía
-      // que la suma se fuera del total que el docente había fijado (7
-      // preguntas de 1.74 + 3 de 2.61 daba 20.01 / 20 pts, y el contador de
-      // arriba lo mostraba), justo lo contrario de lo que promete el panel.
-      // Ahora se reparte el total exacto y los céntimos sobrantes se dan de
-      // a uno a las preguntas con mayor resto, así que la suma SIEMPRE
-      // cuadra; dentro de un mismo tipo dos preguntas pueden diferir como
-      // mucho en 0.01 pts.
-      const totalCents = Math.round(total * 100);
-      const exact = shares.map(s => (s / totalWeight) * totalCents);
-      const cents = exact.map(v => Math.floor(v));
-      const leftover = totalCents - cents.reduce((a, b) => a + b, 0);
-      // Entre preguntas empatadas, los céntimos sobrantes se reparten por
-      // turnos entre los tipos (1ª de cada tipo, 2ª de cada tipo…) en vez de
-      // vaciarlos sobre el primer tipo de la lista. Si no, dos tipos con el
-      // MISMO peso podían terminar mostrando valores distintos (1.93 vs
-      // 1.92 pts c/u), que se lee como un error aunque la suma cuadre.
-      const seenPerType = {};
-      const byRemainder = exact
-        .map((v, i) => {
-          const t = questions[i].type;
-          const turn = seenPerType[t] = (seenPerType[t] === undefined ? 0 : seenPerType[t] + 1);
-          return { i, turn, frac: v - Math.floor(v) };
-        })
-        .sort((a, b) => (b.frac - a.frac) || (a.turn - b.turn) || (a.i - b.i));
-      for (let k = 0; k < leftover && k < byRemainder.length; k++) cents[byRemainder[k].i] += 1;
-
-      questions.forEach((q, i) => { q.points = cents[i] / 100; });
-    }
 
     // Stats Updater
     const QUESTION_TYPE_DEFS = [
