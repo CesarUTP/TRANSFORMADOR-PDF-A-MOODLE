@@ -1,196 +1,309 @@
-# Conversor a Moodle XML
+<div align="center">
 
-Convierte tus pruebas, cuestionarios y exámenes (PDF o TXT) en un archivo **Moodle XML Question Format** listo para importar — con un backend FastAPI, una interfaz web moderna, y un prefiltro de IA (Gemini) que normaliza automáticamente exámenes con formato desordenado.
+# 📝 Conversor a Moodle XML
 
-Corre como una app de escritorio nativa (Windows/macOS, vía `pywebview`) — no es necesario tener conocimientos técnicos para usarla.
+### De un examen en PDF a un banco de preguntas de Moodle, en un par de clics
+
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Gemini](https://img.shields.io/badge/Gemini-3.1_Flash_Lite-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white)](https://aistudio.google.com/)
+[![Moodle](https://img.shields.io/badge/Moodle-XML-F98012?style=for-the-badge&logo=moodle&logoColor=white)](https://docs.moodle.org/en/Moodle_XML_format)
+
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-000000?style=flat-square&logo=apple&logoColor=white)
+![Sin framework](https://img.shields.io/badge/Frontend-sin_framework-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
+![Exactitud](https://img.shields.io/badge/exactitud-100%25_sintéticos_·_96%25_reales-2ea44f?style=flat-square)
+![Procesamiento local](https://img.shields.io/badge/procesamiento-local-informational?style=flat-square)
+
+</div>
 
 ---
 
-## Características principales
+Convierte pruebas, cuestionarios y exámenes (**PDF** o **TXT**) en un archivo **Moodle XML Question Format** listo para importar. Corre como una app de escritorio nativa en Windows y macOS — **no hace falta saber nada técnico para usarla**.
+
+> [!IMPORTANT]
+> El sistema **nunca inventa ni resuelve una respuesta**. Solo lee las que ya están en el documento (la clave final o las marcas del propio examen). Si una pregunta no tiene respuesta indicada, la señala y bloquea el XML hasta que la completes.
+
+<div align="center">
+
+```mermaid
+flowchart LR
+    A["📄 PDF / TXT"] --> B["🔍 Extracción<br/>texto · color · tablas"]
+    B --> C["🤖 Gemini<br/>ordena la estructura"]
+    C --> D["🎯 Marcas resueltas<br/>en código"]
+    D --> E["✅ Validador"]
+    E --> F["✏️ Editor de revisión"]
+    F --> G["📦 Moodle XML"]
+
+    style A fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    style C fill:#f3e5f5,stroke:#8e75b2,color:#4a148c
+    style D fill:#fff3e0,stroke:#f57c00,color:#e65100
+    style F fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    style G fill:#fff8e1,stroke:#f98012,color:#e65100
+```
+
+</div>
+
+---
+
+## ✨ Características principales
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 🎯 Lectura fiel del examen
 
 - **7 tipos de pregunta Moodle**: opción múltiple, verdadero/falso, emparejamiento, completar (Cloze), ensayo, respuesta corta y numérica.
-- **Respuestas múltiples**: tanto en opción múltiple como en cada espacio de una pregunta Cloze, se puede marcar más de una opción como correcta a la vez.
-- **Prefiltro de IA**: si el examen no viene en el formato esperado (numeración distinta, respuestas marcadas con ✓, claves de emparejamiento sueltas, etc.), Gemini lo normaliza automáticamente antes de procesarlo — sin inventar ni resolver ninguna respuesta que no esté indicada en el original.
-- **Respuestas leídas del documento, no adivinadas**: la clave al final, o las marcas del propio examen (texto en color, resaltado, subrayado, negrita, ✓ y cuadros con X). En un PDF digital las marcas se leen del archivo en código; si una pregunta no tiene respuesta marcada, queda señalada para completarla, nunca se inventa.
+- **Respuestas múltiples** en opción múltiple y en cada espacio de un Cloze.
+- **Marcas leídas del PDF, no adivinadas**: color, resaltado, subrayado, negrita, ✓ y cuadros con X — resueltas **en código**, no por la IA.
 - **PDF escaneados**: "Normalizar con IA" lee las páginas como imagen (hasta 15).
-- **Validación de que el archivo sea realmente una prueba**: antes de convertir nada, el sistema evalúa si el documento tiene preguntas con respuesta reales. Si le suben una presentación, un manual, un artículo o cualquier otro documento que no sea una evaluación, lo rechaza con un mensaje claro en vez de inventar preguntas a partir de su contenido.
-- **Editor de revisión interactivo**: antes de generar el XML final, se pueden inspeccionar y editar todas las preguntas.
-  - Filtro por tipo (los 7 tipos soportados), con conteo en vivo y color propio por tipo.
-  - Menú de "Añadir nueva pregunta" colapsable: se despliega en un clic y vuelve a cerrarse solo al elegir un tipo.
-  - Panel de revisión a la derecha (abajo en pantallas angostas): mapa del examen con la pregunta actual, las **incompletas en rojo** (falta enunciado, opciones, respuesta correcta o una pareja; se revisa en vivo) y las que conviene revisar en naranja, con clic para saltar, más los botones **Aprobar** / **Cancelar**. Aprobar no avanza mientras haya incompletas.
-  - Distribución de puntos equitativa o por tipo (con pesos), que siempre suma exacto el total.
-  - Checkboxes para respuestas múltiples y un constructor visual para preguntas Cloze (sin escribir la sintaxis de corchetes a mano).
-- **Resumen visual del resultado**: al terminar, una tarjeta por cada tipo de pregunta *presente* en el examen (no se muestran tipos con 0 preguntas) y una gráfica de pastel con la distribución de los puntos totales por tipo.
-- **Historial de conversiones**: cada examen convertido queda guardado localmente y se puede volver a descargar.
-- **Procesamiento local**: el documento se procesa en tu equipo. Al servicio de IA solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas en imágenes o PDF escaneados).
-- **Progreso en vivo**: la pantalla de carga muestra por qué pregunta va la IA y el tiempo restante.
+- **Rechaza lo que no es un examen**: si suben una presentación, un manual o un artículo, lo dice claro en vez de inventar preguntas.
+
+</td>
+<td width="50%" valign="top">
+
+### ✏️ Revisión antes de generar
+
+- **Panel de revisión** con el mapa del examen: la pregunta actual, las **incompletas en rojo** y las que conviene mirar en naranja. Aprobar no avanza mientras haya incompletas.
+- **Filtro por tipo** con conteo en vivo y color propio.
+- **Distribución de puntos** equitativa o por tipo, que siempre suma exacto.
+- **Constructor visual de Cloze**: sin escribir corchetes a mano.
+- **Progreso en vivo**: por qué pregunta va la IA y cuánto falta.
+- **Historial local** de conversiones, siempre redescargables.
+
+</td>
+</tr>
+</table>
+
+> [!NOTE]
+> **Privacidad:** el documento se procesa en tu equipo. A Google solo se envía lo necesario para ordenar las preguntas — el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas dentro de una imagen, o un PDF escaneado). Ningún otro dato sale de tu máquina.
 
 ---
 
-## Estructura del proyecto
+## 🚀 Uso para el usuario final
+
+```
+1️⃣  Descarga o clona el proyecto
+2️⃣  Doble clic en iniciar.command (macOS) o iniciar.bat (Windows)
+3️⃣  La primera vez instala todo solo (unos minutos); después abre directo
+4️⃣  Sube el examen → revisa las preguntas → descarga el .xml
+```
+
+En Moodle: **Banco de preguntas → Importar**.
+
+> [!TIP]
+> ¿Quieres un instalador de verdad, sin que el usuario final necesite Python?
+> · **Windows** → [`ejecutable/LEEME_WINDOWS.txt`](ejecutable/LEEME_WINDOWS.txt) (`Setup.exe` con ícono, acceso directo y desinstalador)
+> · **macOS** → [`ejecutable_mac/LEEME_MAC.txt`](ejecutable_mac/LEEME_MAC.txt) (`.dmg` que se arrastra a Aplicaciones)
+> En ambos casos corre antes `dev/sync_ejecutable.py`. La app **ya no trae la API key**: cada instalación necesita su propio `.env`.
+
+---
+
+## 📊 Qué tan bien funciona
+
+Set de regresión de **18 documentos** (13 sintéticos con verdad exacta por construcción + 5 exámenes reales), cada uno procesado 3 veces.
+
+<div align="center">
+
+| | Base | Texto + enriquecido | JSON + enriquecido | **Configuración actual** |
+|:---|:---:|:---:|:---:|:---:|
+| 🧪 **Sintéticos** (271 preguntas) | 87 % | 98 % | 99–100 % | **✅ 100 %** |
+| 📄 **Reales** (153 preguntas) | 96 % | 95 % | 96 % | **✅ 96 %** |
+| 🎲 Varianza entre corridas | sí | no | no | **no** |
+
+</div>
+
+**Exactitud** = preguntas que llegan al editor con el tipo, el enunciado completo **y** la respuesta correctos. Varios exámenes sintéticos traen a propósito claves *incorrectas* (ej. Saturno como el planeta más grande) para detectar si el modelo resuelve en vez de transcribir. Detalle por documento en [`dev/eval_results/RESULTADOS.md`](dev/eval_results/RESULTADOS.md).
+
+<details>
+<summary><b>⏱️ Dónde se va el tiempo</b> (medido, no estimado)</summary>
+
+<br>
+
+El trabajo local (abrir el PDF, extraer texto, color y tablas) tarda entre **0,6 y 2,9 s** — un 3–5 % del total. Todo lo demás es la llamada a la IA, y su duración depende casi exclusivamente de **cuánto texto escribe el modelo**, a un ritmo constante de ~350 tokens/s:
+
+| Documento | Preguntas | Tokens de salida | Tiempo |
+|---|---:|---:|---:|
+| s10 estrés | 150 | 20 034 | 57 s |
+| real Parcial 1 2026 | 55 | 14 871 | 40 s |
+| real parcial n.1 | 40 | 10 744 | 27 s |
+| real Historia/Geografía | 15 | 2 885 | 9 s |
+
+Las excepciones a esa línea recta son esperas por **saturación del servicio** en el plan gratuito (503 "high demand"), que pueden añadir hasta 50 s aunque el examen sea de 3 preguntas. No es el documento ni el código: es la cuota.
+
+</details>
+
+---
+
+## 🏗️ Arquitectura
+
+```
+Backend    FastAPI + Uvicorn en 127.0.0.1, todo el trabajo pesado en threadpool
+Streaming  NDJSON (una línea JSON por evento) para el progreso en vivo
+IA         Gemini por REST + SSE con requests — sin el SDK de Google
+Frontend   Módulos ES que el navegador carga tal cual, sin npm ni compilación
+Escritorio pywebview envuelve el backend local en una ventana nativa
+Empaquetado PyInstaller → .exe + Inno Setup (Windows) · .app + .dmg (macOS)
+```
+
+<details>
+<summary><b>📁 Estructura del proyecto</b> (desplegar)</summary>
+
+<br>
 
 ```
 Conversor a Moodle XML/
 ├── iniciar.command       ← Doble clic para abrir la app en macOS
 ├── iniciar.bat           ← Doble clic para abrir la app en Windows
-├── launcher.py           ← Punto de entrada de la app de escritorio (splash + pywebview)
+├── launcher.py           ← Punto de entrada de escritorio (splash + pywebview)
 ├── build.py              ← Empaqueta la app como ejecutable (PyInstaller)
-├── README.md
 │
 ├── backend/
 │   ├── main.py           ← API FastAPI (endpoints)
 │   ├── config.py         ← Configuración centralizada + prompt del sistema (IA)
 │   ├── extractor.py      ← Extracción de texto (.pdf / .txt)
-│   ├── pipeline.py       ← Flujo completo de normalización (lo usan la API y dev/eval.py)
+│   ├── pipeline.py       ← Flujo completo (lo usan la API y dev/eval.py)
 │   ├── formatter.py      ← Llamada a Gemini (modo texto o JSON con esquema)
-│   ├── parser.py         ← Lee el formato de texto que devuelve la IA (modo texto)
-│   ├── schema_adapter.py ← Convierte la salida JSON de la IA (modo JSON)
-│   ├── mark_resolver.py  ← Decide en código las respuestas marcadas (color, resaltado, subrayado, negrita, X en tablas)
-│   ├── validator.py      ← Validación de preguntas contra el spec Moodle XML
+│   ├── parser.py         ← Lee el formato de texto que devuelve la IA
+│   ├── schema_adapter.py ← Convierte la salida JSON de la IA
+│   ├── mark_resolver.py  ← Decide en código las respuestas marcadas
+│   ├── validator.py      ← Validación contra el spec Moodle XML
 │   ├── xml_builder.py    ← Generación del XML Moodle
 │   ├── database.py       ← Historial de conversiones (SQLite)
 │   ├── models.py         ← Modelos Pydantic
 │   ├── requirements.txt  ← Dependencias Python
 │   └── venv/             ← Entorno virtual (no versionado)
 │
-├── frontend/             ← Interfaz web (sin framework ni paso de compilación)
+├── frontend/             ← Interfaz web (sin framework ni compilación)
 │   ├── index.html        ← Estructura de la página
-│   ├── pruebas.html      ← Pruebas de la lógica pura (se abren en el navegador; no se empaqueta)
+│   ├── pruebas.html      ← Pruebas de la lógica pura (no se empaqueta)
 │   ├── css/              ← base (tokens, reset) · componentes · editor
-│   └── js/               ← Módulos ES que el navegador carga tal cual
-│       ├── app.js        ← Punto de entrada: conecta eventos y publica en window lo que usa el HTML
-│       ├── estado.js     ← Estado compartido + aviso de cambios (suscribir/notificar)
+│   └── js/               ← Módulos ES
+│       ├── app.js        ← Entrada: conecta eventos y publica lo que usa el HTML
+│       ├── estado.js     ← Estado compartido + avisos (suscribir/notificar)
 │       ├── dom.js, util.js
 │       ├── carga.js      ← Subir el examen y leer el progreso en vivo
 │       ├── progreso.js   ← Pantalla de carga y tiempo estimado
 │       ├── puntos.js     ← Reparto del puntaje (lógica pura, con pruebas)
-│       ├── validacion.js ← Qué le falta a una pregunta (lógica pura, con pruebas)
+│       ├── validacion.js ← Qué le falta a una pregunta (con pruebas)
 │       ├── resultado.js, historial.js, navegacion.js
-│       ├── editor/       ← tarjetas · panel de revisión · filtros · paneles · cloze · puntos-ui
+│       ├── editor/       ← tarjetas · panel · filtros · paneles · cloze · puntos-ui
 │       └── ui/           ← tema · toast · modales
 │
-├── assets/
-│   └── Icon.ico          ← Ícono del ejecutable empaquetado
-│
-├── data/
-│   └── exams_history.db  ← Base de datos del historial (se crea sola en el primer uso, no versionada)
-│
-├── docs/
-│   └── Formato Moodle XML.txt  ← Referencia del spec Moodle XML usado por el validador
+├── assets/Icon.ico       ← Ícono del ejecutable empaquetado
+├── data/exams_history.db ← Historial (se crea solo, no versionado)
+├── docs/                 ← Referencia del spec Moodle XML
 │
 ├── samples/
 │   ├── *.pdf / *.txt     ← Exámenes reales de prueba
 │   ├── synthetic/        ← Exámenes sintéticos (generados por dev/synthetic/)
 │   └── golden/           ← Resultado esperado de cada uno (set de regresión)
 │
-├── dev/                  ← Solo desarrollo y pruebas (no va en el instalador)
-│   ├── eval.py           ← Evaluación de la normalización contra samples/golden/
+├── dev/                  ← Solo desarrollo (no va en el instalador)
+│   ├── eval.py           ← Evaluación contra samples/golden/
 │   ├── compare.py        ← Compara resultados de eval.py lado a lado
 │   ├── synthetic/        ← Generador de los exámenes sintéticos
 │   ├── eval_results/     ← Resultados guardados (ver RESULTADOS.md)
-│   ├── sync_ejecutable.py ← Copia el código actual a ejecutable/ y ejecutable_mac/ (antes de armar un instalador)
-│   ├── list_models.py    ← Lista los modelos de Gemini disponibles para la API key
+│   ├── sync_ejecutable.py ← Copia el código actual a ejecutable*/ 
+│   ├── list_models.py    ← Modelos de Gemini disponibles para la API key
 │   └── create_exam_pdf.py, run_test.py, test_webview.py
 │
-├── ejecutable/           ← Todo lo necesario para generar el instalador de Windows
-│   ├── backend/ frontend/ assets/ launcher.py  ← copia del código (se actualiza con dev/sync_ejecutable.py)
+├── ejecutable/           ← Instalador de Windows
+│   ├── backend/ frontend/ assets/ launcher.py  ← copia (dev/sync_ejecutable.py)
 │   ├── build.py           ← compila el .exe con PyInstaller
-│   ├── installer.iss      ← script de Inno Setup (icono, accesos directos, desinstalador)
-│   ├── build_windows.bat  ← un solo doble clic que hace todo el proceso
-│   └── LEEME_WINDOWS.txt  ← instrucciones y requisitos
+│   ├── installer.iss      ← script de Inno Setup
+│   ├── build_windows.bat  ← un doble clic que hace todo el proceso
+│   └── LEEME_WINDOWS.txt
 │
-└── ejecutable_mac/       ← Lo mismo para macOS (.app + instalador .dmg)
-    ├── backend/ frontend/ assets/ launcher.py  ← copia del código (mismo sync)
-    ├── build.py           ← compila ConvertidorMoodle.app con PyInstaller
-    ├── build_mac.sh       ← compila la app y arma el .dmg
-    └── LEEME_MAC.txt      ← instrucciones y requisitos
+└── ejecutable_mac/       ← Lo mismo para macOS (.app + .dmg)
+    ├── backend/ frontend/ assets/ launcher.py
+    ├── build.py · build_mac.sh · LEEME_MAC.txt
 ```
 
----
-
-## Uso para el usuario final
-
-1. Descarga o clona el proyecto.
-2. Haz doble clic en **`iniciar.command`** (macOS) o **`iniciar.bat`** (Windows).
-3. La primera vez, el script instala automáticamente todo lo necesario (puede tardar unos minutos); las siguientes veces abre directo.
-4. Se abre la app en una ventana nativa: sube tu examen, revisa las preguntas detectadas, y descarga el `.xml` listo para importar en Moodle (**Banco de preguntas → Importar**).
-
-¿Quieres un instalador de verdad, sin que el usuario final necesite Python? Mira [`ejecutable/LEEME_WINDOWS.txt`](ejecutable/LEEME_WINDOWS.txt) (Windows: `Setup.exe` con ícono, acceso directo y desinstalador) o [`ejecutable_mac/LEEME_MAC.txt`](ejecutable_mac/LEEME_MAC.txt) (macOS: `.dmg` que se arrastra a Aplicaciones). En ambos casos, corre antes `dev/sync_ejecutable.py` y recuerda que la app ya no trae la API key: cada instalación necesita su `.env`.
+</details>
 
 ---
 
-## Para desarrolladores
+## 👩‍💻 Para desarrolladores
 
-### 1. Crear el entorno virtual
+<details open>
+<summary><b>Puesta en marcha</b></summary>
+
+<br>
 
 ```bash
+# 1. Entorno virtual
 cd backend
 python -m venv venv
-```
 
-### 2. Activar el entorno virtual
+# 2. Activarlo
+source venv/bin/activate          # macOS / Linux
+.\venv\Scripts\Activate.ps1       # Windows (PowerShell)
 
-**Windows (PowerShell):**
-```powershell
-.\venv\Scripts\Activate.ps1
-```
-
-**macOS / Linux:**
-```bash
-source venv/bin/activate
-```
-
-### 3. Instalar dependencias
-
-```bash
+# 3. Dependencias
 pip install -r requirements.txt
-pip install pywebview   # solo si vas a correr la app de escritorio (launcher.py)
-```
+pip install pywebview             # solo para la app de escritorio
 
-### 4. Iniciar el backend
-
-```bash
+# 4. Backend
 uvicorn main:app --reload --port 8000
 ```
 
-El API queda disponible en `http://localhost:8000`.
-Documentación interactiva Swagger: `http://localhost:8000/docs`.
+| | |
+|---|---|
+| 🌐 App | `http://localhost:8000` — el backend sirve el frontend |
+| 📚 Swagger | `http://localhost:8000/docs` |
+| 🧪 Pruebas del frontend | `http://localhost:8000/static/pruebas.html` |
+| 🖥️ App de escritorio | `python launcher.py` desde la raíz |
 
-### 5. Abrir el frontend
+</details>
 
-Con el backend corriendo, abre `http://localhost:8000` en el navegador — el propio backend sirve el frontend. También puedes correr la app de escritorio nativa con `python launcher.py` desde la raíz del proyecto.
+<details>
+<summary><b>Evaluar cambios en la normalización</b></summary>
 
----
+<br>
 
-## Evaluar cambios en la normalización
-
-Antes de cambiar el prompt, el modelo o la extracción, compara contra el set de regresión:
+> [!WARNING]
+> Antes de tocar el prompt, el modelo o la extracción, **corre el set de regresión**. Es la única forma de saber si un cambio que suena bien empeora la exactitud.
 
 ```bash
-backend/venv/bin/python dev/eval.py                    # 15 documentos × 3 corridas
+backend/venv/bin/python dev/eval.py                    # 18 documentos × 3 corridas
 backend/venv/bin/python dev/eval.py --only s02 s05     # solo algunos
+backend/venv/bin/python dev/eval.py --runs 1           # rápido, sin medir varianza
 backend/venv/bin/python dev/eval.py --mode json        # probar el modo JSON
 backend/venv/bin/python dev/compare.py dev/eval_results/A.json dev/eval_results/B.json
 ```
 
-La métrica principal es la **exactitud**: preguntas que llegan al editor con el tipo, el enunciado completo y la respuesta correctos. Varios exámenes sintéticos traen a propósito claves "incorrectas" (ej. Saturno como el planeta más grande), para detectar si el modelo resuelve en vez de transcribir. Detalles en `samples/golden/README.md`; resultados actuales en `dev/eval_results/RESULTADOS.md`.
+Cómo se mide: [`dev/eval.py`](dev/eval.py) · formato del golden: [`samples/golden/README.md`](samples/golden/README.md) · resultados: [`dev/eval_results/RESULTADOS.md`](dev/eval_results/RESULTADOS.md).
+
+</details>
+
+<details>
+<summary><b>Notas sobre el frontend</b></summary>
+
+<br>
+
+Sin framework y sin `npm`: son **módulos ES** que el navegador carga directamente, así que editar y recargar alcanza — no hay paso de compilación que mantener ni que recordar antes de generar el instalador.
+
+El estado compartido vive en [`js/estado.js`](frontend/js/estado.js), que avisa con `notificar()` cuando el examen cambia; las vistas derivadas (chips de filtro, mapa de preguntas, contador de puntos) se **suscriben** en `app.js` en vez de refrescarse a mano desde cada sitio.
+
+La lógica que no toca el DOM (`puntos.js`, `validacion.js`) tiene pruebas en `frontend/pruebas.html`: se abren en el navegador y dicen en el momento cuántas pasan.
+
+</details>
 
 ---
 
-## Formato esperado del examen
+## 📄 Formato esperado del examen
 
-El documento puede subirse en **cualquier formato razonable** (numeración con "1.", "1)", respuestas marcadas con ✓, claves de emparejamiento ya compactas, etc.) — el prefiltro de IA lo normaliza automáticamente al formato interno antes de procesarlo. Ese formato interno es:
+El documento puede subirse en **cualquier formato razonable** (numeración con `1.`, `1)`, respuestas marcadas con ✓, claves de emparejamiento compactas…) — el prefiltro de IA lo normaliza al formato interno antes de procesarlo:
 
-```
+```text
 Pregunta 1:
 ¿Cuál es la definición de interfaz de usuario?
 A. El espacio de contacto entre usuario y sistema
 B. Un componente de software únicamente
 C. Un protocolo de red
 D. Una base de datos relacional
-
-Pregunta 2:
-...
 
 Pregunta 4:
 Enunciado con un espacio así: [A: opción_correcta / opción2 / opción3]
@@ -207,161 +320,155 @@ Nº  Tipo         Respuesta correcta
 
 | Tipo | Formato en RESPUESTAS |
 |------|----------------------|
-| `multichoice` | Texto completo de la opción correcta. Si acepta más de una respuesta a la vez, sepáralas con `" \| "` (ej. `Opción B \| Opción D`). |
-| `truefalse` | `Verdadero` o `Falso` |
-| `matching` | Pares compactos `número-letra`, ej. `1-a; 2-b; 3-c` |
-| `cloze` | Un espacio: `A. opción_correcta`. Varios espacios: `A. resp_A; B. resp_B`. Un espacio con varias respuestas correctas: `A. opción1 \| opción3`. |
+| 🔘 `multichoice` | Texto completo de la opción correcta. Varias a la vez → sepáralas con `" \| "` (ej. `Opción B \| Opción D`). |
+| ✔️ `truefalse` | `Verdadero` o `Falso` |
+| 🔗 `matching` | Pares compactos `número-letra`, ej. `1-a; 2-b; 3-c` |
+| 🧩 `cloze` | Un espacio: `A. opción_correcta` · Varios: `A. resp_A; B. resp_B` · Varias correctas en un espacio: `A. opción1 \| opción3` |
+| 📝 `essay` · ✍️ `shortanswer` · 🔢 `numerical` | Según el spec Moodle XML |
 
-Las preguntas de tipo **cloze** usan corchetes en el cuerpo, con letras correlativas si hay más de un espacio: `[A: opción1 / opción2 / opción3] ... [B: opción1 / opción2]`. El orden de las opciones dentro de los corchetes no importa — la respuesta correcta se identifica por su texto, no por su posición.
+Las preguntas **cloze** usan corchetes en el cuerpo, con letras correlativas si hay más de un espacio: `[A: opción1 / opción2] … [B: opción1 / opción2]`. El orden dentro de los corchetes no importa — la correcta se identifica por su texto, no por su posición.
 
-Si una pregunta no tiene una respuesta indicada explícitamente en el examen original, el sistema **nunca la inventa ni la resuelve**: la marca como `SIN_RESPUESTA` y bloquea la generación del XML hasta que se corrija, para no importar a Moodle una clave incorrecta.
-
----
-
-## Endpoints de la API
-
-### `POST /api/parse`
-
-Sube el archivo (`.pdf` o `.txt`), lo pasa por el prefiltro de Gemini si hace falta, y devuelve las preguntas ya parseadas y validadas.
-
-### `POST /api/parse_stream` y `POST /api/normalize_with_ai_stream`
-
-Igual que `/api/parse` y `/api/normalize_with_ai`, pero la respuesta es NDJSON (una línea JSON por evento) para mostrar el avance: `{"type": "stage", …}`, `{"type": "progress", "done": 12, "expected": 40}` y al final `{"type": "result", "data": …}` o `{"type": "error", "status": …, "detail": …}`. Es lo que usa la interfaz.
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `file` | `File` | Archivo `.pdf` o `.txt` |
-
-**Respuesta exitosa (200):** `{ filename, questions, answer_key, was_reformatted }`
-**Respuesta de error (422):** `{"detail": {"message": "...", "errors": [...]}}` — incluye, entre otros casos, cuando el documento no parece ser una prueba/examen real.
-
-### `POST /api/generate_xml`
-
-Recibe las preguntas (ya editadas o no) y genera el archivo Moodle XML final.
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `filename`, `category`, `total_points` | — | Metadatos del examen |
-| `questions`, `answer_key` | — | Mismo formato devuelto por `/api/parse` |
-
-**Respuesta exitosa:** descarga del archivo `.xml`, con el header `X-Question-Stats` (JSON con conteo por tipo de pregunta y puntajes calculados).
-
-### `GET /api/history`
-
-Devuelve los últimos 50 exámenes convertidos (sin el contenido del XML, solo metadatos).
-
-### `GET /api/history/{record_id}/download`
-
-Vuelve a descargar el XML de una conversión anterior guardada en el historial.
+> [!CAUTION]
+> Si una pregunta no tiene respuesta indicada explícitamente en el original, el sistema la marca como `SIN_RESPUESTA` y **bloquea la generación del XML** hasta corregirla, para no importar a Moodle una clave inventada.
 
 ---
 
-## Frontend
+## 🔌 Endpoints de la API
 
-Sin framework y sin `npm`: son **módulos ES** que el navegador carga
-directamente, así que editar y recargar alcanza — no hay paso de
-compilación que mantener ni que recordar antes de generar el instalador.
-El estado compartido vive en `js/estado.js`, que avisa con `notificar()`
-cuando el examen cambia; las vistas derivadas (chips de filtro, mapa de
-preguntas, contador de puntos) se suscriben en `app.js` en vez de
-refrescarse a mano desde cada sitio.
+| Método | Ruta | Qué hace |
+|:---|:---|:---|
+| `POST` | `/api/check_special_cases` | Avisa si el PDF trae imágenes incrustadas, antes de convertir |
+| `POST` | `/api/parse` | Sube `.pdf`/`.txt`, lo normaliza y devuelve las preguntas parseadas y validadas |
+| `POST` | `/api/parse_stream` | Igual, pero con progreso en vivo (NDJSON) — es lo que usa la interfaz |
+| `POST` | `/api/normalize_with_ai` | Camino para PDF escaneados (lee las páginas como imagen) |
+| `POST` | `/api/normalize_with_ai_stream` | Igual, con progreso en vivo |
+| `POST` | `/api/generate_xml` | Recibe las preguntas (editadas o no) y devuelve el Moodle XML final |
+| `GET` | `/api/history` | Últimos 50 exámenes convertidos (solo metadatos) |
+| `GET` | `/api/history/{id}/download` | Vuelve a descargar el XML de una conversión anterior |
 
-La lógica que no toca el DOM (`puntos.js`, `validacion.js`) tiene pruebas
-en `frontend/pruebas.html`: se abren en el navegador
-(`http://localhost:8000/static/pruebas.html` con el backend corriendo) y dicen
-en el momento cuántas pasan.
+<details>
+<summary><b>Detalle de respuestas</b></summary>
+
+<br>
+
+**`/api/parse`** — `200`: `{ filename, questions, answer_key, was_reformatted }` · `422`: `{"detail": {"message": "...", "errors": [...]}}`, incluido el caso de un documento que no parece una prueba.
+
+**Los `_stream`** devuelven una línea JSON por evento:
+```json
+{"type": "stage",    "key": "ai", "message": "…"}
+{"type": "progress", "done": 12, "expected": 40}
+{"type": "result",   "data": {…}}
+{"type": "error",    "status": 503, "detail": "…"}
+```
+
+**`/api/generate_xml`** — descarga del `.xml`, con el header `X-Question-Stats` (JSON con conteo por tipo y puntajes calculados).
+
+</details>
 
 ---
 
-## Dependencias
+## 🤖 El prefiltro de IA
 
-```
-fastapi==0.115.12
-uvicorn[standard]==0.34.2
-python-multipart==0.0.20
-pdfplumber==0.11.6
-lxml>=5.3.2
-pydantic>=2.11.3
-requests>=2.31
-Pillow>=10.0
-```
+Usa **Gemini 3.1 Flash Lite** para normalizar la *estructura* de los documentos — nunca para resolver ni inventar respuestas.
 
-La llamada a Gemini se hace directo contra su API REST con `requests` (streaming SSE), sin el SDK de Google: el SDK no entregaba la respuesta por partes (sin eso no hay progreso en vivo) y sumaba decenas de MB al ejecutable (`grpc`, `protobuf`…).
+### Las marcas se leen, no se adivinan
 
-Además, para la app de escritorio: `pywebview` (no incluida en `requirements.txt` porque no hace falta para correr solo el backend). Para `dev/eval.py` y los exámenes sintéticos: `dev/requirements-dev.txt`.
+En un PDF digital, `extract_text()` pierde justo las marcas de respuesta más comunes: el color de una opción, el resaltado, el subrayado, la negrita y la columna de la "X" en un cuadro. Sin ellas el modelo tiende a **resolver** la pregunta con su propio conocimiento. Por eso:
 
----
+1. **El texto que recibe el modelo lleva las marcas anotadas** — `⟦rojo⟧Lista (list)⟦/rojo⟧`, `⟦resaltado⟧…`, `⟦subrayado⟧…`, `⟦negrita⟧…` — y las tablas con su estructura (`| Evento | … | x |`).
+2. **`mark_resolver.py` decide en código** cuáles son las respuestas marcadas; el modelo solo estructura (qué es enunciado, qué es opción).
+3. **Una marca se aplica solo si funciona como sistema de respuestas**: algunas opciones marcadas (no todas), en al menos 2 preguntas y el 30 % de las ubicadas. Así la negrita de los títulos no reemplaza la clave.
+4. **El editor dice de dónde salió cada respuesta**: un aviso corto arriba, la etiqueta **respuesta por marca** en esas preguntas y **revisar marca** donde la IA tuvo que interpretar.
 
-## Módulo de prefiltro de IA
-
-El sistema utiliza **Gemini 3.1 Flash Lite** para normalizar la estructura de los documentos — nunca para resolver ni inventar respuestas.
-
-```
-PDF/TXT → Extracción (texto + color + tablas) → [GEMINI] → Parser / Adaptador JSON
-        → Marcas resueltas en código → Validador → Editor → XML Builder → Moodle XML
-```
-
-**Las marcas del PDF se leen, no se adivinan.** En un PDF digital, `extract_text()` pierde justo las marcas de respuesta más comunes: el color de una opción, el resaltado, el subrayado, la negrita y la columna de la "X" en un cuadro de marcas. Sin ellas el modelo tiende a *resolver* la pregunta con su propio conocimiento. Por eso:
-
-- el texto que recibe el modelo lleva esas marcas anotadas (`⟦rojo⟧Lista (list)⟦/rojo⟧`, `⟦resaltado⟧…`, `⟦subrayado⟧…`, `⟦negrita⟧…`) y las tablas con su estructura (`| Evento | … | x |`);
-- después, `mark_resolver.py` decide en código las respuestas marcadas. El modelo solo estructura (qué es enunciado, qué es opción). Una marca se aplica solo si funciona como sistema de respuestas (algunas opciones marcadas, no todas, en al menos 2 preguntas y el 30 % de las ubicadas): así la negrita de los títulos o una palabra destacada no reemplaza la clave;
-- el editor dice de dónde salió cada respuesta: un aviso corto arriba ("Respuestas identificadas por color. Revísalas antes de aprobar."), la etiqueta **respuesta por marca** en esas preguntas y **revisar marca** en las que la IA tuvo que interpretar.
-
-**Progreso en vivo.** La llamada a Gemini se hace por streaming (SSE) y el backend va informando al navegador cuántas preguntas lleva procesadas (`/api/parse_stream`, `/api/normalize_with_ai_stream`), así la pantalla de carga muestra "12 de ~40 preguntas procesadas" y el tiempo restante real.
-
-Se controla con variables de entorno (o un archivo `.env`):
+### Configuración (variables de entorno o `.env`)
 
 | Variable | Por defecto | Qué hace |
-|---|---|---|
+|---|:---:|---|
 | `GEMINI_API_KEY` | — | Key de Google AI Studio (ver `.env.example`) |
-| `ENRICH_PDF_TEXT` | `1` | Marcas (color, resaltado, subrayado, negrita, tablas) en el texto + resueltas en código |
-| `NORMALIZER_MODE` | `json` | Carga normal. `json`: la IA devuelve JSON con esquema (más fiel; un examen de 55 preguntas tarda hasta ~1,5 min). `text`: formato de texto propio (2-5× más rápido) |
+| `ENRICH_PDF_TEXT` | `1` | Marcas (color, resaltado, subrayado, negrita, tablas) anotadas y resueltas en código |
+| `NORMALIZER_MODE` | `json` | Carga normal. `json`: la IA devuelve JSON con esquema (más fiel) · `text`: formato propio (2–5× más rápido) |
 | `NORMALIZER_MODE_AI` | `text` | Botón "Normalizar con IA" (escaneados), donde el modo texto midió mejor |
 
-| Caso | Acción |
-|------|--------|
-| El documento **ya tiene** el formato estándar | Gemini retorna el texto sin cambios significativos |
-| El documento **no tiene** el formato estándar | Gemini reformatea **solo la estructura**, conservando preguntas y respuestas tal cual están |
-| El documento **no es una prueba real** (presentación, manual, artículo, apuntes, etc.) | Gemini responde con un centinela interno (`NO_ES_UNA_PRUEBA`); el backend lo detecta y responde `422` sin generar ninguna pregunta |
-| Una pregunta **no tiene respuesta marcada** en el original | Se marca `SIN_RESPUESTA` — el sistema bloquea el XML en vez de adivinar |
-| La API de Gemini **no está disponible** | Reintenta 3 veces (10s de espera entre intentos) antes de devolver error; una llamada colgada se corta (180 s en modo texto, 300 s en JSON) |
-| Se alcanzó el **límite de peticiones por minuto** (429) | Espera el tiempo que indica Google y reintenta |
-| Google tiene el modelo **saturado** (503 "high demand") | Espera cada vez más (5, 10, 20, 30, 30 s) y reintenta; la pantalla de carga muestra "reintentando en N s". Si persiste, avisa que no es un problema del documento |
-| La respuesta **llega cortada** a mitad del stream | Se detecta (sin `finishReason`) y se reintenta, en vez de fallar como JSON mal formado |
-| Se agotó la **cuota diaria** (500 peticiones en el plan gratuito) | Avisa de inmediato, sin reintentar |
+### Qué pasa en cada situación
+
+| Situación | Acción |
+|---|---|
+| ✅ El documento **ya tiene** el formato estándar | Gemini lo devuelve sin cambios significativos |
+| 🔧 El documento **no tiene** el formato estándar | Reformatea **solo la estructura**, conservando preguntas y respuestas tal cual |
+| 🚫 El documento **no es una prueba** | Responde con un centinela interno (`NO_ES_UNA_PRUEBA`); el backend devuelve `422` sin generar nada |
+| ❓ Una pregunta **no tiene respuesta marcada** | Se marca `SIN_RESPUESTA` — se bloquea el XML en vez de adivinar |
+| 🔌 La API **no está disponible** | 3 reintentos (10 s entre intentos); una llamada colgada se corta (180 s en texto, 300 s en JSON) |
+| ⏳ **Límite por minuto** (429) | Espera lo que indica Google y reintenta |
+| 🔥 Modelo **saturado** (503 "high demand") | Espera creciente (5, 10, 20, 30, 30 s); la pantalla muestra "reintentando en N s" y aclara que no es culpa del documento |
+| ✂️ La respuesta **llega cortada** | Se detecta (sin `finishReason`) y se reintenta, en vez de fallar como JSON malformado |
+| 🛑 **Cuota diaria agotada** | Avisa de inmediato, sin reintentar |
 
 ---
 
-> **Nota de privacidad:** El procesamiento del documento (extracción, parseo, generación del XML) ocurre localmente. A la API de Google (Gemini) se envía, únicamente para ordenar las preguntas, el texto extraído y, cuando hace falta, imágenes de algunas páginas: las que tienen imágenes incrustadas (código en captura, marcas dentro de una imagen) o todas, hasta 15, en un PDF escaneado. No se envía ningún otro dato.
+## 📦 Dependencias
+
+```
+fastapi==0.115.12          pdfplumber==0.11.6         requests>=2.31
+uvicorn[standard]==0.34.2  lxml>=5.3.2                Pillow>=10.0
+python-multipart==0.0.20   pydantic>=2.11.3
+```
+
+> [!NOTE]
+> La llamada a Gemini va **directo contra su API REST** con `requests` (streaming SSE), sin el SDK de Google: el SDK no entregaba la respuesta por partes (sin eso no hay progreso en vivo) y sumaba decenas de MB al ejecutable (`grpc`, `protobuf`…).
+
+Además: `pywebview` para la app de escritorio (fuera de `requirements.txt` porque el backend solo no la necesita) y `dev/requirements-dev.txt` para `dev/eval.py` y los exámenes sintéticos.
 
 ---
 
-## Solución de problemas
+## 🛠️ Solución de problemas
 
-### El instalador de Windows se queda pegado en la pantalla de carga
+<details>
+<summary><b>El instalador de Windows se queda pegado en la pantalla de carga</b></summary>
 
-El `.exe` compilado con PyInstaller usa `--noconsole`, así que si el
-backend (uvicorn) falla al arrancar, la app no muestra ningún error —
-simplemente se queda en la splash para siempre. Desde esta versión,
-`launcher.py` escribe cualquier fallo del backend en un archivo
-`launcher_error.log`, creado junto al `.exe` (dentro de la carpeta
-donde quedó instalada la app). Si te pasa, revisa ese archivo primero.
+<br>
 
-La causa más común: un módulo que usa `backend/` (fastapi, uvicorn,
-sqlite3, etc.) no quedó incluido en el `.exe`. Como PyInstaller trata
-la carpeta `backend/` como datos copiados tal cual (vía `--add-data`)
-y no como código que analiza, no detecta automáticamente sus imports
-— hay que declararlos a mano con `--hidden-import` o `--collect-all` en
-[`ejecutable/build.py`](ejecutable/build.py) (y en [`build.py`](build.py)) y volver a compilar. Ver
-[`ejecutable/LEEME_WINDOWS.txt`](ejecutable/LEEME_WINDOWS.txt) para más detalle.
+El `.exe` de PyInstaller usa `--noconsole`: si uvicorn falla al arrancar, la app no muestra ningún error y se queda en la splash para siempre. Por eso `launcher.py` escribe cualquier fallo en un archivo **`launcher_error.log`**, junto al `.exe`, dentro de la carpeta donde quedó instalada la app. **Revísalo primero.**
 
-Otra causa: haber armado el instalador con una copia vieja del código.
-`ejecutable/` y `ejecutable_mac/` llevan su propia copia de `backend/`, `frontend/` y
-`launcher.py`; antes de compilar, corre
-`backend/venv/bin/python dev/sync_ejecutable.py`.
+**Causa más común:** un módulo que usa `backend/` (fastapi, uvicorn, sqlite3…) no quedó incluido en el `.exe`. PyInstaller trata `backend/` como datos copiados tal cual (vía `--add-data`), no como código que analiza, así que **no detecta sus imports** — hay que declararlos a mano con `--hidden-import` o `--collect-all` en [`ejecutable/build.py`](ejecutable/build.py) (y en [`build.py`](build.py)) y recompilar.
+
+**Otra causa:** haber armado el instalador con una copia vieja del código. `ejecutable/` y `ejecutable_mac/` llevan su propia copia de `backend/`, `frontend/` y `launcher.py`; antes de compilar corre:
+
+```bash
+backend/venv/bin/python dev/sync_ejecutable.py
+```
+
+</details>
+
+<details>
+<summary><b>Dice que falta configurar la clave de la IA</b></summary>
+
+<br>
+
+La app **no trae ninguna API key incluida**. Cada instalación necesita un archivo `.env` junto al programa con:
+
+```
+GEMINI_API_KEY=tu_clave
+```
+
+Se obtiene gratis en [Google AI Studio](https://aistudio.google.com/apikey). Ver [`.env.example`](.env.example).
+
+</details>
+
+<details>
+<summary><b>La conversión tarda mucho o dice "reintentando"</b></summary>
+
+<br>
+
+El tiempo depende de cuántas preguntas tenga que escribir la IA (~350 tokens/s): un examen de 15 preguntas tarda ~9 s y uno de 150, ~57 s. Si aparece "reintentando en N s", el modelo está **saturado del lado de Google** — pasa en el plan gratuito y el sistema se recupera solo esperando. No es un problema del documento.
+
+</details>
 
 ---
 
-## Créditos
+<div align="center">
 
-Desarrollado por **César González** y **Vicente Urriola**.
+### Créditos
+
+Desarrollado por **César González** y **Vicente Urriola**
+
+</div>
