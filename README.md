@@ -268,7 +268,7 @@ refrescarse a mano desde cada sitio.
 
 La lógica que no toca el DOM (`puntos.js`, `validacion.js`) tiene pruebas
 en `frontend/pruebas.html`: se abren en el navegador
-(`http://localhost:8000/pruebas.html` con el backend corriendo) y dicen
+(`http://localhost:8000/static/pruebas.html` con el backend corriendo) y dicen
 en el momento cuántas pasan.
 
 ---
