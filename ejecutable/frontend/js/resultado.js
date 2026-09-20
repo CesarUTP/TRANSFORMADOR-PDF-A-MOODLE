@@ -4,7 +4,7 @@
 import { showError } from './carga.js';
 import { selectFilter } from './editor/filtros.js';
 import { buildReviewRail, refreshQuestionIssues, scrollToEditorCard } from './editor/panel.js';
-import { QUESTION_TYPE_DEFS, collectEditorData, renderEditor } from './editor/tarjetas.js';
+import { QUESTION_TYPE_DEFS, collectEditorData } from './editor/tarjetas.js';
 import { estado } from './estado.js';
 import { showPanel } from './navegacion.js';
 import { stopProgress } from './progreso.js';
@@ -203,8 +203,6 @@ export async function generateXml() {
     // real de cada pregunta) en vez del header X-Question-Stats del
     // backend — una sola fuente de verdad, y el resumen final siempre
     // coincide exactamente con el XML que se generó.
-    updateSuccessStats(questions);
-
     const disposition = res.headers.get('Content-Disposition');
     let filename = 'examen_moodle.xml';
     if (disposition && disposition.includes('filename=')) {
@@ -216,6 +214,9 @@ export async function generateXml() {
     estado.downloadBlob = blob;
     estado.downloadFilename = filename;
 
+    // Después de guardar el nombre del archivo: el resumen lo muestra, y
+    // si se calculaba antes salía un "•" suelto al final de la frase.
+    updateSuccessStats(questions);
     showPanel('success');
     // El guardado nativo se dispara solo una vez, cuando el usuario
     // presiona "Descargar Moodle XML" — no automáticamente aquí, para

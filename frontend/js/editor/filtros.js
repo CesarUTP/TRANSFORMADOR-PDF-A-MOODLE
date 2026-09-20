@@ -2,7 +2,7 @@
  * filtros.js — filtro por tipo de pregunta.
  */
 import { buildReviewRail } from './panel.js';
-import { _closeCollapsiblePanel, _closeOtherCollapsiblePanels, _collapsePanelByHand, _openCollapsiblePanel, _panelsExpandedMode, _updateToggleAllPanelsLabel, toggleAddQuestionMenu } from './paneles.js';
+import { _closeCollapsiblePanel, _closeOtherCollapsiblePanels, _collapsePanelByHand, _openCollapsiblePanel, _panelsExpandedMode, _updateToggleAllPanelsLabel } from './paneles.js';
 import { QUESTION_TYPE_LABEL_MAP } from './tarjetas.js';
 
 // Reconstruye los chips "Filtrar:" contando las tarjetas que de verdad

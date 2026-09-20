@@ -2,7 +2,6 @@
  * progreso.js — pantalla de carga: barra, tiempo estimado y avance real.
  * Aprende de las conversiones anteriores (localStorage) para afinar la estimación.
  */
-import { readProgressStream } from './carga.js';
 import { formatMMSS } from './util.js';
 
 // Progress Simulation + tiempo transcurrido/estimado

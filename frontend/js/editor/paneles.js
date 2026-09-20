@@ -3,7 +3,6 @@
  * (Filtrar, Añadir pregunta, Distribuir puntos).
  */
 import { updatePointsWeightPreview } from './puntos-ui.js';
-import { addNewQuestion, renderEditor } from './tarjetas.js';
 
 // Despliega/oculta los 4 botones de tipo bajo "Añadir nueva pregunta".
 // No hace falta volver a ocultarlos tras elegir un tipo: addNewQuestion()

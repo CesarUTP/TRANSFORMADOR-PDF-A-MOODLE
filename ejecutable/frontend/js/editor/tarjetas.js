@@ -2,10 +2,10 @@
  * tarjetas.js — dibuja cada pregunta del editor y vuelve a leerla del DOM.
  */
 import { clozeBuildTextAndAnswer, initClozeBuilder, parseClozeSegments, renderClozeBuilder } from './cloze.js';
-import { refreshFilterChips, toggleFilterMenu } from './filtros.js';
+import { toggleFilterMenu } from './filtros.js';
 import { _restorePanelsExpandedMode, _updateToggleAllPanelsLabel, toggleAddQuestionMenu, toggleAllPanels } from './paneles.js';
-import { _editorTotalPoints, applyPointsDistribution, setPointsToolMode, togglePointsToolMenu, updatePointsAssignedLabel, updatePointsWeightPreview } from './puntos-ui.js';
-import { estado } from '../estado.js';
+import { _editorTotalPoints, applyPointsDistribution, setPointsToolMode, togglePointsToolMenu } from './puntos-ui.js';
+import { estado, notificar } from '../estado.js';
 import { DEFAULT_TYPE_WEIGHTS, fmtPoints } from '../puntos.js';
 import { showToast } from '../ui/toast.js';
 import { esc_html, humanizeSkipReason } from '../util.js';
@@ -41,7 +41,7 @@ export function deleteQuestionCard(btn) {
   if (card) {
     card.remove();
     syncParseResultFromDOM();
-    refreshFilterChips();
+    notificar('pregunta borrada');
     showToast('Pregunta eliminada de la lista', 'info');
   }
 }
@@ -527,9 +527,9 @@ export function renderEditor(data) {
   // requerir que el usuario arrastre el borde del cuadro de texto.
   container.querySelectorAll('.editor-card textarea').forEach(autoGrowTextarea);
   container.querySelectorAll('.cloze-builder').forEach(initClozeBuilder);
-  refreshFilterChips();
-  updatePointsAssignedLabel();
-  updatePointsWeightPreview();
+  // Un solo aviso: los chips de filtro, el mapa del examen y el contador
+  // de puntos se actualizan solos (ver suscripciones en app.js).
+  notificar('editor redibujado');
   _restorePanelsExpandedMode();
   _updateToggleAllPanelsLabel();
   lucide.createIcons();

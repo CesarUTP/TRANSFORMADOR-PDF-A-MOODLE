@@ -5,21 +5,31 @@
  * atributos onclick. Es el único lugar donde se toca `window`.
  */
 
-import { clearFile, handleFileSelected, runConversion, runNormalizeWithAI, showFilePreview } from './carga.js';
+import { clearFile, handleFileSelected, runConversion, runNormalizeWithAI } from './carga.js';
 import { aiPromptText, btnConvert, btnCopyPrompt, btnRemoveFile, copyIcon, copyLabel, dropZone, fileInput, modalDisclaimer, modalHelp, modalHistory, modalTabs, pointsError, pointsInput } from './dom.js';
 import { clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti } from './editor/cloze.js';
-import { selectFilter, toggleFilterMenu } from './editor/filtros.js';
-import { buildReviewRail, jumpToNextFlagged, scheduleIssuesRefresh, toggleRailGrid, updateReviewProgress } from './editor/panel.js';
+import { refreshFilterChips, selectFilter, toggleFilterMenu } from './editor/filtros.js';
+import { buildReviewRail, jumpToNextFlagged, scheduleIssuesRefresh, toggleRailGrid } from './editor/panel.js';
 import { toggleAddQuestionMenu, toggleAllPanels } from './editor/paneles.js';
 import { applyPointsDistribution, setPointsToolMode, togglePointsToolMenu, updatePointsAssignedLabel, updatePointsWeightPreview } from './editor/puntos-ui.js';
 import { addMatchingPairRow, addNewQuestion, deleteQuestionCard, recoverSkippedQuestion } from './editor/tarjetas.js';
-import { estado } from './estado.js';
+import { estado, suscribir } from './estado.js';
 import { closeHistory, confirmDeleteHistory, downloadHistory, loadHistoryList, startDeleteHistory } from './historial.js';
 import { resetAll, showPanel } from './navegacion.js';
 import { generateXml, saveFileToUser } from './resultado.js';
 import { closeDisclaimer, closeHelp, fileFingerprint, openDisclaimer, openHelp, switchTab } from './ui/modales.js';
 import { applyTheme } from './ui/tema.js';
 import { showToast } from './ui/toast.js';
+
+// ── Vistas que se actualizan solas cuando cambia el examen ──────────────
+// Añadir, borrar o repartir puntos solo tiene que llamar a notificar():
+// desde aquí se redibujan los chips de filtro (que a su vez refrescan el
+// mapa de preguntas) y el contador "X / Y pts".
+suscribir(() => {
+  refreshFilterChips();
+  updatePointsAssignedLabel();
+  updatePointsWeightPreview();
+});
 
 // ── Funciones que el HTML llama desde atributos onclick ──────────────────
 // Los módulos tienen ámbito propio, así que las que usa el HTML inline se
