@@ -1,0 +1,585 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x09_emparejamiento_cloze.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "focus": "Emparejamiento y Cloze complejos",
+  "notes": "12 emparejamientos en 4 variantes (A numerada/B lettered; A con letras/B con números; B con números romanos; columnas como listas), con distractores en la columna B y claves 'A→2', '1-III', 'A2 B1'; 14 Cloze (hasta 3 huecos, respuestas múltiples y 3 con banco de palabras compartido); 6 opción múltiple y 4 V/F.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el plural de «lápiz»?",
+      "answers": [
+        "lápices"
+      ],
+      "options": [
+        "lápizs",
+        "lápizes",
+        "lápices",
+        "lápiz"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada unidad con la magnitud que mide.",
+      "pairs": [
+        [
+          "Newton",
+          "Fuerza"
+        ],
+        [
+          "Julio",
+          "Energía"
+        ],
+        [
+          "Vatio",
+          "Potencia"
+        ],
+        [
+          "Pascal",
+          "Presión"
+        ],
+        [
+          "Hercio",
+          "Frecuencia"
+        ],
+        [
+          "Ohmio",
+          "Resistencia eléctrica"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada órgano con su función principal.",
+      "pairs": [
+        [
+          "Pulmón",
+          "Intercambio de gases"
+        ],
+        [
+          "Riñón",
+          "Filtrado de la sangre"
+        ],
+        [
+          "Corazón",
+          "Bombeo de sangre"
+        ],
+        [
+          "Hígado",
+          "Metabolismo y desintoxicación"
+        ],
+        [
+          "Estómago",
+          "Digestión inicial de los alimentos"
+        ]
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El número 0 es par.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "Los mamíferos que vuelan son los ____; los que viven en el mar y respiran aire son los ____.",
+      "blanks": [
+        [
+          "murciélagos"
+        ],
+        [
+          "cetáceos"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "La molécula de agua está formada por ____ átomos de hidrógeno y ____ de oxígeno.",
+      "blanks": [
+        [
+          "dos"
+        ],
+        [
+          "uno"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "La sigla HTTP significa ____ Transfer ____.",
+      "blanks": [
+        [
+          "Hypertext"
+        ],
+        [
+          "Protocol"
+        ]
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En Git, ¿qué comando crea una copia local de un repositorio remoto?",
+      "answers": [
+        "git clone"
+      ],
+      "options": [
+        "git pull",
+        "git init",
+        "git clone",
+        "git fetch"
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "Son planetas rocosos: ____ y también ____.",
+      "blanks": [
+        [
+          "Mercurio",
+          "Venus"
+        ],
+        [
+          "Marte"
+        ]
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "La fórmula química del agua oxigenada es:",
+      "answers": [
+        "H2O2"
+      ],
+      "options": [
+        "H2O2",
+        "OH",
+        "H2O",
+        "HO2"
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "La capital de Francia es ____ y su río principal es el ____.",
+      "blanks": [
+        [
+          "París"
+        ],
+        [
+          "Sena"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "El proceso por el cual las plantas fabrican su alimento se llama ____.",
+      "blanks": [
+        [
+          "fotosíntesis"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "El ____ es el órgano que bombea la sangre y los ____ son los vasos que la llevan de vuelta al corazón.",
+      "blanks": [
+        [
+          "corazón"
+        ],
+        [
+          "venas"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "Son lenguajes de programación: ____.",
+      "blanks": [
+        [
+          "Python",
+          "Java"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada palabra con su sinónimo.",
+      "pairs": [
+        [
+          "Efímero",
+          "Pasajero"
+        ],
+        [
+          "Locuaz",
+          "Hablador"
+        ],
+        [
+          "Prístino",
+          "Original"
+        ],
+        [
+          "Ubérrimo",
+          "Abundante"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada vitamina con su función.",
+      "pairs": [
+        [
+          "Vitamina C",
+          "Previene el escorbuto"
+        ],
+        [
+          "Vitamina D",
+          "Favorece la absorción de calcio"
+        ],
+        [
+          "Vitamina K",
+          "Participa en la coagulación"
+        ],
+        [
+          "Vitamina A",
+          "Salud de la visión"
+        ]
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+      "answers": [
+        "373 K"
+      ],
+      "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "Los seres vivos que producen su propio alimento se denominan ____.",
+      "blanks": [
+        [
+          "autótrofos"
+        ]
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La Revolución Industrial comenzó en Inglaterra.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estructura protege al cerebro?",
+      "answers": [
+        "Costillas"
+      ],
+      "options": [
+        "Columna",
+        "Costillas",
+        "Cráneo",
+        "Pelvis"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada figura geométrica con su número de lados.",
+      "pairs": [
+        [
+          "Triángulo",
+          "3"
+        ],
+        [
+          "Cuadrilátero",
+          "4"
+        ],
+        [
+          "Pentágono",
+          "5"
+        ],
+        [
+          "Hexágono",
+          "6"
+        ],
+        [
+          "Octógono",
+          "8"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada elemento químico con su símbolo.",
+      "pairs": [
+        [
+          "Oro",
+          "Au"
+        ],
+        [
+          "Plata",
+          "Ag"
+        ],
+        [
+          "Hierro",
+          "Fe"
+        ],
+        [
+          "Sodio",
+          "Na"
+        ],
+        [
+          "Potasio",
+          "K"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada científico con su aporte.",
+      "pairs": [
+        [
+          "Newton",
+          "Ley de la gravitación universal"
+        ],
+        [
+          "Darwin",
+          "Selección natural"
+        ],
+        [
+          "Pasteur",
+          "Pasteurización y vacunas"
+        ],
+        [
+          "Curie",
+          "Estudios sobre la radiactividad"
+        ],
+        [
+          "Mendel",
+          "Leyes de la herencia"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "La Revolución Francesa comenzó en ____ y el lema de la República era «libertad, igualdad y ____».",
+      "blanks": [
+        [
+          "1789"
+        ],
+        [
+          "fraternidad"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "El escritor ____ recibió el Premio Nobel de Literatura en 1982 por ____.",
+      "blanks": [
+        [
+          "Gabriel García Márquez"
+        ],
+        [
+          "Cien años de soledad"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "Los colores primarios de la luz son ____, ____ y ____.",
+      "blanks": [
+        [
+          "rojo"
+        ],
+        [
+          "verde"
+        ],
+        [
+          "azul"
+        ]
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El metano es un gas de efecto invernadero.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada evento con su año.",
+      "pairs": [
+        [
+          "Caída del Muro de Berlín",
+          "1989"
+        ],
+        [
+          "Llegada de Colón a América",
+          "1492"
+        ],
+        [
+          "Inicio de la Revolución Francesa",
+          "1789"
+        ],
+        [
+          "Fin de la Segunda Guerra Mundial",
+          "1945"
+        ]
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La mitocondria es la central energética de la célula.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada lenguaje con su ámbito habitual de uso.",
+      "pairs": [
+        [
+          "JavaScript",
+          "Interactividad en navegadores"
+        ],
+        [
+          "SQL",
+          "Consultas a bases de datos"
+        ],
+        [
+          "CSS",
+          "Presentación de páginas web"
+        ],
+        [
+          "Bash",
+          "Automatización en la terminal"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada protocolo con su uso.",
+      "pairs": [
+        [
+          "HTTP",
+          "Transferencia de páginas web"
+        ],
+        [
+          "SMTP",
+          "Envío de correo electrónico"
+        ],
+        [
+          "FTP",
+          "Transferencia de archivos"
+        ],
+        [
+          "DNS",
+          "Resolución de nombres de dominio"
+        ],
+        [
+          "SSH",
+          "Acceso remoto seguro"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada término informático con su definición.",
+      "pairs": [
+        [
+          "RAM",
+          "Memoria volátil de acceso aleatorio"
+        ],
+        [
+          "CPU",
+          "Unidad que ejecuta las instrucciones"
+        ],
+        [
+          "SSD",
+          "Almacenamiento sin partes móviles"
+        ],
+        [
+          "GPU",
+          "Procesador especializado en gráficos"
+        ],
+        [
+          "BIOS",
+          "Firmware que inicia el equipo"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "En una base de datos relacional, cada tabla se compone de ____ y ____.",
+      "blanks": [
+        [
+          "filas"
+        ],
+        [
+          "columnas"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada país con su capital.",
+      "pairs": [
+        [
+          "Perú",
+          "Lima"
+        ],
+        [
+          "Chile",
+          "Santiago"
+        ],
+        [
+          "Brasil",
+          "Brasilia"
+        ],
+        [
+          "Argentina",
+          "Buenos Aires"
+        ],
+        [
+          "Uruguay",
+          "Montevideo"
+        ],
+        [
+          "Bolivia",
+          "Sucre"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "En Python, una ____ es una colección ordenada y mutable, mientras que una ____ es inmutable.",
+      "blanks": [
+        [
+          "lista"
+        ],
+        [
+          "tupla"
+        ]
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Quién compuso la Novena Sinfonía?",
+      "answers": [
+        "Beethoven"
+      ],
+      "options": [
+        "Chopin",
+        "Mozart",
+        "Bach",
+        "Beethoven"
+      ]
+    }
+  ]
+}

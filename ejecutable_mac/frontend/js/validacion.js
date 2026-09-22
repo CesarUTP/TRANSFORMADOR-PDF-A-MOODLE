@@ -8,6 +8,7 @@
  * Lógica pura: no toca el DOM ni el estado global, así se puede probar
  * sola (ver frontend/pruebas.html).
  */
+import { findClozeBrackets, splitOptions } from './util.js';
 
 // ── Preguntas incompletas (revisión en vivo) ───────────────────────────
 // Mismas reglas que el validador del backend (validator.py): lo que
@@ -33,11 +34,18 @@ export function questionIssues(q, key) {
     if (complete.length < keys.length) issues.push('Hay una pareja incompleta');
     if (complete.length < 2) issues.push('Faltan parejas (mínimo 2)');
   } else if (q.type === 'cloze') {
+    // findClozeBrackets balancea los corchetes internos (una opción de
+    // código como "arr[0]") — la regex manual que había antes se
+    // detenía en el PRIMER "]" y desincronizaba este aviso en vivo del
+    // resultado real que calcula el backend (ver RESULTADOS.md).
     const text = d.text || '';
-    const blanks = text.match(/\[[A-Z]:[^\]]*\]/g) || [];
+    const blanks = findClozeBrackets(text);
     if (!blanks.length) issues.push('Faltan los espacios para completar');
-    else if (blanks.some(bl => !bl.slice(3, -1).trim())) issues.push('Un espacio no tiene opciones');
-    if (!text.replace(/\[[A-Z]:[^\]]*\]/g, '').trim()) issues.push('Falta el texto de la pregunta');
+    else if (blanks.some(({ optionsRaw }) => splitOptions(optionsRaw).length === 0)) issues.push('Un espacio no tiene opciones');
+    let cursor = 0, rest = '';
+    blanks.forEach(({ start, end }) => { rest += text.slice(cursor, start); cursor = end; });
+    rest += text.slice(cursor);
+    if (!rest.trim()) issues.push('Falta el texto de la pregunta');
   } else if (q.type === 'shortanswer') {
     if (!ans) issues.push('Falta la respuesta');
   } else if (q.type === 'numerical') {

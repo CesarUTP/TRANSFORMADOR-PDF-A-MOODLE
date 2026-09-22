@@ -1,0 +1,399 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x10_escaneado_degradado.pdf",
+  "path": "normalize_with_ai",
+  "is_exam": true,
+  "focus": "Escaneado degradado",
+  "notes": "32 preguntas como imagen pura (sin capa de texto): 100 dpi, JPEG calidad 40, giro de ±1,4°, desenfoque y ruido. Respuestas solo en rojo (el color solo se puede leer viendo la imagen); ~25 % contrafácticas. Camino 'Normalizar con IA'.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Qué ocurre con el precio cuando la demanda aumenta y la oferta se mantiene?",
+      "answers": [
+        "Sube"
+      ],
+      "options": [
+        "Baja",
+        "Desaparece",
+        "Sube",
+        "Se mantiene"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto vale la raíz cuadrada de 144?",
+      "answers": [
+        "14"
+      ],
+      "options": [
+        "10",
+        "11",
+        "12",
+        "14"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el mínimo común múltiplo de 4 y 6?",
+      "answers": [
+        "12"
+      ],
+      "options": [
+        "6",
+        "12",
+        "18",
+        "24"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El plural de «pez» es «pezes».",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+      "answers": [
+        "Gregor Mendel"
+      ],
+      "options": [
+        "Gregor Mendel",
+        "Louis Pasteur",
+        "Charles Darwin",
+        "Alexander Fleming"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la energía que posee un cuerpo por su movimiento?",
+      "answers": [
+        "Cinética"
+      ],
+      "options": [
+        "Química",
+        "Cinética",
+        "Térmica",
+        "Potencial"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la capital de Canadá?",
+      "answers": [
+        "Toronto"
+      ],
+      "options": [
+        "Montreal",
+        "Ottawa",
+        "Vancouver",
+        "Toronto"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el desierto cálido más extenso del mundo?",
+      "answers": [
+        "Sahara"
+      ],
+      "options": [
+        "Gobi",
+        "Kalahari",
+        "Atacama",
+        "Sahara"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de estos es un lenguaje de marcado?",
+      "answers": [
+        "HTML"
+      ],
+      "options": [
+        "Python",
+        "HTML",
+        "Rust",
+        "C++"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estos países están en Sudamérica?",
+      "answers": [
+        "Uruguay",
+        "Paraguay",
+        "Bolivia"
+      ],
+      "options": [
+        "Uruguay",
+        "Guatemala",
+        "Paraguay",
+        "Cuba",
+        "Bolivia"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Los delfines son peces.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La capital de Perú es Lima.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+      "answers": [
+        "Constantinopla"
+      ],
+      "options": [
+        "Atenas",
+        "Constantinopla",
+        "Alejandría",
+        "Antioquía"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es un adjetivo?",
+      "answers": [
+        "Una palabra que modifica al sustantivo"
+      ],
+      "options": [
+        "Una palabra que enlaza oraciones",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que expresa acción"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de estos es un mamífero marino?",
+      "answers": [
+        "Delfín"
+      ],
+      "options": [
+        "Pulpo",
+        "Atún",
+        "Tiburón",
+        "Delfín"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué tipo de roca se forma por enfriamiento del magma?",
+      "answers": [
+        "Ígnea"
+      ],
+      "options": [
+        "Metamórfica",
+        "Ígnea",
+        "Detrítica",
+        "Sedimentaria"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles son estados de la materia comunes?",
+      "answers": [
+        "Sólido",
+        "Gaseoso",
+        "Líquido"
+      ],
+      "options": [
+        "Sólido",
+        "Gaseoso",
+        "Metálico",
+        "Líquido"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué país tiene forma de bota?",
+      "answers": [
+        "Italia"
+      ],
+      "options": [
+        "Italia",
+        "España",
+        "Portugal",
+        "Grecia"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "La suma de los ángulos internos de un triángulo es:",
+      "answers": [
+        "180°"
+      ],
+      "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Los reptiles son animales de sangre caliente.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué grupo sanguíneo se considera donante universal?",
+      "answers": [
+        "A+"
+      ],
+      "options": [
+        "B−",
+        "O−",
+        "AB+",
+        "A+"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué significa la sigla SQL?",
+      "answers": [
+        "Structured Query Language"
+      ],
+      "options": [
+        "Standard Quick Language",
+        "Structured Query Language",
+        "System Query Logic",
+        "Simple Question List"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué mide un sismógrafo?",
+      "answers": [
+        "Las vibraciones del suelo"
+      ],
+      "options": [
+        "Las vibraciones del suelo",
+        "La presión atmosférica",
+        "La humedad",
+        "La radiación solar"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Un byte equivale a 4 bits.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+      "answers": [
+        "Everest"
+      ],
+      "options": [
+        "K2",
+        "Everest",
+        "Kilimanjaro",
+        "Aconcagua"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el sinónimo de «efímero»?",
+      "answers": [
+        "Pasajero"
+      ],
+      "options": [
+        "Duradero",
+        "Eterno",
+        "Sólido",
+        "Pasajero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué vitamina previene el escorbuto?",
+      "answers": [
+        "Vitamina C"
+      ],
+      "options": [
+        "Vitamina B12",
+        "Vitamina E",
+        "Vitamina C",
+        "Vitamina A"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles son ejemplos de energías renovables?",
+      "answers": [
+        "Hidráulica",
+        "Eólica",
+        "Solar"
+      ],
+      "options": [
+        "Petróleo",
+        "Hidráulica",
+        "Carbón",
+        "Eólica",
+        "Solar"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la derivada de x²?",
+      "answers": [
+        "2"
+      ],
+      "options": [
+        "x",
+        "2x",
+        "x²",
+        "2"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la capital de Australia?",
+      "answers": [
+        "Canberra"
+      ],
+      "options": [
+        "Melbourne",
+        "Canberra",
+        "Perth",
+        "Sídney"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La Tierra tarda unos 365 días en orbitar el Sol.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estructura protege al cerebro?",
+      "answers": [
+        "Columna"
+      ],
+      "options": [
+        "Cráneo",
+        "Columna",
+        "Pelvis",
+        "Costillas"
+      ]
+    }
+  ]
+}

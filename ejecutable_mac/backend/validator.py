@@ -25,7 +25,7 @@ from config import (
     MIN_CLOZE_OPTIONS,
     TRANSCRIPTION_FAILED_MARKER,
 )
-from answer_matching import is_truncated_answer_match
+from answer_matching import find_cloze_brackets, is_truncated_answer_match, split_answers, split_options
 
 logger = logging.getLogger(__name__)
 
@@ -296,7 +296,7 @@ def _validate_multichoice(
 
     # Regla: cada respuesta correcta listada debe coincidir con alguna opción
     if correct_answer and options:
-        targets = [t.strip() for t in correct_answer.split('|') if t.strip()]
+        targets = split_answers(correct_answer)
         for one_target in targets:
             found = any(
                 one_target.lower() in opt.lower() or opt.lower() in one_target.lower()
@@ -443,8 +443,10 @@ def _validate_cloze(
     """
     text = data.get("text", "")
 
-    # Buscar corchetes [X: ...] (formato pre-conversión a Moodle)
-    brackets = re.findall(r'\[([A-Za-z]:\s*[^\]]*)\]', text)
+    # Buscar corchetes [X: ...] (formato pre-conversión a Moodle). Balanceados:
+    # un "[0]" dentro de una opción (código, ej. "arr[0]") no cierra el
+    # espacio a mitad de camino (ver find_cloze_brackets).
+    brackets = find_cloze_brackets(text)
 
     # Caso: ya tiene etiquetas Moodle nativas vacías (error de Gemini)
     if not brackets and "{1:MULTICHOICE:" in text:
@@ -472,7 +474,7 @@ def _validate_cloze(
     # más arriba. Se parsea por separado para no dejarlo pasar en silencio.
     slot_key_answers: Dict[str, List[str]] = {}
     for m in re.finditer(r'([A-Za-z])[\.:]\s*([^;\n]+)', correct_answer):
-        parts = [p.strip() for p in m.group(2).split('|') if p.strip()]
+        parts = split_answers(m.group(2))
         if parts:
             slot_key_answers[m.group(1).upper()] = parts
 
@@ -482,22 +484,12 @@ def _validate_cloze(
     # espacio, se usa la clave completa como la respuesta de ese espacio —
     # igual que ya hace convert_cloze_to_moodle en xml_builder.py.
     if not slot_key_answers and len(brackets) == 1 and correct_answer.strip():
-        only_letter = re.split(r':\s*', brackets[0].strip(), maxsplit=1)[0].strip().upper()
+        only_letter = brackets[0][2].upper()
         slot_key_answers[only_letter] = [correct_answer.strip()]
 
     # Validar cada espacio individualmente
-    for bracket_content in brackets:
-        parts = re.split(r':\s*', bracket_content.strip(), maxsplit=1)
-        if len(parts) != 2:
-            target.append(
-                f"Error: formato inválido en espacio '[{bracket_content}]' "
-                f"del ítem Pregunta {num} (cloze). Formato esperado: "
-                f"'[A: opción1 / opción2]'."
-            )
-            continue
-
-        slot_letter = parts[0].strip()
-        options = [o.strip() for o in parts[1].split('/') if o.strip()]
+    for _start, _end, slot_letter, options_raw in brackets:
+        options = split_options(options_raw)
 
         if len(options) < MIN_CLOZE_OPTIONS:
             target.append(

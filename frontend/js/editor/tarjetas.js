@@ -8,7 +8,7 @@ import { _editorTotalPoints, applyPointsDistribution, setPointsToolMode, toggleP
 import { estado, notificar } from '../estado.js';
 import { DEFAULT_TYPE_WEIGHTS, fmtPoints } from '../puntos.js';
 import { showToast } from '../ui/toast.js';
-import { esc_html, humanizeSkipReason } from '../util.js';
+import { esc_html, humanizeSkipReason, splitAnswers } from '../util.js';
 
 // estado.currentParseResult es la única fuente de datos que usa renderEditor()
 // para redibujar TODAS las tarjetas de golpe (al añadir una pregunta, o
@@ -41,6 +41,15 @@ export function deleteQuestionCard(btn) {
   if (card) {
     card.remove();
     syncParseResultFromDOM();
+    // Vuelve a dibujar TODAS las tarjetas restantes (mismo patrón que
+    // addNewQuestion/recoverSkippedQuestion) para que sus data-idx queden
+    // al día con el array ya reindexado. Sin esto, borrar una SEGUNDA
+    // tarjeta (sin que medie otro render de por medio) usaba el data-idx
+    // viejo contra el array ya más corto, y una tarjeta se quedaba con
+    // metadatos (color_review_hint, low_confidence, answer_from_marks) de
+    // OTRA pregunta distinta a la que en verdad muestra en pantalla.
+    renderEditor(estado.currentParseResult);
+    lucide.createIcons();
     notificar('pregunta borrada');
     showToast('Pregunta eliminada de la lista', 'info');
   }
@@ -420,7 +429,7 @@ export function renderEditor(data) {
 
     if (q.type === 'multichoice') {
       const optEntries = Object.entries(q.data.options || {});
-      const answerTargets = (keyInfo.answer || '').split('|').map(s => s.trim().toLowerCase()).filter(Boolean);
+      const answerTargets = splitAnswers(keyInfo.answer).map(s => s.toLowerCase());
       // Un objetivo de la clave que coincide EXACTO con el texto de
       // alguna opción es esa opción y NINGUNA otra: con opciones
       // A: Python / B: Java / C: JavaScript / D: C y la respuesta

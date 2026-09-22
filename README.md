@@ -134,6 +134,19 @@ Las excepciones a esa línea recta son esperas por **saturación del servicio** 
 
 </details>
 
+<details>
+<summary><b>🥊 Puesto a prueba con exámenes hechos para romperlo</b></summary>
+
+<br>
+
+Aparte del set de regresión, hay **13 exámenes sintéticos adversariales** (30–50 preguntas cada uno, 517 en total) diseñados a propósito para atacar un punto débil distinto: numeración caótica, 10 estilos de rótulo de opción distintos, clave final en 3 formatos mezclados, marcas de color a propósito ambiguas (o mezclando color/resaltado/subrayado/negrita en el mismo examen), texto en dos columnas, ruido documental (encabezados, marcas de agua, pasajes de lectura), respuestas numéricas escritas en palabras, caracteres que chocan con la sintaxis interna (`| / = ]`), Cloze con código (`arr[0]`), un escaneado degradado y un examen donde falta la mayoría de las respuestas.
+
+**Resultado: 94 % (487/517)** — sin inventar ninguna respuesta. El único punto débil real es el **escaneado degradado** (72 %): sin capa de texto extraíble, el modelo puede "corregir" una marca de color con su propio conocimiento en vez de transcribirla, y ahí no hay lector en código que lo blindee (decisión consciente: no es el fuerte de la app). Con una IA perfecta (`dev/xml_fidelity.py`, sin usar la API), el generador de XML es **100 % fiel (517/517)**.
+
+Detalle completo, incluida la clasificación de cada fallo por causa, en la sección "Pruebas adversariales" de [`RESULTADOS.md`](dev/eval_results/RESULTADOS.md).
+
+</details>
+
 ---
 
 ## 🏗️ Arquitectura
@@ -274,6 +287,8 @@ backend/venv/bin/python dev/eval.py --mode json        # probar el modo JSON
 backend/venv/bin/python dev/compare.py dev/eval_results/A.json dev/eval_results/B.json
 ```
 
+Además: `dev/synthetic/generate_adversarial.py` crea 13 exámenes hostiles (`--only x`), `dev/xml_fidelity.py` mide el XML con una IA perfecta y `dev/test_casos_borde.py` prueba sin API los casos que rompían el XML (ver la sección "Pruebas adversariales" de [`RESULTADOS.md`](dev/eval_results/RESULTADOS.md)).
+
 Cómo se mide: [`dev/eval.py`](dev/eval.py) · formato del golden: [`samples/golden/README.md`](samples/golden/README.md) · resultados: [`dev/eval_results/RESULTADOS.md`](dev/eval_results/RESULTADOS.md).
 
 </details>
@@ -376,7 +391,7 @@ Usa **Gemini 3.1 Flash Lite** para normalizar la *estructura* de los documentos 
 En un PDF digital, `extract_text()` pierde justo las marcas de respuesta más comunes: el color de una opción, el resaltado, el subrayado, la negrita y la columna de la "X" en un cuadro. Sin ellas el modelo tiende a **resolver** la pregunta con su propio conocimiento. Por eso:
 
 1. **El texto que recibe el modelo lleva las marcas anotadas** — `⟦rojo⟧Lista (list)⟦/rojo⟧`, `⟦resaltado⟧…`, `⟦subrayado⟧…`, `⟦negrita⟧…` — y las tablas con su estructura (`| Evento | … | x |`).
-2. **`mark_resolver.py` decide en código** cuáles son las respuestas marcadas; el modelo solo estructura (qué es enunciado, qué es opción).
+2. **`mark_resolver.py` decide en código** cuáles son las respuestas marcadas; el modelo solo estructura (qué es enunciado, qué es opción). También resuelve verdadero/falso marcado (`( X ) Verdadero`, o la palabra en color) y **marcas mezcladas**: un docente que subraya en una pregunta, resalta en otra y pone negrita en la siguiente igual queda cubierto.
 3. **Una marca se aplica solo si funciona como sistema de respuestas**: algunas opciones marcadas (no todas), en al menos 2 preguntas y el 30 % de las ubicadas. Así la negrita de los títulos no reemplaza la clave.
 4. **El editor dice de dónde salió cada respuesta**: un aviso corto arriba, la etiqueta **respuesta por marca** en esas preguntas y **revisar marca** donde la IA tuvo que interpretar.
 

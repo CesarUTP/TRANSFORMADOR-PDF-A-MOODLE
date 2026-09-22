@@ -28,6 +28,7 @@
   <script type="module">
     import { autoDistributePoints, fmtPoints, DEFAULT_TYPE_WEIGHTS } from './js/puntos.js';
     import { questionIssues } from './js/validacion.js';
+    import { esc_html, findClozeBrackets, splitAnswers, splitOptions } from './js/util.js';
 
     const lista = document.getElementById('lista');
     let ok = 0, mal = 0;
@@ -49,6 +50,33 @@
 
     const preguntas = (tipos) => tipos.map((t, i) => ({ num: i + 1, type: t }));
     const suma = (qs) => Math.round(qs.reduce((a, q) => a + q.points, 0) * 100) / 100;
+
+    // ── Separadores de respuestas y opciones ────────────────────────────
+    prueba('varias respuestas se separan por " | "', () => {
+      igual(splitAnswers('Opción B | Opción D'), ['Opción B', 'Opción D']);
+    });
+    prueba('la opción "|" sola es texto, no separador', () => {
+      igual(splitAnswers('|'), ['|']);
+      igual(splitAnswers('| | &'), ['|', '&']);
+    });
+    prueba('"km/h" y "TCP/IP" no se parten como opciones Cloze', () => {
+      igual(splitOptions('km/h / m/s² / kg/m'), ['km/h', 'm/s²', 'kg/m']);
+      igual(splitOptions('TCP/IP / UDP'), ['TCP/IP', 'UDP']);
+    });
+    prueba('findClozeBrackets no corta un hueco con código como "arr[0]"', () => {
+      const bs = findClozeBrackets('[A: opción1 / arr[0] / arr[1]] y otro [B: uno / dos]');
+      igual(bs.map(b => b.letter), ['A', 'B']);
+      igual(splitOptions(bs[0].optionsRaw), ['opción1', 'arr[0]', 'arr[1]']);
+    });
+    prueba('esc_html también escapa comillas (seguro dentro de un atributo)', () => {
+      const out = esc_html('a" onmouseover="alert(1)<b>x</b>');
+      igual(out.includes('"'), false);
+      igual(out.includes('<b>'), false);
+    });
+    prueba('questionIssues no confunde un hueco Cloze con código', () => {
+      const q = { type: 'cloze', data: { text: '¿Qué imprime arr[0] si arr = [A: [10, 20, 30] / 10 / arr[1]]?' } };
+      igual(questionIssues(q, { answer: '' }), []);
+    });
 
     // ── Reparto de puntos ───────────────────────────────────────────────
     prueba('equitativo: la suma cuadra exacto', () => {

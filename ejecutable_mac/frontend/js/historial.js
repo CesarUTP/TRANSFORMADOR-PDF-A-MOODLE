@@ -4,6 +4,7 @@
 import { modalHistory } from './dom.js';
 import { saveFileToUser } from './resultado.js';
 import { showToast } from './ui/toast.js';
+import { esc_html } from './util.js';
 
 export async function loadHistoryList() {
   const list = document.getElementById('history-list');
@@ -26,11 +27,11 @@ export async function loadHistoryList() {
     list.innerHTML = data.map(item => `
       <div style="padding:14px 16px;border-bottom:1px solid var(--color-border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;">
         <div style="min-width:0;">
-          <strong style="display:block;font-size:14px;color:var(--color-text);">${item.filename}</strong>
-          <span style="font-size:12px;color:var(--color-text-muted);">${item.category} &bull; ${item.total_points} pts &bull; ${new Date(item.created_at).toLocaleString()}</span>
+          <strong style="display:block;font-size:14px;color:var(--color-text);">${esc_html(item.filename)}</strong>
+          <span style="font-size:12px;color:var(--color-text-muted);">${esc_html(item.category)} &bull; ${item.total_points} pts &bull; ${new Date(item.created_at).toLocaleString()}</span>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-          <button class="btn btn-ghost" onclick="downloadHistory(${item.id}, '${item.filename.replace(/'/g, "\\'")}')" style="padding:6px 12px;font-size:12.5px;">
+          <button class="btn btn-ghost" data-filename="${esc_html(item.filename)}" onclick="downloadHistory(${item.id}, this.dataset.filename)" style="padding:6px 12px;font-size:12.5px;">
             <i data-lucide="download" style="width:14px;height:14px;"></i> Descargar XML
           </button>
           <div class="history-action-slot" data-id="${item.id}" style="display:flex;align-items:center;">

@@ -20,6 +20,7 @@ import re
 from typing import Any, Dict, List, Tuple
 
 from config import TRANSCRIPTION_FAILED_MARKER
+from answer_matching import split_answers
 
 SIN_RESPUESTA = "SIN_RESPUESTA"
 _LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -97,7 +98,7 @@ def _resolve_mc_from_key(clave: str, opts: List[dict]) -> List[int]:
                 return [idx]
             letters = []
         # Clave con el texto de la(s) opción(es).
-        wanted = [_norm(x) for x in re.split(r"\s*\|\s*", clave) if x.strip()]
+        wanted = [_norm(x) for x in split_answers(clave)]
         hits = [i for i, o in enumerate(opts) if _norm(o.get("texto")) in wanted]
         return hits if len(hits) == len(wanted) else []
     idxs = [_index_for_label(L, labels, len(opts)) for L in letters]
@@ -107,10 +108,19 @@ def _resolve_mc_from_key(clave: str, opts: List[dict]) -> List[int]:
 def _index_for_label(label: str, labels: List[str], n: int):
     if label in labels:
         return labels.index(label)
-    # Opciones sin rótulo propio: la letra de la clave es su posición (a=1).
-    if not any(labels) and len(label) == 1 and label.isalpha():
-        i = ord(label) - ord("a")
-        return i if 0 <= i < n else None
+    # Opciones sin rótulo propio: la letra o el número de la clave es su
+    # posición (a=1, "1"=1) — letra_original documenta ambos casos ("a",
+    # "B", "1"...), pero antes solo se resolvía por posición una letra; una
+    # clave puramente numérica ("2") sin ninguna opción rotulada no
+    # resolvía nada y caía en lo que marcó el modelo en vez de en la clave
+    # literal del documento.
+    if not any(labels):
+        if len(label) == 1 and label.isalpha():
+            i = ord(label) - ord("a")
+            return i if 0 <= i < n else None
+        if label.isdigit():
+            i = int(label) - 1
+            return i if 0 <= i < n else None
     return None
 
 
@@ -123,6 +133,13 @@ def _multichoice(q: dict) -> Tuple[dict, str]:
     else:
         correct = [options[_LETTERS[i]] for i, o in enumerate(opts) if o.get("correcta")]
         if not q.get("respuesta_marcada", True):
+            correct = []
+        # Todas las opciones marcadas (ej. las 4 en rojo): esa marca no señala
+        # una respuesta (lo dice el propio prompt, REGLA 8) — antes el modelo
+        # la ignoraba y las 4 salían como correctas (dev/eval x04). Se deja
+        # sin respuesta para que el docente decida; una clave explícita
+        # ("a, b, c, d") sí se respeta, y se resuelve arriba.
+        elif len(opts) >= 2 and len(correct) == len(opts):
             correct = []
     answer = " | ".join(correct) if correct else SIN_RESPUESTA
     return {"stem": _text(q.get("enunciado")), "options": options}, answer
@@ -148,7 +165,12 @@ def _matching(q: dict) -> Tuple[dict, str, Dict[str, str]]:
     key_pairs = re.findall(r"(\d+)\s*[-.→:]\s*([A-Za-z])\b", str(q.get("clave_texto") or ""))
     if key_pairs and all(1 <= int(n) <= len(left) and ord(L.lower()) - 96 <= len(col_b) for n, L in key_pairs):
         pairs = {str(int(n)): L.lower() for n, L in key_pairs}
-    for p in ([] if pairs else (q.get("parejas") or [])):
+    # Sin clave en el documento (respuesta_marcada=false) las parejas que el
+    # modelo devuelva las resolvió él con su conocimiento, no las leyó del
+    # documento: se descartan (dev/eval x12: 4 de 4 emparejamientos sin clave
+    # salían resueltos). La clave compacta y las tablas de marcas siguen valiendo.
+    unmarked = q.get("respuesta_marcada", True) is False
+    for p in ([] if (pairs or unmarked) else (q.get("parejas") or [])):
         li, ri = p.get("izquierda"), p.get("derecha")
         if isinstance(li, int) and isinstance(ri, int) and 1 <= li <= len(left) and 1 <= ri <= len(col_b):
             pairs[str(li)] = _LETTERS[ri - 1].lower()
@@ -175,8 +197,11 @@ def _cloze(q: dict) -> Tuple[dict, str]:
         h = by_letter.get(letter)
         if not h:
             return m.group(0)
-        opts = [_line(o["texto"]) for o in h.get("opciones") or [] if str(o.get("texto", "")).strip()]
-        correct = [_line(o["texto"]) for o in h.get("opciones") or []
+        # " / " es el separador de opciones de la forma interna; dentro de
+        # una opción se compacta a "/" para no partirla.
+        def clean(o): return _line(o["texto"]).replace(" / ", "/")
+        opts = [clean(o) for o in h.get("opciones") or [] if str(o.get("texto", "")).strip()]
+        correct = [clean(o) for o in h.get("opciones") or []
                    if o.get("correcta") and str(o.get("texto", "")).strip()]
         if correct and q.get("respuesta_marcada", True):
             key_parts.append(f"{letter}. {' | '.join(correct)}")

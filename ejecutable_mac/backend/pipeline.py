@@ -20,19 +20,17 @@ from fastapi import HTTPException
 from config import ENRICH_PDF_TEXT, NORMALIZER_MODE, NORMALIZER_MODE_AI
 from extractor import (
     extract_pages_text,
-    extract_pages_text_enriched,
-    extract_tables,
-    get_colored_page_numbers,
+    extract_pages_enriched_and_tables,
+    get_colored_pages,
     join_pages_with_markers,
     extract_text_and_images_from_pdf,
     extract_text_from_pdf,
     extract_text_from_txt,
-    get_colored_text_pages,
     render_all_pages_as_images,
 )
 from formatter import verify_and_format, extract_structured
 from schema_adapter import adapt
-from mark_resolver import resolve_answer_marks, resolve_table_marks
+from mark_resolver import resolve_answer_marks, resolve_table_marks, resolve_tf_marks
 from parser import parse_answer_key, build_questions
 from validator import (
     partition_questions,
@@ -48,12 +46,22 @@ logger = logging.getLogger(__name__)
 # reemplaza por uno concreto cuando las marcas se resolvieron en código.
 COLOR_MARKS_NOTICE = "Hay marcas de color que no se pudieron leer. Revisa las preguntas con «revisar marca»."
 
+# Un PDF escaneado no tiene capa de texto: ni el color ni ninguna otra marca se
+# puede leer en código, solo la ve el modelo en la imagen. Medido (dev/eval x10,
+# marcas en rojo contrafácticas): devolvió lo que él cree correcto en 8,7 de 9
+# preguntas en vez de lo que el docente marcó. El aviso lo dice sin rodeos.
+SCANNED_MARKS_NOTICE = (
+    "Documento escaneado: si las respuestas están marcadas por color u otra marca, la IA las lee "
+    "de la imagen y puede reemplazarlas por lo que ella cree correcto. Revisa TODAS las respuestas "
+    "antes de aprobar."
+)
+
 # Nombre de la marca en el aviso: cualquier color es simplemente "color".
-_MARK_LABELS = {"resaltado": "resaltado", "subrayado": "subrayado", "negrita": "negrita"}
+_MARK_LABELS = {"resaltado": "resaltado", "subrayado": "subrayado", "negrita": "negrita", "mixta": "marcas"}
 
 
 def _marks_notice(mark: Any, applied: int, n_table: int, n_uncertain: int,
-                  fallback: Any) -> Any:
+                  fallback: Any, n_tf: int = 0) -> Any:
     """Aviso corto cuando las respuestas salieron de marcas del documento
     (color, resaltado, subrayado, negrita o X en un cuadro). applied y
     n_table cuentan las preguntas que llegan al editor con la respuesta
@@ -64,6 +72,8 @@ def _marks_notice(mark: Any, applied: int, n_table: int, n_uncertain: int,
         kinds.append(_MARK_LABELS.get(mark, "color"))
     if n_table:
         kinds.append("cuadro con X")
+    if n_tf:
+        kinds.append("marca en verdadero/falso")
     if not kinds:
         return fallback
     return f"Respuestas identificadas por {' y '.join(kinds)}. Revísalas antes de aprobar."
@@ -165,11 +175,15 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
     # colored_pages_text también se usa para marcar INDIVIDUALMENTE las
     # preguntas cuya página de origen tiene esa marca (ver
     # _tag_color_review_hints), en vez de un solo aviso genérico.
+    # colored_page_numbers se calcula aquí mismo (mismo pdfplumber.open())
+    # y se reutiliza más abajo en el modo JSON — antes se recalculaba con
+    # una segunda pasada por todo el PDF (_colored_pages) más adelante.
     color_marks_notice = None
     colored_pages_text: list = []
+    colored_page_numbers: List[int] = []
     if suffix == ".pdf":
         try:
-            colored_pages_text = get_colored_text_pages(raw_bytes)
+            colored_page_numbers, colored_pages_text = get_colored_pages(raw_bytes)
             if colored_pages_text:
                 color_marks_notice = COLOR_MARKS_NOTICE
         except Exception as exc:
@@ -204,7 +218,7 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
         return _finalize_structured(
             filename, payload,
             estimated_question_count, colored_pages_text, color_marks_notice,
-            _colored_pages(raw_bytes) if suffix == ".pdf" else [], marks,
+            colored_page_numbers, marks,
         )
 
     model_text = "\n".join(marks[0]) if marks else full_text
@@ -235,7 +249,7 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
     try:
         full_text = extract_text_from_pdf(raw_bytes)
         page_images = render_all_pages_as_images(raw_bytes)
-        colored_pages_text = get_colored_text_pages(raw_bytes)
+        colored_page_numbers, colored_pages_text = get_colored_pages(raw_bytes)
     except Exception as exc:
         logger.error("Error extrayendo contenido de '%s' para normalizar: %s", filename, exc)
         raise HTTPException(
@@ -249,7 +263,10 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
             detail="No se pudo extraer ningún contenido (ni texto ni páginas) del archivo.",
         )
 
-    color_marks_notice = COLOR_MARKS_NOTICE if colored_pages_text else None
+    if not full_text.strip():
+        color_marks_notice = SCANNED_MARKS_NOTICE
+    else:
+        color_marks_notice = COLOR_MARKS_NOTICE if colored_pages_text else None
 
     # Sin pre_validate_raw_text aquí a propósito: esa validación exige
     # indicios de "pregunta"/"respuesta" en el TEXTO extraído, pero en el
@@ -272,7 +289,7 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
         return _finalize_structured(
             filename, payload,
             estimated_question_count, colored_pages_text, color_marks_notice,
-            _colored_pages(raw_bytes), marks,
+            colored_page_numbers, marks,
         )
 
     reformatted_text, was_reformatted = verify_and_format(full_text, page_images, progress=on_ai, on_retry=_ai_retry(progress))
@@ -291,7 +308,7 @@ def _deterministic_marks(raw_bytes: bytes):
     if not ENRICH_PDF_TEXT:
         return None
     try:
-        return extract_pages_text_enriched(raw_bytes), extract_tables(raw_bytes)
+        return extract_pages_enriched_and_tables(raw_bytes)
     except Exception as exc:  # noqa: BLE001 — sin enriquecer, el flujo sigue igual que antes
         logger.warning("No se pudo enriquecer el texto del PDF: %s", exc)
         return None
@@ -359,13 +376,6 @@ def _model_text_json(raw_bytes: bytes, marks) -> str:
     return join_pages_with_markers(extract_pages_text(raw_bytes))
 
 
-def _colored_pages(raw_bytes: bytes) -> List[int]:
-    try:
-        return get_colored_page_numbers(raw_bytes)
-    except Exception:  # noqa: BLE001 — solo sirve para un aviso
-        return []
-
-
 def _finalize_structured(
     filename: str,
     payload: Dict[str, Any],
@@ -412,6 +422,7 @@ def _finalize_common(
     tolerante, avisos y recorte de la clave a las preguntas válidas."""
     mark_result: Dict[str, Any] = {"mark": None, "applied": 0, "changed": 0}
     n_table = 0
+    n_tf = 0
     if marks:
         pages, tables = marks
         # Siempre, no solo con texto en color: resaltado, subrayado y
@@ -419,9 +430,10 @@ def _finalize_common(
         # documento de verdad marca respuestas así (ver su docstring).
         mark_result = resolve_answer_marks(questions, effective_answer_key, pages)
         n_table = resolve_table_marks(questions, effective_answer_key, tables) if tables else 0
-        if mark_result["applied"] or n_table:
-            logger.info("Marcas resueltas en código: %d por marca (%s), %d por tabla.",
-                        mark_result["applied"], mark_result["mark"], n_table)
+        n_tf = resolve_tf_marks(questions, effective_answer_key, pages)
+        if mark_result["applied"] or n_table or n_tf:
+            logger.info("Marcas resueltas en código: %d por marca (%s), %d por tabla, %d en verdadero/falso.",
+                        mark_result["applied"], mark_result["mark"], n_table, n_tf)
 
     # Modo Tolerante: separar preguntas válidas de las que hay que omitir
     # en vez de bloquear TODA la conversión por una sola pregunta
@@ -443,6 +455,7 @@ def _finalize_common(
         sum(1 for q in from_marks if q["type"] == "multichoice"),
         sum(1 for q in from_marks if q["type"] == "matching"),
         n_uncertain, color_marks_notice,
+        sum(1 for q in from_marks if q["type"] == "truefalse"),
     )
 
     if not valid_questions:

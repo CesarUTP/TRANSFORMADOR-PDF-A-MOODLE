@@ -25,6 +25,9 @@ import unicodedata
 from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
 
+# Nombre de la "marca" cuando cada pregunta usa la suya (ver resolve_answer_marks).
+MIXED_MARKS = "mixta"
+
 _TAG = re.compile(r"⟦/?([a-záéíóú]+)⟧")
 _OPEN = re.compile(r"⟦([a-záéíóú]+)⟧")
 _LABEL = re.compile(r"^\s*(?:[A-Za-z]|\d{1,2})\s*[.)\-]\s+")
@@ -40,9 +43,10 @@ def _norm(s: Any) -> str:
 
 
 class _Line:
-    __slots__ = ("plain", "norm", "colors")
+    __slots__ = ("raw", "plain", "norm", "colors")
 
     def __init__(self, raw: str):
+        self.raw = raw
         self.plain = _TAG.sub("", raw)
         self.norm = _norm(_LABEL.sub("", self.plain))
         # Color que cubre la MAYOR parte de la línea (o None si es texto normal).
@@ -117,6 +121,61 @@ def _option_line(lines: List[_Line], lo: int, hi: int, option: str) -> Optional[
     return None
 
 
+def _anchors(questions: List[Dict[str, Any]], lines: List[_Line]) -> List[Optional[int]]:
+    """Línea donde termina el enunciado de cada pregunta (None si no se ubica)."""
+    anchors: List[Optional[int]] = []
+    cursor = 0
+    for q in questions:
+        stem = (q.get("data") or {}).get("stem") or (q.get("data") or {}).get("text") or ""
+        a = _find_anchor(lines, stem, cursor) if stem else None
+        anchors.append(a)
+        if a is not None:
+            cursor = a + 1
+    return anchors
+
+
+def _candidates(questions: List[Dict[str, Any]], lines: List[_Line], anchors: List[Optional[int]],
+                only: Optional[str]) -> Tuple[int, List[Tuple[Dict[str, Any], List[str]]]]:
+    """
+    (preguntas ubicadas, [(pregunta, opciones marcadas)]). Con `only`, la
+    marca de respuesta es esa. Sin `only` (marcas mezcladas), cada pregunta
+    usa la marca que traigan sus propias opciones, con tal de que sea UNA
+    sola: si en la misma pregunta hay dos marcas distintas, no se decide.
+    """
+    located = 0
+    candidates: List[Tuple[Dict[str, Any], List[str]]] = []
+    for idx, q in enumerate(questions):
+        if q.get("type") != "multichoice" or anchors[idx] is None:
+            continue
+        lo = anchors[idx] + 1
+        hi = next((a for a in anchors[idx + 1:] if a is not None and a > lo), len(lines))
+        options: Dict[str, str] = q["data"].get("options") or {}
+        found = {L: _option_line(lines, lo, hi, text) for L, text in options.items()}
+        if not options or any(v is None for v in found.values()):
+            continue
+        # Dos letras distintas no pueden apuntar a la MISMA línea: si pasa,
+        # una coincidencia difusa (una opción cuyo texto es prefijo del de
+        # otra, ej. "Estructura de datos abstracta" y "... compleja") le
+        # "robó" la línea a su vecina — no se puede confiar en esta
+        # ubicación, así que se descarta la pregunta entera (mismo criterio
+        # que "falta alguna opción", ver docstring del módulo).
+        if len(set(found.values())) != len(found):
+            continue
+        located += 1
+        marks = {L: lines[i].colors for L, i in sorted(found.items())}
+        if only is not None:
+            letters = [L for L, m in marks.items() if m == only]
+        else:
+            distinct = {m for m in marks.values() if m}
+            letters = [L for L, m in marks.items() if m] if len(distinct) == 1 else []
+        marked = [options[L] for L in letters]
+        # Sin marca, o con TODAS las opciones marcadas (ej. un examen que
+        # pone todas las opciones en negrita): eso no señala una respuesta.
+        if marked and len(marked) < len(options):
+            candidates.append((q, marked))
+    return located, candidates
+
+
 def resolve_answer_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[str, Any]],
                          pages: List[str]) -> Dict[str, Any]:
     """
@@ -132,48 +191,32 @@ def resolve_answer_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, 
     para destacar una palabra: una opción marcada de casualidad no debe
     reemplazar la respuesta de la clave.
 
+    1.º se prueba la marca dominante del documento. 2.º, si esa sola no
+    alcanza (un docente que subraya en una pregunta, resalta en otra y pone
+    negrita en la siguiente), se prueban TODAS las marcas juntas, con los
+    mismos umbrales aplicados al conjunto ("mixta").
+
     Devuelve {"mark": nombre de la marca o None, "applied": preguntas cuya
     respuesta salió de la marca, "changed": cuántas cambiaron respecto a
     lo que dijo el modelo}.
     """
     result = {"mark": None, "applied": 0, "changed": 0}
     lines = _lines(pages)
-    color = _mark_color(lines)
-    if not color:
+    anchors = _anchors(questions, lines)
+    dominant = _mark_color(lines)
+
+    chosen: List[Tuple[Dict[str, Any], List[str]]] = []
+    for mark, only in ((dominant, dominant), (MIXED_MARKS, None)):
+        if mark is None:
+            continue
+        located, candidates = _candidates(questions, lines, anchors, only)
+        if len(candidates) >= 2 and len(candidates) >= 0.3 * located:
+            result["mark"], chosen = mark, candidates
+            break
+    if not chosen:
         return result
 
-    anchors: List[Optional[int]] = []
-    cursor = 0
-    for q in questions:
-        stem = (q.get("data") or {}).get("stem") or (q.get("data") or {}).get("text") or ""
-        a = _find_anchor(lines, stem, cursor) if stem else None
-        anchors.append(a)
-        if a is not None:
-            cursor = a + 1
-
-    located = 0
-    candidates: List[Tuple[Dict[str, Any], List[str]]] = []
-    for idx, q in enumerate(questions):
-        if q.get("type") != "multichoice" or anchors[idx] is None:
-            continue
-        lo = anchors[idx] + 1
-        hi = next((a for a in anchors[idx + 1:] if a is not None and a > lo), len(lines))
-        options: Dict[str, str] = q["data"].get("options") or {}
-        found = {L: _option_line(lines, lo, hi, text) for L, text in options.items()}
-        if not options or any(v is None for v in found.values()):
-            continue
-        located += 1
-        marked = [options[L] for L, i in sorted(found.items()) if lines[i].colors == color]
-        # Sin marca, o con TODAS las opciones marcadas (ej. un examen que
-        # pone todas las opciones en negrita): eso no señala una respuesta.
-        if marked and len(marked) < len(options):
-            candidates.append((q, marked))
-
-    if len(candidates) < 2 or len(candidates) < 0.3 * located:
-        return result
-
-    result["mark"] = color
-    for q, marked in candidates:
+    for q, marked in chosen:
         new_answer = " | ".join(marked)
         entry = answer_key.setdefault(q["num"], {"type": "multichoice"})
         if entry.get("answer") != new_answer:
@@ -232,3 +275,51 @@ def resolve_table_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, D
             q["data"]["answer_from_marks"] = True
             break
     return changed
+
+
+# ── Verdadero/falso marcado en el propio documento ───────────────────────────
+# "( X ) Verdadero   (   ) Falso", "[x] Falso", o la palabra en color /
+# resaltado / subrayado / negrita. Sin esto la respuesta la decidía el modelo
+# (dev/eval x01: con "( X ) Verdadero" en "El español es el idioma oficial de
+# Brasil" devolvía "Falso", lo que él cree cierto y no lo que marcó el docente).
+
+_TF_WORD = {"verdadero": "Verdadero", "cierto": "Verdadero", "v": "Verdadero", "falso": "Falso", "f": "Falso"}
+_TF_CHECKED = re.compile(r"[\(\[]\s*[xX✓✔]\s*[\)\]]\s*(verdadero|falso|cierto|v|f)\b", re.IGNORECASE)
+_TF_MARKED_WORD = re.compile(r"⟦([a-záéíóú]+)⟧\s*(verdadero|falso|cierto|v|f)\s*⟦/\1⟧", re.IGNORECASE)
+
+
+def _tf_mark(raw_lines: List[str]) -> Optional[str]:
+    text = " ".join(raw_lines)
+    found = {_TF_WORD[w.lower()] for w in _TF_CHECKED.findall(text)}
+    found |= {_TF_WORD[m.group(2).lower()] for m in _TF_MARKED_WORD.finditer(text)}
+    return found.pop() if len(found) == 1 else None
+
+
+def resolve_tf_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[str, Any]],
+                     pages: List[str]) -> int:
+    """
+    Para cada verdadero/falso, busca en su línea (y las 2 siguientes, hasta la
+    pregunta que sigue) UNA casilla marcada o UNA de las dos palabras marcada.
+    Si hay exactamente una, esa es la respuesta. Si la misma palabra sale
+    marcada en todas las preguntas (con 3 o más), es un estilo del documento
+    (ej. "Verdadero" siempre en negrita) y no se aplica nada.
+    Devuelve cuántas preguntas quedaron con la respuesta leída de la marca.
+    """
+    lines = _lines(pages)
+    anchors = _anchors(questions, lines)
+    found: List[Tuple[Dict[str, Any], str]] = []
+    for idx, q in enumerate(questions):
+        if q.get("type") != "truefalse" or anchors[idx] is None:
+            continue
+        lo = anchors[idx]
+        hi = next((a for a in anchors[idx + 1:] if a is not None and a > lo), len(lines))
+        answer = _tf_mark([ln.raw for ln in lines[lo:min(hi, lo + 3)]])
+        if answer:
+            found.append((q, answer))
+    if not found or (len(found) >= 3 and len({a for _, a in found}) == 1):
+        return 0
+    for q, answer in found:
+        entry = answer_key.setdefault(q["num"], {"type": "truefalse"})
+        entry["answer"] = answer
+        q["data"]["answer_from_marks"] = True
+    return len(found)

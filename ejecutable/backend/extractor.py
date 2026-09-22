@@ -213,10 +213,24 @@ def _word_style(word: dict, highlights: List[tuple], underlines: List[tuple]) ->
     if highlights and any(_in_bbox(word, b) for b in highlights):
         return "resaltado"
     if underlines:
-        width = (word["x1"] - word["x0"]) or 1.0
+        # abs(): en una página rotada 90°/270° el bbox de una palabra puede
+        # venir con x1 < x0 o bottom < top — sin abs(), height/width salían
+        # negativos y "above" (más abajo) también, invirtiendo la ventana
+        # de comparación y desactivando la detección de subrayado en
+        # silencio para esa palabra en vez de solo no encontrar nada.
+        width = abs(word["x1"] - word["x0"]) or 1.0
+        height = abs(word["bottom"] - word["top"]) or 1.0
         for x0, x1, y in underlines:
             overlap = min(x1, word["x1"]) - max(x0, word["x0"])
-            if overlap >= 0.6 * width and word["bottom"] - 1 <= y <= word["bottom"] + 3:
+            # Word dibuja el subrayado sobre la línea base, hasta ~3 pt POR
+            # ENCIMA del borde inferior del cuadro de la palabra (Aptos 12 pt:
+            # y=358,4 con bottom=361,3); antes solo se aceptaba desde 1 pt por
+            # encima y esas opciones subrayadas llegaban al modelo sin marca.
+            # El margen es en puntos y tiene tope (4 pt): con uno proporcional,
+            # el borde de una tabla que cruza una letra grande de una marca de
+            # agua contaba como subrayado (x06).
+            above = min(0.35 * height, 4.0)
+            if overlap >= 0.6 * width and word["bottom"] - above <= y <= word["bottom"] + 3:
                 return "subrayado"
     if _BOLD_FONT.search(str(word.get("fontname", ""))):
         return "negrita"
@@ -315,14 +329,39 @@ def extract_tables(file_bytes: bytes) -> List[List[List[str]]]:
     tables: List[List[List[str]]] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
-            try:
-                for t in page.extract_tables():
-                    rows = [[" ".join(str(c or "").split()) for c in row] for row in t]
-                    if len(rows) >= 2:
-                        tables.append(rows)
-            except Exception:  # noqa: BLE001
-                continue
+            tables.extend(_page_tables(page))
     return tables
+
+
+def _page_tables(page) -> List[List[List[str]]]:
+    tables: List[List[List[str]]] = []
+    try:
+        for t in page.extract_tables():
+            rows = [[" ".join(str(c or "").split()) for c in row] for row in t]
+            if len(rows) >= 2:
+                tables.append(rows)
+    except Exception:  # noqa: BLE001
+        pass
+    return tables
+
+
+def extract_pages_enriched_and_tables(file_bytes: bytes) -> tuple[List[str], List[List[List[str]]]]:
+    """
+    extract_pages_text_enriched() + extract_tables() en un solo
+    pdfplumber.open(): pipeline._deterministic_marks las llamaba una
+    después de la otra sobre el MISMO archivo — cada pdfplumber.open()
+    reparsea la estructura completa del PDF desde cero, así que llamarlas
+    por separado duplicaba ese trabajo sin necesidad (una sola petición de
+    /api/parse en modo JSON llegaba a abrir el mismo PDF 5 veces; ver
+    dev/eval_results/RESULTADOS.md).
+    """
+    pages: List[str] = []
+    tables: List[List[List[str]]] = []
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        for page in pdf.pages:
+            pages.append(_enriched_page_text(page) if _page_needs_enrichment(page) else (page.extract_text() or ""))
+            tables.extend(_page_tables(page))
+    return pages, tables
 
 
 def get_colored_page_numbers(file_bytes: bytes) -> List[int]:
@@ -345,6 +384,23 @@ def get_colored_text_pages(file_bytes: bytes) -> List[str]:
             if any(_char_has_color(ch) for ch in page.chars):
                 pages_text.append(page.extract_text() or "")
     return pages_text
+
+
+def get_colored_pages(file_bytes: bytes) -> tuple[List[int], List[str]]:
+    """
+    get_colored_page_numbers() + get_colored_text_pages() en un solo
+    pdfplumber.open() (mismo motivo que extract_pages_enriched_and_tables):
+    pipeline.py las llamaba por separado sobre el MISMO archivo dentro de
+    la MISMA petición.
+    """
+    numbers: List[int] = []
+    texts: List[str] = []
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        for page in pdf.pages:
+            if any(_char_has_color(ch) for ch in page.chars):
+                numbers.append(page.page_number)
+                texts.append(page.extract_text() or "")
+    return numbers, texts
 
 
 def pdf_has_colored_text(file_bytes: bytes) -> bool:

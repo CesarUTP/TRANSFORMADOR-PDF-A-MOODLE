@@ -1,0 +1,447 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x05_dos_columnas.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "focus": "Diseño en dos columnas",
+  "notes": "40 preguntas en dos columnas: el texto se lee por líneas y mezcla ambas columnas (la fila y de la izquierda se une a la de la derecha). Clave al final, también en dos columnas.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+      "answers": [
+        "Everest"
+      ],
+      "options": [
+        "K2",
+        "Everest",
+        "Kilimanjaro",
+        "Aconcagua"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+      "answers": [
+        "Oxígeno"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El oro es un metal más ligero que el agua.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué método de HTTP se usa normalmente para crear un recurso?",
+      "answers": [
+        "POST"
+      ],
+      "options": [
+        "TRACE",
+        "HEAD",
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de estos números es primo?",
+      "answers": [
+        "21"
+      ],
+      "options": [
+        "21",
+        "27",
+        "29",
+        "33"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el valor de pi con dos decimales?",
+      "answers": [
+        "3,14"
+      ],
+      "options": [
+        "3,12",
+        "3,14",
+        "3,16",
+        "3,18"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué partícula tiene carga eléctrica negativa?",
+      "answers": [
+        "Protón"
+      ],
+      "options": [
+        "Neutrón",
+        "Electrón",
+        "Protón",
+        "Fotón"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Júpiter es el planeta más cercano al Sol.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es el ADN?",
+      "answers": [
+        "Ácido desoxirribonucleico, portador de la información genética"
+      ],
+      "options": [
+        "Ácido desoxirribonucleico, portador de la información genética",
+        "Una hormona",
+        "Una proteína estructural",
+        "Un tipo de azúcar"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "SQL se usa para consultar bases de datos relacionales.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué extensión suelen tener los archivos de hojas de estilo?",
+      "answers": [
+        ".html"
+      ],
+      "options": [
+        ".xml",
+        ".html",
+        ".js",
+        ".css"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es un adjetivo?",
+      "answers": [
+        "Una palabra que modifica al sustantivo"
+      ],
+      "options": [
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que enlaza oraciones",
+        "Una palabra que expresa acción"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama la estructura de datos que sigue el principio FIFO?",
+      "answers": [
+        "Cola"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué palabra reservada define una función en Python?",
+      "answers": [
+        "def"
+      ],
+      "options": [
+        "def",
+        "function",
+        "func",
+        "fn"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el desierto cálido más extenso del mundo?",
+      "answers": [
+        "Gobi"
+      ],
+      "options": [
+        "Sahara",
+        "Kalahari",
+        "Gobi",
+        "Atacama"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuál es el perímetro, en cm, de un cuadrado de lado 6,5 cm?",
+      "answers": [
+        "26"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué país fue gobernado por los faraones?",
+      "answers": [
+        "Egipto"
+      ],
+      "options": [
+        "Persia",
+        "Egipto",
+        "Fenicia",
+        "Mesopotamia"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+      "answers": [
+        "4"
+      ],
+      "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuántos cromosomas tiene una célula humana somática normal?",
+      "answers": [
+        "46"
+      ],
+      "options": [
+        "23",
+        "44",
+        "46",
+        "48"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La raíz cuadrada de 49 es 6.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el mínimo común múltiplo de 4 y 6?",
+      "answers": [
+        "12"
+      ],
+      "options": [
+        "6",
+        "12",
+        "18",
+        "24"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "HTTP es un protocolo sin estado.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la complejidad de la búsqueda binaria?",
+      "answers": [
+        "O(log n)"
+      ],
+      "options": [
+        "O(n)",
+        "O(n²)",
+        "O(log n)",
+        "O(1)"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la capital de Australia?",
+      "answers": [
+        "Canberra"
+      ],
+      "options": [
+        "Perth",
+        "Sídney",
+        "Melbourne",
+        "Canberra"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué órgano filtra la sangre y produce la orina?",
+      "answers": [
+        "Páncreas"
+      ],
+      "options": [
+        "Riñón",
+        "Bazo",
+        "Páncreas",
+        "Hígado"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Los hongos pertenecen al reino vegetal.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+      "answers": [
+        "Charles Darwin"
+      ],
+      "options": [
+        "Alexander Fleming",
+        "Gregor Mendel",
+        "Charles Darwin",
+        "Louis Pasteur"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En derecho, ¿qué significa «habeas corpus»?",
+      "answers": [
+        "Derecho a la propiedad"
+      ],
+      "options": [
+        "Derecho a la propiedad",
+        "Libertad de prensa",
+        "Derecho de autor",
+        "Protección contra la detención arbitraria"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Un byte equivale a 4 bits.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuántos grados tiene un ángulo recto?",
+      "answers": [
+        "90"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Quién escribió Cien años de soledad?",
+      "answers": [
+        "Julio Cortázar"
+      ],
+      "options": [
+        "Jorge Luis Borges",
+        "Julio Cortázar",
+        "Mario Vargas Llosa",
+        "Gabriel García Márquez"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la velocidad aproximada de la luz en el vacío?",
+      "answers": [
+        "300 000 km/s"
+      ],
+      "options": [
+        "300 000 km/s",
+        "150 000 km/s",
+        "30 000 km/s",
+        "3 000 000 km/s"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Quién pintó La noche estrellada?",
+      "answers": [
+        "Vincent van Gogh"
+      ],
+      "options": [
+        "Pablo Picasso",
+        "Claude Monet",
+        "Vincent van Gogh",
+        "Salvador Dalí"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el plural de «lápiz»?",
+      "answers": [
+        "lápices"
+      ],
+      "options": [
+        "lápizes",
+        "lápiz",
+        "lápices",
+        "lápizs"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Los reptiles son animales de sangre caliente.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuántos lados tiene un dodecágono?",
+      "answers": [
+        "12"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+      "answers": [
+        "373 K"
+      ],
+      "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "La suma de los ángulos internos de un triángulo es:",
+      "answers": [
+        "180°"
+      ],
+      "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la unidad de la resistencia eléctrica?",
+      "answers": [
+        "Amperio"
+      ],
+      "options": [
+        "Voltio",
+        "Ohmio",
+        "Vatio",
+        "Amperio"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el hueso del muslo?",
+      "answers": [
+        "Fémur"
+      ]
+    }
+  ]
+}

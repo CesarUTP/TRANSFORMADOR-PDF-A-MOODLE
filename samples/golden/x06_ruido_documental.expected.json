@@ -1,0 +1,530 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x06_ruido_documental.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "focus": "Ruido documental",
+  "notes": "48 preguntas con encabezado y pie en cada página, marca de agua 'BORRADOR' girada, lista de instrucciones numerada (parece preguntas), puntajes '(2 pts)' en cada enunciado, pasaje de lectura con 4 preguntas dependientes, código ilustrativo suelto, recuadro de borrador y salto de página en medio de una pregunta.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Qué vitamina se sintetiza en la piel con la luz solar?",
+      "answers": [
+        "Vitamina A"
+      ],
+      "options": [
+        "Vitamina K",
+        "Vitamina A",
+        "Vitamina D",
+        "Vitamina C"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué elemento es el más abundante en el universo?",
+      "answers": [
+        "Hidrógeno"
+      ],
+      "options": [
+        "Helio",
+        "Oxígeno",
+        "Hidrógeno",
+        "Carbono"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué operador de Python realiza la división entera?",
+      "answers": [
+        "//"
+      ],
+      "options": [
+        "**",
+        "/",
+        "//",
+        "%"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el área de un círculo de radio 3 (en función de pi)?",
+      "answers": [
+        "12 pi"
+      ],
+      "options": [
+        "6 pi",
+        "9 pi",
+        "3 pi",
+        "12 pi"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Quién compuso la Novena Sinfonía?",
+      "answers": [
+        "Beethoven"
+      ],
+      "options": [
+        "Chopin",
+        "Beethoven",
+        "Bach",
+        "Mozart"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de estos números es primo?",
+      "answers": [
+        "33"
+      ],
+      "options": [
+        "21",
+        "27",
+        "29",
+        "33"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Si f(x) = 3x + 2, ¿cuánto vale f(4)?",
+      "answers": [
+        "14"
+      ],
+      "options": [
+        "12",
+        "14",
+        "16",
+        "10"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿En qué año se firmó la Declaración de Independencia de los Estados Unidos?",
+      "answers": [
+        "1776"
+      ],
+      "options": [
+        "1776",
+        "1789",
+        "1812",
+        "1492"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Quién pintó La noche estrellada?",
+      "answers": [
+        "Claude Monet"
+      ],
+      "options": [
+        "Claude Monet",
+        "Salvador Dalí",
+        "Pablo Picasso",
+        "Vincent van Gogh"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "La suma de los ángulos internos de un triángulo es:",
+      "answers": [
+        "270°"
+      ],
+      "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué algoritmo de ordenamiento tiene complejidad promedio O(n log n)?",
+      "answers": [
+        "Quicksort"
+      ],
+      "options": [
+        "Quicksort",
+        "Inserción",
+        "Burbuja",
+        "Selección"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es una clave primaria en una base de datos relacional?",
+      "answers": [
+        "Una copia de seguridad"
+      ],
+      "options": [
+        "Un índice de texto completo",
+        "Una contraseña del administrador",
+        "Una copia de seguridad",
+        "Un campo que identifica de forma única cada registro"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es la mitosis?",
+      "answers": [
+        "Muerte celular programada"
+      ],
+      "options": [
+        "Muerte celular programada",
+        "División celular que produce dos células idénticas",
+        "Formación de gametos",
+        "Fusión de dos células"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+      "answers": [
+        "373 K"
+      ],
+      "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué comando de SQL elimina las filas que cumplen una condición?",
+      "answers": [
+        "DELETE"
+      ],
+      "options": [
+        "REMOVE",
+        "ERASE",
+        "DROP",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el país más poblado de Sudamérica?",
+      "answers": [
+        "Brasil"
+      ],
+      "options": [
+        "Colombia",
+        "Perú",
+        "Argentina",
+        "Brasil"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Según el texto, ¿en qué país se encuentra actualmente Tikal?",
+      "answers": [
+        "Guatemala"
+      ],
+      "options": [
+        "México",
+        "Guatemala",
+        "Honduras",
+        "Belice"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Según el texto, ¿qué función tenían los templos piramidales?",
+      "answers": [
+        "Realizar ceremonias religiosas y honrar a los gobernantes"
+      ],
+      "options": [
+        "Almacenar alimentos",
+        "Servir como fortalezas militares",
+        "Realizar ceremonias religiosas y honrar a los gobernantes",
+        "Observar el clima"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "De acuerdo con el texto, ¿entre qué siglos alcanzó Tikal su máximo esplendor?",
+      "answers": [
+        "Entre los siglos III y IX"
+      ],
+      "options": [
+        "Entre los siglos I y III",
+        "Entre los siglos III y IX",
+        "Entre los siglos IX y XV",
+        "Entre los siglos XV y XVIII"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Según el texto, ¿cuál se considera una causa del colapso de la ciudad?",
+      "answers": [
+        "Un terremoto único"
+      ],
+      "options": [
+        "Un terremoto único",
+        "La llegada de los conquistadores en el año 900",
+        "Una combinación de sequías, guerras y agotamiento de recursos",
+        "Una epidemia de origen desconocido"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué mide un sismógrafo?",
+      "answers": [
+        "Las vibraciones del suelo"
+      ],
+      "options": [
+        "La humedad",
+        "La presión atmosférica",
+        "Las vibraciones del suelo",
+        "La radiación solar"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es el ADN?",
+      "answers": [
+        "Una hormona"
+      ],
+      "options": [
+        "Ácido desoxirribonucleico, portador de la información genética",
+        "Un tipo de azúcar",
+        "Una hormona",
+        "Una proteína estructural"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+      "answers": [
+        "Everest"
+      ],
+      "options": [
+        "K2",
+        "Everest",
+        "Aconcagua",
+        "Kilimanjaro"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué tipo de roca se forma por enfriamiento del magma?",
+      "answers": [
+        "Ígnea"
+      ],
+      "options": [
+        "Ígnea",
+        "Metamórfica",
+        "Sedimentaria",
+        "Detrítica"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuántos cromosomas tiene una célula humana somática normal?",
+      "answers": [
+        "44"
+      ],
+      "options": [
+        "23",
+        "44",
+        "46",
+        "48"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es el kernel de un sistema operativo?",
+      "answers": [
+        "El núcleo que gestiona los recursos del hardware"
+      ],
+      "options": [
+        "Un navegador",
+        "El núcleo que gestiona los recursos del hardware",
+        "Un editor de texto",
+        "Un antivirus"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Quién fue el primer presidente de los Estados Unidos?",
+      "answers": [
+        "Abraham Lincoln"
+      ],
+      "options": [
+        "George Washington",
+        "Abraham Lincoln",
+        "Thomas Jefferson",
+        "John Adams"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la capital de Canadá?",
+      "answers": [
+        "Ottawa"
+      ],
+      "options": [
+        "Montreal",
+        "Toronto",
+        "Ottawa",
+        "Vancouver"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+      "answers": [
+        "3"
+      ],
+      "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+      "answers": [
+        "473 K"
+      ],
+      "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de estos números es primo?",
+      "answers": [
+        "29"
+      ],
+      "options": [
+        "21",
+        "27",
+        "29",
+        "33"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "La fotosíntesis ocurre principalmente en los:",
+      "answers": [
+        "cloroplastos"
+      ],
+      "options": [
+        "vacuolas",
+        "cloroplastos",
+        "ribosomas",
+        "centriolos"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Júpiter es el planeta más cercano al Sol.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La Tierra tarda unos 365 días en orbitar el Sol.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La Primera Guerra Mundial comenzó en 1914.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Un ángulo de 90 grados se llama agudo.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "SQL se usa para consultar bases de datos relacionales.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El punto de congelación del agua es 100 °C.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el lenguaje que estructura las páginas web?",
+      "answers": [
+        "HTML"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cuál es la unidad de la fuerza en el Sistema Internacional?",
+      "answers": [
+        "Newton"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el proceso por el cual las plantas producen su alimento con luz?",
+      "answers": [
+        "Fotosíntesis"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+      "answers": [
+        "Oxígeno"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuánto es 15 × 14?",
+      "answers": [
+        "210"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuál es el resultado de 2 elevado a la 10?",
+      "answers": [
+        "1024"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuántos segundos hay en 5 minutos?",
+      "answers": [
+        "300"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Explica el concepto de oferta y demanda con un ejemplo cotidiano."
+    },
+    {
+      "type": "essay",
+      "stem": "Comenta las consecuencias económicas de una inflación sostenida."
+    },
+    {
+      "type": "essay",
+      "stem": "Desarrolla una opinión fundamentada sobre el impacto de las redes sociales en los adolescentes."
+    }
+  ]
+}

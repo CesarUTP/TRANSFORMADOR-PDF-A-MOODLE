@@ -1,0 +1,606 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x02_opciones_heterogeneas.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "focus": "Formatos de opciones",
+  "notes": "45 preguntas donde cada una usa un estilo de rótulo distinto (A) a. (a) i. 1- • [ ] - sin rótulo), hasta 6 opciones, 'Todas/Ninguna de las anteriores', opciones que son un símbolo (**, !=, %), opciones de varias líneas y 10 de respuesta múltiple. Respuestas solo en rojo.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Qué símbolo se usa para acceder a un elemento por índice en Python?",
+      "answers": [
+        "[ ]"
+      ],
+      "options": [
+        "( )",
+        "{ }",
+        "[ ]",
+        "< >",
+        "No se puede determinar"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué operador compara si dos valores son distintos?",
+      "answers": [
+        "!="
+      ],
+      "options": [
+        "==",
+        "!=",
+        "=",
+        ">="
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué operador lógico significa «y» en Python?",
+      "answers": [
+        "and"
+      ],
+      "options": [
+        "and",
+        "or",
+        "not",
+        "xor"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué tipo de texto tiene como finalidad convencer al lector?",
+      "answers": [
+        "Argumentativo"
+      ],
+      "options": [
+        "Narrativo",
+        "Argumentativo",
+        "Descriptivo",
+        "Instructivo"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el resultado de 10 // 3 en Python?",
+      "answers": [
+        "3"
+      ],
+      "options": [
+        "3",
+        "3,33",
+        "1",
+        "4",
+        "Todas las anteriores"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es una clave primaria en una base de datos relacional?",
+      "answers": [
+        "Un campo que identifica de forma única cada registro"
+      ],
+      "options": [
+        "Un índice de texto completo",
+        "Un campo que identifica de forma única cada registro",
+        "Una contraseña del administrador",
+        "Una copia de seguridad"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué operador devuelve el residuo de una división?",
+      "answers": [
+        "%"
+      ],
+      "options": [
+        "/",
+        "%",
+        "//",
+        "^"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué tipo de enlace comparte electrones entre átomos?",
+      "answers": [
+        "Covalente"
+      ],
+      "options": [
+        "Covalente",
+        "De hidrógeno",
+        "Metálico",
+        "Iónico"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estos son tipos de datos primitivos en Java?",
+      "answers": [
+        "double",
+        "boolean",
+        "int"
+      ],
+      "options": [
+        "double",
+        "List",
+        "String",
+        "boolean",
+        "int",
+        "Ninguna de las anteriores"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estos son métodos HTTP?",
+      "answers": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "options": [
+        "GET",
+        "PUSH",
+        "FETCH",
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué corriente artística pintó relojes derretidos?",
+      "answers": [
+        "Surrealismo"
+      ],
+      "options": [
+        "Impresionismo",
+        "Barroco",
+        "Surrealismo",
+        "Cubismo"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cómo se llama la línea imaginaria que divide la Tierra en hemisferio norte y sur?",
+      "answers": [
+        "Trópico de Cáncer"
+      ],
+      "options": [
+        "Ecuador",
+        "Meridiano de Greenwich",
+        "Trópico de Cáncer",
+        "Círculo polar"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estos animales son mamíferos?",
+      "answers": [
+        "Ballena",
+        "Delfín",
+        "Murciélago"
+      ],
+      "options": [
+        "Tiburón",
+        "Ballena",
+        "Pingüino",
+        "Delfín",
+        "Murciélago"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es el ADN?",
+      "answers": [
+        "Ácido desoxirribonucleico, portador de la información genética"
+      ],
+      "options": [
+        "Una proteína estructural",
+        "Una hormona",
+        "Ácido desoxirribonucleico, portador de la información genética",
+        "Un tipo de azúcar"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El español es el idioma oficial de Brasil.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Quién escribió Cien años de soledad?",
+      "answers": [
+        "Julio Cortázar"
+      ],
+      "options": [
+        "Gabriel García Márquez",
+        "Julio Cortázar",
+        "Mario Vargas Llosa",
+        "Jorge Luis Borges"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es un adjetivo?",
+      "answers": [
+        "Una palabra que expresa acción"
+      ],
+      "options": [
+        "Una palabra que enlaza oraciones",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que expresa acción",
+        "Una palabra que modifica al sustantivo",
+        "No se puede determinar"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Elige los escritores latinoamericanos:",
+      "answers": [
+        "Gabriela Mistral",
+        "Pablo Neruda"
+      ],
+      "options": [
+        "Gabriela Mistral",
+        "Pablo Neruda",
+        "Miguel de Cervantes",
+        "William Shakespeare"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Marca las afirmaciones correctas sobre la fotosíntesis:",
+      "answers": [
+        "Consume dióxido de carbono",
+        "Produce oxígeno",
+        "Usa luz solar"
+      ],
+      "options": [
+        "Ocurre en las mitocondrias",
+        "Consume dióxido de carbono",
+        "Produce oxígeno",
+        "Usa luz solar",
+        "Ninguna de las anteriores"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué significa la sigla SQL?",
+      "answers": [
+        "Structured Query Language"
+      ],
+      "options": [
+        "Standard Quick Language",
+        "Simple Question List",
+        "System Query Logic",
+        "Structured Query Language"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿En qué año cayó el Muro de Berlín?",
+      "answers": [
+        "1989"
+      ],
+      "options": [
+        "1985",
+        "1989",
+        "1991",
+        "1993",
+        "Ninguna de las anteriores"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "SQL se usa para consultar bases de datos relacionales.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Quién fue el primer presidente de los Estados Unidos?",
+      "answers": [
+        "George Washington"
+      ],
+      "options": [
+        "Thomas Jefferson",
+        "John Adams",
+        "George Washington",
+        "Abraham Lincoln",
+        "Todas las anteriores"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es el PIB?",
+      "answers": [
+        "El valor total de los bienes y servicios producidos en un país en un periodo"
+      ],
+      "options": [
+        "El valor total de los bienes y servicios producidos en un país en un periodo",
+        "La deuda externa de un país",
+        "El número de empleados de un país",
+        "El total de impuestos recaudados",
+        "Todas las anteriores"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Selecciona los colores primarios en pigmento (modelo tradicional):",
+      "answers": [
+        "Rojo",
+        "Azul",
+        "Amarillo"
+      ],
+      "options": [
+        "Rojo",
+        "Azul",
+        "Amarillo",
+        "Verde"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+      "answers": [
+        "3"
+      ],
+      "options": [
+        "2",
+        "3",
+        "4",
+        "Error",
+        "Todas las anteriores"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La Gran Muralla China es visible a simple vista desde el espacio.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el país más poblado de Sudamérica?",
+      "answers": [
+        "Brasil"
+      ],
+      "options": [
+        "Perú",
+        "Brasil",
+        "Colombia",
+        "Argentina",
+        "No se puede determinar"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué isla es la más grande del mundo?",
+      "answers": [
+        "Groenlandia"
+      ],
+      "options": [
+        "Nueva Guinea",
+        "Groenlandia",
+        "Borneo",
+        "Madagascar"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué operador de Python eleva un número a una potencia?",
+      "answers": [
+        "**"
+      ],
+      "options": [
+        "+",
+        "-",
+        "**",
+        "//",
+        "No se puede determinar"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Los delfines son peces.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El punto de congelación del agua es 100 °C.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es el kernel de un sistema operativo?",
+      "answers": [
+        "El núcleo que gestiona los recursos del hardware"
+      ],
+      "options": [
+        "El núcleo que gestiona los recursos del hardware",
+        "Un antivirus",
+        "Un navegador",
+        "Un editor de texto"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el plural de «lápiz»?",
+      "answers": [
+        "lápices"
+      ],
+      "options": [
+        "lápizes",
+        "lápices",
+        "lápizs",
+        "lápiz",
+        "No se puede determinar"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Selecciona los lenguajes de programación:",
+      "answers": [
+        "Go",
+        "Python",
+        "Java"
+      ],
+      "options": [
+        "HTML",
+        "Go",
+        "CSS",
+        "Python",
+        "Java"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estos países están en Sudamérica?",
+      "answers": [
+        "Paraguay",
+        "Bolivia",
+        "Uruguay"
+      ],
+      "options": [
+        "Paraguay",
+        "Cuba",
+        "Bolivia",
+        "Uruguay",
+        "Guatemala"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es la inflación?",
+      "answers": [
+        "Aumento generalizado y sostenido de los precios"
+      ],
+      "options": [
+        "Caída del tipo de cambio únicamente",
+        "Aumento generalizado y sostenido de los precios",
+        "Disminución del desempleo",
+        "Aumento de las exportaciones"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles son ejemplos de energías renovables?",
+      "answers": [
+        "Hidráulica",
+        "Solar",
+        "Eólica"
+      ],
+      "options": [
+        "Hidráulica",
+        "Solar",
+        "Petróleo",
+        "Eólica",
+        "Carbón",
+        "No se puede determinar"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estas figuras tienen cuatro lados?",
+      "answers": [
+        "Rombo",
+        "Cuadrado"
+      ],
+      "options": [
+        "Rombo",
+        "Triángulo",
+        "Cuadrado",
+        "Pentágono",
+        "Ninguna de las anteriores"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es la mitosis?",
+      "answers": [
+        "División celular que produce dos células idénticas"
+      ],
+      "options": [
+        "Formación de gametos",
+        "Fusión de dos células",
+        "Muerte celular programada",
+        "División celular que produce dos células idénticas",
+        "Ninguna de las anteriores"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué figura literaria compara dos elementos usando «como»?",
+      "answers": [
+        "Símil"
+      ],
+      "options": [
+        "Símil",
+        "Hipérbole",
+        "Ironía",
+        "Metáfora",
+        "Todas las anteriores"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué galaxia contiene a nuestro sistema solar?",
+      "answers": [
+        "Vía Láctea"
+      ],
+      "options": [
+        "Triángulo",
+        "Sombrero",
+        "Vía Láctea",
+        "Andrómeda"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿En qué año se firmó la Declaración de Independencia de los Estados Unidos?",
+      "answers": [
+        "1776"
+      ],
+      "options": [
+        "1776",
+        "1789",
+        "1812",
+        "1492"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué mide un sismógrafo?",
+      "answers": [
+        "Las vibraciones del suelo"
+      ],
+      "options": [
+        "La presión atmosférica",
+        "La radiación solar",
+        "La humedad",
+        "Las vibraciones del suelo"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estructura de datos funciona con el principio LIFO?",
+      "answers": [
+        "Pila"
+      ],
+      "options": [
+        "Grafo",
+        "Cola",
+        "Pila",
+        "Árbol"
+      ]
+    }
+  ]
+}

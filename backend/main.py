@@ -198,14 +198,16 @@ class GenerateXmlRequest(BaseModel):
     questions: List[Dict[str, Any]]
     answer_key: Dict[str, Any]
 
-@app.post("/api/generate_xml")
-async def api_generate_xml(req: GenerateXmlRequest):
-    # Convert string keys back to int for answer_key
-    try:
-        parsed_answer_key = {int(k): v for k, v in req.answer_key.items()}
-    except ValueError:
-        raise HTTPException(status_code=422, detail="Las claves de answer_key deben ser enteros.")
-
+def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any]):
+    """
+    Todo el trabajo síncrono de /api/generate_xml (validar, construir el
+    XML, parsearlo de vuelta para chequear que quedó bien formado, guardar
+    en el historial). Corre en threadpool — igual que parse_document en
+    /api/parse — para no bloquear el event loop de FastAPI: con un examen
+    grande (150 preguntas) este trabajo, hecho directo en la corrutina,
+    retrasaba los eventos NDJSON de OTRAS conversiones en curso en
+    /api/parse_stream.
+    """
     # ── 6.5 Re-validate: el usuario pudo editar libremente en el navegador,
     # así que no podemos confiar en que los datos que llegan aquí sigan
     # cumpliendo el spec Moodle (p. ej. un emparejamiento sin pares, o una
@@ -240,6 +242,18 @@ async def api_generate_xml(req: GenerateXmlRequest):
 
     # ── 8.5 Guardar en historial ─────────────────────────────────────────
     save_conversion(req.filename, req.category, req.total_points, xml_content)
+    return xml_content, stats, grades
+
+
+@app.post("/api/generate_xml")
+async def api_generate_xml(req: GenerateXmlRequest):
+    # Convert string keys back to int for answer_key
+    try:
+        parsed_answer_key = {int(k): v for k, v in req.answer_key.items()}
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Las claves de answer_key deben ser enteros.")
+
+    xml_content, stats, grades = await run_in_threadpool(_generate_xml_sync, req, parsed_answer_key)
 
     # ── 9. Return as downloadable file ──────────────────────────────────
     stem = Path(req.filename).stem

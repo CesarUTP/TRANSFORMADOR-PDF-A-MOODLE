@@ -3,7 +3,7 @@
  * para no escribir la sintaxis de corchetes a mano.
  */
 import { showToast } from '../ui/toast.js';
-import { esc_html } from '../util.js';
+import { esc_html, findClozeBrackets, splitAnswers, splitOptions } from '../util.js';
 
 // Convierte el texto crudo "[A: opt1 / opt2]" (+ la respuesta guardada
 // en la clave) en una lista ordenada de segmentos {type:'text', value}
@@ -16,18 +16,17 @@ export function parseClozeSegments(text, keyAnswer) {
     const keySlotRegex = /([A-Za-z])[\.:]\s*([^;\n]+)/g;
     let km;
     while ((km = keySlotRegex.exec(keyAnswer)) !== null) {
-      const parts = km[2].split('|').map(s => s.trim()).filter(Boolean);
+      const parts = splitAnswers(km[2]);
       if (parts.length) keyMap[km[1].toUpperCase()] = parts;
     }
   }
 
   const segments = [];
-  const bracketRegex = /\[([A-Za-z]):\s*([^\]]+)\]/g;
-  let last = 0, match;
-  while ((match = bracketRegex.exec(text || '')) !== null) {
-    if (match.index > last) segments.push({ type: 'text', value: text.slice(last, match.index) });
-    const letter = match[1].toUpperCase();
-    const options = match[2].split('/').map(s => s.trim()).filter(Boolean);
+  let last = 0;
+  findClozeBrackets(text).forEach(({ start, end, letter: rawLetter, optionsRaw }) => {
+    if (start > last) segments.push({ type: 'text', value: text.slice(last, start) });
+    const letter = rawLetter.toUpperCase();
+    const options = splitOptions(optionsRaw);
     if (options.length === 0) options.push('', '');
 
     const wantedList = keyMap[letter] || [];
@@ -38,8 +37,8 @@ export function parseClozeSegments(text, keyAnswer) {
     });
     if (correctIndices.length === 0) correctIndices = [0];
     segments.push({ type: 'blank', options, correctIndices, multi: correctIndices.length > 1 });
-    last = bracketRegex.lastIndex;
-  }
+    last = end;
+  });
   if (last < (text || '').length || segments.length === 0) {
     segments.push({ type: 'text', value: (text || '').slice(last) });
   }

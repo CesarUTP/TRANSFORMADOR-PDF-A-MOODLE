@@ -1,0 +1,353 @@
+{
+ "x01": {
+  "n": 40,
+  "ok": 40,
+  "acentos": 0,
+  "fallos": [],
+  "omitidas_ok": 0,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "multichoice": [
+    24,
+    24
+   ],
+   "truefalse": [
+    8,
+    8
+   ],
+   "essay": [
+    4,
+    4
+   ],
+   "shortanswer": [
+    4,
+    4
+   ]
+  }
+ },
+ "x02": {
+  "n": 45,
+  "ok": 45,
+  "acentos": 0,
+  "fallos": [],
+  "omitidas_ok": 0,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "multichoice": [
+    40,
+    40
+   ],
+   "truefalse": [
+    5,
+    5
+   ]
+  }
+ },
+ "x03": {
+  "n": 40,
+  "ok": 40,
+  "acentos": 4,
+  "fallos": [],
+  "omitidas_ok": 0,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "multichoice": [
+    18,
+    18
+   ],
+   "numerical": [
+    3,
+    3
+   ],
+   "shortanswer": [
+    3,
+    3
+   ],
+   "matching": [
+    4,
+    4
+   ],
+   "truefalse": [
+    6,
+    6
+   ],
+   "cloze": [
+    4,
+    4
+   ],
+   "essay": [
+    2,
+    2
+   ]
+  }
+ },
+ "x04": {
+  "n": 40,
+  "ok": 40,
+  "acentos": 0,
+  "fallos": [],
+  "omitidas_ok": 3,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "multichoice": [
+    29,
+    29
+   ],
+   "truefalse": [
+    7,
+    7
+   ],
+   "shortanswer": [
+    4,
+    4
+   ]
+  }
+ },
+ "x05": {
+  "n": 40,
+  "ok": 40,
+  "acentos": 0,
+  "fallos": [],
+  "omitidas_ok": 0,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "multichoice": [
+    26,
+    26
+   ],
+   "shortanswer": [
+    3,
+    3
+   ],
+   "truefalse": [
+    8,
+    8
+   ],
+   "numerical": [
+    3,
+    3
+   ]
+  }
+ },
+ "x06": {
+  "n": 48,
+  "ok": 48,
+  "acentos": 0,
+  "fallos": [],
+  "omitidas_ok": 0,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "multichoice": [
+    32,
+    32
+   ],
+   "truefalse": [
+    6,
+    6
+   ],
+   "shortanswer": [
+    4,
+    4
+   ],
+   "numerical": [
+    3,
+    3
+   ],
+   "essay": [
+    3,
+    3
+   ]
+  }
+ },
+ "x07": {
+  "n": 50,
+  "ok": 50,
+  "acentos": 0,
+  "fallos": [],
+  "omitidas_ok": 0,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "truefalse": [
+    10,
+    10
+   ],
+   "shortanswer": [
+    14,
+    14
+   ],
+   "essay": [
+    12,
+    12
+   ],
+   "numerical": [
+    14,
+    14
+   ]
+  }
+ },
+ "x08": {
+  "n": 36,
+  "ok": 36,
+  "acentos": 0,
+  "fallos": [],
+  "omitidas_ok": 0,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "multichoice": [
+    20,
+    20
+   ],
+   "truefalse": [
+    6,
+    6
+   ],
+   "shortanswer": [
+    2,
+    2
+   ],
+   "cloze": [
+    6,
+    6
+   ],
+   "numerical": [
+    2,
+    2
+   ]
+  }
+ },
+ "x09": {
+  "n": 36,
+  "ok": 36,
+  "acentos": 9,
+  "fallos": [],
+  "omitidas_ok": 0,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "multichoice": [
+    6,
+    6
+   ],
+   "matching": [
+    12,
+    12
+   ],
+   "truefalse": [
+    4,
+    4
+   ],
+   "cloze": [
+    14,
+    14
+   ]
+  }
+ },
+ "x10": {
+  "n": 32,
+  "ok": 32,
+  "acentos": 0,
+  "fallos": [],
+  "omitidas_ok": 0,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "multichoice": [
+    26,
+    26
+   ],
+   "truefalse": [
+    6,
+    6
+   ]
+  }
+ },
+ "x11": {
+  "n": 30,
+  "ok": 30,
+  "acentos": 0,
+  "fallos": [],
+  "omitidas_ok": 0,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "multichoice": [
+    22,
+    22
+   ],
+   "truefalse": [
+    8,
+    8
+   ]
+  }
+ },
+ "x12": {
+  "n": 40,
+  "ok": 40,
+  "acentos": 2,
+  "fallos": [],
+  "omitidas_ok": 20,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "shortanswer": [
+    4,
+    4
+   ],
+   "multichoice": [
+    14,
+    14
+   ],
+   "numerical": [
+    4,
+    4
+   ],
+   "matching": [
+    4,
+    4
+   ],
+   "truefalse": [
+    6,
+    6
+   ],
+   "cloze": [
+    4,
+    4
+   ],
+   "essay": [
+    4,
+    4
+   ]
+  }
+ },
+ "x13": {
+  "n": 40,
+  "ok": 40,
+  "acentos": 0,
+  "fallos": [],
+  "omitidas_ok": 2,
+  "inventadas": [],
+  "omitidas_mal": [],
+  "por_tipo": {
+   "multichoice": [
+    30,
+    30
+   ],
+   "shortanswer": [
+    4,
+    4
+   ],
+   "truefalse": [
+    6,
+    6
+   ]
+  }
+ }
+}

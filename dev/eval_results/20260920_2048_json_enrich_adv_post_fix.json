@@ -1,0 +1,7376 @@
+{
+ "mode": "json",
+ "enrich": true,
+ "runs": 3,
+ "date": "2026-09-20T20:48:56",
+ "docs": {
+  "x01_numeracion_caotica": {
+   "summary": {
+    "doc": "x01_numeracion_caotica",
+    "runs": 3,
+    "esperadas": 40,
+    "exactitud": 1.0,
+    "exactitud_min": 1.0,
+    "exactitud_max": 1.0,
+    "completas": 40,
+    "completas_min": 40,
+    "completas_max": 40,
+    "encontradas": 40,
+    "encontradas_min": 40,
+    "encontradas_max": 40,
+    "utilizables": 40,
+    "utilizables_min": 40,
+    "utilizables_max": 40,
+    "tipo_ok": 40,
+    "tipo_ok_min": 40,
+    "tipo_ok_max": 40,
+    "enunciado_ok": 40,
+    "enunciado_ok_min": 40,
+    "enunciado_ok_max": 40,
+    "respuesta_ok": 40,
+    "respuesta_ok_min": 40,
+    "respuesta_ok_max": 40,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 0,
+    "omitidas_min": 0,
+    "omitidas_max": 0,
+    "seconds": 17.967,
+    "seconds_min": 17.5,
+    "seconds_max": 18.4,
+    "prompt_tokens": 5784,
+    "prompt_tokens_min": 5784,
+    "prompt_tokens_max": 5784,
+    "output_tokens": 6952.333,
+    "output_tokens_min": 6922,
+    "output_tokens_max": 7013,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 17.5,
+     "prompt_tokens": 5784,
+     "output_tokens": 6922,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [],
+     "encontradas": 40,
+     "utilizables": 40,
+     "tipo_ok": 40,
+     "enunciado_ok": 40,
+     "respuesta_ok": 40,
+     "inventadas": 0,
+     "completas": 40,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+       "options": [
+        "Gregor Mendel",
+        "Alexander Fleming",
+        "Louis Pasteur",
+        "Charles Darwin"
+       ],
+       "answers": [
+        "Gregor Mendel"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El código binario usa únicamente los dígitos 0 y 1.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el pH de una solución neutra a 25 °C?",
+       "options": [
+        "0",
+        "7",
+        "10",
+        "14"
+       ],
+       "answers": [
+        "7"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El Sol es una estrella.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el mínimo común múltiplo de 4 y 6?",
+       "options": [
+        "6",
+        "12",
+        "18",
+        "24"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe cómo funciona el protocolo HTTP en una petición típica."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tipo de enlace comparte electrones entre átomos?",
+       "options": [
+        "Iónico",
+        "Covalente",
+        "De hidrógeno",
+        "Metálico"
+       ],
+       "answers": [
+        "De hidrógeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Quién pintó La noche estrellada?",
+       "options": [
+        "Salvador Dalí",
+        "Pablo Picasso",
+        "Claude Monet",
+        "Vincent van Gogh"
+       ],
+       "answers": [
+        "Vincent van Gogh"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El español es el idioma oficial de Brasil.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estructura de la célula vegetal no existe en la célula animal?",
+       "options": [
+        "Núcleo",
+        "Pared celular",
+        "Citoplasma",
+        "Membrana plasmática"
+       ],
+       "answers": [
+        "Pared celular"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué continente se encuentra Mongolia?",
+       "options": [
+        "Asia",
+        "África",
+        "Oceanía",
+        "Europa"
+       ],
+       "answers": [
+        "Asia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cuál es la capital de Argentina?",
+       "answers": [
+        "Buenos Aires"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La fotosíntesis ocurre principalmente en los:",
+       "options": [
+        "cloroplastos",
+        "vacuolas",
+        "centriolos",
+        "ribosomas"
+       ],
+       "answers": [
+        "cloroplastos"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Explica qué es la normalización en bases de datos y por qué es útil."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un monopolio?",
+       "options": [
+        "Mercado regulado por sus consumidores",
+        "Mercado sin compradores",
+        "Mercado con muchos vendedores",
+        "Mercado con un único vendedor"
+       ],
+       "answers": [
+        "Mercado con un único vendedor"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el proceso por el cual las plantas producen su alimento con luz?",
+       "answers": [
+        "Fotosíntesis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+       "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+       ],
+       "answers": [
+        "3"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La fracción 3/6 es equivalente a 1/2.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué planeta tiene los anillos más visibles?",
+       "options": [
+        "Urano",
+        "Júpiter",
+        "Neptuno",
+        "Saturno"
+       ],
+       "answers": [
+        "Urano"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el río más caudaloso del mundo?",
+       "options": [
+        "Misisipi",
+        "Nilo",
+        "Amazonas",
+        "Yangtsé"
+       ],
+       "answers": [
+        "Amazonas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué país fue gobernado por los faraones?",
+       "options": [
+        "Mesopotamia",
+        "Persia",
+        "Egipto",
+        "Fenicia"
+       ],
+       "answers": [
+        "Egipto"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es el ADN?",
+       "options": [
+        "Una hormona",
+        "Una proteína estructural",
+        "Un tipo de azúcar",
+        "Ácido desoxirribonucleico, portador de la información genética"
+       ],
+       "answers": [
+        "Ácido desoxirribonucleico, portador de la información genética"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe el ciclo del agua y su importancia para los ecosistemas."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué civilización construyó Machu Picchu?",
+       "options": [
+        "Olmeca",
+        "Azteca",
+        "Maya",
+        "Inca"
+       ],
+       "answers": [
+        "Maya"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama la estructura de datos que sigue el principio FIFO?",
+       "answers": [
+        "Cola"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son tipos de datos primitivos en Java? (marca todas las correctas)",
+       "options": [
+        "double",
+        "List",
+        "int",
+        "boolean",
+        "String"
+       ],
+       "answers": [
+        "double",
+        "int",
+        "boolean"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el área de un círculo de radio 3 (en función de pi)?",
+       "options": [
+        "6 pi",
+        "9 pi",
+        "3 pi"
+       ],
+       "answers": [
+        "3 pi"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+       "answers": [
+        "Oxígeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El punto de congelación del agua es 100 °C.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos cromosomas tiene una célula humana somática normal?",
+       "options": [
+        "23",
+        "44",
+        "46",
+        "48"
+       ],
+       "answers": [
+        "48"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+       "options": [
+        "Aconcagua",
+        "Everest",
+        "K2",
+        "Kilimanjaro"
+       ],
+       "answers": [
+        "Everest"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+       "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+       ],
+       "answers": [
+        "323 K"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe las fases de la mitosis."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué corriente artística pintó relojes derretidos?",
+       "options": [
+        "Impresionismo",
+        "Cubismo",
+        "Surrealismo",
+        "Barroco"
+       ],
+       "answers": [
+        "Surrealismo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Los delfines son peces.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La raíz cuadrada de 49 es 6.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "SQL se usa para consultar bases de datos relacionales.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué elemento es el más abundante en el universo?",
+       "options": [
+        "Oxígeno",
+        "Helio",
+        "Hidrógeno",
+        "Carbono"
+       ],
+       "answers": [
+        "Hidrógeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Selecciona los lenguajes de programación: (marca todas las correctas)",
+       "options": [
+        "Java",
+        "CSS",
+        "Python",
+        "HTML",
+        "Go"
+       ],
+       "answers": [
+        "Java",
+        "Python",
+        "Go"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 18.0,
+     "prompt_tokens": 5784,
+     "output_tokens": 7013,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [],
+     "encontradas": 40,
+     "utilizables": 40,
+     "tipo_ok": 40,
+     "enunciado_ok": 40,
+     "respuesta_ok": 40,
+     "inventadas": 0,
+     "completas": 40,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+       "options": [
+        "Gregor Mendel",
+        "Alexander Fleming",
+        "Louis Pasteur",
+        "Charles Darwin"
+       ],
+       "answers": [
+        "Gregor Mendel"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El código binario usa únicamente los dígitos 0 y 1.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el pH de una solución neutra a 25 °C?",
+       "options": [
+        "0",
+        "7",
+        "10",
+        "14"
+       ],
+       "answers": [
+        "7"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El Sol es una estrella.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el mínimo común múltiplo de 4 y 6?",
+       "options": [
+        "6",
+        "12",
+        "18",
+        "24"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe cómo funciona el protocolo HTTP en una petición típica."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tipo de enlace comparte electrones entre átomos?",
+       "options": [
+        "Iónico",
+        "Covalente",
+        "De hidrógeno",
+        "Metálico"
+       ],
+       "answers": [
+        "De hidrógeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Quién pintó La noche estrellada?",
+       "options": [
+        "Salvador Dalí",
+        "Pablo Picasso",
+        "Claude Monet",
+        "Vincent van Gogh"
+       ],
+       "answers": [
+        "Vincent van Gogh"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El español es el idioma oficial de Brasil.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estructura de la célula vegetal no existe en la célula animal?",
+       "options": [
+        "Núcleo",
+        "Pared celular",
+        "Citoplasma",
+        "Membrana plasmática"
+       ],
+       "answers": [
+        "Pared celular"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué continente se encuentra Mongolia?",
+       "options": [
+        "Asia",
+        "África",
+        "Oceanía",
+        "Europa"
+       ],
+       "answers": [
+        "Asia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cuál es la capital de Argentina?",
+       "answers": [
+        "Buenos Aires"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La fotosíntesis ocurre principalmente en los:",
+       "options": [
+        "cloroplastos",
+        "vacuolas",
+        "centriolos",
+        "ribosomas"
+       ],
+       "answers": [
+        "cloroplastos"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Explica qué es la normalización en bases de datos y por qué es útil."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un monopolio?",
+       "options": [
+        "Mercado regulado por sus consumidores",
+        "Mercado sin compradores",
+        "Mercado con muchos vendedores",
+        "Mercado con un único vendedor"
+       ],
+       "answers": [
+        "Mercado con un único vendedor"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el proceso por el cual las plantas producen su alimento con luz?",
+       "answers": [
+        "Fotosíntesis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+       "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+       ],
+       "answers": [
+        "3"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La fracción 3/6 es equivalente a 1/2.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué planeta tiene los anillos más visibles?",
+       "options": [
+        "Urano",
+        "Júpiter",
+        "Neptuno",
+        "Saturno"
+       ],
+       "answers": [
+        "Urano"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el río más caudaloso del mundo?",
+       "options": [
+        "Misisipi",
+        "Nilo",
+        "Amazonas",
+        "Yangtsé"
+       ],
+       "answers": [
+        "Amazonas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué país fue gobernado por los faraones?",
+       "options": [
+        "Mesopotamia",
+        "Persia",
+        "Egipto",
+        "Fenicia"
+       ],
+       "answers": [
+        "Egipto"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es el ADN?",
+       "options": [
+        "Una hormona",
+        "Una proteína estructural",
+        "Un tipo de azúcar",
+        "Ácido desoxirribonucleico, portador de la información genética"
+       ],
+       "answers": [
+        "Ácido desoxirribonucleico, portador de la información genética"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe el ciclo del agua y su importancia para los ecosistemas."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué civilización construyó Machu Picchu?",
+       "options": [
+        "Olmeca",
+        "Azteca",
+        "Maya",
+        "Inca"
+       ],
+       "answers": [
+        "Maya"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama la estructura de datos que sigue el principio FIFO?",
+       "answers": [
+        "Cola"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son tipos de datos primitivos en Java? (marca todas las correctas)",
+       "options": [
+        "double",
+        "List",
+        "int",
+        "boolean",
+        "String"
+       ],
+       "answers": [
+        "double",
+        "int",
+        "boolean"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el área de un círculo de radio 3 (en función de pi)?",
+       "options": [
+        "6 pi",
+        "9 pi",
+        "3 pi",
+        "12 pi"
+       ],
+       "answers": [
+        "3 pi"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+       "answers": [
+        "Oxígeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El punto de congelación del agua es 100 °C.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos cromosomas tiene una célula humana somática normal?",
+       "options": [
+        "23",
+        "44",
+        "46",
+        "48"
+       ],
+       "answers": [
+        "48"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+       "options": [
+        "Aconcagua",
+        "Everest",
+        "K2",
+        "Kilimanjaro"
+       ],
+       "answers": [
+        "Everest"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+       "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+       ],
+       "answers": [
+        "323 K"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe las fases de la mitosis."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué corriente artística pintó relojes derretidos?",
+       "options": [
+        "Impresionismo",
+        "Cubismo",
+        "Surrealismo",
+        "Barroco"
+       ],
+       "answers": [
+        "Surrealismo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Los delfines son peces.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La raíz cuadrada de 49 es 6.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "SQL se usa para consultar bases de datos relacionales.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué elemento es el más abundante en el universo?",
+       "options": [
+        "Oxígeno",
+        "Helio",
+        "Hidrógeno",
+        "Carbono"
+       ],
+       "answers": [
+        "Hidrógeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Selecciona los lenguajes de programación: (marca todas las correctas)",
+       "options": [
+        "Java",
+        "CSS",
+        "Python",
+        "HTML",
+        "Go"
+       ],
+       "answers": [
+        "Java",
+        "Python",
+        "Go"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 18.4,
+     "prompt_tokens": 5784,
+     "output_tokens": 6922,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [],
+     "encontradas": 40,
+     "utilizables": 40,
+     "tipo_ok": 40,
+     "enunciado_ok": 40,
+     "respuesta_ok": 40,
+     "inventadas": 0,
+     "completas": 40,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+       "options": [
+        "Gregor Mendel",
+        "Alexander Fleming",
+        "Louis Pasteur",
+        "Charles Darwin"
+       ],
+       "answers": [
+        "Gregor Mendel"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El código binario usa únicamente los dígitos 0 y 1.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el pH de una solución neutra a 25 °C?",
+       "options": [
+        "0",
+        "7",
+        "10",
+        "14"
+       ],
+       "answers": [
+        "7"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El Sol es una estrella.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el mínimo común múltiplo de 4 y 6?",
+       "options": [
+        "6",
+        "12",
+        "18",
+        "24"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe cómo funciona el protocolo HTTP en una petición típica."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tipo de enlace comparte electrones entre átomos?",
+       "options": [
+        "Iónico",
+        "Covalente",
+        "De hidrógeno",
+        "Metálico"
+       ],
+       "answers": [
+        "De hidrógeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Quién pintó La noche estrellada?",
+       "options": [
+        "Salvador Dalí",
+        "Pablo Picasso",
+        "Claude Monet",
+        "Vincent van Gogh"
+       ],
+       "answers": [
+        "Vincent van Gogh"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El español es el idioma oficial de Brasil.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estructura de la célula vegetal no existe en la célula animal?",
+       "options": [
+        "Núcleo",
+        "Pared celular",
+        "Citoplasma",
+        "Membrana plasmática"
+       ],
+       "answers": [
+        "Pared celular"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué continente se encuentra Mongolia?",
+       "options": [
+        "Asia",
+        "África",
+        "Oceanía",
+        "Europa"
+       ],
+       "answers": [
+        "Asia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cuál es la capital de Argentina?",
+       "answers": [
+        "Buenos Aires"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La fotosíntesis ocurre principalmente en los:",
+       "options": [
+        "cloroplastos",
+        "vacuolas",
+        "centriolos",
+        "ribosomas"
+       ],
+       "answers": [
+        "cloroplastos"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Explica qué es la normalización en bases de datos y por qué es útil."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un monopolio?",
+       "options": [
+        "Mercado regulado por sus consumidores",
+        "Mercado sin compradores",
+        "Mercado con muchos vendedores",
+        "Mercado con un único vendedor"
+       ],
+       "answers": [
+        "Mercado con un único vendedor"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el proceso por el cual las plantas producen su alimento con luz?",
+       "answers": [
+        "Fotosíntesis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+       "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+       ],
+       "answers": [
+        "3"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La fracción 3/6 es equivalente a 1/2.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué planeta tiene los anillos más visibles?",
+       "options": [
+        "Urano",
+        "Júpiter",
+        "Neptuno",
+        "Saturno"
+       ],
+       "answers": [
+        "Urano"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el río más caudaloso del mundo?",
+       "options": [
+        "Misisipi",
+        "Nilo",
+        "Amazonas",
+        "Yangtsé"
+       ],
+       "answers": [
+        "Amazonas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué país fue gobernado por los faraones?",
+       "options": [
+        "Mesopotamia",
+        "Persia",
+        "Egipto",
+        "Fenicia"
+       ],
+       "answers": [
+        "Egipto"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es el ADN?",
+       "options": [
+        "Una hormona",
+        "Una proteína estructural",
+        "Un tipo de azúcar",
+        "Ácido desoxirribonucleico, portador de la información genética"
+       ],
+       "answers": [
+        "Ácido desoxirribonucleico, portador de la información genética"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe el ciclo del agua y su importancia para los ecosistemas."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué civilización construyó Machu Picchu?",
+       "options": [
+        "Olmeca",
+        "Azteca",
+        "Maya",
+        "Inca"
+       ],
+       "answers": [
+        "Maya"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama la estructura de datos que sigue el principio FIFO?",
+       "answers": [
+        "Cola"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son tipos de datos primitivos en Java? (marca todas las correctas)",
+       "options": [
+        "double",
+        "List",
+        "int",
+        "boolean",
+        "String"
+       ],
+       "answers": [
+        "double",
+        "int",
+        "boolean"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el área de un círculo de radio 3 (en función de pi)?",
+       "options": [
+        "6 pi",
+        "9 pi",
+        "3 pi"
+       ],
+       "answers": [
+        "3 pi"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+       "answers": [
+        "Oxígeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El punto de congelación del agua es 100 °C.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos cromosomas tiene una célula humana somática normal?",
+       "options": [
+        "23",
+        "44",
+        "46",
+        "48"
+       ],
+       "answers": [
+        "48"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+       "options": [
+        "Aconcagua",
+        "Everest",
+        "K2",
+        "Kilimanjaro"
+       ],
+       "answers": [
+        "Everest"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+       "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+       ],
+       "answers": [
+        "323 K"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe las fases de la mitosis."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué corriente artística pintó relojes derretidos?",
+       "options": [
+        "Impresionismo",
+        "Cubismo",
+        "Surrealismo",
+        "Barroco"
+       ],
+       "answers": [
+        "Surrealismo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Los delfines son peces.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La raíz cuadrada de 49 es 6.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "SQL se usa para consultar bases de datos relacionales.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué elemento es el más abundante en el universo?",
+       "options": [
+        "Oxígeno",
+        "Helio",
+        "Hidrógeno",
+        "Carbono"
+       ],
+       "answers": [
+        "Hidrógeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Selecciona los lenguajes de programación: (marca todas las correctas)",
+       "options": [
+        "Java",
+        "CSS",
+        "Python",
+        "HTML",
+        "Go"
+       ],
+       "answers": [
+        "Java",
+        "Python",
+        "Go"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "x04_marcas_distractoras": {
+   "summary": {
+    "doc": "x04_marcas_distractoras",
+    "runs": 3,
+    "esperadas": 40,
+    "exactitud": 1.0,
+    "exactitud_min": 1.0,
+    "exactitud_max": 1.0,
+    "completas": 40,
+    "completas_min": 40,
+    "completas_max": 40,
+    "encontradas": 40,
+    "encontradas_min": 40,
+    "encontradas_max": 40,
+    "utilizables": 37,
+    "utilizables_min": 37,
+    "utilizables_max": 37,
+    "tipo_ok": 37,
+    "tipo_ok_min": 37,
+    "tipo_ok_max": 37,
+    "enunciado_ok": 37,
+    "enunciado_ok_min": 37,
+    "enunciado_ok_max": 37,
+    "respuesta_ok": 40,
+    "respuesta_ok_min": 40,
+    "respuesta_ok_max": 40,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 3,
+    "omitidas_min": 3,
+    "omitidas_max": 3,
+    "seconds": 18.033,
+    "seconds_min": 17.9,
+    "seconds_max": 18.2,
+    "prompt_tokens": 6729,
+    "prompt_tokens_min": 6729,
+    "prompt_tokens_max": 6729,
+    "output_tokens": 7172,
+    "output_tokens_min": 7172,
+    "output_tokens_max": 7172,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 17.9,
+     "prompt_tokens": 6729,
+     "output_tokens": 7172,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [],
+     "encontradas": 40,
+     "utilizables": 37,
+     "tipo_ok": 37,
+     "enunciado_ok": 37,
+     "respuesta_ok": 40,
+     "inventadas": 0,
+     "completas": 40,
+     "sobrantes": 0,
+     "omitidas": 3,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son tipos de datos primitivos en Java?",
+       "options": [
+        "boolean",
+        "int",
+        "double",
+        "List",
+        "String"
+       ],
+       "answers": [
+        "boolean",
+        "int",
+        "double"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Selecciona todos los números primos:",
+       "options": [
+        "2",
+        "15",
+        "17",
+        "11",
+        "9"
+       ],
+       "answers": [
+        "2",
+        "17",
+        "11"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La ciudad de Estambul se encuentra en dos continentes.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Revolución Industrial comenzó en Inglaterra.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son estados de la materia comunes?",
+       "options": [
+        "Sólido",
+        "Metálico",
+        "Líquido",
+        "Gaseoso"
+       ],
+       "answers": [
+        "Sólido",
+        "Líquido",
+        "Gaseoso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué mide un sismógrafo?",
+       "options": [
+        "La radiación solar",
+        "Las vibraciones del suelo",
+        "La humedad",
+        "La presión atmosférica"
+       ],
+       "answers": [
+        "Las vibraciones del suelo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué año se firmó la Declaración de Independencia de los Estados Unidos?",
+       "options": [
+        "1776",
+        "1789",
+        "1812",
+        "1492"
+       ],
+       "answers": [
+        "1776"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el plural de «lápiz»?",
+       "options": [
+        "lápizs",
+        "lápices",
+        "lápiz",
+        "lápizes"
+       ],
+       "answers": [
+        "lápices"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un mamífero marino?",
+       "options": [
+        "Atún",
+        "Delfín",
+        "Pulpo",
+        "Tiburón"
+       ],
+       "answers": [
+        "Delfín"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El español es el idioma oficial de Brasil.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la mediana del conjunto {3, 9, 4, 7, 5}?",
+       "options": [
+        "4",
+        "5",
+        "6",
+        "7"
+       ],
+       "answers": [
+        "5"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué hace la instrucción break dentro de un bucle?",
+       "options": [
+        "Salta a la siguiente iteración",
+        "Termina el bucle",
+        "Reinicia el bucle",
+        "Lanza una excepción"
+       ],
+       "answers": [
+        "Termina el bucle"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Júpiter es el planeta más cercano al Sol.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué operador de Python realiza la división entera?",
+       "options": [
+        "//",
+        "/",
+        "%",
+        "**"
+       ],
+       "answers": [
+        "**"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el órgano que bombea la sangre?",
+       "answers": [
+        "Corazón"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La luz viaja más lento que el sonido.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Si f(x) = 3x + 2, ¿ cuánto vale f(4)?",
+       "options": [
+        "12",
+        "14",
+        "16",
+        "10"
+       ],
+       "answers": [
+        "14"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la moneda oficial de Japón?",
+       "options": [
+        "Yen",
+        "Ringgit",
+        "Won",
+        "Yuan"
+       ],
+       "answers": [
+        "Yuan"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué instrumento mide la temperatura?",
+       "answers": [
+        "Termómetro"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama la división de una célula en dos células idénticas?",
+       "answers": [
+        "Mitosis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cuál es la unidad de la fuerza en el Sistema Internacional ?",
+       "answers": [
+        "Newton"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la energía que posee un cuerpo por su movimiento?",
+       "options": [
+        "Térmica",
+        "Cinética",
+        "Química",
+        "Potencial"
+       ],
+       "answers": [
+        "Potencial"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es la mitosis ?",
+       "options": [
+        "Muerte celular programada",
+        "Formación de gametos",
+        "División celular que produce dos células idénticas",
+        "Fusión de dos células"
+       ],
+       "answers": [
+        "División celular que produce dos células idénticas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el pH de una solución neutra a 25 °C?",
+       "options": [
+        "0",
+        "7",
+        "10",
+        "14"
+       ],
+       "answers": [
+        "7"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+       "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+       ],
+       "answers": [
+        "373 K"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Primera Guerra Mundial comenzó en 1914.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué planeta tiene los anillos más visibles?",
+       "options": [
+        "Saturno",
+        "Júpiter",
+        "Neptuno",
+        "Urano"
+       ],
+       "answers": [
+        "Saturno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es el kernel de un sistema operativo?",
+       "options": [
+        "Un navegador",
+        "Un antivirus",
+        "El núcleo que gestiona los recursos del hardware",
+        "Un editor de texto"
+       ],
+       "answers": [
+        "El núcleo que gestiona los recursos del hardware"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué órgano regula el nivel de glucosa mediante la insulina?",
+       "options": [
+        "Páncreas",
+        "Riñón",
+        "Bazo",
+        "Hígado"
+       ],
+       "answers": [
+        "Páncreas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El código binario usa únicamente los dígitos 0 y 1.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tratado dividió el Nuevo Mundo entre España y Portugal en 1494?",
+       "options": [
+        "Tordesillas",
+        "Utrecht",
+        "Versalles",
+        "Westfalia"
+       ],
+       "answers": [
+        "Versalles"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Canadá?",
+       "options": [
+        "Toronto",
+        "Vancouver",
+        "Montreal",
+        "Ottawa"
+       ],
+       "answers": [
+        "Ottawa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el lago navegable más alto del mundo?",
+       "options": [
+        "Superior",
+        "Titicaca",
+        "Victoria",
+        "Baikal"
+       ],
+       "answers": [
+        "Titicaca"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print('a' * 3)?",
+       "options": [
+        "a3",
+        "aaa",
+        "3a",
+        "Error"
+       ],
+       "answers": [
+        "aaa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estrecho separa Europa de África?",
+       "options": [
+        "Gibraltar",
+        "Magallanes",
+        "Bósforo",
+        "Bering"
+       ],
+       "answers": [
+        "Magallanes"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cómo se llama la línea imaginaria que divide la Tierra en hemisferio norte y sur?",
+       "options": [
+        "Ecuador",
+        "Meridiano de Greenwich",
+        "Trópico de Cáncer",
+        "Círculo polar"
+       ],
+       "answers": [
+        "Ecuador"
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué figura literaria compara dos elementos usando «como»?",
+       "options": [
+        "Ironía",
+        "Metáfora",
+        "Hipérbole",
+        "Símil"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 3 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+       "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 5 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Cuál es el país más poblado de Sudamérica?",
+       "options": [
+        "Argentina",
+        "Perú",
+        "Brasil",
+        "Colombia"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 18 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 18.0,
+     "prompt_tokens": 6729,
+     "output_tokens": 7172,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [],
+     "encontradas": 40,
+     "utilizables": 37,
+     "tipo_ok": 37,
+     "enunciado_ok": 37,
+     "respuesta_ok": 40,
+     "inventadas": 0,
+     "completas": 40,
+     "sobrantes": 0,
+     "omitidas": 3,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son tipos de datos primitivos en Java?",
+       "options": [
+        "boolean",
+        "int",
+        "double",
+        "List",
+        "String"
+       ],
+       "answers": [
+        "boolean",
+        "int",
+        "double"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Selecciona todos los números primos:",
+       "options": [
+        "2",
+        "15",
+        "17",
+        "11",
+        "9"
+       ],
+       "answers": [
+        "2",
+        "17",
+        "11"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La ciudad de Estambul se encuentra en dos continentes.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Revolución Industrial comenzó en Inglaterra.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son estados de la materia comunes?",
+       "options": [
+        "Sólido",
+        "Metálico",
+        "Líquido",
+        "Gaseoso"
+       ],
+       "answers": [
+        "Sólido",
+        "Líquido",
+        "Gaseoso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué mide un sismógrafo?",
+       "options": [
+        "La radiación solar",
+        "Las vibraciones del suelo",
+        "La humedad",
+        "La presión atmosférica"
+       ],
+       "answers": [
+        "Las vibraciones del suelo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué año se firmó la Declaración de Independencia de los Estados Unidos?",
+       "options": [
+        "1776",
+        "1789",
+        "1812",
+        "1492"
+       ],
+       "answers": [
+        "1776"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el plural de «lápiz»?",
+       "options": [
+        "lápizs",
+        "lápices",
+        "lápiz",
+        "lápizes"
+       ],
+       "answers": [
+        "lápices"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un mamífero marino?",
+       "options": [
+        "Atún",
+        "Delfín",
+        "Pulpo",
+        "Tiburón"
+       ],
+       "answers": [
+        "Delfín"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El español es el idioma oficial de Brasil.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la mediana del conjunto {3, 9, 4, 7, 5}?",
+       "options": [
+        "4",
+        "5",
+        "6",
+        "7"
+       ],
+       "answers": [
+        "5"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué hace la instrucción break dentro de un bucle?",
+       "options": [
+        "Salta a la siguiente iteración",
+        "Termina el bucle",
+        "Reinicia el bucle",
+        "Lanza una excepción"
+       ],
+       "answers": [
+        "Termina el bucle"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Júpiter es el planeta más cercano al Sol.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué operador de Python realiza la división entera?",
+       "options": [
+        "//",
+        "/",
+        "%",
+        "**"
+       ],
+       "answers": [
+        "**"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el órgano que bombea la sangre?",
+       "answers": [
+        "Corazón"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La luz viaja más lento que el sonido.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Si f(x) = 3x + 2, ¿ cuánto vale f(4)?",
+       "options": [
+        "12",
+        "14",
+        "16",
+        "10"
+       ],
+       "answers": [
+        "14"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la moneda oficial de Japón?",
+       "options": [
+        "Yen",
+        "Ringgit",
+        "Won",
+        "Yuan"
+       ],
+       "answers": [
+        "Yuan"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué instrumento mide la temperatura?",
+       "answers": [
+        "Termómetro"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama la división de una célula en dos células idénticas?",
+       "answers": [
+        "Mitosis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cuál es la unidad de la fuerza en el Sistema Internacional ?",
+       "answers": [
+        "Newton"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la energía que posee un cuerpo por su movimiento?",
+       "options": [
+        "Térmica",
+        "Cinética",
+        "Química",
+        "Potencial"
+       ],
+       "answers": [
+        "Potencial"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es la mitosis ?",
+       "options": [
+        "Muerte celular programada",
+        "Formación de gametos",
+        "División celular que produce dos células idénticas",
+        "Fusión de dos células"
+       ],
+       "answers": [
+        "División celular que produce dos células idénticas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el pH de una solución neutra a 25 °C?",
+       "options": [
+        "0",
+        "7",
+        "10",
+        "14"
+       ],
+       "answers": [
+        "7"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+       "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+       ],
+       "answers": [
+        "373 K"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Primera Guerra Mundial comenzó en 1914.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué planeta tiene los anillos más visibles?",
+       "options": [
+        "Saturno",
+        "Júpiter",
+        "Neptuno",
+        "Urano"
+       ],
+       "answers": [
+        "Saturno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es el kernel de un sistema operativo?",
+       "options": [
+        "Un navegador",
+        "Un antivirus",
+        "El núcleo que gestiona los recursos del hardware",
+        "Un editor de texto"
+       ],
+       "answers": [
+        "El núcleo que gestiona los recursos del hardware"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué órgano regula el nivel de glucosa mediante la insulina?",
+       "options": [
+        "Páncreas",
+        "Riñón",
+        "Bazo",
+        "Hígado"
+       ],
+       "answers": [
+        "Páncreas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El código binario usa únicamente los dígitos 0 y 1.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tratado dividió el Nuevo Mundo entre España y Portugal en 1494?",
+       "options": [
+        "Tordesillas",
+        "Utrecht",
+        "Versalles",
+        "Westfalia"
+       ],
+       "answers": [
+        "Versalles"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Canadá?",
+       "options": [
+        "Toronto",
+        "Vancouver",
+        "Montreal",
+        "Ottawa"
+       ],
+       "answers": [
+        "Ottawa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el lago navegable más alto del mundo?",
+       "options": [
+        "Superior",
+        "Titicaca",
+        "Victoria",
+        "Baikal"
+       ],
+       "answers": [
+        "Titicaca"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print('a' * 3)?",
+       "options": [
+        "a3",
+        "aaa",
+        "3a",
+        "Error"
+       ],
+       "answers": [
+        "aaa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estrecho separa Europa de África?",
+       "options": [
+        "Gibraltar",
+        "Magallanes",
+        "Bósforo",
+        "Bering"
+       ],
+       "answers": [
+        "Magallanes"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cómo se llama la línea imaginaria que divide la Tierra en hemisferio norte y sur?",
+       "options": [
+        "Ecuador",
+        "Meridiano de Greenwich",
+        "Trópico de Cáncer",
+        "Círculo polar"
+       ],
+       "answers": [
+        "Ecuador"
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué figura literaria compara dos elementos usando «como»?",
+       "options": [
+        "Ironía",
+        "Metáfora",
+        "Hipérbole",
+        "Símil"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 3 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+       "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 5 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Cuál es el país más poblado de Sudamérica?",
+       "options": [
+        "Argentina",
+        "Perú",
+        "Brasil",
+        "Colombia"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 18 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 18.2,
+     "prompt_tokens": 6729,
+     "output_tokens": 7172,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [],
+     "encontradas": 40,
+     "utilizables": 37,
+     "tipo_ok": 37,
+     "enunciado_ok": 37,
+     "respuesta_ok": 40,
+     "inventadas": 0,
+     "completas": 40,
+     "sobrantes": 0,
+     "omitidas": 3,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son tipos de datos primitivos en Java?",
+       "options": [
+        "boolean",
+        "int",
+        "double",
+        "List",
+        "String"
+       ],
+       "answers": [
+        "boolean",
+        "int",
+        "double"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Selecciona todos los números primos:",
+       "options": [
+        "2",
+        "15",
+        "17",
+        "11",
+        "9"
+       ],
+       "answers": [
+        "2",
+        "17",
+        "11"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La ciudad de Estambul se encuentra en dos continentes.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Revolución Industrial comenzó en Inglaterra.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son estados de la materia comunes?",
+       "options": [
+        "Sólido",
+        "Metálico",
+        "Líquido",
+        "Gaseoso"
+       ],
+       "answers": [
+        "Sólido",
+        "Líquido",
+        "Gaseoso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué mide un sismógrafo?",
+       "options": [
+        "La radiación solar",
+        "Las vibraciones del suelo",
+        "La humedad",
+        "La presión atmosférica"
+       ],
+       "answers": [
+        "Las vibraciones del suelo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué año se firmó la Declaración de Independencia de los Estados Unidos?",
+       "options": [
+        "1776",
+        "1789",
+        "1812",
+        "1492"
+       ],
+       "answers": [
+        "1776"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el plural de «lápiz»?",
+       "options": [
+        "lápizs",
+        "lápices",
+        "lápiz",
+        "lápizes"
+       ],
+       "answers": [
+        "lápices"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un mamífero marino?",
+       "options": [
+        "Atún",
+        "Delfín",
+        "Pulpo",
+        "Tiburón"
+       ],
+       "answers": [
+        "Delfín"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El español es el idioma oficial de Brasil.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la mediana del conjunto {3, 9, 4, 7, 5}?",
+       "options": [
+        "4",
+        "5",
+        "6",
+        "7"
+       ],
+       "answers": [
+        "5"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué hace la instrucción break dentro de un bucle?",
+       "options": [
+        "Salta a la siguiente iteración",
+        "Termina el bucle",
+        "Reinicia el bucle",
+        "Lanza una excepción"
+       ],
+       "answers": [
+        "Termina el bucle"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Júpiter es el planeta más cercano al Sol.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué operador de Python realiza la división entera?",
+       "options": [
+        "//",
+        "/",
+        "%",
+        "**"
+       ],
+       "answers": [
+        "**"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el órgano que bombea la sangre?",
+       "answers": [
+        "Corazón"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La luz viaja más lento que el sonido.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Si f(x) = 3x + 2, ¿ cuánto vale f(4)?",
+       "options": [
+        "12",
+        "14",
+        "16",
+        "10"
+       ],
+       "answers": [
+        "14"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la moneda oficial de Japón?",
+       "options": [
+        "Yen",
+        "Ringgit",
+        "Won",
+        "Yuan"
+       ],
+       "answers": [
+        "Yuan"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué instrumento mide la temperatura?",
+       "answers": [
+        "Termómetro"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama la división de una célula en dos células idénticas?",
+       "answers": [
+        "Mitosis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cuál es la unidad de la fuerza en el Sistema Internacional ?",
+       "answers": [
+        "Newton"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la energía que posee un cuerpo por su movimiento?",
+       "options": [
+        "Térmica",
+        "Cinética",
+        "Química",
+        "Potencial"
+       ],
+       "answers": [
+        "Potencial"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es la mitosis ?",
+       "options": [
+        "Muerte celular programada",
+        "Formación de gametos",
+        "División celular que produce dos células idénticas",
+        "Fusión de dos células"
+       ],
+       "answers": [
+        "División celular que produce dos células idénticas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el pH de una solución neutra a 25 °C?",
+       "options": [
+        "0",
+        "7",
+        "10",
+        "14"
+       ],
+       "answers": [
+        "7"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+       "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+       ],
+       "answers": [
+        "373 K"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Primera Guerra Mundial comenzó en 1914.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué planeta tiene los anillos más visibles?",
+       "options": [
+        "Saturno",
+        "Júpiter",
+        "Neptuno",
+        "Urano"
+       ],
+       "answers": [
+        "Saturno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es el kernel de un sistema operativo?",
+       "options": [
+        "Un navegador",
+        "Un antivirus",
+        "El núcleo que gestiona los recursos del hardware",
+        "Un editor de texto"
+       ],
+       "answers": [
+        "El núcleo que gestiona los recursos del hardware"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué órgano regula el nivel de glucosa mediante la insulina?",
+       "options": [
+        "Páncreas",
+        "Riñón",
+        "Bazo",
+        "Hígado"
+       ],
+       "answers": [
+        "Páncreas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El código binario usa únicamente los dígitos 0 y 1.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tratado dividió el Nuevo Mundo entre España y Portugal en 1494?",
+       "options": [
+        "Tordesillas",
+        "Utrecht",
+        "Versalles",
+        "Westfalia"
+       ],
+       "answers": [
+        "Versalles"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Canadá?",
+       "options": [
+        "Toronto",
+        "Vancouver",
+        "Montreal",
+        "Ottawa"
+       ],
+       "answers": [
+        "Ottawa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el lago navegable más alto del mundo?",
+       "options": [
+        "Superior",
+        "Titicaca",
+        "Victoria",
+        "Baikal"
+       ],
+       "answers": [
+        "Titicaca"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print('a' * 3)?",
+       "options": [
+        "a3",
+        "aaa",
+        "3a",
+        "Error"
+       ],
+       "answers": [
+        "aaa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estrecho separa Europa de África?",
+       "options": [
+        "Gibraltar",
+        "Magallanes",
+        "Bósforo",
+        "Bering"
+       ],
+       "answers": [
+        "Magallanes"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cómo se llama la línea imaginaria que divide la Tierra en hemisferio norte y sur?",
+       "options": [
+        "Ecuador",
+        "Meridiano de Greenwich",
+        "Trópico de Cáncer",
+        "Círculo polar"
+       ],
+       "answers": [
+        "Ecuador"
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué figura literaria compara dos elementos usando «como»?",
+       "options": [
+        "Ironía",
+        "Metáfora",
+        "Hipérbole",
+        "Símil"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 3 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+       "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 5 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Cuál es el país más poblado de Sudamérica?",
+       "options": [
+        "Argentina",
+        "Perú",
+        "Brasil",
+        "Colombia"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 18 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "x08_caracteres_especiales": {
+   "summary": {
+    "doc": "x08_caracteres_especiales",
+    "runs": 3,
+    "esperadas": 36,
+    "exactitud": 0.917,
+    "exactitud_min": 0.917,
+    "exactitud_max": 0.917,
+    "completas": 33,
+    "completas_min": 33,
+    "completas_max": 33,
+    "encontradas": 36,
+    "encontradas_min": 36,
+    "encontradas_max": 36,
+    "utilizables": 36,
+    "utilizables_min": 36,
+    "utilizables_max": 36,
+    "tipo_ok": 34,
+    "tipo_ok_min": 34,
+    "tipo_ok_max": 34,
+    "enunciado_ok": 36,
+    "enunciado_ok_min": 36,
+    "enunciado_ok_max": 36,
+    "respuesta_ok": 33,
+    "respuesta_ok_min": 33,
+    "respuesta_ok_max": 33,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 0,
+    "omitidas_min": 0,
+    "omitidas_max": 0,
+    "seconds": 17.3,
+    "seconds_min": 16.9,
+    "seconds_max": 17.9,
+    "prompt_tokens": 5986,
+    "prompt_tokens_min": 5986,
+    "prompt_tokens_max": 5986,
+    "output_tokens": 6981,
+    "output_tokens_min": 6981,
+    "output_tokens_max": 6981,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 17.9,
+     "prompt_tokens": 5986,
+     "output_tokens": 6981,
+     "gemini_calls": 1,
+     "esperadas": 36,
+     "problemas": [
+      "#1 [multichoice] '¿Qué operador bit a bit realiza la operación OR en Python?': respuesta None",
+      "#8 [cloze] 'En una lista de Python, el índice del primer elemento es ___': tipo shortanswer (esperado cloze)",
+      "#8 [cloze] 'En una lista de Python, el índice del primer elemento es ___': respuesta ['0']",
+      "#10 [cloze] 'El protocolo ____ es la base de Internet.': tipo shortanswer (esperado cloze)",
+      "#10 [cloze] 'El protocolo ____ es la base de Internet.': respuesta ['TCP/IP']"
+     ],
+     "encontradas": 36,
+     "utilizables": 36,
+     "tipo_ok": 34,
+     "enunciado_ok": 36,
+     "respuesta_ok": 33,
+     "inventadas": 0,
+     "completas": 33,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 0.917,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué operador bit a bit realiza la operación OR en Python?",
+       "options": [
+        "~",
+        "^",
+        "&",
+        "|"
+       ],
+       "answers": []
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El carácter ~ se usa en Cloze de Moodle para separar las opciones de una respuesta.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La etiqueta <br> inserta un salto de línea en HTML.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué representa la letra griega Σ en matemáticas?",
+       "options": [
+        "Una integral",
+        "Un producto",
+        "Un sumatoria",
+        "Un límite"
+       ],
+       "answers": [
+        "Un sumatoria"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué operador de Python realiza la comparación de igualdad?",
+       "answers": [
+        "=="
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué símbolo se usa para comentarios de una línea en Python?",
+       "options": [
+        "/*",
+        "//",
+        "--",
+        "#"
+       ],
+       "answers": [
+        "#"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "En SQL, el comodín % representa cualquier secuencia de caracteres.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "Completa: En una lista de Python, el índice del primer elemento es ________ (0 / 1 / -1).",
+       "answers": [
+        "0"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: En Python, ____ (== / = / !=) compara igualdad y ____ (= / == / :=) asigna un valor.",
+       "blanks": [
+        [
+         "=="
+        ],
+        [
+         "="
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "Completa: El protocolo ________ (TCP/IP / UDP / HTTP/2) es la base de Internet.",
+       "answers": [
+        "TCP/IP"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el resultado de 2 × 3 + 4 ÷ 2?",
+       "options": [
+        "8",
+        "7",
+        "5",
+        "10"
+       ],
+       "answers": [
+        "8"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el resultado de 5 > 3 && 2 < 1 en JavaScript?",
+       "options": [
+        "undefined",
+        "true",
+        "false",
+        "NaN"
+       ],
+       "answers": [
+        "false"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el símbolo de la moneda del euro?",
+       "options": [
+        "€",
+        "$",
+        "£",
+        "¥"
+       ],
+       "answers": [
+        "€"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Un texto termina con la secuencia ]]> ¿Qué formato XML necesita escapar esa secuencia?",
+       "options": [
+        "YAML",
+        "JSON",
+        "CDATA",
+        "CSV"
+       ],
+       "answers": [
+        "CDATA"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: La fórmula del agua es ____ (H₂O / HO₂ / H₂O₂) y la del dióxido de carbono es ____ (CO₂ / C₂O / CO).",
+       "blanks": [
+        [
+         "H₂O"
+        ],
+        [
+         "CO₂"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué frase está escrita entre comillas latinas?",
+       "options": [
+        "\"Hola\"",
+        "'Hola'",
+        "«Hola»",
+        "“Hola”"
+       ],
+       "answers": [
+        "«Hola»"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: En un archivo CSV el separador suele ser ____ (la coma (,) / el punto y coma (;) / la barra (|)); en Moodle las opciones de un Cloze se separan con ____ (la tilde (~) / el numeral (#) / la barra (|)).",
+       "blanks": [
+        [
+         "el punto y coma ("
+        ],
+        [
+         "la tilde (~)"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la fórmula del área del círculo?",
+       "options": [
+        "A = 2πr",
+        "A = r²/π",
+        "A = πd",
+        "A = πr²"
+       ],
+       "answers": [
+        "A = πr²"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print('Tom & Jerry')?",
+       "options": [
+        "Tom & Jerry",
+        "Tom y Jerry",
+        "Error",
+        "Tom &amp; Jerry"
+       ],
+       "answers": [
+        "Tom & Jerry"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué desigualdad describe «x es mayor o igual que 5»?",
+       "options": [
+        "x ≠ 5",
+        "x ≤ 5",
+        "x ≥ 5",
+        "x < 5"
+       ],
+       "answers": [
+        "x ≥ 5"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "El valor aproximado de π es:",
+       "options": [
+        "π ≈ 2,71",
+        "π ≈ 4,13",
+        "π ≈ 1,61",
+        "π ≈ 3,14"
+       ],
+       "answers": [
+        "π ≈ 3,14"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Una expresión regular que reconoce un dígito es:",
+       "options": [
+        "\\s",
+        "\\d",
+        "\\b",
+        "\\w"
+       ],
+       "answers": [
+        "\\d"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La secuencia «]]>» cierra una sección CDATA en XML.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué secuencia de escape representa un salto de línea en C?",
+       "options": [
+        "\\n",
+        "/n",
+        "\\r",
+        "\\t"
+       ],
+       "answers": [
+        "\\n"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: La velocidad se mide en ____ (km/h / m/s² / kg/m) y la frecuencia en ____ (Hz / dB / N/m).",
+       "blanks": [
+        [
+         "km/h"
+        ],
+        [
+         "Hz"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La expresión x ≠ y significa que x es igual a y.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuánto es 1/4 + 1/4?",
+       "options": [
+        "1/2",
+        "1/8",
+        "2/8",
+        "1/16"
+       ],
+       "answers": [
+        "1/2"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "En Python, 5 // 2 devuelve 2,5.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la temperatura de congelación del agua?",
+       "options": [
+        "0 °C",
+        "32 °C",
+        "100 °C",
+        "273 °C"
+       ],
+       "answers": [
+        "0 °C"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la derivada de sen(x)?",
+       "options": [
+        "sen(x)",
+        "-sen(x)",
+        "cos(x)",
+        "-cos(x)"
+       ],
+       "answers": [
+        "cos(x)"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "Escribe el símbolo químico del oro.",
+       "answers": [
+        "Au"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "En la sintaxis de Moodle {1:MULTICHOICE:=Sí~No}, ¿qué carácter separa las opciones?",
+       "options": [
+        "#",
+        "}",
+        "~",
+        "="
+       ],
+       "answers": [
+        "~"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál palabra está escrita correctamente?",
+       "options": [
+        "cancion",
+        "cançión",
+        "canciõn",
+        "canción"
+       ],
+       "answers": [
+        "canción"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuál es el resultado de 10 ÷ 4? (usa coma decimal)",
+       "answers": [
+        "2,5"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "En HTML, ¿qué etiqueta define un párrafo?",
+       "options": [
+        "<div>",
+        "<br>",
+        "<span>",
+        "<p>"
+       ],
+       "answers": [
+        "<p>"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuánto es 3² + 4²?",
+       "answers": [
+        "25"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 16.9,
+     "prompt_tokens": 5986,
+     "output_tokens": 6981,
+     "gemini_calls": 1,
+     "esperadas": 36,
+     "problemas": [
+      "#1 [multichoice] '¿Qué operador bit a bit realiza la operación OR en Python?': respuesta None",
+      "#8 [cloze] 'En una lista de Python, el índice del primer elemento es ___': tipo shortanswer (esperado cloze)",
+      "#8 [cloze] 'En una lista de Python, el índice del primer elemento es ___': respuesta ['0']",
+      "#10 [cloze] 'El protocolo ____ es la base de Internet.': tipo shortanswer (esperado cloze)",
+      "#10 [cloze] 'El protocolo ____ es la base de Internet.': respuesta ['TCP/IP']"
+     ],
+     "encontradas": 36,
+     "utilizables": 36,
+     "tipo_ok": 34,
+     "enunciado_ok": 36,
+     "respuesta_ok": 33,
+     "inventadas": 0,
+     "completas": 33,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 0.917,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué operador bit a bit realiza la operación OR en Python?",
+       "options": [
+        "~",
+        "^",
+        "&",
+        "|"
+       ],
+       "answers": []
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El carácter ~ se usa en Cloze de Moodle para separar las opciones de una respuesta.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La etiqueta <br> inserta un salto de línea en HTML.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué representa la letra griega Σ en matemáticas?",
+       "options": [
+        "Una integral",
+        "Un producto",
+        "Un sumatoria",
+        "Un límite"
+       ],
+       "answers": [
+        "Un sumatoria"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué operador de Python realiza la comparación de igualdad?",
+       "answers": [
+        "=="
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué símbolo se usa para comentarios de una línea en Python?",
+       "options": [
+        "/*",
+        "//",
+        "--",
+        "#"
+       ],
+       "answers": [
+        "#"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "En SQL, el comodín % representa cualquier secuencia de caracteres.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "Completa: En una lista de Python, el índice del primer elemento es ________ (0 / 1 / -1).",
+       "answers": [
+        "0"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: En Python, ____ (== / = / !=) compara igualdad y ____ (= / == / :=) asigna un valor.",
+       "blanks": [
+        [
+         "=="
+        ],
+        [
+         "="
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "Completa: El protocolo ________ (TCP/IP / UDP / HTTP/2) es la base de Internet.",
+       "answers": [
+        "TCP/IP"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el resultado de 2 × 3 + 4 ÷ 2?",
+       "options": [
+        "8",
+        "7",
+        "5",
+        "10"
+       ],
+       "answers": [
+        "8"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el resultado de 5 > 3 && 2 < 1 en JavaScript?",
+       "options": [
+        "undefined",
+        "true",
+        "false",
+        "NaN"
+       ],
+       "answers": [
+        "false"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el símbolo de la moneda del euro?",
+       "options": [
+        "€",
+        "$",
+        "£",
+        "¥"
+       ],
+       "answers": [
+        "€"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Un texto termina con la secuencia ]]> ¿Qué formato XML necesita escapar esa secuencia?",
+       "options": [
+        "YAML",
+        "JSON",
+        "CDATA",
+        "CSV"
+       ],
+       "answers": [
+        "CDATA"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: La fórmula del agua es ____ (H₂O / HO₂ / H₂O₂) y la del dióxido de carbono es ____ (CO₂ / C₂O / CO).",
+       "blanks": [
+        [
+         "H₂O"
+        ],
+        [
+         "CO₂"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué frase está escrita entre comillas latinas?",
+       "options": [
+        "\"Hola\"",
+        "'Hola'",
+        "«Hola»",
+        "“Hola”"
+       ],
+       "answers": [
+        "«Hola»"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: En un archivo CSV el separador suele ser ____ (la coma (,) / el punto y coma (;) / la barra (|)); en Moodle las opciones de un Cloze se separan con ____ (la tilde (~) / el numeral (#) / la barra (|)).",
+       "blanks": [
+        [
+         "el punto y coma ("
+        ],
+        [
+         "la tilde (~)"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la fórmula del área del círculo?",
+       "options": [
+        "A = 2πr",
+        "A = r²/π",
+        "A = πd",
+        "A = πr²"
+       ],
+       "answers": [
+        "A = πr²"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print('Tom & Jerry')?",
+       "options": [
+        "Tom & Jerry",
+        "Tom y Jerry",
+        "Error",
+        "Tom &amp; Jerry"
+       ],
+       "answers": [
+        "Tom & Jerry"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué desigualdad describe «x es mayor o igual que 5»?",
+       "options": [
+        "x ≠ 5",
+        "x ≤ 5",
+        "x ≥ 5",
+        "x < 5"
+       ],
+       "answers": [
+        "x ≥ 5"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "El valor aproximado de π es:",
+       "options": [
+        "π ≈ 2,71",
+        "π ≈ 4,13",
+        "π ≈ 1,61",
+        "π ≈ 3,14"
+       ],
+       "answers": [
+        "π ≈ 3,14"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Una expresión regular que reconoce un dígito es:",
+       "options": [
+        "\\s",
+        "\\d",
+        "\\b",
+        "\\w"
+       ],
+       "answers": [
+        "\\d"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La secuencia «]]>» cierra una sección CDATA en XML.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué secuencia de escape representa un salto de línea en C?",
+       "options": [
+        "\\n",
+        "/n",
+        "\\r",
+        "\\t"
+       ],
+       "answers": [
+        "\\n"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: La velocidad se mide en ____ (km/h / m/s² / kg/m) y la frecuencia en ____ (Hz / dB / N/m).",
+       "blanks": [
+        [
+         "km/h"
+        ],
+        [
+         "Hz"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La expresión x ≠ y significa que x es igual a y.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuánto es 1/4 + 1/4?",
+       "options": [
+        "1/2",
+        "1/8",
+        "2/8",
+        "1/16"
+       ],
+       "answers": [
+        "1/2"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "En Python, 5 // 2 devuelve 2,5.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la temperatura de congelación del agua?",
+       "options": [
+        "0 °C",
+        "32 °C",
+        "100 °C",
+        "273 °C"
+       ],
+       "answers": [
+        "0 °C"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la derivada de sen(x)?",
+       "options": [
+        "sen(x)",
+        "-sen(x)",
+        "cos(x)",
+        "-cos(x)"
+       ],
+       "answers": [
+        "cos(x)"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "Escribe el símbolo químico del oro.",
+       "answers": [
+        "Au"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "En la sintaxis de Moodle {1:MULTICHOICE:=Sí~No}, ¿qué carácter separa las opciones?",
+       "options": [
+        "#",
+        "}",
+        "~",
+        "="
+       ],
+       "answers": [
+        "~"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál palabra está escrita correctamente?",
+       "options": [
+        "cancion",
+        "cançión",
+        "canciõn",
+        "canción"
+       ],
+       "answers": [
+        "canción"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuál es el resultado de 10 ÷ 4? (usa coma decimal)",
+       "answers": [
+        "2,5"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "En HTML, ¿qué etiqueta define un párrafo?",
+       "options": [
+        "<div>",
+        "<br>",
+        "<span>",
+        "<p>"
+       ],
+       "answers": [
+        "<p>"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuánto es 3² + 4²?",
+       "answers": [
+        "25"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 17.1,
+     "prompt_tokens": 5986,
+     "output_tokens": 6981,
+     "gemini_calls": 1,
+     "esperadas": 36,
+     "problemas": [
+      "#1 [multichoice] '¿Qué operador bit a bit realiza la operación OR en Python?': respuesta None",
+      "#8 [cloze] 'En una lista de Python, el índice del primer elemento es ___': tipo shortanswer (esperado cloze)",
+      "#8 [cloze] 'En una lista de Python, el índice del primer elemento es ___': respuesta ['0']",
+      "#10 [cloze] 'El protocolo ____ es la base de Internet.': tipo shortanswer (esperado cloze)",
+      "#10 [cloze] 'El protocolo ____ es la base de Internet.': respuesta ['TCP/IP']"
+     ],
+     "encontradas": 36,
+     "utilizables": 36,
+     "tipo_ok": 34,
+     "enunciado_ok": 36,
+     "respuesta_ok": 33,
+     "inventadas": 0,
+     "completas": 33,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 0.917,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué operador bit a bit realiza la operación OR en Python?",
+       "options": [
+        "~",
+        "^",
+        "&",
+        "|"
+       ],
+       "answers": []
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El carácter ~ se usa en Cloze de Moodle para separar las opciones de una respuesta.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La etiqueta <br> inserta un salto de línea en HTML.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué representa la letra griega Σ en matemáticas?",
+       "options": [
+        "Una integral",
+        "Un producto",
+        "Un sumatoria",
+        "Un límite"
+       ],
+       "answers": [
+        "Un sumatoria"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué operador de Python realiza la comparación de igualdad?",
+       "answers": [
+        "=="
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué símbolo se usa para comentarios de una línea en Python?",
+       "options": [
+        "/*",
+        "//",
+        "--",
+        "#"
+       ],
+       "answers": [
+        "#"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "En SQL, el comodín % representa cualquier secuencia de caracteres.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "Completa: En una lista de Python, el índice del primer elemento es ________ (0 / 1 / -1).",
+       "answers": [
+        "0"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: En Python, ____ (== / = / !=) compara igualdad y ____ (= / == / :=) asigna un valor.",
+       "blanks": [
+        [
+         "=="
+        ],
+        [
+         "="
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "Completa: El protocolo ________ (TCP/IP / UDP / HTTP/2) es la base de Internet.",
+       "answers": [
+        "TCP/IP"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el resultado de 2 × 3 + 4 ÷ 2?",
+       "options": [
+        "8",
+        "7",
+        "5",
+        "10"
+       ],
+       "answers": [
+        "8"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el resultado de 5 > 3 && 2 < 1 en JavaScript?",
+       "options": [
+        "undefined",
+        "true",
+        "false",
+        "NaN"
+       ],
+       "answers": [
+        "false"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el símbolo de la moneda del euro?",
+       "options": [
+        "€",
+        "$",
+        "£",
+        "¥"
+       ],
+       "answers": [
+        "€"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Un texto termina con la secuencia ]]> ¿Qué formato XML necesita escapar esa secuencia?",
+       "options": [
+        "YAML",
+        "JSON",
+        "CDATA",
+        "CSV"
+       ],
+       "answers": [
+        "CDATA"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: La fórmula del agua es ____ (H₂O / HO₂ / H₂O₂) y la del dióxido de carbono es ____ (CO₂ / C₂O / CO).",
+       "blanks": [
+        [
+         "H₂O"
+        ],
+        [
+         "CO₂"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué frase está escrita entre comillas latinas?",
+       "options": [
+        "\"Hola\"",
+        "'Hola'",
+        "«Hola»",
+        "“Hola”"
+       ],
+       "answers": [
+        "«Hola»"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: En un archivo CSV el separador suele ser ____ (la coma (,) / el punto y coma (;) / la barra (|)); en Moodle las opciones de un Cloze se separan con ____ (la tilde (~) / el numeral (#) / la barra (|)).",
+       "blanks": [
+        [
+         "el punto y coma ("
+        ],
+        [
+         "la tilde (~)"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la fórmula del área del círculo?",
+       "options": [
+        "A = 2πr",
+        "A = r²/π",
+        "A = πd",
+        "A = πr²"
+       ],
+       "answers": [
+        "A = πr²"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print('Tom & Jerry')?",
+       "options": [
+        "Tom & Jerry",
+        "Tom y Jerry",
+        "Error",
+        "Tom &amp; Jerry"
+       ],
+       "answers": [
+        "Tom & Jerry"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué desigualdad describe «x es mayor o igual que 5»?",
+       "options": [
+        "x ≠ 5",
+        "x ≤ 5",
+        "x ≥ 5",
+        "x < 5"
+       ],
+       "answers": [
+        "x ≥ 5"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "El valor aproximado de π es:",
+       "options": [
+        "π ≈ 2,71",
+        "π ≈ 4,13",
+        "π ≈ 1,61",
+        "π ≈ 3,14"
+       ],
+       "answers": [
+        "π ≈ 3,14"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Una expresión regular que reconoce un dígito es:",
+       "options": [
+        "\\s",
+        "\\d",
+        "\\b",
+        "\\w"
+       ],
+       "answers": [
+        "\\d"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La secuencia «]]>» cierra una sección CDATA en XML.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué secuencia de escape representa un salto de línea en C?",
+       "options": [
+        "\\n",
+        "/n",
+        "\\r",
+        "\\t"
+       ],
+       "answers": [
+        "\\n"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: La velocidad se mide en ____ (km/h / m/s² / kg/m) y la frecuencia en ____ (Hz / dB / N/m).",
+       "blanks": [
+        [
+         "km/h"
+        ],
+        [
+         "Hz"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La expresión x ≠ y significa que x es igual a y.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuánto es 1/4 + 1/4?",
+       "options": [
+        "1/2",
+        "1/8",
+        "2/8",
+        "1/16"
+       ],
+       "answers": [
+        "1/2"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "En Python, 5 // 2 devuelve 2,5.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la temperatura de congelación del agua?",
+       "options": [
+        "0 °C",
+        "32 °C",
+        "100 °C",
+        "273 °C"
+       ],
+       "answers": [
+        "0 °C"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la derivada de sen(x)?",
+       "options": [
+        "sen(x)",
+        "-sen(x)",
+        "cos(x)",
+        "-cos(x)"
+       ],
+       "answers": [
+        "cos(x)"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "Escribe el símbolo químico del oro.",
+       "answers": [
+        "Au"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "En la sintaxis de Moodle {1:MULTICHOICE:=Sí~No}, ¿qué carácter separa las opciones?",
+       "options": [
+        "#",
+        "}",
+        "~",
+        "="
+       ],
+       "answers": [
+        "~"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál palabra está escrita correctamente?",
+       "options": [
+        "cancion",
+        "cançión",
+        "canciõn",
+        "canción"
+       ],
+       "answers": [
+        "canción"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuál es el resultado de 10 ÷ 4? (usa coma decimal)",
+       "answers": [
+        "2,5"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "En HTML, ¿qué etiqueta define un párrafo?",
+       "options": [
+        "<div>",
+        "<br>",
+        "<span>",
+        "<p>"
+       ],
+       "answers": [
+        "<p>"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuánto es 3² + 4²?",
+       "answers": [
+        "25"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "x10_escaneado_degradado": {
+   "summary": {
+    "doc": "x10_escaneado_degradado",
+    "runs": 3,
+    "esperadas": 32,
+    "exactitud": 0.719,
+    "exactitud_min": 0.719,
+    "exactitud_max": 0.719,
+    "completas": 23,
+    "completas_min": 23,
+    "completas_max": 23,
+    "encontradas": 31.333,
+    "encontradas_min": 31,
+    "encontradas_max": 32,
+    "utilizables": 31.333,
+    "utilizables_min": 31,
+    "utilizables_max": 32,
+    "tipo_ok": 31.333,
+    "tipo_ok_min": 31,
+    "tipo_ok_max": 32,
+    "enunciado_ok": 31.333,
+    "enunciado_ok_min": 31,
+    "enunciado_ok_max": 32,
+    "respuesta_ok": 23,
+    "respuesta_ok_min": 23,
+    "respuesta_ok_max": 23,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0.667,
+    "sobrantes_min": 0,
+    "sobrantes_max": 1,
+    "omitidas": 0,
+    "omitidas_min": 0,
+    "omitidas_max": 0,
+    "seconds": 37.167,
+    "seconds_min": 17.3,
+    "seconds_max": 50.1,
+    "prompt_tokens": 8571,
+    "prompt_tokens_min": 8571,
+    "prompt_tokens_max": 8571,
+    "output_tokens": 1585.667,
+    "output_tokens_min": 1585,
+    "output_tokens_max": 1586,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 50.1,
+     "prompt_tokens": 8571,
+     "output_tokens": 1586,
+     "gemini_calls": 1,
+     "esperadas": 32,
+     "problemas": [
+      "#2 [multichoice] '¿Cuánto vale la raíz cuadrada de 144?': respuesta ['12']",
+      "#4 [truefalse] 'El plural de «pez» es «pezes».': NO apareció",
+      "#5 [multichoice] '¿Qué científico propuso la teoría de la evolución por selecc': respuesta ['Charles Darwin']",
+      "#7 [multichoice] '¿Cuál es la capital de Canadá?': respuesta ['Ottawa']",
+      "#11 [truefalse] 'Los delfines son peces.': respuesta ['Falso']",
+      "#20 [truefalse] 'Los reptiles son animales de sangre caliente.': respuesta ['Falso']",
+      "#21 [multichoice] '¿Qué grupo sanguíneo se considera donante universal?': respuesta ['O-']",
+      "#29 [multichoice] '¿Cuál es la derivada de x²?': respuesta ['2x']",
+      "#32 [multichoice] '¿Qué estructura protege al cerebro?': respuesta ['Cráneo']",
+      "sobrante [truefalse] 'El plural de «pez» es «peces». (solo el enunciado, sin opciones ni res'"
+     ],
+     "encontradas": 31,
+     "utilizables": 31,
+     "tipo_ok": 31,
+     "enunciado_ok": 31,
+     "respuesta_ok": 23,
+     "inventadas": 0,
+     "completas": 23,
+     "sobrantes": 1,
+     "omitidas": 0,
+     "exactitud": 0.719,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué ocurre con el precio cuando la demanda aumenta y la oferta se mantiene?",
+       "options": [
+        "Baja",
+        "Desaparece",
+        "Sube",
+        "Se mantiene"
+       ],
+       "answers": [
+        "Sube"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuánto vale la raíz cuadrada de 144?",
+       "options": [
+        "10",
+        "11",
+        "12",
+        "14"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el mínimo común múltiplo de 4 y 6?",
+       "options": [
+        "6",
+        "12",
+        "18",
+        "24"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El plural de «pez» es «peces». (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+       "options": [
+        "Gregor Mendel",
+        "Louis Pasteur",
+        "Charles Darwin",
+        "Alexander Fleming"
+       ],
+       "answers": [
+        "Charles Darwin"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la energía que posee un cuerpo por su movimiento?",
+       "options": [
+        "Química",
+        "Cinética",
+        "Térmica",
+        "Potencial"
+       ],
+       "answers": [
+        "Cinética"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Canadá?",
+       "options": [
+        "Montreal",
+        "Ottawa",
+        "Vancouver",
+        "Toronto"
+       ],
+       "answers": [
+        "Ottawa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el desierto cálido más extenso del mundo?",
+       "options": [
+        "Gobi",
+        "Kalahari",
+        "Atacama",
+        "Sahara"
+       ],
+       "answers": [
+        "Sahara"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un lenguaje de marcado?",
+       "options": [
+        "Python",
+        "HTML",
+        "Rust",
+        "C++"
+       ],
+       "answers": [
+        "HTML"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos países están en Sudamérica?",
+       "options": [
+        "Uruguay",
+        "Guatemala",
+        "Paraguay",
+        "Cuba",
+        "Bolivia"
+       ],
+       "answers": [
+        "Uruguay",
+        "Paraguay",
+        "Bolivia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Los delfines son peces. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La capital de Perú es Lima. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+       "options": [
+        "Atenas",
+        "Constantinopla",
+        "Alejandría",
+        "Antioquía"
+       ],
+       "answers": [
+        "Constantinopla"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un adjetivo?",
+       "options": [
+        "Una palabra que enlaza oraciones",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que expresa acción"
+       ],
+       "answers": [
+        "Una palabra que modifica al sustantivo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un mamífero marino?",
+       "options": [
+        "Pulpo",
+        "Atún",
+        "Tiburón",
+        "Delfín"
+       ],
+       "answers": [
+        "Delfín"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tipo de roca se forma por enfriamiento del magma?",
+       "options": [
+        "Metamórfica",
+        "Ígnea",
+        "Detrítica",
+        "Sedimentaria"
+       ],
+       "answers": [
+        "Ígnea"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son estados de la materia comunes?",
+       "options": [
+        "Sólido",
+        "Gaseoso",
+        "Metálico",
+        "Líquido"
+       ],
+       "answers": [
+        "Sólido",
+        "Gaseoso",
+        "Líquido"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué país tiene forma de bota?",
+       "options": [
+        "Italia",
+        "España",
+        "Portugal",
+        "Grecia"
+       ],
+       "answers": [
+        "Italia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Los reptiles son animales de sangre caliente. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué grupo sanguíneo se considera donante universal?",
+       "options": [
+        "B-",
+        "O-",
+        "AB+",
+        "A+"
+       ],
+       "answers": [
+        "O-"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué significa la sigla SQL?",
+       "options": [
+        "Standard Quick Language",
+        "Structured Query Language",
+        "System Query Logic",
+        "Simple Question List"
+       ],
+       "answers": [
+        "Structured Query Language"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué mide un sismógrafo?",
+       "options": [
+        "Las vibraciones del suelo",
+        "La presión atmosférica",
+        "La humedad",
+        "La radiación solar"
+       ],
+       "answers": [
+        "Las vibraciones del suelo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un byte equivale a 4 bits. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+       "options": [
+        "K2",
+        "Everest",
+        "Kilimanjaro",
+        "Aconcagua"
+       ],
+       "answers": [
+        "Everest"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el sinónimo de «efímero»?",
+       "options": [
+        "Duradero",
+        "Eterno",
+        "Sólido",
+        "Pasajero"
+       ],
+       "answers": [
+        "Pasajero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué vitamina previene el escorbuto?",
+       "options": [
+        "Vitamina B12",
+        "Vitamina E",
+        "Vitamina C",
+        "Vitamina A"
+       ],
+       "answers": [
+        "Vitamina C"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son ejemplos de energías renovables?",
+       "options": [
+        "Petróleo",
+        "Hidráulica",
+        "Carbón",
+        "Eólica",
+        "Solar"
+       ],
+       "answers": [
+        "Hidráulica",
+        "Eólica",
+        "Solar"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la derivada de x²?",
+       "options": [
+        "x",
+        "2x",
+        "x²",
+        "2"
+       ],
+       "answers": [
+        "2x"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Australia?",
+       "options": [
+        "Melbourne",
+        "Canberra",
+        "Perth",
+        "Sídney"
+       ],
+       "answers": [
+        "Canberra"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Tierra tarda unos 365 días en orbitar el Sol. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estructura protege al cerebro?",
+       "options": [
+        "Cráneo",
+        "Columna",
+        "Pelvis",
+        "Costillas"
+       ],
+       "answers": [
+        "Cráneo"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 44.1,
+     "prompt_tokens": 8571,
+     "output_tokens": 1585,
+     "gemini_calls": 1,
+     "esperadas": 32,
+     "problemas": [
+      "#2 [multichoice] '¿Cuánto vale la raíz cuadrada de 144?': respuesta ['12']",
+      "#4 [truefalse] 'El plural de «pez» es «pezes».': respuesta ['Falso']",
+      "#5 [multichoice] '¿Qué científico propuso la teoría de la evolución por selecc': respuesta ['Charles Darwin']",
+      "#7 [multichoice] '¿Cuál es la capital de Canadá?': respuesta ['Ottawa']",
+      "#11 [truefalse] 'Los delfines son peces.': respuesta ['Falso']",
+      "#20 [truefalse] 'Los reptiles son animales de sangre caliente.': respuesta ['Falso']",
+      "#21 [multichoice] '¿Qué grupo sanguíneo se considera donante universal?': respuesta ['O-']",
+      "#29 [multichoice] '¿Cuál es la derivada de x²?': respuesta ['2x']",
+      "#32 [multichoice] '¿Qué estructura protege al cerebro?': respuesta ['Cráneo']"
+     ],
+     "encontradas": 32,
+     "utilizables": 32,
+     "tipo_ok": 32,
+     "enunciado_ok": 32,
+     "respuesta_ok": 23,
+     "inventadas": 0,
+     "completas": 23,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 0.719,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué ocurre con el precio cuando la demanda aumenta y la oferta se mantiene?",
+       "options": [
+        "Baja",
+        "Desaparece",
+        "Sube",
+        "Se mantiene"
+       ],
+       "answers": [
+        "Sube"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuánto vale la raíz cuadrada de 144?",
+       "options": [
+        "10",
+        "11",
+        "12",
+        "14"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el mínimo común múltiplo de 4 y 6?",
+       "options": [
+        "6",
+        "12",
+        "18",
+        "24"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El plural de «pez» es «pezes». (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+       "options": [
+        "Gregor Mendel",
+        "Louis Pasteur",
+        "Charles Darwin",
+        "Alexander Fleming"
+       ],
+       "answers": [
+        "Charles Darwin"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la energía que posee un cuerpo por su movimiento?",
+       "options": [
+        "Química",
+        "Cinética",
+        "Térmica",
+        "Potencial"
+       ],
+       "answers": [
+        "Cinética"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Canadá?",
+       "options": [
+        "Montreal",
+        "Ottawa",
+        "Vancouver",
+        "Toronto"
+       ],
+       "answers": [
+        "Ottawa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el desierto cálido más extenso del mundo?",
+       "options": [
+        "Gobi",
+        "Kalahari",
+        "Atacama",
+        "Sahara"
+       ],
+       "answers": [
+        "Sahara"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un lenguaje de marcado?",
+       "options": [
+        "Python",
+        "HTML",
+        "Rust",
+        "C++"
+       ],
+       "answers": [
+        "HTML"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos países están en Sudamérica?",
+       "options": [
+        "Uruguay",
+        "Guatemala",
+        "Paraguay",
+        "Cuba",
+        "Bolivia"
+       ],
+       "answers": [
+        "Uruguay",
+        "Paraguay",
+        "Bolivia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Los delfines son peces. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La capital de Perú es Lima. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+       "options": [
+        "Atenas",
+        "Constantinopla",
+        "Alejandría",
+        "Antioquía"
+       ],
+       "answers": [
+        "Constantinopla"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un adjetivo?",
+       "options": [
+        "Una palabra que enlaza oraciones",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que expresa acción"
+       ],
+       "answers": [
+        "Una palabra que modifica al sustantivo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un mamífero marino?",
+       "options": [
+        "Pulpo",
+        "Atún",
+        "Tiburón",
+        "Delfín"
+       ],
+       "answers": [
+        "Delfín"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tipo de roca se forma por enfriamiento del magma?",
+       "options": [
+        "Metamórfica",
+        "Ígnea",
+        "Detrítica",
+        "Sedimentaria"
+       ],
+       "answers": [
+        "Ígnea"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son estados de la materia comunes?",
+       "options": [
+        "Sólido",
+        "Gaseoso",
+        "Metálico",
+        "Líquido"
+       ],
+       "answers": [
+        "Sólido",
+        "Gaseoso",
+        "Líquido"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué país tiene forma de bota?",
+       "options": [
+        "Italia",
+        "España",
+        "Portugal",
+        "Grecia"
+       ],
+       "answers": [
+        "Italia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Los reptiles son animales de sangre caliente. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué grupo sanguíneo se considera donante universal?",
+       "options": [
+        "B-",
+        "O-",
+        "AB+",
+        "A+"
+       ],
+       "answers": [
+        "O-"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué significa la sigla SQL?",
+       "options": [
+        "Standard Quick Language",
+        "Structured Query Language",
+        "System Query Logic",
+        "Simple Question List"
+       ],
+       "answers": [
+        "Structured Query Language"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué mide un sismógrafo?",
+       "options": [
+        "Las vibraciones del suelo",
+        "La presión atmosférica",
+        "La humedad",
+        "La radiación solar"
+       ],
+       "answers": [
+        "Las vibraciones del suelo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un byte equivale a 4 bits. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+       "options": [
+        "K2",
+        "Everest",
+        "Kilimanjaro",
+        "Aconcagua"
+       ],
+       "answers": [
+        "Everest"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el sinónimo de «efímero»?",
+       "options": [
+        "Duradero",
+        "Eterno",
+        "Sólido",
+        "Pasajero"
+       ],
+       "answers": [
+        "Pasajero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué vitamina previene el escorbuto?",
+       "options": [
+        "Vitamina B12",
+        "Vitamina E",
+        "Vitamina C",
+        "Vitamina A"
+       ],
+       "answers": [
+        "Vitamina C"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son ejemplos de energías renovables?",
+       "options": [
+        "Petróleo",
+        "Hidráulica",
+        "Carbón",
+        "Eólica",
+        "Solar"
+       ],
+       "answers": [
+        "Hidráulica",
+        "Eólica",
+        "Solar"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la derivada de x²?",
+       "options": [
+        "x",
+        "2x",
+        "x²",
+        "2"
+       ],
+       "answers": [
+        "2x"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Australia?",
+       "options": [
+        "Melbourne",
+        "Canberra",
+        "Perth",
+        "Sídney"
+       ],
+       "answers": [
+        "Canberra"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Tierra tarda unos 365 días en orbitar el Sol. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estructura protege al cerebro?",
+       "options": [
+        "Cráneo",
+        "Columna",
+        "Pelvis",
+        "Costillas"
+       ],
+       "answers": [
+        "Cráneo"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 17.3,
+     "prompt_tokens": 8571,
+     "output_tokens": 1586,
+     "gemini_calls": 1,
+     "esperadas": 32,
+     "problemas": [
+      "#2 [multichoice] '¿Cuánto vale la raíz cuadrada de 144?': respuesta ['12']",
+      "#4 [truefalse] 'El plural de «pez» es «pezes».': NO apareció",
+      "#5 [multichoice] '¿Qué científico propuso la teoría de la evolución por selecc': respuesta ['Charles Darwin']",
+      "#7 [multichoice] '¿Cuál es la capital de Canadá?': respuesta ['Ottawa']",
+      "#11 [truefalse] 'Los delfines son peces.': respuesta ['Falso']",
+      "#20 [truefalse] 'Los reptiles son animales de sangre caliente.': respuesta ['Falso']",
+      "#21 [multichoice] '¿Qué grupo sanguíneo se considera donante universal?': respuesta ['O-']",
+      "#29 [multichoice] '¿Cuál es la derivada de x²?': respuesta ['2x']",
+      "#32 [multichoice] '¿Qué estructura protege al cerebro?': respuesta ['Cráneo']",
+      "sobrante [truefalse] 'El plural de «pez» es «peces». (solo el enunciado, sin opciones ni res'"
+     ],
+     "encontradas": 31,
+     "utilizables": 31,
+     "tipo_ok": 31,
+     "enunciado_ok": 31,
+     "respuesta_ok": 23,
+     "inventadas": 0,
+     "completas": 23,
+     "sobrantes": 1,
+     "omitidas": 0,
+     "exactitud": 0.719,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué ocurre con el precio cuando la demanda aumenta y la oferta se mantiene?",
+       "options": [
+        "Baja",
+        "Desaparece",
+        "Sube",
+        "Se mantiene"
+       ],
+       "answers": [
+        "Sube"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuánto vale la raíz cuadrada de 144?",
+       "options": [
+        "10",
+        "11",
+        "12",
+        "14"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el mínimo común múltiplo de 4 y 6?",
+       "options": [
+        "6",
+        "12",
+        "18",
+        "24"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El plural de «pez» es «peces». (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+       "options": [
+        "Gregor Mendel",
+        "Louis Pasteur",
+        "Charles Darwin",
+        "Alexander Fleming"
+       ],
+       "answers": [
+        "Charles Darwin"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la energía que posee un cuerpo por su movimiento?",
+       "options": [
+        "Química",
+        "Cinética",
+        "Térmica",
+        "Potencial"
+       ],
+       "answers": [
+        "Cinética"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Canadá?",
+       "options": [
+        "Montreal",
+        "Ottawa",
+        "Vancouver",
+        "Toronto"
+       ],
+       "answers": [
+        "Ottawa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el desierto cálido más extenso del mundo?",
+       "options": [
+        "Gobi",
+        "Kalahari",
+        "Atacama",
+        "Sahara"
+       ],
+       "answers": [
+        "Sahara"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un lenguaje de marcado?",
+       "options": [
+        "Python",
+        "HTML",
+        "Rust",
+        "C++"
+       ],
+       "answers": [
+        "HTML"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos países están en Sudamérica?",
+       "options": [
+        "Uruguay",
+        "Guatemala",
+        "Paraguay",
+        "Cuba",
+        "Bolivia"
+       ],
+       "answers": [
+        "Uruguay",
+        "Paraguay",
+        "Bolivia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Los delfines son peces. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La capital de Perú es Lima. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+       "options": [
+        "Atenas",
+        "Constantinopla",
+        "Alejandría",
+        "Antioquía"
+       ],
+       "answers": [
+        "Constantinopla"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un adjetivo?",
+       "options": [
+        "Una palabra que enlaza oraciones",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que expresa acción"
+       ],
+       "answers": [
+        "Una palabra que modifica al sustantivo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un mamífero marino?",
+       "options": [
+        "Pulpo",
+        "Atún",
+        "Tiburón",
+        "Delfín"
+       ],
+       "answers": [
+        "Delfín"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tipo de roca se forma por enfriamiento del magma?",
+       "options": [
+        "Metamórfica",
+        "Ígnea",
+        "Detrítica",
+        "Sedimentaria"
+       ],
+       "answers": [
+        "Ígnea"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son estados de la materia comunes?",
+       "options": [
+        "Sólido",
+        "Gaseoso",
+        "Metálico",
+        "Líquido"
+       ],
+       "answers": [
+        "Sólido",
+        "Gaseoso",
+        "Líquido"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué país tiene forma de bota?",
+       "options": [
+        "Italia",
+        "España",
+        "Portugal",
+        "Grecia"
+       ],
+       "answers": [
+        "Italia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Los reptiles son animales de sangre caliente. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué grupo sanguíneo se considera donante universal?",
+       "options": [
+        "B-",
+        "O-",
+        "AB+",
+        "A+"
+       ],
+       "answers": [
+        "O-"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué significa la sigla SQL?",
+       "options": [
+        "Standard Quick Language",
+        "Structured Query Language",
+        "System Query Logic",
+        "Simple Question List"
+       ],
+       "answers": [
+        "Structured Query Language"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué mide un sismógrafo?",
+       "options": [
+        "Las vibraciones del suelo",
+        "La presión atmosférica",
+        "La humedad",
+        "La radiación solar"
+       ],
+       "answers": [
+        "Las vibraciones del suelo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un byte equivale a 4 bits. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+       "options": [
+        "K2",
+        "Everest",
+        "Kilimanjaro",
+        "Aconcagua"
+       ],
+       "answers": [
+        "Everest"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el sinónimo de «efímero»?",
+       "options": [
+        "Duradero",
+        "Eterno",
+        "Sólido",
+        "Pasajero"
+       ],
+       "answers": [
+        "Pasajero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué vitamina previene el escorbuto?",
+       "options": [
+        "Vitamina B12",
+        "Vitamina E",
+        "Vitamina C",
+        "Vitamina A"
+       ],
+       "answers": [
+        "Vitamina C"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son ejemplos de energías renovables?",
+       "options": [
+        "Petróleo",
+        "Hidráulica",
+        "Carbón",
+        "Eólica",
+        "Solar"
+       ],
+       "answers": [
+        "Hidráulica",
+        "Eólica",
+        "Solar"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la derivada de x²?",
+       "options": [
+        "x",
+        "2x",
+        "x²",
+        "2"
+       ],
+       "answers": [
+        "2x"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Australia?",
+       "options": [
+        "Melbourne",
+        "Canberra",
+        "Perth",
+        "Sídney"
+       ],
+       "answers": [
+        "Canberra"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Tierra tarda unos 365 días en orbitar el Sol. (solo el enunciado, sin opciones ni respuesta)",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estructura protege al cerebro?",
+       "options": [
+        "Cráneo",
+        "Columna",
+        "Pelvis",
+        "Costillas"
+       ],
+       "answers": [
+        "Cráneo"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "x12_clave_parcial": {
+   "summary": {
+    "doc": "x12_clave_parcial",
+    "runs": 3,
+    "esperadas": 40,
+    "exactitud": 0.967,
+    "exactitud_min": 0.95,
+    "exactitud_max": 1.0,
+    "completas": 38.667,
+    "completas_min": 38,
+    "completas_max": 40,
+    "encontradas": 38.667,
+    "encontradas_min": 38,
+    "encontradas_max": 40,
+    "utilizables": 20,
+    "utilizables_min": 20,
+    "utilizables_max": 20,
+    "tipo_ok": 20,
+    "tipo_ok_min": 20,
+    "tipo_ok_max": 20,
+    "enunciado_ok": 20,
+    "enunciado_ok_min": 20,
+    "enunciado_ok_max": 20,
+    "respuesta_ok": 38.667,
+    "respuesta_ok_min": 38,
+    "respuesta_ok_max": 40,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 20,
+    "omitidas_min": 20,
+    "omitidas_max": 20,
+    "seconds": 21.567,
+    "seconds_min": 20.7,
+    "seconds_max": 22.7,
+    "prompt_tokens": 6187,
+    "prompt_tokens_min": 6187,
+    "prompt_tokens_max": 6187,
+    "output_tokens": 8220,
+    "output_tokens_min": 8146,
+    "output_tokens_max": 8257,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 21.3,
+     "prompt_tokens": 6187,
+     "output_tokens": 8257,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [
+      "#12 [cloze] 'Los seres vivos que producen su propio alimento se denominan': NO apareció",
+      "#22 [cloze] 'El ____ es el planeta más grande del sistema solar y ____ es': NO apareció"
+     ],
+     "encontradas": 38,
+     "utilizables": 20,
+     "tipo_ok": 20,
+     "enunciado_ok": 20,
+     "respuesta_ok": 38,
+     "inventadas": 0,
+     "completas": 38,
+     "sobrantes": 0,
+     "omitidas": 20,
+     "exactitud": 0.95,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuál es el resultado de 2 elevado a la 10?",
+       "answers": [
+        "1024"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: Los mamíferos que vuelan son los ____ (murciélagos / pájaros / insectos); los que viven en el mar y respiran aire son los ____ (cetáceos / peces / moluscos).",
+       "blanks": [
+        [
+         "murciélagos"
+        ],
+        [
+         "cetáceos"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Quién escribió El Quijote?",
+       "answers": [
+        "Cervantes"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el elemento químico con número atómico 6?",
+       "options": [
+        "Nitrógeno",
+        "Carbono",
+        "Oxígeno",
+        "Boro"
+       ],
+       "answers": [
+        "Carbono"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un adjetivo?",
+       "options": [
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que enlaza oraciones",
+        "Una palabra que expresa acción"
+       ],
+       "answers": [
+        "Una palabra que modifica al sustantivo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la unidad de la resistencia eléctrica?",
+       "options": [
+        "Amperio",
+        "Vatio",
+        "Ohmio",
+        "Voltio"
+       ],
+       "answers": [
+        "Ohmio"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: El proceso por el cual las plantas fabrican su alimento se llama ____ (fotosíntesis / respiración / digestión).",
+       "blanks": [
+        [
+         "fotosíntesis"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe las fases de la mitosis."
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Explica la diferencia entre una pila y una cola y da un ejemplo de uso de cada una."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estas palabras es aguda?",
+       "options": [
+        "Canción",
+        "Árbol",
+        "Útil",
+        "Lápiz"
+       ],
+       "answers": [
+        "Canción"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un átomo neutro tiene igual número de protones y electrones.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuántos lados tiene un dodecágono?",
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe cómo funciona el protocolo HTTP en una petición típica."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el sinónimo de «efímero»?",
+       "options": [
+        "Pasajero",
+        "Duradero",
+        "Eterno",
+        "Sólido"
+       ],
+       "answers": [
+        "Pasajero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El ADN se encuentra únicamente en las células vegetales.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+       "answers": [
+        "Oxígeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+       "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+       ],
+       "answers": [
+        "3"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+       "options": [
+        "Atenas",
+        "Antioquía",
+        "Alejandría",
+        "Constantinopla"
+       ],
+       "answers": [
+        "Constantinopla"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Analiza las ventajas y desventajas del uso de energías renovables."
+      },
+      {
+       "status": "skipped",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el paso de un líquido a gas?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 1 (shortanswer) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada elemento químico con su símbolo.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 4 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "El punto de congelación del agua es 100 °C.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 5 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Cuál es la complejidad de la búsqueda binaria?",
+       "options": [
+        "O(n)",
+        "O(1)",
+        "O(n²)",
+        "O(log n)"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 6 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "La luz viaja más lento que el sonido.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 7 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué porcentaje es 45 de 180?",
+       "options": [
+        "20 %",
+        "25 %",
+        "30 %",
+        "35 %"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 10 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "cloze",
+       "stem": "Completa: Los seres vivos que producen su propio alimento se denominan [A: SIN_RESPUESTA / autótrofos / heterótrofos / descomponedores] (autótrofos / heterótrofos / descomponedores).",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: el espacio [A] en la Pregunta 12 (cloze) no tiene una respuesta correcta especificada."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el órgano que bombea la sangre?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 15 (shortanswer) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Cuál es el metal líquido a temperatura ambiente?",
+       "options": [
+        "Estaño",
+        "Mercurio",
+        "Plomo",
+        "Cobre"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 16 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué vitamina se sintetiza en la piel con la luz solar?",
+       "options": [
+        "Vitamina K",
+        "Vitamina C",
+        "Vitamina D",
+        "Vitamina A"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 18 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada término informático con su definición.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 19 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada autor con su obra.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 20 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "cloze",
+       "stem": "Completa: El [A: SIN_RESPUESTA / Júpiter / Saturno / Neptuno] (Júpiter / Saturno / Neptuno) es el planeta más grande del sistema solar y [B: SIN_RESPUESTA / Mercurio / Venus / Marte] (Mercurio / Venus / Marte) es el más cercano al Sol.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: el espacio [A] en la Pregunta 22 (cloze) no tiene una respuesta correcta especificada.",
+        "Error: el espacio [B] en la Pregunta 22 (cloze) no tiene una respuesta correcta especificada."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "numerical",
+       "stem": "¿Cuál es la raíz cuadrada de 225?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 25 (numerical) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "numerical",
+       "stem": "¿Cuál es el perímetro, en cm, de un cuadrado de lado 6,5 cm?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 26 (numerical) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "La Tierra tarda unos 365 días en orbitar el Sol.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 34 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "Júpiter es el planeta más cercano al Sol.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 35 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada figura geométrica con su número de lados.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 36 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué hace la instrucción break dentro de un bucle?",
+       "options": [
+        "Reinicia el bucle",
+        "Lanza una excepción",
+        "Termina el bucle",
+        "Salta a la siguiente iteración"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 37 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué estructura de datos funciona con el principio LIFO?",
+       "options": [
+        "Pila",
+        "Cola",
+        "Grafo",
+        "Árbol"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 40 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 22.7,
+     "prompt_tokens": 6187,
+     "output_tokens": 8146,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [],
+     "encontradas": 40,
+     "utilizables": 20,
+     "tipo_ok": 20,
+     "enunciado_ok": 20,
+     "respuesta_ok": 40,
+     "inventadas": 0,
+     "completas": 40,
+     "sobrantes": 0,
+     "omitidas": 20,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuál es el resultado de 2 elevado a la 10?",
+       "answers": [
+        "1024"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: Los mamíferos que vuelan son los ____; los que viven en el mar y respiran aire son los ____.",
+       "blanks": [
+        [
+         "murciélagos"
+        ],
+        [
+         "cetáceos"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Quién escribió El Quijote?",
+       "answers": [
+        "Cervantes"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el elemento químico con número atómico 6?",
+       "options": [
+        "Nitrógeno",
+        "Carbono",
+        "Oxígeno",
+        "Boro"
+       ],
+       "answers": [
+        "Carbono"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un adjetivo?",
+       "options": [
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que enlaza oraciones",
+        "Una palabra que expresa acción"
+       ],
+       "answers": [
+        "Una palabra que modifica al sustantivo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la unidad de la resistencia eléctrica?",
+       "options": [
+        "Amperio",
+        "Vatio",
+        "Ohmio",
+        "Voltio"
+       ],
+       "answers": [
+        "Ohmio"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: El proceso por el cual las plantas fabrican su alimento se llama ____.",
+       "blanks": [
+        [
+         "fotosíntesis"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe las fases de la mitosis."
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Explica la diferencia entre una pila y una cola y da un ejemplo de uso de cada una."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estas palabras es aguda?",
+       "options": [
+        "Canción",
+        "Árbol",
+        "Útil",
+        "Lápiz"
+       ],
+       "answers": [
+        "Canción"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un átomo neutro tiene igual número de protones y electrones.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuántos lados tiene un dodecágono?",
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe cómo funciona el protocolo HTTP en una petición típica."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el sinónimo de «efímero»?",
+       "options": [
+        "Pasajero",
+        "Duradero",
+        "Eterno",
+        "Sólido"
+       ],
+       "answers": [
+        "Pasajero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El ADN se encuentra únicamente en las células vegetales.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+       "answers": [
+        "Oxígeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+       "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+       ],
+       "answers": [
+        "3"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+       "options": [
+        "Atenas",
+        "Antioquía",
+        "Alejandría",
+        "Constantinopla"
+       ],
+       "answers": [
+        "Constantinopla"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Analiza las ventajas y desventajas del uso de energías renovables."
+      },
+      {
+       "status": "skipped",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el paso de un líquido a gas?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 1 (shortanswer) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada elemento químico con su símbolo.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 4 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "El punto de congelación del agua es 100 °C.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 5 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Cuál es la complejidad de la búsqueda binaria?",
+       "options": [
+        "O(n)",
+        "O(1)",
+        "O(n²)",
+        "O(log n)"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 6 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "La luz viaja más lento que el sonido.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 7 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué porcentaje es 45 de 180?",
+       "options": [
+        "20 %",
+        "25 %",
+        "30 %",
+        "35 %"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 10 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "cloze",
+       "stem": "Completa: Los seres vivos que producen su propio alimento se denominan [A: SIN_RESPUESTA / autótrofos / heterótrofos / descomponedores].",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: el espacio [A] en la Pregunta 12 (cloze) no tiene una respuesta correcta especificada."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el órgano que bombea la sangre?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 15 (shortanswer) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Cuál es el metal líquido a temperatura ambiente?",
+       "options": [
+        "Estaño",
+        "Mercurio",
+        "Plomo",
+        "Cobre"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 16 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué vitamina se sintetiza en la piel con la luz solar?",
+       "options": [
+        "Vitamina K",
+        "Vitamina C",
+        "Vitamina D",
+        "Vitamina A"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 18 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada término informático con su definición.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 19 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada autor con su obra.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 20 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "cloze",
+       "stem": "Completa: El [A: SIN_RESPUESTA / Júpiter / Saturno / Neptuno] es el planeta más grande del sistema solar y [B: SIN_RESPUESTA / Mercurio / Venus / Marte] es el más cercano al Sol.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: el espacio [A] en la Pregunta 22 (cloze) no tiene una respuesta correcta especificada.",
+        "Error: el espacio [B] en la Pregunta 22 (cloze) no tiene una respuesta correcta especificada."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "numerical",
+       "stem": "¿Cuál es la raíz cuadrada de 225?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 25 (numerical) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "numerical",
+       "stem": "¿Cuál es el perímetro, en cm, de un cuadrado de lado 6,5 cm?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 26 (numerical) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "La Tierra tarda unos 365 días en orbitar el Sol.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 34 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "Júpiter es el planeta más cercano al Sol.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 35 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada figura geométrica con su número de lados.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 36 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué hace la instrucción break dentro de un bucle?",
+       "options": [
+        "Reinicia el bucle",
+        "Lanza una excepción",
+        "Termina el bucle",
+        "Salta a la siguiente iteración"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 37 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué estructura de datos funciona con el principio LIFO?",
+       "options": [
+        "Pila",
+        "Cola",
+        "Grafo",
+        "Árbol"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 40 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 20.7,
+     "prompt_tokens": 6187,
+     "output_tokens": 8257,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [
+      "#12 [cloze] 'Los seres vivos que producen su propio alimento se denominan': NO apareció",
+      "#22 [cloze] 'El ____ es el planeta más grande del sistema solar y ____ es': NO apareció"
+     ],
+     "encontradas": 38,
+     "utilizables": 20,
+     "tipo_ok": 20,
+     "enunciado_ok": 20,
+     "respuesta_ok": 38,
+     "inventadas": 0,
+     "completas": 38,
+     "sobrantes": 0,
+     "omitidas": 20,
+     "exactitud": 0.95,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuál es el resultado de 2 elevado a la 10?",
+       "answers": [
+        "1024"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: Los mamíferos que vuelan son los ____ (murciélagos / pájaros / insectos); los que viven en el mar y respiran aire son los ____ (cetáceos / peces / moluscos).",
+       "blanks": [
+        [
+         "murciélagos"
+        ],
+        [
+         "cetáceos"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Quién escribió El Quijote?",
+       "answers": [
+        "Cervantes"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el elemento químico con número atómico 6?",
+       "options": [
+        "Nitrógeno",
+        "Carbono",
+        "Oxígeno",
+        "Boro"
+       ],
+       "answers": [
+        "Carbono"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un adjetivo?",
+       "options": [
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que enlaza oraciones",
+        "Una palabra que expresa acción"
+       ],
+       "answers": [
+        "Una palabra que modifica al sustantivo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la unidad de la resistencia eléctrica?",
+       "options": [
+        "Amperio",
+        "Vatio",
+        "Ohmio",
+        "Voltio"
+       ],
+       "answers": [
+        "Ohmio"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: El proceso por el cual las plantas fabrican su alimento se llama ____ (fotosíntesis / respiración / digestión).",
+       "blanks": [
+        [
+         "fotosíntesis"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe las fases de la mitosis."
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Explica la diferencia entre una pila y una cola y da un ejemplo de uso de cada una."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estas palabras es aguda?",
+       "options": [
+        "Canción",
+        "Árbol",
+        "Útil",
+        "Lápiz"
+       ],
+       "answers": [
+        "Canción"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un átomo neutro tiene igual número de protones y electrones.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuántos lados tiene un dodecágono?",
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Describe cómo funciona el protocolo HTTP en una petición típica."
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el sinónimo de «efímero»?",
+       "options": [
+        "Pasajero",
+        "Duradero",
+        "Eterno",
+        "Sólido"
+       ],
+       "answers": [
+        "Pasajero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El ADN se encuentra únicamente en las células vegetales.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+       "answers": [
+        "Oxígeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+       "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+       ],
+       "answers": [
+        "3"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+       "options": [
+        "Atenas",
+        "Antioquía",
+        "Alejandría",
+        "Constantinopla"
+       ],
+       "answers": [
+        "Constantinopla"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Analiza las ventajas y desventajas del uso de energías renovables."
+      },
+      {
+       "status": "skipped",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el paso de un líquido a gas?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 1 (shortanswer) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada elemento químico con su símbolo.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 4 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "El punto de congelación del agua es 100 °C.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 5 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Cuál es la complejidad de la búsqueda binaria?",
+       "options": [
+        "O(n)",
+        "O(1)",
+        "O(n²)",
+        "O(log n)"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 6 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "La luz viaja más lento que el sonido.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 7 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué porcentaje es 45 de 180?",
+       "options": [
+        "20 %",
+        "25 %",
+        "30 %",
+        "35 %"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 10 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "cloze",
+       "stem": "Completa: Los seres vivos que producen su propio alimento se denominan [A: SIN_RESPUESTA / autótrofos / heterótrofos / descomponedores] (autótrofos / heterótrofos / descomponedores).",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: el espacio [A] en la Pregunta 12 (cloze) no tiene una respuesta correcta especificada."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el órgano que bombea la sangre?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 15 (shortanswer) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Cuál es el metal líquido a temperatura ambiente?",
+       "options": [
+        "Estaño",
+        "Mercurio",
+        "Plomo",
+        "Cobre"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 16 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué vitamina se sintetiza en la piel con la luz solar?",
+       "options": [
+        "Vitamina K",
+        "Vitamina C",
+        "Vitamina D",
+        "Vitamina A"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 18 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada término informático con su definición.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 19 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada autor con su obra.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 20 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "cloze",
+       "stem": "Completa: El [A: SIN_RESPUESTA / Júpiter / Saturno / Neptuno] (Júpiter / Saturno / Neptuno) es el planeta más grande del sistema solar y [B: SIN_RESPUESTA / Mercurio / Venus / Marte] (Mercurio / Venus / Marte) es el más cercano al Sol.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: el espacio [A] en la Pregunta 22 (cloze) no tiene una respuesta correcta especificada.",
+        "Error: el espacio [B] en la Pregunta 22 (cloze) no tiene una respuesta correcta especificada."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "numerical",
+       "stem": "¿Cuál es la raíz cuadrada de 225?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 25 (numerical) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "numerical",
+       "stem": "¿Cuál es el perímetro, en cm, de un cuadrado de lado 6,5 cm?",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 26 (numerical) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "La Tierra tarda unos 365 días en orbitar el Sol.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 34 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "Júpiter es el planeta más cercano al Sol.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 35 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "matching",
+       "stem": "Relaciona cada figura geométrica con su número de lados.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 36 (matching) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué hace la instrucción break dentro de un bucle?",
+       "options": [
+        "Reinicia el bucle",
+        "Lanza una excepción",
+        "Termina el bucle",
+        "Salta a la siguiente iteración"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 37 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Qué estructura de datos funciona con el principio LIFO?",
+       "options": [
+        "Pila",
+        "Cola",
+        "Grafo",
+        "Árbol"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 40 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

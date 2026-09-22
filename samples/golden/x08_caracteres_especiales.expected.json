@@ -1,0 +1,407 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x08_caracteres_especiales.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "focus": "Caracteres especiales",
+  "notes": "36 preguntas con &, <, >, ]]>, {1:MULTICHOICE:…}, ~, #, barras invertidas, '|' como opción (el separador de respuestas múltiples), '/' dentro de las opciones de un Cloze (km/h, TCP/IP), ';' y '|' dentro de opciones Cloze, símbolos matemáticos y subíndices Unicode.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Qué operador bit a bit realiza la operación OR en Python?",
+      "answers": [
+        "|"
+      ],
+      "options": [
+        "~",
+        "^",
+        "&",
+        "|"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El carácter ~ se usa en Cloze de Moodle para separar las opciones de una respuesta.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La etiqueta <br> inserta un salto de línea en HTML.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué representa la letra griega Σ en matemáticas?",
+      "answers": [
+        "Una sumatoria"
+      ],
+      "options": [
+        "Una integral",
+        "Un producto",
+        "Una sumatoria",
+        "Un límite"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Qué operador de Python realiza la comparación de igualdad?",
+      "answers": [
+        "=="
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué símbolo se usa para comentarios de una línea en Python?",
+      "answers": [
+        "#"
+      ],
+      "options": [
+        "/*",
+        "//",
+        "--",
+        "#"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "En SQL, el comodín % representa cualquier secuencia de caracteres.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "En una lista de Python, el índice del primer elemento es ____.",
+      "blanks": [
+        [
+          "0"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "En Python, ____ compara igualdad y ____ asigna un valor.",
+      "blanks": [
+        [
+          "=="
+        ],
+        [
+          "="
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "El protocolo ____ es la base de Internet.",
+      "blanks": [
+        [
+          "TCP/IP"
+        ]
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el resultado de 2 × 3 + 4 ÷ 2?",
+      "answers": [
+        "8"
+      ],
+      "options": [
+        "8",
+        "7",
+        "5",
+        "10"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el resultado de 5 > 3 && 2 < 1 en JavaScript?",
+      "answers": [
+        "false"
+      ],
+      "options": [
+        "undefined",
+        "true",
+        "false",
+        "NaN"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el símbolo de la moneda del euro?",
+      "answers": [
+        "€"
+      ],
+      "options": [
+        "€",
+        "$",
+        "£",
+        "¥"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Un texto termina con la secuencia ]]> ¿Qué formato XML necesita escapar esa secuencia?",
+      "answers": [
+        "CDATA"
+      ],
+      "options": [
+        "YAML",
+        "JSON",
+        "CDATA",
+        "CSV"
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "La fórmula del agua es ____ y la del dióxido de carbono es ____.",
+      "blanks": [
+        [
+          "H₂O"
+        ],
+        [
+          "CO₂"
+        ]
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué frase está escrita entre comillas latinas?",
+      "answers": [
+        "«Hola»"
+      ],
+      "options": [
+        "\"Hola\"",
+        "'Hola'",
+        "«Hola»",
+        "“Hola”"
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "En un archivo CSV el separador suele ser ____; en Moodle las opciones de un Cloze se separan con ____.",
+      "blanks": [
+        [
+          "el punto y coma (;)"
+        ],
+        [
+          "la tilde (~)"
+        ]
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la fórmula del área del círculo?",
+      "answers": [
+        "A = πr²"
+      ],
+      "options": [
+        "A = 2πr",
+        "A = r²/π",
+        "A = πd",
+        "A = πr²"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué imprime print('Tom & Jerry')?",
+      "answers": [
+        "Tom & Jerry"
+      ],
+      "options": [
+        "Tom & Jerry",
+        "Tom y Jerry",
+        "Error",
+        "Tom &amp; Jerry"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué desigualdad describe «x es mayor o igual que 5»?",
+      "answers": [
+        "x ≥ 5"
+      ],
+      "options": [
+        "x ≠ 5",
+        "x ≤ 5",
+        "x ≥ 5",
+        "x < 5"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "El valor aproximado de π es:",
+      "answers": [
+        "π ≈ 3,14"
+      ],
+      "options": [
+        "π ≈ 2,71",
+        "π ≈ 4,13",
+        "π ≈ 1,61",
+        "π ≈ 3,14"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Una expresión regular que reconoce un dígito es:",
+      "answers": [
+        "\\d"
+      ],
+      "options": [
+        "\\s",
+        "\\d",
+        "\\b",
+        "\\w"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La secuencia «]]>» cierra una sección CDATA en XML.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué secuencia de escape representa un salto de línea en C?",
+      "answers": [
+        "\\n"
+      ],
+      "options": [
+        "\\n",
+        "/n",
+        "\\r",
+        "\\t"
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "La velocidad se mide en ____ y la frecuencia en ____.",
+      "blanks": [
+        [
+          "km/h"
+        ],
+        [
+          "Hz"
+        ]
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La expresión x ≠ y significa que x es igual a y.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuánto es 1/4 + 1/4?",
+      "answers": [
+        "1/2"
+      ],
+      "options": [
+        "1/2",
+        "1/8",
+        "2/8",
+        "1/16"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "En Python, 5 // 2 devuelve 2,5.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la temperatura de congelación del agua?",
+      "answers": [
+        "0 °C"
+      ],
+      "options": [
+        "0 °C",
+        "32 °C",
+        "100 °C",
+        "273 °C"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la derivada de sen(x)?",
+      "answers": [
+        "cos(x)"
+      ],
+      "options": [
+        "sen(x)",
+        "-sen(x)",
+        "cos(x)",
+        "-cos(x)"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "Escribe el símbolo químico del oro.",
+      "answers": [
+        "Au"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En la sintaxis de Moodle {1:MULTICHOICE:=Sí~No}, ¿qué carácter separa las opciones?",
+      "answers": [
+        "~"
+      ],
+      "options": [
+        "#",
+        "}",
+        "~",
+        "="
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál palabra está escrita correctamente?",
+      "answers": [
+        "canción"
+      ],
+      "options": [
+        "cancion",
+        "cançión",
+        "canciõn",
+        "canción"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuál es el resultado de 10 ÷ 4? (usa coma decimal)",
+      "answers": [
+        "2,5"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En HTML, ¿qué etiqueta define un párrafo?",
+      "answers": [
+        "<p>"
+      ],
+      "options": [
+        "<div>",
+        "<br>",
+        "<span>",
+        "<p>"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuánto es 3² + 4²?",
+      "answers": [
+        "25"
+      ]
+    }
+  ]
+}

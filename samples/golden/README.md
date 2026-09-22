@@ -15,12 +15,17 @@ backend/venv/bin/python dev/eval.py --mode json     # otro modo de normalizació
 |---|---|---|
 | `s01…s09` | Sintéticos, generados por `dev/synthetic/generate.py` a partir de `dev/synthetic/exams.py` | Exacta por construcción |
 | `real_*` | Los PDFs reales de `samples/` | Pre-llenada con el pipeline y **verificada**: ver `reviewed` / `notes` |
+| `x01…x13` | Sintéticos **adversariales** (30-50 preguntas, cada uno diseñado para romper una parte distinta del sistema), generados por `dev/synthetic/generate_adversarial.py` | Exacta por construcción. `source: "adversarial"`; quedan fuera de la corrida por defecto: se corren con `--adversarial` o `--only x` |
+
+Los adversariales llevan además `"focus"` (qué punto débil ataca). Para
+correrlos: `backend/venv/bin/python dev/eval.py --only x --runs 3`.
 
 Para regenerar los sintéticos (es determinista):
 
 ```bash
 backend/venv/bin/python -m pip install -r dev/requirements-dev.txt
 backend/venv/bin/python dev/synthetic/generate.py
+backend/venv/bin/python dev/synthetic/generate_adversarial.py   # x01…x12
 ```
 
 ## Formato

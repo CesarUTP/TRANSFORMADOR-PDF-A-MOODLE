@@ -11,6 +11,8 @@ Centralizarlo aquí evita que los dos vuelvan a divergir.
 """
 
 import difflib
+import re
+from typing import List, Tuple
 
 _PREFIX_FALLBACK_MIN_LEN = 20  # evita falsos positivos con fragmentos cortos/genéricos
 
@@ -34,3 +36,74 @@ def is_truncated_answer_match(target: str, option: str) -> bool:
         return False
     prefix_len = min(len(target), len(option))
     return difflib.SequenceMatcher(None, target[:prefix_len], option[:prefix_len]).ratio() > 0.9
+
+
+# ── Separadores de la forma interna ──────────────────────────────────────────
+# La clave guarda varias respuestas correctas de una misma pregunta unidas con
+# " | ", y las opciones de un hueco Cloze van unidas con " / ". Antes se
+# separaba por "|" y "/" a secas, y un texto que contiene esos caracteres
+# (la opción "|" de un examen de programación, "km/h", "TCP/IP") se partía en
+# pedazos o se perdía (medido en dev/eval_results/RESULTADOS.md, x08). Ahora el
+# separador es el carácter CON espacios a ambos lados: "|" solo, "km/h" o
+# "la barra (|)" son texto, no separador.
+_ANSWER_SEP = re.compile(r"\s+\|\s+")
+_OPTION_SEP = re.compile(r"\s+/\s+")
+
+
+def split_answers(text: str) -> List[str]:
+    """"B | D" → ["B", "D"]; "|" → ["|"]; "| | &" → ["|", "&"]."""
+    return [p.strip() for p in _ANSWER_SEP.split((text or "").strip()) if p.strip()]
+
+
+def split_options(text: str) -> List[str]:
+    """"a / b / c" → ["a", "b", "c"]; "km/h / m/s" → ["km/h", "m/s"]."""
+    return [p.strip() for p in _OPTION_SEP.split((text or "").strip()) if p.strip()]
+
+
+# ── Espacios de un Cloze: "[Letra: opción1 / opción2]" ──────────────────────
+_CLOZE_SLOT_OPEN = re.compile(r"([A-Za-z]):\s*")
+
+
+def find_cloze_brackets(text: str) -> List[Tuple[int, int, str, str]]:
+    """
+    Ubica cada espacio "[Letra: opción1 / opción2 / ...]" de un Cloze en
+    `text`, para validator.py, xml_builder.py y el constructor visual del
+    frontend (cloze.js, misma lógica en JS).
+
+    Un "[" y "]" balanceados DENTRO de una opción (ej. una opción de código
+    como "arr[0]") NO cierran el espacio a mitad de camino: antes se usaba
+    una expresión regular que se detenía en el PRIMER "]" que encontrara,
+    así que "[A: arr[0] / arr[1]]" se leía como el espacio "[A: arr[0]]"
+    seguido de basura suelta "/ arr[1]]" — perdiendo la segunda opción y
+    dejando el enunciado con un corchete de más (dev/eval_results/
+    RESULTADOS.md, casos con código de programación).
+
+    Devuelve una lista de (inicio, fin, letra, opciones_crudas) — "fin" es
+    el índice justo después del "]" de cierre; "opciones_crudas" es el
+    texto entre "Letra:" y ese "]", todavía sin partir por " / "
+    (usar split_options para eso).
+    """
+    out: List[Tuple[int, int, str, str]] = []
+    i, n = 0, len(text)
+    while i < n:
+        if text[i] != "[":
+            i += 1
+            continue
+        m = _CLOZE_SLOT_OPEN.match(text, i + 1)
+        if not m:
+            i += 1
+            continue
+        body_start = m.end()
+        depth, j = 1, body_start
+        while j < n and depth:
+            if text[j] == "[":
+                depth += 1
+            elif text[j] == "]":
+                depth -= 1
+            j += 1
+        if depth:
+            i += 1  # sin cierre — no es un espacio válido, sigue buscando
+            continue
+        out.append((i, j, m.group(1), text[body_start:j - 1]))
+        i = j
+    return out

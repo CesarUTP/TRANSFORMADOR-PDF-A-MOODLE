@@ -1,0 +1,429 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x01_numeracion_caotica.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "focus": "Numeración y rótulos",
+  "notes": "40 preguntas con numeración repetida y salteada en 4 estilos distintos, opciones numeradas como si fueran preguntas, opciones sin rótulo y, desde la 26, preguntas sin ningún número. Respuestas con asterisco y V/F con ( X ); ~25 % con clave contrafáctica.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+      "answers": [
+        "Gregor Mendel"
+      ],
+      "options": [
+        "Gregor Mendel",
+        "Alexander Fleming",
+        "Louis Pasteur",
+        "Charles Darwin"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El código binario usa únicamente los dígitos 0 y 1.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el pH de una solución neutra a 25 °C?",
+      "answers": [
+        "7"
+      ],
+      "options": [
+        "0",
+        "7",
+        "10",
+        "14"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El Sol es una estrella.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el mínimo común múltiplo de 4 y 6?",
+      "answers": [
+        "12"
+      ],
+      "options": [
+        "6",
+        "12",
+        "18",
+        "24"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Describe cómo funciona el protocolo HTTP en una petición típica."
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué tipo de enlace comparte electrones entre átomos?",
+      "answers": [
+        "De hidrógeno"
+      ],
+      "options": [
+        "Iónico",
+        "Covalente",
+        "De hidrógeno",
+        "Metálico"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Quién pintó La noche estrellada?",
+      "answers": [
+        "Vincent van Gogh"
+      ],
+      "options": [
+        "Salvador Dalí",
+        "Pablo Picasso",
+        "Claude Monet",
+        "Vincent van Gogh"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El español es el idioma oficial de Brasil.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estructura de la célula vegetal no existe en la célula animal?",
+      "answers": [
+        "Pared celular"
+      ],
+      "options": [
+        "Núcleo",
+        "Pared celular",
+        "Citoplasma",
+        "Membrana plasmática"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿En qué continente se encuentra Mongolia?",
+      "answers": [
+        "Asia"
+      ],
+      "options": [
+        "Asia",
+        "África",
+        "Oceanía",
+        "Europa"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cuál es la capital de Argentina?",
+      "answers": [
+        "Buenos Aires"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "La fotosíntesis ocurre principalmente en los:",
+      "answers": [
+        "cloroplastos"
+      ],
+      "options": [
+        "cloroplastos",
+        "vacuolas",
+        "centriolos",
+        "ribosomas"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Explica qué es la normalización en bases de datos y por qué es útil."
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es un monopolio?",
+      "answers": [
+        "Mercado con un único vendedor"
+      ],
+      "options": [
+        "Mercado regulado por sus consumidores",
+        "Mercado sin compradores",
+        "Mercado con muchos vendedores",
+        "Mercado con un único vendedor"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el proceso por el cual las plantas producen su alimento con luz?",
+      "answers": [
+        "Fotosíntesis"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+      "answers": [
+        "3"
+      ],
+      "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La fracción 3/6 es equivalente a 1/2.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "La suma de los ángulos internos de un triángulo es:",
+      "answers": [
+        "180°"
+      ],
+      "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué planeta tiene los anillos más visibles?",
+      "answers": [
+        "Urano"
+      ],
+      "options": [
+        "Urano",
+        "Júpiter",
+        "Neptuno",
+        "Saturno"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el río más caudaloso del mundo?",
+      "answers": [
+        "Amazonas"
+      ],
+      "options": [
+        "Misisipi",
+        "Nilo",
+        "Amazonas",
+        "Yangtsé"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué país fue gobernado por los faraones?",
+      "answers": [
+        "Egipto"
+      ],
+      "options": [
+        "Mesopotamia",
+        "Persia",
+        "Egipto",
+        "Fenicia"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es el ADN?",
+      "answers": [
+        "Ácido desoxirribonucleico, portador de la información genética"
+      ],
+      "options": [
+        "Una hormona",
+        "Una proteína estructural",
+        "Un tipo de azúcar",
+        "Ácido desoxirribonucleico, portador de la información genética"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Describe el ciclo del agua y su importancia para los ecosistemas."
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué civilización construyó Machu Picchu?",
+      "answers": [
+        "Maya"
+      ],
+      "options": [
+        "Olmeca",
+        "Azteca",
+        "Maya",
+        "Inca"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama la estructura de datos que sigue el principio FIFO?",
+      "answers": [
+        "Cola"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estos son tipos de datos primitivos en Java?",
+      "answers": [
+        "double",
+        "int",
+        "boolean"
+      ],
+      "options": [
+        "double",
+        "List",
+        "int",
+        "boolean",
+        "String"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el área de un círculo de radio 3 (en función de pi)?",
+      "answers": [
+        "3 pi"
+      ],
+      "options": [
+        "6 pi",
+        "9 pi",
+        "3 pi",
+        "12 pi"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+      "answers": [
+        "Oxígeno"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El punto de congelación del agua es 100 °C.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuántos cromosomas tiene una célula humana somática normal?",
+      "answers": [
+        "48"
+      ],
+      "options": [
+        "23",
+        "44",
+        "46",
+        "48"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+      "answers": [
+        "Everest"
+      ],
+      "options": [
+        "Aconcagua",
+        "Everest",
+        "K2",
+        "Kilimanjaro"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+      "answers": [
+        "323 K"
+      ],
+      "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Describe las fases de la mitosis."
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué corriente artística pintó relojes derretidos?",
+      "answers": [
+        "Surrealismo"
+      ],
+      "options": [
+        "Impresionismo",
+        "Cubismo",
+        "Surrealismo",
+        "Barroco"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Los delfines son peces.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La raíz cuadrada de 49 es 6.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "SQL se usa para consultar bases de datos relacionales.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué elemento es el más abundante en el universo?",
+      "answers": [
+        "Hidrógeno"
+      ],
+      "options": [
+        "Oxígeno",
+        "Helio",
+        "Hidrógeno",
+        "Carbono"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Selecciona los lenguajes de programación:",
+      "answers": [
+        "Java",
+        "Python",
+        "Go"
+      ],
+      "options": [
+        "Java",
+        "CSS",
+        "Python",
+        "HTML",
+        "Go"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,486 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x03_claves_heterogeneas.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "focus": "Clave final en 3 formatos",
+  "notes": "40 preguntas de los 7 tipos; la clave del final cambia de formato en cada sección (lista con letras, tabla Nº|Respuesta con V/F completos y '→', 'Pregunta N: c) texto' con Cloze entre corchetes). ~25 % de claves contrafácticas.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Qué tipo de texto tiene como finalidad convencer al lector?",
+      "answers": [
+        "Argumentativo"
+      ],
+      "options": [
+        "Instructivo",
+        "Argumentativo",
+        "Narrativo",
+        "Descriptivo"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuál es la raíz cuadrada de 225?",
+      "answers": [
+        "15"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el paso de un líquido a gas?",
+      "answers": [
+        "Evaporación"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada término informático con su definición.",
+      "pairs": [
+        [
+          "RAM",
+          "Memoria volátil de acceso aleatorio"
+        ],
+        [
+          "CPU",
+          "Unidad que ejecuta las instrucciones"
+        ],
+        [
+          "SSD",
+          "Almacenamiento sin partes móviles"
+        ],
+        [
+          "GPU",
+          "Procesador especializado en gráficos"
+        ],
+        [
+          "BIOS",
+          "Firmware que inicia el equipo"
+        ]
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el proceso por el cual las plantas producen su alimento con luz?",
+      "answers": [
+        "Fotosíntesis"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El ozono protege de la radiación ultravioleta.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estructura de la célula vegetal no existe en la célula animal?",
+      "answers": [
+        "Pared celular"
+      ],
+      "options": [
+        "Membrana plasmática",
+        "Pared celular",
+        "Citoplasma",
+        "Núcleo"
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "En una base de datos relacional, cada tabla se compone de ____ y ____.",
+      "blanks": [
+        [
+          "filas"
+        ],
+        [
+          "columnas"
+        ]
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿En qué año se firmó la Declaración de Independencia de los Estados Unidos?",
+      "answers": [
+        "1776"
+      ],
+      "options": [
+        "1776",
+        "1789",
+        "1812",
+        "1492"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el lago navegable más alto del mundo?",
+      "answers": [
+        "Titicaca"
+      ],
+      "options": [
+        "Baikal",
+        "Victoria",
+        "Titicaca",
+        "Superior"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Júpiter es el planeta más cercano al Sol.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Quién fue el primer presidente de los Estados Unidos?",
+      "answers": [
+        "George Washington"
+      ],
+      "options": [
+        "John Adams",
+        "Thomas Jefferson",
+        "Abraham Lincoln",
+        "George Washington"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estructura de control ejecuta código solo si se cumple una condición?",
+      "answers": [
+        "import"
+      ],
+      "options": [
+        "import",
+        "while",
+        "for",
+        "if"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Un ciclo while puede no ejecutarse ninguna vez.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Qué instrumento mide la temperatura?",
+      "answers": [
+        "Termómetro"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué galaxia contiene a nuestro sistema solar?",
+      "answers": [
+        "Vía Láctea"
+      ],
+      "options": [
+        "Andrómeda",
+        "Sombrero",
+        "Triángulo",
+        "Vía Láctea"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué civilización construyó Machu Picchu?",
+      "answers": [
+        "Inca"
+      ],
+      "options": [
+        "Olmeca",
+        "Azteca",
+        "Inca",
+        "Maya"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada autor con su obra.",
+      "pairs": [
+        [
+          "Cervantes",
+          "Don Quijote de la Mancha"
+        ],
+        [
+          "García Márquez",
+          "Cien años de soledad"
+        ],
+        [
+          "Neruda",
+          "Veinte poemas de amor y una canción desesperada"
+        ],
+        [
+          "Borges",
+          "El Aleph"
+        ],
+        [
+          "Cortázar",
+          "Rayuela"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "Los seres vivos que producen su propio alimento se denominan ____.",
+      "blanks": [
+        [
+          "autótrofos"
+        ]
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Comenta las consecuencias económicas de una inflación sostenida."
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuántos bits tiene un byte?",
+      "answers": [
+        "16"
+      ],
+      "options": [
+        "4",
+        "8",
+        "16",
+        "32"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La luz viaja más lento que el sonido.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "El proceso por el cual las plantas fabrican su alimento se llama ____.",
+      "blanks": [
+        [
+          "fotosíntesis"
+        ]
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada elemento químico con su símbolo.",
+      "pairs": [
+        [
+          "Oro",
+          "Au"
+        ],
+        [
+          "Plata",
+          "Ag"
+        ],
+        [
+          "Hierro",
+          "Fe"
+        ],
+        [
+          "Sodio",
+          "Na"
+        ],
+        [
+          "Potasio",
+          "K"
+        ]
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué vitamina se sintetiza en la piel con la luz solar?",
+      "answers": [
+        "Vitamina C"
+      ],
+      "options": [
+        "Vitamina A",
+        "Vitamina C",
+        "Vitamina K",
+        "Vitamina D"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Explica con tus palabras las causas de la Primera Guerra Mundial."
+    },
+    {
+      "type": "truefalse",
+      "stem": "La Gran Muralla China es visible a simple vista desde el espacio.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada figura geométrica con su número de lados.",
+      "pairs": [
+        [
+          "Triángulo",
+          "3"
+        ],
+        [
+          "Cuadrilátero",
+          "4"
+        ],
+        [
+          "Pentágono",
+          "5"
+        ],
+        [
+          "Hexágono",
+          "6"
+        ],
+        [
+          "Octógono",
+          "8"
+        ]
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "La capital de Francia es ____ y su río principal es el ____.",
+      "blanks": [
+        [
+          "París"
+        ],
+        [
+          "Sena"
+        ]
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuántos grados tiene un ángulo recto?",
+      "answers": [
+        "90"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el sistema de numeración en base 2?",
+      "answers": [
+        "Binario"
+      ],
+      "options": [
+        "Octal",
+        "Hexadecimal",
+        "Decimal",
+        "Binario"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El punto de congelación del agua es 100 °C.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuánto es 3 − 8?",
+      "answers": [
+        "-5"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estos son métodos HTTP?",
+      "answers": [
+        "POST",
+        "DELETE",
+        "GET"
+      ],
+      "options": [
+        "FETCH",
+        "POST",
+        "DELETE",
+        "PUSH",
+        "GET"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de estos es un mamífero marino?",
+      "answers": [
+        "Delfín"
+      ],
+      "options": [
+        "Atún",
+        "Delfín",
+        "Tiburón",
+        "Pulpo"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿En qué año cayó el Muro de Berlín?",
+      "answers": [
+        "1989"
+      ],
+      "options": [
+        "1985",
+        "1989",
+        "1991",
+        "1993"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En derecho, ¿qué significa «habeas corpus»?",
+      "answers": [
+        "Protección contra la detención arbitraria"
+      ],
+      "options": [
+        "Derecho a la propiedad",
+        "Derecho de autor",
+        "Protección contra la detención arbitraria",
+        "Libertad de prensa"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el resultado de 2³ + 3²?",
+      "answers": [
+        "17"
+      ],
+      "options": [
+        "13",
+        "17",
+        "15",
+        "12"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la velocidad aproximada de la luz en el vacío?",
+      "answers": [
+        "300 000 km/s"
+      ],
+      "options": [
+        "300 000 km/s",
+        "150 000 km/s",
+        "30 000 km/s",
+        "3 000 000 km/s"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es el PIB?",
+      "answers": [
+        "El total de impuestos recaudados"
+      ],
+      "options": [
+        "El total de impuestos recaudados",
+        "El número de empleados de un país",
+        "La deuda externa de un país",
+        "El valor total de los bienes y servicios producidos en un país en un periodo"
+      ]
+    }
+  ]
+}

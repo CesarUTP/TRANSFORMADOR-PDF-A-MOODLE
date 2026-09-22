@@ -1,0 +1,461 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x12_clave_parcial.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "focus": "Clave incompleta (no inventar)",
+  "notes": "40 preguntas de los 7 tipos donde ~55 % de las autocalificables NO tienen respuesta en el documento (ni clave ni marca). Lo correcto es omitirlas; cualquier respuesta que salga es inventada.",
+  "questions": [
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el paso de un líquido a gas?",
+      "answers": [
+        "Evaporación"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "multichoice",
+      "stem": "La suma de los ángulos internos de un triángulo es:",
+      "answers": [
+        "180°"
+      ],
+      "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuál es el resultado de 2 elevado a la 10?",
+      "answers": [
+        "1024"
+      ]
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada elemento químico con su símbolo.",
+      "pairs": [
+        [
+          "Oro",
+          "Au"
+        ],
+        [
+          "Plata",
+          "Ag"
+        ],
+        [
+          "Hierro",
+          "Fe"
+        ],
+        [
+          "Sodio",
+          "Na"
+        ],
+        [
+          "Potasio",
+          "K"
+        ]
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "truefalse",
+      "stem": "El punto de congelación del agua es 100 °C.",
+      "answers": [
+        "Falso"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la complejidad de la búsqueda binaria?",
+      "answers": [],
+      "options": [
+        "O(n)",
+        "O(1)",
+        "O(n²)",
+        "O(log n)"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "truefalse",
+      "stem": "La luz viaja más lento que el sonido.",
+      "answers": [
+        "Verdadero"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "cloze",
+      "stem": "Los mamíferos que vuelan son los ____; los que viven en el mar y respiran aire son los ____.",
+      "blanks": [
+        [
+          "murciélagos"
+        ],
+        [
+          "cetáceos"
+        ]
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Quién escribió El Quijote?",
+      "answers": [
+        "Cervantes"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué porcentaje es 45 de 180?",
+      "answers": [],
+      "options": [
+        "20 %",
+        "25 %",
+        "30 %",
+        "35 %"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el elemento químico con número atómico 6?",
+      "answers": [
+        "Carbono"
+      ],
+      "options": [
+        "Nitrógeno",
+        "Carbono",
+        "Oxígeno",
+        "Boro"
+      ]
+    },
+    {
+      "type": "cloze",
+      "stem": "Los seres vivos que producen su propio alimento se denominan ____.",
+      "blanks": [
+        [
+          "autótrofos"
+        ]
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es un adjetivo?",
+      "answers": [
+        "Una palabra que modifica al sustantivo"
+      ],
+      "options": [
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que enlaza oraciones",
+        "Una palabra que expresa acción"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la unidad de la resistencia eléctrica?",
+      "answers": [
+        "Ohmio"
+      ],
+      "options": [
+        "Amperio",
+        "Vatio",
+        "Ohmio",
+        "Voltio"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el órgano que bombea la sangre?",
+      "answers": [
+        "Corazón"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el metal líquido a temperatura ambiente?",
+      "answers": [],
+      "options": [
+        "Estaño",
+        "Mercurio",
+        "Plomo",
+        "Cobre"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "cloze",
+      "stem": "El proceso por el cual las plantas fabrican su alimento se llama ____.",
+      "blanks": [
+        [
+          "fotosíntesis"
+        ]
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué vitamina se sintetiza en la piel con la luz solar?",
+      "answers": [],
+      "options": [
+        "Vitamina K",
+        "Vitamina C",
+        "Vitamina D",
+        "Vitamina A"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada término informático con su definición.",
+      "pairs": [
+        [
+          "RAM",
+          "Memoria volátil de acceso aleatorio"
+        ],
+        [
+          "CPU",
+          "Unidad que ejecuta las instrucciones"
+        ],
+        [
+          "SSD",
+          "Almacenamiento sin partes móviles"
+        ],
+        [
+          "GPU",
+          "Procesador especializado en gráficos"
+        ],
+        [
+          "BIOS",
+          "Firmware que inicia el equipo"
+        ]
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada autor con su obra.",
+      "pairs": [
+        [
+          "Cervantes",
+          "Don Quijote de la Mancha"
+        ],
+        [
+          "García Márquez",
+          "Cien años de soledad"
+        ],
+        [
+          "Neruda",
+          "Veinte poemas de amor y una canción desesperada"
+        ],
+        [
+          "Borges",
+          "El Aleph"
+        ],
+        [
+          "Cortázar",
+          "Rayuela"
+        ]
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "essay",
+      "stem": "Describe las fases de la mitosis."
+    },
+    {
+      "type": "cloze",
+      "stem": "El ____ es el planeta más grande del sistema solar y ____ es el más cercano al Sol.",
+      "blanks": [
+        [
+          "Júpiter"
+        ],
+        [
+          "Mercurio"
+        ]
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "essay",
+      "stem": "Explica la diferencia entre una pila y una cola y da un ejemplo de uso de cada una."
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de estas palabras es aguda?",
+      "answers": [
+        "Canción"
+      ],
+      "options": [
+        "Canción",
+        "Árbol",
+        "Útil",
+        "Lápiz"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuál es la raíz cuadrada de 225?",
+      "answers": [
+        "15"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuál es el perímetro, en cm, de un cuadrado de lado 6,5 cm?",
+      "answers": [
+        "26"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "truefalse",
+      "stem": "Un átomo neutro tiene igual número de protones y electrones.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuántos lados tiene un dodecágono?",
+      "answers": [
+        "12"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Describe cómo funciona el protocolo HTTP en una petición típica."
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el sinónimo de «efímero»?",
+      "answers": [
+        "Pasajero"
+      ],
+      "options": [
+        "Pasajero",
+        "Duradero",
+        "Eterno",
+        "Sólido"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El ADN se encuentra únicamente en las células vegetales.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+      "answers": [
+        "Oxígeno"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+      "answers": [
+        "3"
+      ],
+      "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La Tierra tarda unos 365 días en orbitar el Sol.",
+      "answers": [
+        "Falso"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "truefalse",
+      "stem": "Júpiter es el planeta más cercano al Sol.",
+      "answers": [
+        "Falso"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "matching",
+      "stem": "Relaciona cada figura geométrica con su número de lados.",
+      "pairs": [
+        [
+          "Triángulo",
+          "3"
+        ],
+        [
+          "Cuadrilátero",
+          "4"
+        ],
+        [
+          "Pentágono",
+          "5"
+        ],
+        [
+          "Hexágono",
+          "6"
+        ],
+        [
+          "Octógono",
+          "8"
+        ]
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué hace la instrucción break dentro de un bucle?",
+      "answers": [],
+      "options": [
+        "Reinicia el bucle",
+        "Lanza una excepción",
+        "Termina el bucle",
+        "Salta a la siguiente iteración"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+      "answers": [
+        "Constantinopla"
+      ],
+      "options": [
+        "Atenas",
+        "Antioquía",
+        "Alejandría",
+        "Constantinopla"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Analiza las ventajas y desventajas del uso de energías renovables."
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estructura de datos funciona con el principio LIFO?",
+      "answers": [],
+      "options": [
+        "Pila",
+        "Cola",
+        "Grafo",
+        "Árbol"
+      ],
+      "unanswered": true
+    }
+  ]
+}

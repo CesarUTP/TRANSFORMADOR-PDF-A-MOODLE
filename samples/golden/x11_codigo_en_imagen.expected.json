@@ -1,0 +1,353 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x11_codigo_en_imagen.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "focus": "Código en imágenes",
+  "notes": "30 preguntas; 20 traen el código como IMAGEN incrustada (resaltado de sintaxis, números de línea) y solo ahí; el golden exige el enunciado con el código transcrito (REGLA 9). Incluye 8 V/F sobre la salida del programa. ~25 % contrafácticas.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "Observa el siguiente programa. ¿Cuál es su resultado?\nprint(3 > 2 and 2 > 5)",
+      "answers": [
+        "False"
+      ],
+      "options": [
+        "Error",
+        "None",
+        "False",
+        "True"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Analiza el fragmento y elige la salida correcta:\ndef f(x, y=2):\n    return x ** y\n\nprint(f(3))",
+      "answers": [
+        "9"
+      ],
+      "options": [
+        "5",
+        "6",
+        "Error",
+        "9"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Analiza el fragmento y elige la salida correcta:\nnombres = [\"Ana\", \"Luis\", \"Marta\"]\nfor n in nombres:\n    if len(n) > 3:\n        print(n)",
+      "answers": [
+        "Luis y Marta"
+      ],
+      "options": [
+        "Ana y Luis",
+        "Luis y Marta",
+        "Solo Marta",
+        "Ninguno"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué se muestra en pantalla al ejecutar el siguiente código?\na, b = 1, 2\na, b = b, a\nprint(a, b)",
+      "answers": [
+        "2 1"
+      ],
+      "options": [
+        "2 2",
+        "1 1",
+        "2 1",
+        "1 2"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Observa el siguiente programa. ¿Cuál es su resultado?\ndef f(n):\n    if n <= 1:\n        return 1\n    return n * f(n - 1)\n\nprint(f(4))",
+      "answers": [
+        "24"
+      ],
+      "options": [
+        "16",
+        "10",
+        "12",
+        "24"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué se muestra en pantalla al ejecutar el siguiente código?\nd = {\"a\": 1, \"b\": 2}\nd[\"c\"] = d[\"a\"] + d[\"b\"]\nprint(d[\"c\"])",
+      "answers": [
+        "3"
+      ],
+      "options": [
+        "KeyError",
+        "3",
+        "1",
+        "2"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El programa de la imagen imprime «17».\nx = 5\ny = 3\nprint(x * y + 2)",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Analiza el fragmento y elige la salida correcta:\ntry:\n    print(10 / 0)\nexcept ZeroDivisionError:\n    print(\"error\")",
+      "answers": [
+        "Nada"
+      ],
+      "options": [
+        "error",
+        "10",
+        "Nada",
+        "0"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El programa de la imagen imprime «Luis y Marta».\nnombres = [\"Ana\", \"Luis\", \"Marta\"]\nfor n in nombres:\n    if len(n) > 3:\n        print(n)",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué se muestra en pantalla al ejecutar el siguiente código?\nprint([x * 2 for x in range(4)])",
+      "answers": [
+        "[0, 2, 4, 6]"
+      ],
+      "options": [
+        "[2, 4, 6, 8]",
+        "[0, 1, 2, 3]",
+        "[0, 2, 4]",
+        "[0, 2, 4, 6]"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es el kernel de un sistema operativo?",
+      "answers": [
+        "El núcleo que gestiona los recursos del hardware"
+      ],
+      "options": [
+        "Un antivirus",
+        "Un editor de texto",
+        "El núcleo que gestiona los recursos del hardware",
+        "Un navegador"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué operador de Python realiza la división entera?",
+      "answers": [
+        "//"
+      ],
+      "options": [
+        "/",
+        "//",
+        "%",
+        "**"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué representa la sigla CPU?",
+      "answers": [
+        "Central Program Update"
+      ],
+      "options": [
+        "Core Power Utility",
+        "Central Program Update",
+        "Central Processing Unit",
+        "Computer Personal Unit"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué tipo de dato usa Python para pares clave-valor?",
+      "answers": [
+        "dict"
+      ],
+      "options": [
+        "dict",
+        "set",
+        "tuple",
+        "list"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El programa de la imagen imprime «0 1 2».\ni = 0\nwhile i < 3:\n    print(i)\n    i += 1",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El programa de la imagen imprime «3».\nd = {\"a\": 1, \"b\": 2}\nd[\"c\"] = d[\"a\"] + d[\"b\"]\nprint(d[\"c\"])",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El programa de la imagen imprime «10».\ndef f(n):\n    if n <= 1:\n        return 1\n    return n * f(n - 1)\n\nprint(f(4))",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué código de estado HTTP indica que un recurso no fue encontrado?",
+      "answers": [
+        "404"
+      ],
+      "options": [
+        "200",
+        "301",
+        "404",
+        "500"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Observa el siguiente programa. ¿Cuál es su resultado?\ns = \"programacion\"\nprint(s[0:4])",
+      "answers": [
+        "prog"
+      ],
+      "options": [
+        "rogr",
+        "progr",
+        "prog",
+        "ogra"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El programa de la imagen imprime «10».\ntry:\n    print(10 / 0)\nexcept ZeroDivisionError:\n    print(\"error\")",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué comando de SQL elimina las filas que cumplen una condición?",
+      "answers": [
+        "DELETE"
+      ],
+      "options": [
+        "DELETE",
+        "REMOVE",
+        "DROP",
+        "ERASE"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "En Git, ¿qué comando crea una copia local de un repositorio remoto?",
+      "answers": [
+        "git clone"
+      ],
+      "options": [
+        "git fetch",
+        "git clone",
+        "git init",
+        "git pull"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El programa de la imagen imprime «progr».\ns = \"programacion\"\nprint(s[0:4])",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Observa el siguiente programa. ¿Cuál es su resultado?\nlet n = 4;\nconsole.log(n % 3);",
+      "answers": [
+        "1"
+      ],
+      "options": [
+        "0",
+        "3",
+        "4",
+        "1"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El programa de la imagen imprime «[0, 2, 4, 6]».\nprint([x * 2 for x in range(4)])",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué palabra reservada define una función en Python?",
+      "answers": [
+        "def"
+      ],
+      "options": [
+        "fn",
+        "def",
+        "function",
+        "func"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué se muestra en pantalla al ejecutar el siguiente código?\nx = 5\ny = 3\nprint(x * y + 2)",
+      "answers": [
+        "17"
+      ],
+      "options": [
+        "Error",
+        "17",
+        "13",
+        "15"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué significa la sigla SQL?",
+      "answers": [
+        "System Query Logic"
+      ],
+      "options": [
+        "Structured Query Language",
+        "System Query Logic",
+        "Simple Question List",
+        "Standard Quick Language"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Analiza el fragmento y elige la salida correcta:\ni = 0\nwhile i < 3:\n    print(i)\n    i += 1",
+      "answers": [
+        "0 1 2"
+      ],
+      "options": [
+        "0 1 2 3",
+        "Bucle infinito",
+        "1 2 3",
+        "0 1 2"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuántos bits tiene un byte?",
+      "answers": [
+        "4"
+      ],
+      "options": [
+        "4",
+        "8",
+        "16",
+        "32"
+      ]
+    }
+  ]
+}

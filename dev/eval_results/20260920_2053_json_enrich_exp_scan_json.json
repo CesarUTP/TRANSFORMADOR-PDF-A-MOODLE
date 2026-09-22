@@ -1,0 +1,1328 @@
+{
+ "mode": "json",
+ "enrich": true,
+ "runs": 2,
+ "date": "2026-09-20T20:53:42",
+ "docs": {
+  "s06_escaneado_sin_texto": {
+   "summary": {
+    "doc": "s06_escaneado_sin_texto",
+    "runs": 2,
+    "esperadas": 10,
+    "exactitud": 0.9,
+    "exactitud_min": 0.9,
+    "exactitud_max": 0.9,
+    "completas": 9,
+    "completas_min": 9,
+    "completas_max": 9,
+    "encontradas": 10,
+    "encontradas_min": 10,
+    "encontradas_max": 10,
+    "utilizables": 10,
+    "utilizables_min": 10,
+    "utilizables_max": 10,
+    "tipo_ok": 10,
+    "tipo_ok_min": 10,
+    "tipo_ok_max": 10,
+    "enunciado_ok": 10,
+    "enunciado_ok_min": 10,
+    "enunciado_ok_max": 10,
+    "respuesta_ok": 9,
+    "respuesta_ok_min": 9,
+    "respuesta_ok_max": 9,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 0,
+    "omitidas_min": 0,
+    "omitidas_max": 0,
+    "seconds": 7.85,
+    "seconds_min": 7.3,
+    "seconds_max": 8.4,
+    "prompt_tokens": 6650,
+    "prompt_tokens_min": 6650,
+    "prompt_tokens_max": 6650,
+    "output_tokens": 1782,
+    "output_tokens_min": 1782,
+    "output_tokens_max": 1782,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 8.4,
+     "prompt_tokens": 6650,
+     "output_tokens": 1782,
+     "gemini_calls": 1,
+     "esperadas": 10,
+     "problemas": [
+      "#9 [numerical] '¿Cuántos minutos tiene una hora?': respuesta ['60']"
+     ],
+     "encontradas": 10,
+     "utilizables": 10,
+     "tipo_ok": 10,
+     "enunciado_ok": 10,
+     "respuesta_ok": 9,
+     "inventadas": 0,
+     "completas": 9,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 0.9,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el planeta más grande del sistema solar?",
+       "options": [
+        "Marte",
+        "Júpiter",
+        "Saturno",
+        "Venus"
+       ],
+       "answers": [
+        "Saturno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué gas absorben las plantas durante la fotosíntesis?",
+       "options": [
+        "Oxígeno",
+        "Nitrógeno",
+        "Dióxido de carbono",
+        "Helio"
+       ],
+       "answers": [
+        "Dióxido de carbono"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El agua hierve a 100 grados Celsius a nivel del mar.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Gran Muralla China es visible a simple vista desde la Luna.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "matching",
+       "stem": "Relaciona cada país con su capital.",
+       "pairs": [
+        [
+         "Perú",
+         "Lima"
+        ],
+        [
+         "Chile",
+         "Santiago"
+        ],
+        [
+         "Colombia",
+         "Bogotá"
+        ],
+        [
+         "Ecuador",
+         "Quito"
+        ]
+       ],
+       "left_items": [
+        "Perú",
+        "Chile",
+        "Colombia",
+        "Ecuador"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: La capital de Francia es ____ y su río principal es el ____.",
+       "blanks": [
+        [
+         "París"
+        ],
+        [
+         "Sena"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Explica con tus palabras las causas principales de la Primera Guerra Mundial."
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el proceso por el cual el agua pasa de líquido a gas?",
+       "answers": [
+        "Evaporación"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuántos minutos tiene una hora?",
+       "answers": [
+        "60"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos animales es un mamífero?",
+       "options": [
+        "Tiburón",
+        "Delfín",
+        "Pingüino",
+        "Cocodrilo"
+       ],
+       "answers": [
+        "Delfín"
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 7.3,
+     "prompt_tokens": 6650,
+     "output_tokens": 1782,
+     "gemini_calls": 1,
+     "esperadas": 10,
+     "problemas": [
+      "#9 [numerical] '¿Cuántos minutos tiene una hora?': respuesta ['60']"
+     ],
+     "encontradas": 10,
+     "utilizables": 10,
+     "tipo_ok": 10,
+     "enunciado_ok": 10,
+     "respuesta_ok": 9,
+     "inventadas": 0,
+     "completas": 9,
+     "sobrantes": 0,
+     "omitidas": 0,
+     "exactitud": 0.9,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el planeta más grande del sistema solar?",
+       "options": [
+        "Marte",
+        "Júpiter",
+        "Saturno",
+        "Venus"
+       ],
+       "answers": [
+        "Saturno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué gas absorben las plantas durante la fotosíntesis?",
+       "options": [
+        "Oxígeno",
+        "Nitrógeno",
+        "Dióxido de carbono",
+        "Helio"
+       ],
+       "answers": [
+        "Dióxido de carbono"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El agua hierve a 100 grados Celsius a nivel del mar.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Gran Muralla China es visible a simple vista desde la Luna.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "matching",
+       "stem": "Relaciona cada país con su capital.",
+       "pairs": [
+        [
+         "Perú",
+         "Lima"
+        ],
+        [
+         "Chile",
+         "Santiago"
+        ],
+        [
+         "Colombia",
+         "Bogotá"
+        ],
+        [
+         "Ecuador",
+         "Quito"
+        ]
+       ],
+       "left_items": [
+        "Perú",
+        "Chile",
+        "Colombia",
+        "Ecuador"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "cloze",
+       "stem": "Completa: La capital de Francia es ____ y su río principal es el ____.",
+       "blanks": [
+        [
+         "París"
+        ],
+        [
+         "Sena"
+        ]
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "essay",
+       "stem": "Explica con tus palabras las causas principales de la Primera Guerra Mundial."
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el proceso por el cual el agua pasa de líquido a gas?",
+       "answers": [
+        "Evaporación"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "numerical",
+       "stem": "¿Cuántos minutos tiene una hora?",
+       "answers": [
+        "60"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos animales es un mamífero?",
+       "options": [
+        "Tiburón",
+        "Delfín",
+        "Pingüino",
+        "Cocodrilo"
+       ],
+       "answers": [
+        "Delfín"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "x10_escaneado_degradado": {
+   "summary": {
+    "doc": "x10_escaneado_degradado",
+    "runs": 2,
+    "esperadas": 32,
+    "exactitud": 0.688,
+    "exactitud_min": 0.688,
+    "exactitud_max": 0.688,
+    "completas": 22,
+    "completas_min": 22,
+    "completas_max": 22,
+    "encontradas": 32,
+    "encontradas_min": 32,
+    "encontradas_max": 32,
+    "utilizables": 26,
+    "utilizables_min": 26,
+    "utilizables_max": 26,
+    "tipo_ok": 26,
+    "tipo_ok_min": 26,
+    "tipo_ok_max": 26,
+    "enunciado_ok": 26,
+    "enunciado_ok_min": 26,
+    "enunciado_ok_max": 26,
+    "respuesta_ok": 22,
+    "respuesta_ok_min": 22,
+    "respuesta_ok_max": 22,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 6,
+    "omitidas_min": 6,
+    "omitidas_max": 6,
+    "seconds": 18.15,
+    "seconds_min": 17.2,
+    "seconds_max": 19.1,
+    "prompt_tokens": 8854,
+    "prompt_tokens_min": 8854,
+    "prompt_tokens_max": 8854,
+    "output_tokens": 5910,
+    "output_tokens_min": 5910,
+    "output_tokens_max": 5910,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 19.1,
+     "prompt_tokens": 8854,
+     "output_tokens": 5910,
+     "gemini_calls": 1,
+     "esperadas": 32,
+     "problemas": [
+      "#2 [multichoice] '¿Cuánto vale la raíz cuadrada de 144?': respuesta ['12']",
+      "#4 [truefalse] 'El plural de «pez» es «pezes».': omitida → Error: la Pregunta 4 (truefalse) no tiene una respuesta correcta especificada en el examen.",
+      "#8 [multichoice] '¿Cuál es el desierto cálido más extenso del mundo?': omitida → Error: la Pregunta 8 (multichoice) no tiene una respuesta correcta especificada en el examen.",
+      "#11 [truefalse] 'Los delfines son peces.': omitida → Error: la Pregunta 11 (truefalse) no tiene una respuesta correcta especificada en el examen.",
+      "#20 [truefalse] 'Los reptiles son animales de sangre caliente.': omitida → Error: la Pregunta 20 (truefalse) no tiene una respuesta correcta especificada en el examen.",
+      "#21 [multichoice] '¿Qué grupo sanguíneo se considera donante universal?': respuesta ['O-']",
+      "#24 [truefalse] 'Un byte equivale a 4 bits.': omitida → Error: la Pregunta 24 (truefalse) no tiene una respuesta correcta especificada en el examen.",
+      "#29 [multichoice] '¿Cuál es la derivada de x²?': respuesta ['2x']",
+      "#31 [truefalse] 'La Tierra tarda unos 365 días en orbitar el Sol.': omitida → Error: la Pregunta 31 (truefalse) no tiene una respuesta correcta especificada en el examen.",
+      "#32 [multichoice] '¿Qué estructura protege al cerebro?': respuesta ['Cráneo']"
+     ],
+     "encontradas": 32,
+     "utilizables": 26,
+     "tipo_ok": 26,
+     "enunciado_ok": 26,
+     "respuesta_ok": 22,
+     "inventadas": 0,
+     "completas": 22,
+     "sobrantes": 0,
+     "omitidas": 6,
+     "exactitud": 0.688,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué ocurre con el precio cuando la demanda aumenta y la oferta se mantiene?",
+       "options": [
+        "Baja",
+        "Desaparece",
+        "Sube",
+        "Se mantiene"
+       ],
+       "answers": [
+        "Sube"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuánto vale la raíz cuadrada de 144?",
+       "options": [
+        "10",
+        "11",
+        "12",
+        "14"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el mínimo común múltiplo de 4 y 6?",
+       "options": [
+        "6",
+        "12",
+        "18",
+        "24"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+       "options": [
+        "Gregor Mendel",
+        "Louis Pasteur",
+        "Charles Darwin",
+        "Alexander Fleming"
+       ],
+       "answers": [
+        "Gregor Mendel"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la energía que posee un cuerpo por su movimiento?",
+       "options": [
+        "Química",
+        "Cinética",
+        "Térmica",
+        "Potencial"
+       ],
+       "answers": [
+        "Cinética"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Canadá?",
+       "options": [
+        "Montreal",
+        "Ottawa",
+        "Vancouver",
+        "Toronto"
+       ],
+       "answers": [
+        "Toronto"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un lenguaje de marcado?",
+       "options": [
+        "Python",
+        "HTML",
+        "Rust",
+        "C++"
+       ],
+       "answers": [
+        "HTML"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos países están en Sudamérica?",
+       "options": [
+        "Uruguay",
+        "Guatemala",
+        "Paraguay",
+        "Cuba",
+        "Bolivia"
+       ],
+       "answers": [
+        "Uruguay",
+        "Paraguay",
+        "Bolivia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La capital de Perú es Lima.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+       "options": [
+        "Atenas",
+        "Constantinopla",
+        "Alejandría",
+        "Antioquía"
+       ],
+       "answers": [
+        "Constantinopla"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un adjetivo?",
+       "options": [
+        "Una palabra que enlaza oraciones",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que expresa acción"
+       ],
+       "answers": [
+        "Una palabra que modifica al sustantivo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un mamífero marino?",
+       "options": [
+        "Pulpo",
+        "Atún",
+        "Tiburón",
+        "Delfín"
+       ],
+       "answers": [
+        "Delfín"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tipo de roca se forma por enfriamiento del magma?",
+       "options": [
+        "Metamórfica",
+        "Ígnea",
+        "Detrítica",
+        "Sedimentaria"
+       ],
+       "answers": [
+        "Ígnea"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son estados de la materia comunes?",
+       "options": [
+        "Sólido",
+        "Gaseoso",
+        "Metálico",
+        "Líquido"
+       ],
+       "answers": [
+        "Sólido",
+        "Gaseoso",
+        "Líquido"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué país tiene forma de bota?",
+       "options": [
+        "Italia",
+        "España",
+        "Portugal",
+        "Grecia"
+       ],
+       "answers": [
+        "Italia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué grupo sanguíneo se considera donante universal?",
+       "options": [
+        "B-",
+        "O-",
+        "AB+",
+        "A+"
+       ],
+       "answers": [
+        "O-"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué significa la sigla SQL?",
+       "options": [
+        "Standard Quick Language",
+        "Structured Query Language",
+        "System Query Logic",
+        "Simple Question List"
+       ],
+       "answers": [
+        "Structured Query Language"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué mide un sismógrafo?",
+       "options": [
+        "Las vibraciones del suelo",
+        "La presión atmosférica",
+        "La humedad",
+        "La radiación solar"
+       ],
+       "answers": [
+        "Las vibraciones del suelo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+       "options": [
+        "K2",
+        "Everest",
+        "Kilimanjaro",
+        "Aconcagua"
+       ],
+       "answers": [
+        "Everest"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el sinónimo de «efímero»?",
+       "options": [
+        "Duradero",
+        "Eterno",
+        "Sólido",
+        "Pasajero"
+       ],
+       "answers": [
+        "Pasajero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué vitamina previene el escorbuto?",
+       "options": [
+        "Vitamina B12",
+        "Vitamina E",
+        "Vitamina C",
+        "Vitamina A"
+       ],
+       "answers": [
+        "Vitamina C"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son ejemplos de energías renovables?",
+       "options": [
+        "Petróleo",
+        "Hidráulica",
+        "Carbón",
+        "Eólica",
+        "Solar"
+       ],
+       "answers": [
+        "Hidráulica",
+        "Eólica",
+        "Solar"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la derivada de x²?",
+       "options": [
+        "x",
+        "2x",
+        "x²",
+        "2"
+       ],
+       "answers": [
+        "2x"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Australia?",
+       "options": [
+        "Melbourne",
+        "Canberra",
+        "Perth",
+        "Sídney"
+       ],
+       "answers": [
+        "Canberra"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estructura protege al cerebro?",
+       "options": [
+        "Cráneo",
+        "Columna",
+        "Pelvis",
+        "Costillas"
+       ],
+       "answers": [
+        "Cráneo"
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "El plural de «pez» es «pezes».",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 4 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Cuál es el desierto cálido más extenso del mundo?",
+       "options": [
+        "Gobi",
+        "Kalahari",
+        "Atacama",
+        "Sahara"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 8 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "Los delfines son peces.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 11 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "Los reptiles son animales de sangre caliente.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 20 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "Un byte equivale a 4 bits.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 24 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "La Tierra tarda unos 365 días en orbitar el Sol.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 31 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 17.2,
+     "prompt_tokens": 8854,
+     "output_tokens": 5910,
+     "gemini_calls": 1,
+     "esperadas": 32,
+     "problemas": [
+      "#2 [multichoice] '¿Cuánto vale la raíz cuadrada de 144?': respuesta ['12']",
+      "#4 [truefalse] 'El plural de «pez» es «pezes».': omitida → Error: la Pregunta 4 (truefalse) no tiene una respuesta correcta especificada en el examen.",
+      "#8 [multichoice] '¿Cuál es el desierto cálido más extenso del mundo?': omitida → Error: la Pregunta 8 (multichoice) no tiene una respuesta correcta especificada en el examen.",
+      "#11 [truefalse] 'Los delfines son peces.': omitida → Error: la Pregunta 11 (truefalse) no tiene una respuesta correcta especificada en el examen.",
+      "#20 [truefalse] 'Los reptiles son animales de sangre caliente.': omitida → Error: la Pregunta 20 (truefalse) no tiene una respuesta correcta especificada en el examen.",
+      "#21 [multichoice] '¿Qué grupo sanguíneo se considera donante universal?': respuesta ['O-']",
+      "#24 [truefalse] 'Un byte equivale a 4 bits.': omitida → Error: la Pregunta 24 (truefalse) no tiene una respuesta correcta especificada en el examen.",
+      "#29 [multichoice] '¿Cuál es la derivada de x²?': respuesta ['2x']",
+      "#31 [truefalse] 'La Tierra tarda unos 365 días en orbitar el Sol.': omitida → Error: la Pregunta 31 (truefalse) no tiene una respuesta correcta especificada en el examen.",
+      "#32 [multichoice] '¿Qué estructura protege al cerebro?': respuesta ['Cráneo']"
+     ],
+     "encontradas": 32,
+     "utilizables": 26,
+     "tipo_ok": 26,
+     "enunciado_ok": 26,
+     "respuesta_ok": 22,
+     "inventadas": 0,
+     "completas": 22,
+     "sobrantes": 0,
+     "omitidas": 6,
+     "exactitud": 0.688,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué ocurre con el precio cuando la demanda aumenta y la oferta se mantiene?",
+       "options": [
+        "Baja",
+        "Desaparece",
+        "Sube",
+        "Se mantiene"
+       ],
+       "answers": [
+        "Sube"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuánto vale la raíz cuadrada de 144?",
+       "options": [
+        "10",
+        "11",
+        "12",
+        "14"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el mínimo común múltiplo de 4 y 6?",
+       "options": [
+        "6",
+        "12",
+        "18",
+        "24"
+       ],
+       "answers": [
+        "12"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué científico propuso la teoría de la evolución por selección natural?",
+       "options": [
+        "Gregor Mendel",
+        "Louis Pasteur",
+        "Charles Darwin",
+        "Alexander Fleming"
+       ],
+       "answers": [
+        "Gregor Mendel"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la energía que posee un cuerpo por su movimiento?",
+       "options": [
+        "Química",
+        "Cinética",
+        "Térmica",
+        "Potencial"
+       ],
+       "answers": [
+        "Cinética"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Canadá?",
+       "options": [
+        "Montreal",
+        "Ottawa",
+        "Vancouver",
+        "Toronto"
+       ],
+       "answers": [
+        "Toronto"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un lenguaje de marcado?",
+       "options": [
+        "Python",
+        "HTML",
+        "Rust",
+        "C++"
+       ],
+       "answers": [
+        "HTML"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos países están en Sudamérica?",
+       "options": [
+        "Uruguay",
+        "Guatemala",
+        "Paraguay",
+        "Cuba",
+        "Bolivia"
+       ],
+       "answers": [
+        "Uruguay",
+        "Paraguay",
+        "Bolivia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La capital de Perú es Lima.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+       "options": [
+        "Atenas",
+        "Constantinopla",
+        "Alejandría",
+        "Antioquía"
+       ],
+       "answers": [
+        "Constantinopla"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un adjetivo?",
+       "options": [
+        "Una palabra que enlaza oraciones",
+        "Una palabra que sustituye al nombre",
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que expresa acción"
+       ],
+       "answers": [
+        "Una palabra que modifica al sustantivo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál de estos es un mamífero marino?",
+       "options": [
+        "Pulpo",
+        "Atún",
+        "Tiburón",
+        "Delfín"
+       ],
+       "answers": [
+        "Delfín"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tipo de roca se forma por enfriamiento del magma?",
+       "options": [
+        "Metamórfica",
+        "Ígnea",
+        "Detrítica",
+        "Sedimentaria"
+       ],
+       "answers": [
+        "Ígnea"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son estados de la materia comunes?",
+       "options": [
+        "Sólido",
+        "Gaseoso",
+        "Metálico",
+        "Líquido"
+       ],
+       "answers": [
+        "Sólido",
+        "Gaseoso",
+        "Líquido"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué país tiene forma de bota?",
+       "options": [
+        "Italia",
+        "España",
+        "Portugal",
+        "Grecia"
+       ],
+       "answers": [
+        "Italia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "180°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué grupo sanguíneo se considera donante universal?",
+       "options": [
+        "B-",
+        "O-",
+        "AB+",
+        "A+"
+       ],
+       "answers": [
+        "O-"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué significa la sigla SQL?",
+       "options": [
+        "Standard Quick Language",
+        "Structured Query Language",
+        "System Query Logic",
+        "Simple Question List"
+       ],
+       "answers": [
+        "Structured Query Language"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué mide un sismógrafo?",
+       "options": [
+        "Las vibraciones del suelo",
+        "La presión atmosférica",
+        "La humedad",
+        "La radiación solar"
+       ],
+       "answers": [
+        "Las vibraciones del suelo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la montaña más alta del mundo sobre el nivel del mar?",
+       "options": [
+        "K2",
+        "Everest",
+        "Kilimanjaro",
+        "Aconcagua"
+       ],
+       "answers": [
+        "Everest"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el sinónimo de «efímero»?",
+       "options": [
+        "Duradero",
+        "Eterno",
+        "Sólido",
+        "Pasajero"
+       ],
+       "answers": [
+        "Pasajero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué vitamina previene el escorbuto?",
+       "options": [
+        "Vitamina B12",
+        "Vitamina E",
+        "Vitamina C",
+        "Vitamina A"
+       ],
+       "answers": [
+        "Vitamina C"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son ejemplos de energías renovables?",
+       "options": [
+        "Petróleo",
+        "Hidráulica",
+        "Carbón",
+        "Eólica",
+        "Solar"
+       ],
+       "answers": [
+        "Hidráulica",
+        "Eólica",
+        "Solar"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la derivada de x²?",
+       "options": [
+        "x",
+        "2x",
+        "x²",
+        "2"
+       ],
+       "answers": [
+        "2x"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Australia?",
+       "options": [
+        "Melbourne",
+        "Canberra",
+        "Perth",
+        "Sídney"
+       ],
+       "answers": [
+        "Canberra"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué estructura protege al cerebro?",
+       "options": [
+        "Cráneo",
+        "Columna",
+        "Pelvis",
+        "Costillas"
+       ],
+       "answers": [
+        "Cráneo"
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "El plural de «pez» es «pezes».",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 4 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Cuál es el desierto cálido más extenso del mundo?",
+       "options": [
+        "Gobi",
+        "Kalahari",
+        "Atacama",
+        "Sahara"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 8 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "Los delfines son peces.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 11 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "Los reptiles son animales de sangre caliente.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 20 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "Un byte equivale a 4 bits.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 24 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "truefalse",
+       "stem": "La Tierra tarda unos 365 días en orbitar el Sol.",
+       "options": [],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 31 (truefalse) no tiene una respuesta correcta especificada en el examen."
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

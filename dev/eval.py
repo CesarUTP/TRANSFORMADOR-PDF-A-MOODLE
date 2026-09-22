@@ -132,6 +132,7 @@ _BRACKET = re.compile(r"\[([A-Za-z]):\s*([^\]]+)\]")
 def canonical_from_response(res: dict) -> list:
     """Convierte la respuesta de pipeline (lo que recibe el editor) a una
     lista de preguntas en el mismo formato que el golden."""
+    from answer_matching import split_answers  # mismo separador " | " que usa la app
     out = []
     key = res.get("answer_key", {})
     for q in res.get("questions", []):
@@ -145,7 +146,7 @@ def canonical_from_response(res: dict) -> list:
             c["options"] = [opts[k] for k in sorted(opts)]
             got = []
             texts = {v.strip().lower() for v in opts.values()}
-            for part in [x.strip() for x in ans.split("|") if x.strip()]:
+            for part in split_answers(ans):
                 # Igual que xml_builder: el texto exacto de una opción gana a
                 # la letra ("C" puede ser la opción cuyo texto es "C").
                 if len(part) == 1 and part.upper() in opts and part.lower() not in texts:
@@ -170,7 +171,7 @@ def canonical_from_response(res: dict) -> list:
             letters = [m.group(1).upper() for m in _BRACKET.finditer(text)]
             keymap = {}
             for m in re.finditer(r"([A-Za-z])[\.:]\s*([^;\n]+)", ans):
-                keymap[m.group(1).upper()] = [x.strip() for x in m.group(2).split("|") if x.strip()]
+                keymap[m.group(1).upper()] = split_answers(m.group(2))
             c["blanks"] = [keymap.get(L, []) for L in letters]
         elif t == "essay":
             c["stem"] = d.get("stem", "")
@@ -342,13 +343,18 @@ def run_once(pipeline, formatter, golden: dict) -> dict:
     return out
 
 
-def load_goldens(only: list | None) -> list:
+def load_goldens(only: list | None, adversarial: bool = False) -> list:
+    """Los documentos "adversarial" (x01…x12, ver dev/synthetic/generate_adversarial.py)
+    quedan fuera de la corrida por defecto para no mover la línea base de los
+    18 originales: se incluyen con --adversarial, o al nombrarlos con --only."""
     goldens = []
     for f in sorted(GOLDEN_DIR.glob("*.expected.json")):
         name = f.name.replace(".expected.json", "")
         if only and not any(o in name for o in only):
             continue
         g = json.loads(f.read_text(encoding="utf-8"))
+        if g.get("source") == "adversarial" and not (adversarial or only):
+            continue
         g["name"] = name
         goldens.append(g)
     return goldens
@@ -370,10 +376,10 @@ def print_table(summaries: list, goldens: dict) -> None:
     hdr = f"{'documento':34s} {'exact.':>7s} {'encont':>7s} {'util':>6s} {'resp':>6s} {'omit':>5s} {'inv':>4s} {'sobr':>5s} {'seg_ia':>6s} {'tok_in':>7s} {'tok_out':>7s}"
     print(hdr)
     print("─" * len(hdr))
-    groups = {"synthetic": [], "real": []}
+    groups = {"synthetic": [], "real": [], "adversarial": []}
     for s in summaries:
         g = goldens[s["doc"]]
-        groups["real" if g.get("source") == "real" else "synthetic"].append(s)
+        groups[g.get("source") if g.get("source") in groups else "synthetic"].append(s)
     for group, items in groups.items():
         if not items:
             continue
@@ -405,6 +411,8 @@ def main():
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--workers", type=int, default=3)
     ap.add_argument("--only", nargs="*")
+    ap.add_argument("--adversarial", action="store_true",
+                    help="incluir también los exámenes adversariales x01…x12 (además de los 18 originales)")
     ap.add_argument("--bootstrap-real", action="store_true",
                     help="genera samples/golden/real_*.expected.json a partir de UNA corrida (sin revisar)")
     ap.add_argument("--tag", default="", help="sufijo para el archivo de resultados")
@@ -416,7 +424,7 @@ def main():
         bootstrap_real(pipeline, formatter)
         return
 
-    goldens = load_goldens(args.only)
+    goldens = load_goldens(args.only, args.adversarial)
     if not goldens:
         sys.exit("No hay golden que coincida.")
     by_name = {g["name"]: g for g in goldens}

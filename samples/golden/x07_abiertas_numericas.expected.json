@@ -1,0 +1,325 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x07_abiertas_numericas.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "focus": "Abiertas y numéricas",
+  "notes": "50 preguntas: 12 ensayo, 14 respuesta corta, 14 numéricas (coma decimal, negativo, y 4 casos límite: 2 con el número escrito en palabras y 2 con unidad en la clave) y 10 V/F. El golden espera el número puro ('180', '80').",
+  "questions": [
+    {
+      "type": "truefalse",
+      "stem": "Mozart fue un compositor del periodo clásico.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "En Python, las listas son mutables.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+      "answers": [
+        "Oxígeno"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Explica con tus palabras las causas de la Primera Guerra Mundial."
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el paso de un líquido a gas?",
+      "answers": [
+        "Evaporación"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "SQL se usa para consultar bases de datos relacionales.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Los reptiles son animales de sangre caliente.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Comenta las consecuencias económicas de una inflación sostenida."
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuál es la raíz cuadrada de 225?",
+      "answers": [
+        "15"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Explica qué es la normalización en bases de datos y por qué es útil."
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama la división de una célula en dos células idénticas?",
+      "answers": [
+        "Mitosis"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Describe cómo funciona el protocolo HTTP en una petición típica."
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuántos lados tiene un dodecágono?",
+      "answers": [
+        "12"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Qué instrumento mide la temperatura?",
+      "answers": [
+        "Termómetro"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el hueso del muslo?",
+      "answers": [
+        "Fémur"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Analiza el papel de la Revolución Industrial en el crecimiento de las ciudades."
+    },
+    {
+      "type": "essay",
+      "stem": "Explica la diferencia entre una pila y una cola y da un ejemplo de uso de cada una."
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuántos bits hay en 4 bytes?",
+      "answers": [
+        "32"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Quién escribió El Quijote?",
+      "answers": [
+        "Cervantes"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Los delfines son peces.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuánto es 15 × 14?",
+      "answers": [
+        "210"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuántos segundos hay en 5 minutos?",
+      "answers": [
+        "300"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Desarrolla una opinión fundamentada sobre el impacto de las redes sociales en los adolescentes."
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cuál es el símbolo químico del sodio?",
+      "answers": [
+        "Na"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cuál es la unidad de la fuerza en el Sistema Internacional?",
+      "answers": [
+        "Newton"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Describe las fases de la mitosis."
+    },
+    {
+      "type": "truefalse",
+      "stem": "Un átomo neutro tiene igual número de protones y electrones.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El plural de «pez» es «pezes».",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "Un tren recorre 240 km en 3 horas. ¿Cuál es su velocidad media en km/h?",
+      "answers": [
+        "80"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Discute las implicaciones éticas del uso de inteligencia artificial en la educación."
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama la estructura de datos que sigue el principio FIFO?",
+      "answers": [
+        "Cola"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cuál es el nombre del satélite natural de la Tierra?",
+      "answers": [
+        "Luna"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La inflación es la disminución generalizada de los precios.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuánto es el 20 % de 350?",
+      "answers": [
+        "70"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Redacta un párrafo argumentativo sobre la importancia de la lectura."
+    },
+    {
+      "type": "numerical",
+      "stem": "Si 5 kg de manzanas cuestan 20 dólares, ¿cuántos dólares cuestan 8 kg?",
+      "answers": [
+        "32"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Qué figura geométrica tiene tres lados?",
+      "answers": [
+        "Triángulo"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Explica el concepto de oferta y demanda con un ejemplo cotidiano."
+    },
+    {
+      "type": "truefalse",
+      "stem": "El agua está compuesta por hidrógeno y oxígeno.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuántos grados tiene un ángulo recto?",
+      "answers": [
+        "90"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuántos minutos hay en tres horas?",
+      "answers": [
+        "180"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuál es el resultado de 2 elevado a la 10?",
+      "answers": [
+        "1024"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El oro es un metal más ligero que el agua.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "essay",
+      "stem": "Analiza las ventajas y desventajas del uso de energías renovables."
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuánto es 7,5 + 2,25?",
+      "answers": [
+        "9,75"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el lenguaje que estructura las páginas web?",
+      "answers": [
+        "HTML"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cuál es la capital de Argentina?",
+      "answers": [
+        "Buenos Aires"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuánto es 3 − 8?",
+      "answers": [
+        "-5"
+      ]
+    },
+    {
+      "type": "numerical",
+      "stem": "¿Cuál es el perímetro, en cm, de un cuadrado de lado 6,5 cm?",
+      "answers": [
+        "26"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el proceso por el cual las plantas producen su alimento con luz?",
+      "answers": [
+        "Fotosíntesis"
+      ]
+    }
+  ]
+}

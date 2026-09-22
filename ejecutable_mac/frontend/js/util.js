@@ -2,6 +2,49 @@
  * util.js — ayudas sin estado: formato, escape de HTML y color.
  */
 
+// Separadores de la forma interna (igual que backend/answer_matching.py): varias
+// respuestas correctas van unidas con " | " y las opciones de un hueco Cloze con
+// " / ", SIEMPRE con espacios. Sin ellos, "|", "km/h" o "TCP/IP" son texto.
+export function splitAnswers(text) {
+  return String(text || '').trim().split(/\s+\|\s+/).map(s => s.trim()).filter(Boolean);
+}
+export function splitOptions(text) {
+  return String(text || '').trim().split(/\s+\/\s+/).map(s => s.trim()).filter(Boolean);
+}
+
+// Ubica cada espacio "[Letra: opción1 / opción2]" de un Cloze en `text`
+// (igual que backend/answer_matching.py:find_cloze_brackets — misma lógica,
+// mismo motivo). Un "[" y "]" balanceados DENTRO de una opción (ej. una
+// opción de código como "arr[0]") no cierran el espacio a mitad de camino:
+// antes se usaba una expresión regular que se detenía en el PRIMER "]" que
+// encontrara, así que esa opción se cortaba en dos y sobraba un corchete.
+// Devuelve [{start, end, letter, optionsRaw}, ...] — "end" es el índice
+// justo después del "]" de cierre; "optionsRaw" aún no está partido por
+// " / " (usar splitOptions para eso).
+const _CLOZE_SLOT_OPEN = /^([A-Za-z]):\s*/;
+export function findClozeBrackets(text) {
+  text = String(text || '');
+  const out = [];
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    if (text[i] !== '[') { i++; continue; }
+    const m = _CLOZE_SLOT_OPEN.exec(text.slice(i + 1));
+    if (!m) { i++; continue; }
+    const bodyStart = i + 1 + m[0].length;
+    let depth = 1, j = bodyStart;
+    while (j < n && depth) {
+      if (text[j] === '[') depth++;
+      else if (text[j] === ']') depth--;
+      j++;
+    }
+    if (depth) { i++; continue; } // sin cierre — no es un espacio válido
+    out.push({ start: i, end: j, letter: m[1], optionsRaw: text.slice(bodyStart, j - 1) });
+    i = j;
+  }
+  return out;
+}
+
 // File Helpers
 export function formatBytes(bytes) {
   if (bytes < 1024) return bytes + ' B';
@@ -9,10 +52,16 @@ export function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
 }
 
+// Segura para insertar en HTML como TEXTO (innerHTML) y también dentro de un
+// atributo entre comillas (title="...", data-x="...", onclick="..." con un
+// argumento embebido): el truco textContent→innerHTML ya escapa & < >, pero
+// NO las comillas (no hacen falta en un nodo de texto) — sin esto, un valor
+// con una comilla doble cierra el atributo a la mitad (ej. un nombre de
+// archivo con " en el historial de conversiones).
 export function esc_html(s) {
   const div = document.createElement('div');
   div.textContent = s == null ? '' : String(s);
-  return div.innerHTML;
+  return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // Traduce el motivo técnico que devuelve el validador (pensado para el

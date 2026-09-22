@@ -1,10 +1,11 @@
+import contextlib
 import os
 import sqlite3
 import sys
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import Iterator, List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -40,71 +41,70 @@ def get_db_path() -> Path:
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir / "exams_history.db"
 
+@contextlib.contextmanager
+def _connection() -> Iterator[sqlite3.Connection]:
+    """
+    Conexión SQLite que SIEMPRE se cierra, incluso si execute()/commit()
+    lanza una excepción — antes cada función de este módulo hacía
+    sqlite3.connect() y conn.close() al final "en línea recta", sin
+    try/finally: una escritura concurrente que choca con "database is
+    locked" (u otro error a mitad de camino) dejaba la conexión abierta,
+    sin liberar, en un proceso de larga vida como el ejecutable de
+    escritorio.
+    """
+    conn = sqlite3.connect(get_db_path())
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
 def init_db():
-    db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT NOT NULL,
-            category TEXT NOT NULL,
-            total_points REAL NOT NULL,
-            xml_content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    conn.close()
-    logger.info("Database initialized at %s", db_path)
+    with _connection() as conn:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                filename TEXT NOT NULL,
+                category TEXT NOT NULL,
+                total_points REAL NOT NULL,
+                xml_content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+    logger.info("Database initialized at %s", get_db_path())
 
 def save_conversion(filename: str, category: str, total_points: float, xml_content: str) -> int:
-    db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO history (filename, category, total_points, xml_content)
-        VALUES (?, ?, ?, ?)
-    ''', (filename, category, total_points, xml_content))
-    record_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    return record_id
+    with _connection() as conn:
+        cursor = conn.execute('''
+            INSERT INTO history (filename, category, total_points, xml_content)
+            VALUES (?, ?, ?, ?)
+        ''', (filename, category, total_points, xml_content))
+        record_id = cursor.lastrowid
+        conn.commit()
+        return record_id
 
 def get_history_list() -> List[Dict[str, Any]]:
-    db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    # Fetch all except xml_content to save memory
-    cursor.execute('''
-        SELECT id, filename, category, total_points, created_at 
-        FROM history 
-        ORDER BY id DESC 
-        LIMIT 50
-    ''')
-    rows = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    with _connection() as conn:
+        conn.row_factory = sqlite3.Row
+        # Fetch all except xml_content to save memory
+        cursor = conn.execute('''
+            SELECT id, filename, category, total_points, created_at
+            FROM history
+            ORDER BY id DESC
+            LIMIT 50
+        ''')
+        return [dict(row) for row in cursor.fetchall()]
 
 def get_xml_content(record_id: int) -> Optional[Dict[str, Any]]:
-    db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute('SELECT filename, xml_content FROM history WHERE id = ?', (record_id,))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return dict(row)
-    return None
+    with _connection() as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute('SELECT filename, xml_content FROM history WHERE id = ?', (record_id,)).fetchone()
+        return dict(row) if row else None
 
 def delete_history_item(record_id: int) -> bool:
-    db_path = get_db_path()
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM history WHERE id = ?', (record_id,))
-    deleted = cursor.rowcount > 0
-    conn.commit()
-    conn.close()
-    return deleted
+    with _connection() as conn:
+        cursor = conn.execute('DELETE FROM history WHERE id = ?', (record_id,))
+        deleted = cursor.rowcount > 0
+        conn.commit()
+        return deleted

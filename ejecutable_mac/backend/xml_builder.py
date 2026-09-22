@@ -20,7 +20,7 @@ from config import (
     DEFAULT_MATCHING_STEM,
 )
 from models import QuestionStats
-from answer_matching import is_truncated_answer_match
+from answer_matching import find_cloze_brackets, is_truncated_answer_match, split_answers, split_options
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +92,8 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
         return (s.replace('\\', '\\\\')
                  .replace('~', '\\~')
                  .replace('#', '\\#')
+                 .replace('/', '\\/')
+                 .replace('"', '\\"')
                  .replace('{', '\\{')
                  .replace('}', '\\}'))
 
@@ -105,22 +107,16 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
     # is just a one-item list, so this stays fully backward compatible.
     slot_answers: Dict[str, List[str]] = {}
     for m in re.finditer(r'([A-Za-z])[\.:]\s*([^;\n]+)', raw_key_ans):
-        parts = [p.strip() for p in m.group(2).split('|') if p.strip()]
+        parts = split_answers(m.group(2))
         if parts:
             slot_answers[m.group(1).upper()] = parts
 
-    def replace_bracket(match):
-        inner = match.group(1).strip()
-        parts = re.split(r':\s*', inner, maxsplit=1)
-        if len(parts) != 2:
-            return match.group(0)
-
-        letter = parts[0].strip().upper()
-        options_raw = parts[1].strip()
-        options = [o.strip() for o in options_raw.split('/') if o.strip()]
-
+    def render_slot(letter: str, options_raw: str) -> Optional[str]:
+        """Texto Moodle para UN espacio, o None si no hay opciones (el
+        corchete original se deja tal cual, igual que antes)."""
+        options = split_options(options_raw)
         if not options:
-            return match.group(0)
+            return None
 
         # Determine which option(s) are correct for this slot — usually one,
         # but a "select several" slot can mark more than one.
@@ -152,10 +148,17 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
         if not correct_indices:
             correct_indices = [0]  # default to first option, same safety net as before
 
-        moodle_options = [
-            f"={escape_cloze_syntax(strip_accents(opt))}" if i in correct_indices else escape_cloze_syntax(strip_accents(opt))
-            for i, opt in enumerate(options)
-        ]
+        def render_option(i: int, opt: str) -> str:
+            text = escape_cloze_syntax(strip_accents(opt))
+            if i in correct_indices:
+                return f"={text}"
+            # Una opción INCORRECTA cuyo texto empieza por "=" o "%" (el
+            # operador "==", "%") se leería como marcador de respuesta
+            # correcta / de porcentaje: "%0%" fija explícitamente 0 %
+            # (sintaxis %fracción% de la documentación de Moodle).
+            return f"%0%{text}" if text[:1] in ("=", "%") else text
+
+        moodle_options = [render_option(i, opt) for i, opt in enumerate(options)]
         slot_num = str(ord(letter) - ord('A') + 1) if 'A' <= letter <= 'Z' else "1"
         # Un solo "=" -> selección única (MULTICHOICE_S, radio/desplegable).
         # Dos o más -> varias respuestas correctas a la vez (MULTIRESPONSE_S,
@@ -164,7 +167,19 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
         qtype_name = "MULTIRESPONSE_S" if len(correct_indices) > 1 else "MULTICHOICE_S"
         return f"{{{slot_num}:{qtype_name}:{'~'.join(moodle_options)}}}"
 
-    return re.sub(r'\[([A-Za-z]:\s*[^\]]+)\]', replace_bracket, cloze_text)
+    # Reconstruye el texto reemplazando cada espacio por su sintaxis Moodle.
+    # No se usa re.sub porque find_cloze_brackets balancea corchetes
+    # internos (ver su docstring) — algo que una sola expresión regular no
+    # puede hacer.
+    out: List[str] = []
+    last = 0
+    for start, end, letter, options_raw in find_cloze_brackets(cloze_text):
+        replacement = render_slot(letter.upper(), options_raw.strip())
+        out.append(cloze_text[last:start])
+        out.append(replacement if replacement is not None else cloze_text[start:end])
+        last = end
+    out.append(cloze_text[last:])
+    return "".join(out)
 
 
 
@@ -246,7 +261,7 @@ def build_xml(
             # simplemente una lista de un elemento, así que el comportamiento
             # de siempre queda intacto.
             correct_letters: List[str] = []
-            for target in [t.strip() for t in correct_answer.split('|') if t.strip()]:
+            for target in split_answers(correct_answer):
                 ca_clean = target.lower()
                 match_letter = None
                 # Priority 1: exact match, checked across ALL options before
@@ -314,11 +329,25 @@ def build_xml(
             # igual que ya hacemos para "varias respuestas" en Cloze.
             correct_fraction = round(100.0 / len(correct_letters), 5) if not is_single else 100
 
+            # "Selecciona todas las que correspondan" (is_single=False): las
+            # incorrectas necesitan una fracción NEGATIVA, no 0 — con 0, un
+            # estudiante que marca TODAS las opciones (correctas e
+            # incorrectas) igual suma el 100% de las correctas y se lleva la
+            # nota completa sin haber discriminado nada. Es la propia
+            # recomendación de Moodle ("Multiple Choice question type"):
+            # repartir -100% entre las incorrectas para que marcarlas TODAS
+            # cancele exactamente el 100% de las correctas. Con una sola
+            # respuesta correcta (radio, is_single=True) esto no aplica: el
+            # estudiante solo puede marcar una opción a la vez, así que 0%
+            # en las demás ya es el comportamiento estándar y correcto.
+            incorrect_count = len(options) - len(correct_letters)
+            incorrect_fraction = round(-100.0 / incorrect_count, 5) if (not is_single and incorrect_count) else 0
+
             # Iterar dinámicamente sobre las opciones encontradas (no limitado a
             # A-D): una pregunta con opción E o más ya no se descarta en silencio.
             for letter in sorted(options.keys()):
                 is_correct = letter in correct_letters
-                fraction = correct_fraction if is_correct else 0
+                fraction = correct_fraction if is_correct else incorrect_fraction
                 feedback = FEEDBACK_CORRECT if is_correct else FEEDBACK_INCORRECT
                 xml_parts.append(f'    <answer fraction="{fraction}">')
                 xml_parts.append(f'      <text>{cdata(esc(options[letter]))}</text>')
@@ -436,7 +465,7 @@ def build_xml(
             xml_parts.append('  <question type="cloze">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
             xml_parts.append('    <questiontext format="html">')
-            xml_parts.append(f'      <text>{cdata(f"<p>{esc(cloze_text)}</p>")}</text>')
+            xml_parts.append(f'      <text>{cdata(f"<p>{html.escape(cloze_text, quote=False)}</p>")}</text>')
             xml_parts.append('    </questiontext>')
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('  </question>')

@@ -1,0 +1,1658 @@
+{
+ "mode": "json",
+ "enrich": true,
+ "runs": 3,
+ "date": "2026-09-21T09:33:40",
+ "docs": {
+  "x13_marcas_mixtas": {
+   "summary": {
+    "doc": "x13_marcas_mixtas",
+    "runs": 3,
+    "esperadas": 40,
+    "exactitud": 1.0,
+    "exactitud_min": 1.0,
+    "exactitud_max": 1.0,
+    "completas": 40,
+    "completas_min": 40,
+    "completas_max": 40,
+    "encontradas": 40,
+    "encontradas_min": 40,
+    "encontradas_max": 40,
+    "utilizables": 38,
+    "utilizables_min": 38,
+    "utilizables_max": 38,
+    "tipo_ok": 38,
+    "tipo_ok_min": 38,
+    "tipo_ok_max": 38,
+    "enunciado_ok": 38,
+    "enunciado_ok_min": 38,
+    "enunciado_ok_max": 38,
+    "respuesta_ok": 40,
+    "respuesta_ok_min": 40,
+    "respuesta_ok_max": 40,
+    "inventadas": 0,
+    "inventadas_min": 0,
+    "inventadas_max": 0,
+    "sobrantes": 0,
+    "sobrantes_min": 0,
+    "sobrantes_max": 0,
+    "omitidas": 2,
+    "omitidas_min": 2,
+    "omitidas_max": 2,
+    "seconds": 21.933,
+    "seconds_min": 21.4,
+    "seconds_max": 22.8,
+    "prompt_tokens": 6350,
+    "prompt_tokens_min": 6350,
+    "prompt_tokens_max": 6350,
+    "output_tokens": 7267.333,
+    "output_tokens_min": 7260,
+    "output_tokens_max": 7282,
+    "gemini_calls": 1,
+    "gemini_calls_min": 1,
+    "gemini_calls_max": 1
+   },
+   "runs": [
+    {
+     "status": "ok",
+     "seconds": 21.4,
+     "prompt_tokens": 6350,
+     "output_tokens": 7260,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [],
+     "encontradas": 40,
+     "utilizables": 38,
+     "tipo_ok": 38,
+     "enunciado_ok": 38,
+     "respuesta_ok": 40,
+     "inventadas": 0,
+     "completas": 40,
+     "sobrantes": 0,
+     "omitidas": 2,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "90°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué algoritmo de ordenamiento tiene complejidad promedio O(n log n)?",
+       "options": [
+        "Inserción",
+        "Quicksort",
+        "Selección",
+        "Burbuja"
+       ],
+       "answers": [
+        "Quicksort"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estas figuras tienen cuatro lados? (seleccione todas las que apliquen)",
+       "options": [
+        "Triángulo",
+        "Rombo",
+        "Pentágono",
+        "Cuadrado"
+       ],
+       "answers": [
+        "Rombo",
+        "Cuadrado"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el resultado de 2³ + 3²?",
+       "options": [
+        "13",
+        "17",
+        "15",
+        "12"
+       ],
+       "answers": [
+        "13"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+       "options": [
+        "Alejandría",
+        "Antioquía",
+        "Atenas",
+        "Constantinopla"
+       ],
+       "answers": [
+        "Constantinopla"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué continente se encuentra Mongolia?",
+       "options": [
+        "Oceanía",
+        "Asia",
+        "África",
+        "Europa"
+       ],
+       "answers": [
+        "Asia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué isla es la más grande del mundo?",
+       "options": [
+        "Borneo",
+        "Nueva Guinea",
+        "Groenlandia",
+        "Madagascar"
+       ],
+       "answers": [
+        "Groenlandia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué año se firmó la Declaración de Independencia de los Estados Unidos?",
+       "options": [
+        "1776",
+        "1789",
+        "1812",
+        "1492"
+       ],
+       "answers": [
+        "1776"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el proceso por el cual las plantas producen su alimento con luz?",
+       "answers": [
+        "Fotosíntesis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos bits tiene un byte?",
+       "options": [
+        "4",
+        "8",
+        "16",
+        "32"
+       ],
+       "answers": [
+        "8"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Primera Guerra Mundial comenzó en 1914.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La primera ley de Newton también se conoce como ley de:",
+       "options": [
+        "conservación de la energía",
+        "acción y reacción",
+        "inercia",
+        "gravitación"
+       ],
+       "answers": [
+        "inercia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el país más poblado de Sudamérica?",
+       "options": [
+        "Colombia",
+        "Brasil",
+        "Argentina",
+        "Perú"
+       ],
+       "answers": [
+        "Brasil"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Selecciona los colores primarios en pigmento (modelo tradicional): (seleccione todas las que apliquen)",
+       "options": [
+        "Verde",
+        "Rojo",
+        "Azul",
+        "Amarillo"
+       ],
+       "answers": [
+        "Rojo",
+        "Azul",
+        "Amarillo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué año cayó el Muro de Berlín?",
+       "options": [
+        "1985",
+        "1989",
+        "1991",
+        "1993"
+       ],
+       "answers": [
+        "1989"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos cromosomas tiene una célula humana somática normal?",
+       "options": [
+        "23",
+        "44",
+        "46",
+        "48"
+       ],
+       "answers": [
+        "46"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué figura literaria compara dos elementos usando «como»?",
+       "options": [
+        "Hipérbole",
+        "Ironía",
+        "Símil",
+        "Metáfora"
+       ],
+       "answers": [
+        "Símil"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Canadá?",
+       "options": [
+        "Toronto",
+        "Ottawa",
+        "Montreal",
+        "Vancouver"
+       ],
+       "answers": [
+        "Ottawa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La Segunda Guerra Mundial terminó en:",
+       "options": [
+        "1943",
+        "1945",
+        "1947",
+        "1950"
+       ],
+       "answers": [
+        "1950"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El ADN se encuentra únicamente en las células vegetales.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+       "answers": [
+        "Oxígeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué palabra reservada define una función en Python?",
+       "options": [
+        "def",
+        "func",
+        "fn",
+        "function"
+       ],
+       "answers": [
+        "def"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un átomo neutro tiene igual número de protones y electrones.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son tipos de datos primitivos en Java? (seleccione todas las que apliquen)",
+       "options": [
+        "boolean",
+        "double",
+        "List",
+        "int",
+        "String"
+       ],
+       "answers": [
+        "boolean",
+        "double",
+        "int"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son ejemplos de energías renovables? (seleccione todas las que apliquen)",
+       "options": [
+        "Eólica",
+        "Solar",
+        "Carbón",
+        "Petróleo",
+        "Hidráulica"
+       ],
+       "answers": [
+        "Eólica",
+        "Solar",
+        "Hidráulica"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El corazón humano tiene cuatro cavidades.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué país fue gobernado por los faraones?",
+       "options": [
+        "Mesopotamia",
+        "Fenicia",
+        "Persia",
+        "Egipto"
+       ],
+       "answers": [
+        "Persia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tratado dividió el Nuevo Mundo entre España y Portugal en 1494?",
+       "options": [
+        "Tordesillas",
+        "Versalles",
+        "Utrecht",
+        "Westfalia"
+       ],
+       "answers": [
+        "Tordesillas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué método de HTTP se usa normalmente para crear un recurso?",
+       "options": [
+        "GET",
+        "HEAD",
+        "POST",
+        "TRACE"
+       ],
+       "answers": [
+        "POST"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué océano baña las costas occidentales de Chile?",
+       "options": [
+        "Pacífico",
+        "Índico",
+        "Atlántico",
+        "Ártico"
+       ],
+       "answers": [
+        "Pacífico"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un adjetivo?",
+       "options": [
+        "Una palabra que sustituye al nombre",
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que enlaza oraciones",
+        "Una palabra que expresa acción"
+       ],
+       "answers": [
+        "Una palabra que modifica al sustantivo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La mitocondria es la central energética de la célula.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cuál es la unidad de la fuerza en el Sistema Internacional?",
+       "answers": [
+        "Newton"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el lenguaje que estructura las páginas web?",
+       "answers": [
+        "HTML"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El río Amazonas desemboca en el océano Pacífico.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la derivada de x²?",
+       "options": [
+        "x",
+        "2x",
+        "x²",
+        "2"
+       ],
+       "answers": [
+        "x²"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué protocolo se usa para transferir páginas web de forma segura?",
+       "options": [
+        "HTTPS",
+        "FTP",
+        "SSH",
+        "SMTP"
+       ],
+       "answers": [
+        "HTTPS"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la unidad de la resistencia eléctrica?",
+       "options": [
+        "Ohmio",
+        "Voltio",
+        "Amperio",
+        "Vatio"
+       ],
+       "answers": [
+        "Ohmio"
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Quién fue el primer presidente de los Estados Unidos?",
+       "options": [
+        "Thomas Jefferson",
+        "John Adams",
+        "George Washington",
+        "Abraham Lincoln"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 12 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "En derecho, ¿qué significa «habeas corpus»?",
+       "options": [
+        "Derecho a la propiedad",
+        "Derecho de autor",
+        "Protección contra la detención arbitraria",
+        "Libertad de prensa"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 27 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 21.6,
+     "prompt_tokens": 6350,
+     "output_tokens": 7260,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [],
+     "encontradas": 40,
+     "utilizables": 38,
+     "tipo_ok": 38,
+     "enunciado_ok": 38,
+     "respuesta_ok": 40,
+     "inventadas": 0,
+     "completas": 40,
+     "sobrantes": 0,
+     "omitidas": 2,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "90°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué algoritmo de ordenamiento tiene complejidad promedio O(n log n)?",
+       "options": [
+        "Inserción",
+        "Quicksort",
+        "Selección",
+        "Burbuja"
+       ],
+       "answers": [
+        "Quicksort"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estas figuras tienen cuatro lados? (seleccione todas las que apliquen)",
+       "options": [
+        "Triángulo",
+        "Rombo",
+        "Pentágono",
+        "Cuadrado"
+       ],
+       "answers": [
+        "Rombo",
+        "Cuadrado"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el resultado de 2³ + 3²?",
+       "options": [
+        "13",
+        "17",
+        "15",
+        "12"
+       ],
+       "answers": [
+        "13"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+       "options": [
+        "Alejandría",
+        "Antioquía",
+        "Atenas",
+        "Constantinopla"
+       ],
+       "answers": [
+        "Constantinopla"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué continente se encuentra Mongolia?",
+       "options": [
+        "Oceanía",
+        "Asia",
+        "África",
+        "Europa"
+       ],
+       "answers": [
+        "Asia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué isla es la más grande del mundo?",
+       "options": [
+        "Borneo",
+        "Nueva Guinea",
+        "Groenlandia",
+        "Madagascar"
+       ],
+       "answers": [
+        "Groenlandia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué año se firmó la Declaración de Independencia de los Estados Unidos?",
+       "options": [
+        "1776",
+        "1789",
+        "1812",
+        "1492"
+       ],
+       "answers": [
+        "1776"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el proceso por el cual las plantas producen su alimento con luz?",
+       "answers": [
+        "Fotosíntesis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos bits tiene un byte?",
+       "options": [
+        "4",
+        "8",
+        "16",
+        "32"
+       ],
+       "answers": [
+        "8"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Primera Guerra Mundial comenzó en 1914.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La primera ley de Newton también se conoce como ley de:",
+       "options": [
+        "conservación de la energía",
+        "acción y reacción",
+        "inercia",
+        "gravitación"
+       ],
+       "answers": [
+        "inercia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el país más poblado de Sudamérica?",
+       "options": [
+        "Colombia",
+        "Brasil",
+        "Argentina",
+        "Perú"
+       ],
+       "answers": [
+        "Brasil"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Selecciona los colores primarios en pigmento (modelo tradicional): (seleccione todas las que apliquen)",
+       "options": [
+        "Verde",
+        "Rojo",
+        "Azul",
+        "Amarillo"
+       ],
+       "answers": [
+        "Rojo",
+        "Azul",
+        "Amarillo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué año cayó el Muro de Berlín?",
+       "options": [
+        "1985",
+        "1989",
+        "1991",
+        "1993"
+       ],
+       "answers": [
+        "1989"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos cromosomas tiene una célula humana somática normal?",
+       "options": [
+        "23",
+        "44",
+        "46",
+        "48"
+       ],
+       "answers": [
+        "46"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué figura literaria compara dos elementos usando «como»?",
+       "options": [
+        "Hipérbole",
+        "Ironía",
+        "Símil",
+        "Metáfora"
+       ],
+       "answers": [
+        "Símil"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Canadá?",
+       "options": [
+        "Toronto",
+        "Ottawa",
+        "Montreal",
+        "Vancouver"
+       ],
+       "answers": [
+        "Ottawa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La Segunda Guerra Mundial terminó en:",
+       "options": [
+        "1943",
+        "1945",
+        "1947",
+        "1950"
+       ],
+       "answers": [
+        "1950"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El ADN se encuentra únicamente en las células vegetales.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+       "answers": [
+        "Oxígeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué palabra reservada define una función en Python?",
+       "options": [
+        "def",
+        "func",
+        "fn",
+        "function"
+       ],
+       "answers": [
+        "def"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un átomo neutro tiene igual número de protones y electrones.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son tipos de datos primitivos en Java? (seleccione todas las que apliquen)",
+       "options": [
+        "boolean",
+        "double",
+        "List",
+        "int",
+        "String"
+       ],
+       "answers": [
+        "boolean",
+        "double",
+        "int"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son ejemplos de energías renovables? (seleccione todas las que apliquen)",
+       "options": [
+        "Eólica",
+        "Solar",
+        "Carbón",
+        "Petróleo",
+        "Hidráulica"
+       ],
+       "answers": [
+        "Eólica",
+        "Solar",
+        "Hidráulica"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El corazón humano tiene cuatro cavidades.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué país fue gobernado por los faraones?",
+       "options": [
+        "Mesopotamia",
+        "Fenicia",
+        "Persia",
+        "Egipto"
+       ],
+       "answers": [
+        "Persia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tratado dividió el Nuevo Mundo entre España y Portugal en 1494?",
+       "options": [
+        "Tordesillas",
+        "Versalles",
+        "Utrecht",
+        "Westfalia"
+       ],
+       "answers": [
+        "Tordesillas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué método de HTTP se usa normalmente para crear un recurso?",
+       "options": [
+        "GET",
+        "HEAD",
+        "POST",
+        "TRACE"
+       ],
+       "answers": [
+        "POST"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué océano baña las costas occidentales de Chile?",
+       "options": [
+        "Pacífico",
+        "Índico",
+        "Atlántico",
+        "Ártico"
+       ],
+       "answers": [
+        "Pacífico"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un adjetivo?",
+       "options": [
+        "Una palabra que sustituye al nombre",
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que enlaza oraciones",
+        "Una palabra que expresa acción"
+       ],
+       "answers": [
+        "Una palabra que modifica al sustantivo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La mitocondria es la central energética de la célula.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cuál es la unidad de la fuerza en el Sistema Internacional?",
+       "answers": [
+        "Newton"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el lenguaje que estructura las páginas web?",
+       "answers": [
+        "HTML"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El río Amazonas desemboca en el océano Pacífico.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la derivada de x²?",
+       "options": [
+        "x",
+        "2x",
+        "x²",
+        "2"
+       ],
+       "answers": [
+        "x²"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué protocolo se usa para transferir páginas web de forma segura?",
+       "options": [
+        "HTTPS",
+        "FTP",
+        "SSH",
+        "SMTP"
+       ],
+       "answers": [
+        "HTTPS"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la unidad de la resistencia eléctrica?",
+       "options": [
+        "Ohmio",
+        "Voltio",
+        "Amperio",
+        "Vatio"
+       ],
+       "answers": [
+        "Ohmio"
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Quién fue el primer presidente de los Estados Unidos?",
+       "options": [
+        "Thomas Jefferson",
+        "John Adams",
+        "George Washington",
+        "Abraham Lincoln"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 12 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "En derecho, ¿qué significa «habeas corpus»?",
+       "options": [
+        "Derecho a la propiedad",
+        "Derecho de autor",
+        "Protección contra la detención arbitraria",
+        "Libertad de prensa"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 27 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      }
+     ]
+    },
+    {
+     "status": "ok",
+     "seconds": 22.8,
+     "prompt_tokens": 6350,
+     "output_tokens": 7282,
+     "gemini_calls": 1,
+     "esperadas": 40,
+     "problemas": [],
+     "encontradas": 40,
+     "utilizables": 38,
+     "tipo_ok": 38,
+     "enunciado_ok": 38,
+     "respuesta_ok": 40,
+     "inventadas": 0,
+     "completas": 40,
+     "sobrantes": 0,
+     "omitidas": 2,
+     "exactitud": 1.0,
+     "detail": "",
+     "predicted": [
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La suma de los ángulos internos de un triángulo es:",
+       "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+       ],
+       "answers": [
+        "90°"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué algoritmo de ordenamiento tiene complejidad promedio O(n log n)?",
+       "options": [
+        "Inserción",
+        "Quicksort",
+        "Selección",
+        "Burbuja"
+       ],
+       "answers": [
+        "Quicksort"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estas figuras tienen cuatro lados? (seleccione todas las que apliquen)",
+       "options": [
+        "Triángulo",
+        "Rombo",
+        "Pentágono",
+        "Cuadrado"
+       ],
+       "answers": [
+        "Rombo",
+        "Cuadrado"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el resultado de 2³ + 3²?",
+       "options": [
+        "13",
+        "17",
+        "15",
+        "12"
+       ],
+       "answers": [
+        "13"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál fue la capital del Imperio Romano de Oriente?",
+       "options": [
+        "Alejandría",
+        "Antioquía",
+        "Atenas",
+        "Constantinopla"
+       ],
+       "answers": [
+        "Constantinopla"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué continente se encuentra Mongolia?",
+       "options": [
+        "Oceanía",
+        "Asia",
+        "África",
+        "Europa"
+       ],
+       "answers": [
+        "Asia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué isla es la más grande del mundo?",
+       "options": [
+        "Borneo",
+        "Nueva Guinea",
+        "Groenlandia",
+        "Madagascar"
+       ],
+       "answers": [
+        "Groenlandia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué año se firmó la Declaración de Independencia de los Estados Unidos?",
+       "options": [
+        "1776",
+        "1789",
+        "1812",
+        "1492"
+       ],
+       "answers": [
+        "1776"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el proceso por el cual las plantas producen su alimento con luz?",
+       "answers": [
+        "Fotosíntesis"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos bits tiene un byte?",
+       "options": [
+        "4",
+        "8",
+        "16",
+        "32"
+       ],
+       "answers": [
+        "8"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La Primera Guerra Mundial comenzó en 1914.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La primera ley de Newton también se conoce como ley de:",
+       "options": [
+        "conservación de la energía",
+        "acción y reacción",
+        "inercia",
+        "gravitación"
+       ],
+       "answers": [
+        "inercia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es el país más poblado de Sudamérica?",
+       "options": [
+        "Colombia",
+        "Brasil",
+        "Argentina",
+        "Perú"
+       ],
+       "answers": [
+        "Brasil"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "Selecciona los colores primarios en pigmento (modelo tradicional): (seleccione todas las que apliquen)",
+       "options": [
+        "Verde",
+        "Rojo",
+        "Azul",
+        "Amarillo"
+       ],
+       "answers": [
+        "Rojo",
+        "Azul",
+        "Amarillo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿En qué año cayó el Muro de Berlín?",
+       "options": [
+        "1985",
+        "1989",
+        "1991",
+        "1993"
+       ],
+       "answers": [
+        "1989"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuántos cromosomas tiene una célula humana somática normal?",
+       "options": [
+        "23",
+        "44",
+        "46",
+        "48"
+       ],
+       "answers": [
+        "46"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué figura literaria compara dos elementos usando «como»?",
+       "options": [
+        "Hipérbole",
+        "Ironía",
+        "Símil",
+        "Metáfora"
+       ],
+       "answers": [
+        "Símil"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la capital de Canadá?",
+       "options": [
+        "Toronto",
+        "Ottawa",
+        "Montreal",
+        "Vancouver"
+       ],
+       "answers": [
+        "Ottawa"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "La Segunda Guerra Mundial terminó en:",
+       "options": [
+        "1943",
+        "1945",
+        "1947",
+        "1950"
+       ],
+       "answers": [
+        "1950"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El ADN se encuentra únicamente en las células vegetales.",
+       "answers": [
+        "Falso"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Qué gas necesitan los seres humanos para respirar?",
+       "answers": [
+        "Oxígeno"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué palabra reservada define una función en Python?",
+       "options": [
+        "def",
+        "func",
+        "fn",
+        "function"
+       ],
+       "answers": [
+        "def"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "Un átomo neutro tiene igual número de protones y electrones.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles de estos son tipos de datos primitivos en Java? (seleccione todas las que apliquen)",
+       "options": [
+        "boolean",
+        "double",
+        "List",
+        "int",
+        "String"
+       ],
+       "answers": [
+        "boolean",
+        "double",
+        "int"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuáles son ejemplos de energías renovables? (seleccione todas las que apliquen)",
+       "options": [
+        "Eólica",
+        "Solar",
+        "Carbón",
+        "Petróleo",
+        "Hidráulica"
+       ],
+       "answers": [
+        "Eólica",
+        "Solar",
+        "Hidráulica"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El corazón humano tiene cuatro cavidades.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué país fue gobernado por los faraones?",
+       "options": [
+        "Mesopotamia",
+        "Fenicia",
+        "Persia",
+        "Egipto"
+       ],
+       "answers": [
+        "Persia"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué tratado dividió el Nuevo Mundo entre España y Portugal en 1494?",
+       "options": [
+        "Tordesillas",
+        "Versalles",
+        "Utrecht",
+        "Westfalia"
+       ],
+       "answers": [
+        "Tordesillas"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué método de HTTP se usa normalmente para crear un recurso?",
+       "options": [
+        "GET",
+        "HEAD",
+        "POST",
+        "TRACE"
+       ],
+       "answers": [
+        "POST"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué océano baña las costas occidentales de Chile?",
+       "options": [
+        "Pacífico",
+        "Índico",
+        "Atlántico",
+        "Ártico"
+       ],
+       "answers": [
+        "Pacífico"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué es un adjetivo?",
+       "options": [
+        "Una palabra que sustituye al nombre",
+        "Una palabra que modifica al sustantivo",
+        "Una palabra que enlaza oraciones",
+        "Una palabra que expresa acción"
+       ],
+       "answers": [
+        "Una palabra que modifica al sustantivo"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "La mitocondria es la central energética de la célula.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cuál es la unidad de la fuerza en el Sistema Internacional?",
+       "answers": [
+        "Newton"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "shortanswer",
+       "stem": "¿Cómo se llama el lenguaje que estructura las páginas web?",
+       "answers": [
+        "HTML"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "truefalse",
+       "stem": "El río Amazonas desemboca en el océano Pacífico.",
+       "answers": [
+        "Verdadero"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la derivada de x²?",
+       "options": [
+        "x",
+        "2x",
+        "x²",
+        "2"
+       ],
+       "answers": [
+        "x²"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Qué protocolo se usa para transferir páginas web de forma segura?",
+       "options": [
+        "HTTPS",
+        "FTP",
+        "SSH",
+        "SMTP"
+       ],
+       "answers": [
+        "HTTPS"
+       ]
+      },
+      {
+       "status": "valid",
+       "type": "multichoice",
+       "stem": "¿Cuál es la unidad de la resistencia eléctrica?",
+       "options": [
+        "Ohmio",
+        "Voltio",
+        "Amperio",
+        "Vatio"
+       ],
+       "answers": [
+        "Ohmio"
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "¿Quién fue el primer presidente de los Estados Unidos?",
+       "options": [
+        "Thomas Jefferson",
+        "John Adams",
+        "George Washington",
+        "Abraham Lincoln"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 12 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      },
+      {
+       "status": "skipped",
+       "type": "multichoice",
+       "stem": "En derecho, ¿qué significa «habeas corpus»?",
+       "options": [
+        "Derecho a la propiedad",
+        "Derecho de autor",
+        "Protección contra la detención arbitraria",
+        "Libertad de prensa"
+       ],
+       "answer_only": true,
+       "reasons": [
+        "Error: la Pregunta 27 (multichoice) no tiene una respuesta correcta especificada en el examen."
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,470 @@
+{
+  "source": "adversarial",
+  "reviewed": true,
+  "file": "synthetic/x04_marcas_distractoras.pdf",
+  "path": "parse",
+  "is_exam": true,
+  "focus": "Marcas distractoras",
+  "notes": "Respuestas en rojo, pero también: palabras del enunciado en rojo/azul/negrita, opciones equivocadas completas en azul, títulos de sección en rojo y 3 preguntas con TODAS las opciones en rojo (no hay respuesta: deben omitirse). ~25 % de claves contrafácticas.",
+  "questions": [
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles de estos son tipos de datos primitivos en Java?",
+      "answers": [
+        "boolean",
+        "int",
+        "double"
+      ],
+      "options": [
+        "boolean",
+        "int",
+        "double",
+        "List",
+        "String"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Selecciona todos los números primos:",
+      "answers": [
+        "2",
+        "17",
+        "11"
+      ],
+      "options": [
+        "2",
+        "15",
+        "17",
+        "11",
+        "9"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué figura literaria compara dos elementos usando «como»?",
+      "answers": [],
+      "options": [
+        "Ironía",
+        "Metáfora",
+        "Hipérbole",
+        "Símil"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "truefalse",
+      "stem": "La ciudad de Estambul se encuentra en dos continentes.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué imprime print(len([1, 2, 3]))?",
+      "answers": [],
+      "options": [
+        "2",
+        "3",
+        "4",
+        "Error"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "multichoice",
+      "stem": "La suma de los ángulos internos de un triángulo es:",
+      "answers": [
+        "180°"
+      ],
+      "options": [
+        "90°",
+        "180°",
+        "270°",
+        "360°"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La Revolución Industrial comenzó en Inglaterra.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuáles son estados de la materia comunes?",
+      "answers": [
+        "Sólido",
+        "Líquido",
+        "Gaseoso"
+      ],
+      "options": [
+        "Sólido",
+        "Metálico",
+        "Líquido",
+        "Gaseoso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué mide un sismógrafo?",
+      "answers": [
+        "Las vibraciones del suelo"
+      ],
+      "options": [
+        "La radiación solar",
+        "Las vibraciones del suelo",
+        "La humedad",
+        "La presión atmosférica"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿En qué año se firmó la Declaración de Independencia de los Estados Unidos?",
+      "answers": [
+        "1776"
+      ],
+      "options": [
+        "1776",
+        "1789",
+        "1812",
+        "1492"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el plural de «lápiz»?",
+      "answers": [
+        "lápices"
+      ],
+      "options": [
+        "lápizs",
+        "lápices",
+        "lápiz",
+        "lápizes"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál de estos es un mamífero marino?",
+      "answers": [
+        "Delfín"
+      ],
+      "options": [
+        "Atún",
+        "Delfín",
+        "Pulpo",
+        "Tiburón"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El español es el idioma oficial de Brasil.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la mediana del conjunto {3, 9, 4, 7, 5}?",
+      "answers": [
+        "5"
+      ],
+      "options": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué hace la instrucción break dentro de un bucle?",
+      "answers": [
+        "Termina el bucle"
+      ],
+      "options": [
+        "Salta a la siguiente iteración",
+        "Termina el bucle",
+        "Reinicia el bucle",
+        "Lanza una excepción"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "Júpiter es el planeta más cercano al Sol.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué operador de Python realiza la división entera?",
+      "answers": [
+        "**"
+      ],
+      "options": [
+        "//",
+        "/",
+        "%",
+        "**"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el país más poblado de Sudamérica?",
+      "answers": [],
+      "options": [
+        "Argentina",
+        "Perú",
+        "Brasil",
+        "Colombia"
+      ],
+      "unanswered": true
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama el órgano que bombea la sangre?",
+      "answers": [
+        "Corazón"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La luz viaja más lento que el sonido.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "Si f(x) = 3x + 2, ¿cuánto vale f(4)?",
+      "answers": [
+        "14"
+      ],
+      "options": [
+        "12",
+        "14",
+        "16",
+        "10"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la moneda oficial de Japón?",
+      "answers": [
+        "Yuan"
+      ],
+      "options": [
+        "Yen",
+        "Ringgit",
+        "Won",
+        "Yuan"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Qué instrumento mide la temperatura?",
+      "answers": [
+        "Termómetro"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cómo se llama la división de una célula en dos células idénticas?",
+      "answers": [
+        "Mitosis"
+      ]
+    },
+    {
+      "type": "shortanswer",
+      "stem": "¿Cuál es la unidad de la fuerza en el Sistema Internacional?",
+      "answers": [
+        "Newton"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la energía que posee un cuerpo por su movimiento?",
+      "answers": [
+        "Potencial"
+      ],
+      "options": [
+        "Térmica",
+        "Cinética",
+        "Química",
+        "Potencial"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es la mitosis?",
+      "answers": [
+        "División celular que produce dos células idénticas"
+      ],
+      "options": [
+        "Muerte celular programada",
+        "Formación de gametos",
+        "División celular que produce dos células idénticas",
+        "Fusión de dos células"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el pH de una solución neutra a 25 °C?",
+      "answers": [
+        "7"
+      ],
+      "options": [
+        "0",
+        "7",
+        "10",
+        "14"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el punto de ebullición del agua a 1 atm en la escala Kelvin?",
+      "answers": [
+        "373 K"
+      ],
+      "options": [
+        "273 K",
+        "323 K",
+        "373 K",
+        "473 K"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "La Primera Guerra Mundial comenzó en 1914.",
+      "answers": [
+        "Verdadero"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué planeta tiene los anillos más visibles?",
+      "answers": [
+        "Saturno"
+      ],
+      "options": [
+        "Saturno",
+        "Júpiter",
+        "Neptuno",
+        "Urano"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué es el kernel de un sistema operativo?",
+      "answers": [
+        "El núcleo que gestiona los recursos del hardware"
+      ],
+      "options": [
+        "Un navegador",
+        "Un antivirus",
+        "El núcleo que gestiona los recursos del hardware",
+        "Un editor de texto"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué órgano regula el nivel de glucosa mediante la insulina?",
+      "answers": [
+        "Páncreas"
+      ],
+      "options": [
+        "Páncreas",
+        "Riñón",
+        "Bazo",
+        "Hígado"
+      ]
+    },
+    {
+      "type": "truefalse",
+      "stem": "El código binario usa únicamente los dígitos 0 y 1.",
+      "answers": [
+        "Falso"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué tratado dividió el Nuevo Mundo entre España y Portugal en 1494?",
+      "answers": [
+        "Versalles"
+      ],
+      "options": [
+        "Tordesillas",
+        "Utrecht",
+        "Versalles",
+        "Westfalia"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es la capital de Canadá?",
+      "answers": [
+        "Ottawa"
+      ],
+      "options": [
+        "Toronto",
+        "Vancouver",
+        "Montreal",
+        "Ottawa"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cuál es el lago navegable más alto del mundo?",
+      "answers": [
+        "Titicaca"
+      ],
+      "options": [
+        "Superior",
+        "Titicaca",
+        "Victoria",
+        "Baikal"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué imprime print('a' * 3)?",
+      "answers": [
+        "aaa"
+      ],
+      "options": [
+        "a3",
+        "aaa",
+        "3a",
+        "Error"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Qué estrecho separa Europa de África?",
+      "answers": [
+        "Magallanes"
+      ],
+      "options": [
+        "Gibraltar",
+        "Magallanes",
+        "Bósforo",
+        "Bering"
+      ]
+    },
+    {
+      "type": "multichoice",
+      "stem": "¿Cómo se llama la línea imaginaria que divide la Tierra en hemisferio norte y sur?",
+      "answers": [
+        "Ecuador"
+      ],
+      "options": [
+        "Ecuador",
+        "Meridiano de Greenwich",
+        "Trópico de Cáncer",
+        "Círculo polar"
+      ]
+    }
+  ]
+}
