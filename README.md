@@ -412,6 +412,7 @@ En un PDF digital, `extract_text()` pierde justo las marcas de respuesta más co
 | Variable | Por defecto | Qué hace |
 |---|:---:|---|
 | `GEMINI_API_KEY` | — | Key de Google AI Studio (ver `.env.example`) |
+| `GEMINI_MODEL` | `gemini-3.1-flash-lite` | Modelo de Gemini. Sirve para comparar modelos con `dev/eval.py` sin tocar el código (ver la comparación con 3.5-flash-lite en [`RESULTADOS.md`](dev/eval_results/RESULTADOS.md)) |
 | `ENRICH_PDF_TEXT` | `1` | Marcas (color, resaltado, subrayado, negrita, tablas) anotadas y resueltas en código |
 | `NORMALIZER_MODE` | `json` | Carga normal. `json`: la IA devuelve JSON con esquema (más fiel) · `text`: formato propio (2–5× más rápido) |
 | `NORMALIZER_MODE_AI` | `text` | Botón "Leer el PDF con IA" (escaneados), donde el modo texto midió mejor |

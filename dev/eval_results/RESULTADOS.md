@@ -437,3 +437,30 @@ Con `/code-review --full --level high` sobre todo el proyecto (no solo el diff d
 **Regresión:** 11 pruebas nuevas en `dev/test_casos_borde.py` (30 en total) y 3 en `frontend/pruebas.html` (26 en total, corridas en el navegador real). Cada una se probó primero contra el código SIN el arreglo para confirmar que de verdad falla ahí y pasa con el arreglo — no son pruebas vacuas. `dev/xml_fidelity.py`: 517/517 sin cambios. Regresión completa con la API real (1 corrida): 18 originales — **100 % sintéticos, 97 % reales** (148/153, dentro de la variación normal del modelo); 13 adversariales — **94 % (487/517)**, sin caídas respecto a la medición anterior (94,1 %).
 
 Reproducir: `backend/venv/bin/python dev/test_casos_borde.py`, `backend/venv/bin/python dev/xml_fidelity.py`, y abrir `http://localhost:PUERTO/static/pruebas.html`. Archivos: `*_revision_10_fixes.json`, `*_revision_10_fixes_adv.json`.
+
+## Comparación de modelos: 3.1-flash-lite vs 3.5-flash-lite (23/09/2026)
+
+Ya en el plan de pago de Gemini (modalidad Estándar), mismo set y mismo
+código; el modelo se elige con la variable `GEMINI_MODEL`.
+
+| | gemini-3.1-flash-lite (actual) | gemini-3.5-flash-lite |
+|---|---|---|
+| Sintéticos | 100 % (271/271) | 100 % (271/271) |
+| Reales sin `computacion` | 100 % | 100 % |
+| `real_parcial_1_computacion` * (3 corridas) | 85 % | 90 % |
+| Precio (entrada / salida por 1 M tokens) | $0.25 / $1.50 | $0.30 / $2.50 |
+| Tiempo | referencia | ~10–15 % más lento |
+
+**Decisión: se mantiene 3.1-flash-lite.** Empatan en todo lo verificado; la
+única diferencia (< 2 preguntas en promedio) está en el documento cuyo
+golden no se revisó a mano, así que no es concluyente. 3.5 cuesta ~50 % más
+por examen y es algo más lento.
+
+Archivos: `20260923_1057_json_enrich_diag.json` (3.1, 1 corrida),
+`20260923_1058_json_enrich_comp31.json` (3.1, `computacion` ×3) y
+`20260923_1051_json_enrich_pago_35lite.json` (3.5, 3 corridas).
+
+Nota: con `--workers 3` la corrida de 3.1 se cerró dos veces de golpe
+(código 133) tras el primer documento; con `--workers 1` corre completa.
+Apunta a que el renderizado de PDF no tolera hilos en paralelo; queda por
+investigar.

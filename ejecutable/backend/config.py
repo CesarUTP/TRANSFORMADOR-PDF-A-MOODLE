@@ -80,7 +80,9 @@ MISSING_API_KEY_MESSAGE = (
 )
 if not GEMINI_API_KEY:
     _logger.warning(MISSING_API_KEY_MESSAGE)
-GEMINI_MODEL_NAME: str = "gemini-3.1-flash-lite"
+# Se puede cambiar con la variable GEMINI_MODEL (p. ej. para comparar
+# modelos con dev/eval.py sin tocar el código).
+GEMINI_MODEL_NAME: str = os.environ.get("GEMINI_MODEL", "").strip() or "gemini-3.1-flash-lite"
 GEMINI_MAX_RETRIES: int = 3
 # Tiempo máximo de UNA llamada a Gemini. Sin esto, una petición que se
 # queda colgada del lado de Google esperaba el timeout por defecto del SDK
