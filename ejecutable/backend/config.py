@@ -14,15 +14,37 @@ from pathlib import Path
 _logger = logging.getLogger(__name__)
 
 
+def _app_data_dir() -> Path:
+    """Carpeta de datos de la app (la misma que usa database.py)."""
+    if sys.platform == "win32":
+        base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    elif sys.platform == "darwin":
+        base = os.path.expanduser("~/Library/Application Support")
+    else:
+        base = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+    return Path(base) / "ConversorMoodleXML"
+
+
 def _load_dotenv() -> None:
     """
     Carga variables desde un archivo .env local (NO versionado — ver
     .gitignore) sin agregar dependencias: una línea CLAVE=valor por
     variable, se ignoran comentarios (#) y líneas vacías. Nunca pisa una
-    variable que ya venga del entorno real. Se buscan, en orden: junto al
-    ejecutable empaquetado, en backend/ y en la raíz del proyecto.
+    variable que ya venga del entorno real. Se buscan, en orden:
+
+      1. En la carpeta de datos de la app (la misma del historial):
+           macOS:   ~/Library/Application Support/ConversorMoodleXML/.env
+           Windows: %LOCALAPPDATA%\\ConversorMoodleXML\\.env
+         Es la ubicación recomendada: sobrevive a recompilar o reinstalar
+         la app (antes la clave vivía DENTRO del .app y se perdía en cada
+         compilación).
+      2. Junto al ejecutable empaquetado.
+      3. En backend/ y en la raíz del proyecto (desarrollo).
+
+    Una línea vacía ("GEMINI_API_KEY=" sin valor) no cuenta: así la
+    plantilla recién creada no tapa una clave puesta en otro lugar.
     """
-    candidates = []
+    candidates = [_app_data_dir() / ".env"]
     if getattr(sys, "frozen", False):
         candidates.append(Path(sys.executable).parent / ".env")
     here = Path(__file__).resolve().parent
@@ -36,7 +58,7 @@ def _load_dotenv() -> None:
                 continue
             key, _, value = line.partition("=")
             key, value = key.strip(), value.strip().strip('"').strip("'")
-            if key and key not in os.environ:
+            if key and value and key not in os.environ:
                 os.environ[key] = value
 
 
@@ -50,10 +72,11 @@ GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "").strip()
 # Mensaje único para cuando falta: lo muestra la app tal cual (ver
 # formatter._generate_with_retries), así el usuario sabe qué hacer en vez
 # de ver un error técnico de la API.
+ENV_PATH = _app_data_dir() / ".env"
 MISSING_API_KEY_MESSAGE = (
-    "Falta configurar la clave de la IA (GEMINI_API_KEY). Crea un archivo .env "
-    "junto al programa con la línea GEMINI_API_KEY=tu_clave — puedes obtenerla "
-    "gratis en https://aistudio.google.com/apikey (ver .env.example)."
+    "Falta configurar la clave de la IA (GEMINI_API_KEY). Abre el archivo "
+    f"«{ENV_PATH}», pega tu clave después de «GEMINI_API_KEY=», guárdalo y vuelve "
+    "a abrir la aplicación. La clave se obtiene gratis en https://aistudio.google.com/apikey."
 )
 if not GEMINI_API_KEY:
     _logger.warning(MISSING_API_KEY_MESSAGE)

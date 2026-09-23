@@ -32,17 +32,24 @@ ahí queda "instalada" como cualquier app de Mac.
 
 Clave de Gemini (API key)
 ------------------------------------------------
-La app NO trae ninguna clave adentro. Cada Mac donde se instale
-necesita un archivo ".env" junto al ejecutable, dentro del paquete:
+La app NO trae ninguna clave adentro. Cada Mac donde se use necesita
+un archivo ".env" en la carpeta de datos de la app (la misma donde
+queda el historial):
 
-    ConvertidorMoodle.app/Contents/MacOS/.env
+    ~/Library/Application Support/ConversorMoodleXML/.env
 
 con una sola línea:
 
     GEMINI_API_KEY=tu_clave_aqui
 
-(Para llegar ahí: clic derecho en la app → "Mostrar contenido del
-paquete" → Contents → MacOS.)
+Para llegar ahí: en el Finder, menú Ir → "Ir a la carpeta…"
+(Cmd+Shift+G) y pega la ruta de arriba. Si la carpeta no existe,
+abre la app una vez y se crea sola. El archivo se edita con TextEdit
+(Formato → Convertir a texto normal).
+
+Esta ubicación sobrevive a recompilar o reinstalar la app. (Antes la
+clave iba DENTRO del paquete .app, y se perdía cada vez que se volvía
+a compilar.)
 
 La clave se obtiene gratis en https://aistudio.google.com/apikey
 

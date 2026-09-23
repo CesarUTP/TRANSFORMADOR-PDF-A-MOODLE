@@ -50,15 +50,21 @@ más instalado.
 
 Clave de Gemini (API key)
 ------------------------------------------------
-La app lee la clave de un archivo ".env" ubicado junto a
-"ConvertidorMoodle.exe" (en la carpeta donde quedó instalada, por
-defecto C:\Program Files\Conversor a Moodle XML). Créalo con
-el Bloc de notas, como administrador, con una sola línea:
+La app lee la clave de un archivo ".env" en su carpeta de datos (la
+misma donde queda el historial). No hace falta ser administrador:
+
+    %LOCALAPPDATA%\ConversorMoodleXML\.env
+
+Para llegar ahí: Windows+R, pega la ruta de arriba (sin ".env") y
+Enter. Si la carpeta no existe, abre la app una vez y se crea sola.
+Crea el archivo con el Bloc de notas, con una sola línea:
 
     GEMINI_API_KEY=tu_clave_aqui
 
 Guárdalo con el nombre exacto ".env" (tipo "Todos los archivos", para
-que no quede como ".env.txt").
+que no quede como ".env.txt"). Esta ubicación sobrevive a reinstalar
+o actualizar la app. (Un .env junto a "ConvertidorMoodle.exe" también
+sigue funcionando.)
 
 Sin ese archivo la app abre igual, pero al convertir un examen avisa
 que falta configurar la clave. El ejecutable NO trae ninguna clave

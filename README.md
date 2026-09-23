@@ -100,7 +100,7 @@ En Moodle: **Banco de preguntas → Importar**.
 > ¿Quieres un instalador de verdad, sin que el usuario final necesite Python?
 > · **Windows** → [`ejecutable/LEEME_WINDOWS.txt`](ejecutable/LEEME_WINDOWS.txt) (`Setup.exe` con ícono, acceso directo y desinstalador)
 > · **macOS** → [`ejecutable_mac/LEEME_MAC.txt`](ejecutable_mac/LEEME_MAC.txt) (`.dmg` que se arrastra a Aplicaciones)
-> En ambos casos corre antes `dev/sync_ejecutable.py`. La app **ya no trae la API key**: cada instalación necesita su propio `.env`.
+> En ambos casos corre antes `dev/sync_ejecutable.py`. La app **ya no trae la API key**: cada instalación necesita su propio `.env` en la carpeta de datos de la app (ver "Dice que falta configurar la clave de la IA").
 
 ---
 
@@ -486,11 +486,12 @@ El mismo mensaje de error muestra la ruta. Ese archivo es lo primero que hay que
 
 <br>
 
-La app **no trae ninguna API key incluida**. Cada instalación necesita un archivo `.env` junto al programa con:
+La app **no trae ninguna API key incluida**. Cada instalación necesita un archivo `.env` en la carpeta de datos de la app (la misma del historial), con la línea `GEMINI_API_KEY=tu_clave`:
 
-```
-GEMINI_API_KEY=tu_clave
-```
+- macOS: `~/Library/Application Support/ConversorMoodleXML/.env` (Finder → Cmd+Shift+G)
+- Windows: `%LOCALAPPDATA%\ConversorMoodleXML\.env` (Windows+R)
+
+Esa ubicación sobrevive a recompilar o reinstalar la app. El mensaje de error muestra la ruta exacta. Desde el código también vale el `.env` de la raíz del proyecto.
 
 Se obtiene gratis en [Google AI Studio](https://aistudio.google.com/apikey). Ver [`.env.example`](.env.example).
 
