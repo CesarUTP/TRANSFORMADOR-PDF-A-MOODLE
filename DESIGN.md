@@ -135,7 +135,7 @@ No es una landing page ni busca persuadir: es una herramienta de trabajo (modo O
 Se rechazó explícitamente el vocabulario visual por defecto de "interfaz generada por IA": sin texto en degradado, sin halos de color (`box-shadow` sin desplazamiento), sin tipografías de IA sobreusadas (Plus Jakarta Sans, Inter, Space Grotesk), sin bordes de acento de más de 1px en callouts.
 
 **Key Characteristics:**
-- Oscuro por defecto (`data-theme="dark"`), con una variante clara completa como alternativa, no como pensamiento tardío.
+- **Se abre siempre en modo claro** (`data-theme="light"`), sin importar el tema del sistema ni la última elección; el modo oscuro sigue disponible con el botón de tema durante la sesión. La splash también es clara.
 - Un acento funcional (Azul Señal) + una paleta de 7 colores categóricos para tipos de pregunta.
 - Sombras neutras (negro a baja opacidad) para elevación; cero halos de color.
 - Tarjetas redondeadas de esquina generosa (14-28px), sólidas, sobre un fondo liso: sin vidrio, sin blur decorativo y sin halos radiales de fondo (se quitaron en la revisión de septiembre de 2026 por contradecir la Regla Sin Halo).
@@ -248,7 +248,7 @@ Con un archivo elegido, la zona de carga pasa a verde (borde sólido `--color-su
 J/K (siguiente/anterior), I (siguiente incompleta), R (siguiente para revisar), ? (abre la Guía en «Revisión») y Esc. No hay botón propio en el editor: la lista vive en la Guía → Revisión, a la que se llega con «¿Cómo reviso?» o con `?`.
 
 ### Pantalla de arranque (splash, launcher.py)
-Sin tarjeta, sin vidrio ni halos, sin texto en degradado y sin mensajes inventados. Fondo liso del tema del sistema (claro u oscuro); el ícono oficial a 64px (incrustado en el HTML, porque la splash se carga sin servidor), nombre en Outfit 30px, una línea de descripción y una barra de 3px que avanza con las etapas REALES del arranque (`setStage`, llamada desde el launcher). Pie con los créditos y la versión, separado por una línea fina. La pantalla de "no se pudo iniciar" usa el mismo lenguaje, con la marca en rojo, qué hacer y la ruta del registro.
+Sin tarjeta, sin vidrio ni halos, sin texto en degradado y sin mensajes inventados. Fondo liso claro (la app siempre abre en modo claro); el ícono oficial a 64px (incrustado en el HTML, porque la splash se carga sin servidor), nombre en Outfit 30px, una línea de descripción y una barra de 3px que avanza con las etapas REALES del arranque (`setStage`, llamada desde el launcher). Pie con los créditos y la versión, separado por una línea fina. La pantalla de "no se pudo iniciar" usa el mismo lenguaje, con la marca en rojo, qué hacer y la ruta del registro.
 
 ### Mapa del examen (review rail)
 Un cuadro por pregunta. **Incompleta:** borde rojo sólido + fondo rojo tenue. **Para revisar:** borde ámbar **discontinuo** (no depende solo del color, y se distingue del ámbar de Emparejamiento). **Actual:** contorno de acento de 2px; solo si no tiene avisos se rellena de acento con `--color-on-accent`. Teclas J/K para siguiente/anterior.

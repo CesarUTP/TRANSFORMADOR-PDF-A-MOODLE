@@ -139,25 +139,17 @@ class Api:
 # Pantalla sobria de arranque: el ícono oficial, nombre, una barra fina que avanza con
 # las etapas REALES del arranque (el launcher las informa con setStage) y un
 # pie con créditos y versión. Sin tarjeta de vidrio, sin halos, sin texto en
-# degradado y sin mensajes inventados que rotan (ver DESIGN.md). Sigue el
-# tema claro/oscuro del sistema.
+# degradado y sin mensajes inventados que rotan (ver DESIGN.md). Siempre en
+# modo claro, igual que la app al abrirse.
 APP_VERSION = "1.1"
 
 _SPLASH_STYLE = """
     :root {
-      --bg: #090d16; --surface: #111a2e; --border: rgba(255,255,255,0.10);
-      --text: #f8fafc; --muted: #94a3b8; --subtle: #8f9db0;
-      --mark: #0369a1; --accent: #38bdf8; --error: #f43f5e;
+      --bg: #f1f5f9; --surface: #ffffff; --border: #d5dde8;
+      --text: #0f172a; --muted: #475569; --subtle: #606f85;
+      --mark: #0369a1; --accent: #0273ae; --error: #d31b44;
       --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-      color-scheme: dark;
-    }
-    @media (prefers-color-scheme: light) {
-      :root {
-        --bg: #f1f5f9; --surface: #ffffff; --border: #d5dde8;
-        --text: #0f172a; --muted: #475569; --subtle: #606f85;
-        --accent: #0273ae; --error: #d31b44;
-        color-scheme: light;
-      }
+      color-scheme: light;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; }

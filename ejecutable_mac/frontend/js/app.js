@@ -43,12 +43,10 @@ Object.assign(window, { addMatchingPairRow, addNewQuestion, applyPointsDistribut
 // Init Lucide Icons
 lucide.createIcons();
 
-(function initTheme() {
-  let saved = null;
-  try { saved = localStorage.getItem('theme'); } catch (_) {}
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  applyTheme(saved === 'dark' || (!saved && prefersDark));
-})();
+// La app abre SIEMPRE en modo claro, sin importar el tema del sistema ni
+// lo que se eligió la vez anterior. El botón de tema sigue cambiándolo
+// durante la sesión.
+applyTheme(false);
 
 // ¿Quedó una revisión a medias la última vez? Se ofrece retomarla.
 mostrarAvisoBorrador();

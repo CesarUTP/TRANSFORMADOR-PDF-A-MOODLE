@@ -12,6 +12,5 @@ export function applyTheme(dark) {
   const label = dark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
   btn.setAttribute('aria-label', label);
   btn.title = label;
-  try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (_) {}
   window.dispatchEvent(new Event('themechange'));
 }
