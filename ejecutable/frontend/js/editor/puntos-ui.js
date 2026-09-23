@@ -1,7 +1,7 @@
 /**
  * puntos-ui.js — panel "Distribuir puntos" (el cálculo vive en js/puntos.js).
  */
-import { _closeOtherCollapsiblePanels, _collapsePanelByHand, _openCollapsiblePanel, _updateToggleAllPanelsLabel } from './paneles.js';
+import { _openCollapsiblePanel, togglePanel } from './paneles.js';
 import { renderEditor, syncParseResultFromDOM } from './tarjetas.js';
 import { estado } from '../estado.js';
 import { autoDistributePoints, fmtPoints } from '../puntos.js';
@@ -9,16 +9,7 @@ import { showToast } from '../ui/toast.js';
 
 // ── Panel "Distribuir puntos" ──────────────────────────────────────────
 export function togglePointsToolMenu() {
-  const el = document.getElementById('points-tool-panel');
-  if (!el) return;
-  if (el.classList.contains('panel-open')) {
-    _collapsePanelByHand(el);
-  } else {
-    _closeOtherCollapsiblePanels('points-tool-panel');
-    _openCollapsiblePanel(el, 'flex');
-    updatePointsWeightPreview();
-  }
-  _updateToggleAllPanelsLabel();
+  if (togglePanel('points-tool-panel', 'flex')) updatePointsWeightPreview();
 }
 
 // Puntos totales del examen: SIEMPRE los que el docente escribió al
@@ -57,17 +48,14 @@ export function setPointsToolMode(mode) {
   const equalBtn = document.getElementById('points-mode-equal');
   const byTypeBtn = document.getElementById('points-mode-byType');
   const weightsEditor = document.getElementById('points-weights-editor');
-  if (equalBtn) equalBtn.className = mode === 'equal' ? 'btn btn-primary' : 'btn btn-ghost';
-  if (byTypeBtn) byTypeBtn.className = mode === 'byType' ? 'btn btn-primary' : 'btn btn-ghost';
-  if (equalBtn) equalBtn.style.flex = '1';
-  if (byTypeBtn) byTypeBtn.style.flex = '1';
+  if (equalBtn) { equalBtn.className = 'btn btn-sm ' + (mode === 'equal' ? 'btn-primary' : 'btn-ghost'); equalBtn.setAttribute('aria-pressed', mode === 'equal'); equalBtn.style.flex = '1'; }
+  if (byTypeBtn) { byTypeBtn.className = 'btn btn-sm ' + (mode === 'byType' ? 'btn-primary' : 'btn-ghost'); byTypeBtn.setAttribute('aria-pressed', mode === 'byType'); byTypeBtn.style.flex = '1'; }
   if (weightsEditor) weightsEditor.style.display = (mode === 'byType') ? 'flex' : 'none';
 }
 
-// Botón "Aplicar": recalcula el puntaje de TODAS las preguntas visibles
-// según el modo elegido y vuelve a renderizar — se avisa por toast que
-// esto reemplaza cualquier valor puesto a mano, ya que no hay forma de
-// aplicarlo solo a algunas sin resultar confuso.
+// Botón "Aplicar": recalcula el puntaje de TODAS las preguntas según el
+// modo elegido. Reemplaza los valores puestos a mano, así que el aviso
+// ofrece "Deshacer" (antes solo había una advertencia en letra de 11,5px).
 export function applyPointsDistribution() {
   // Los pesos que el docente acaba de escribir viven en inputs que
   // renderEditor() va a reconstruir desde cero más abajo — hay que
@@ -83,6 +71,7 @@ export function applyPointsDistribution() {
     showToast('No hay un total de puntos definido para este examen', 'error');
     return;
   }
+  const anteriores = estado.currentParseResult.questions.map(q => q.points);
   autoDistributePoints(estado.currentParseResult.questions, totalPoints, mode, weights);
   renderEditor(estado.currentParseResult);
   lucide.createIcons();
@@ -97,18 +86,19 @@ export function applyPointsDistribution() {
   });
   updatePointsWeightPreview();
   const panel = document.getElementById('points-tool-panel');
-  if (panel && !panel.classList.contains('panel-open')) {
-    _closeOtherCollapsiblePanels('points-tool-panel');
-    _openCollapsiblePanel(panel, 'flex');
-  }
-  _updateToggleAllPanelsLabel();
+  if (panel && !panel.classList.contains('panel-open')) _openCollapsiblePanel(panel, 'flex');
 
-  // El toast dice el resultado concreto (no solo "listo"): con el panel
-  // abierto y la lista de preguntas abajo, es la señal más clara de que
-  // el botón sí hizo algo y de cuánto se repartió en total.
+  // El aviso dice el resultado concreto y permite volver atrás.
   showToast(
-    `${fmtPoints(totalPoints)} pts repartidos entre ${estado.currentParseResult.questions.length} preguntas — revisa cada una antes de generar el XML`,
-    'info'
+    `${fmtPoints(totalPoints)} pts repartidos entre ${estado.currentParseResult.questions.length} preguntas`,
+    'info',
+    { accion: { texto: 'Deshacer', alPulsar: () => {
+      syncParseResultFromDOM();
+      estado.currentParseResult.questions.forEach((q, i) => { if (i < anteriores.length) q.points = anteriores[i]; });
+      renderEditor(estado.currentParseResult);
+      lucide.createIcons();
+      showToast('Se restauraron los puntos anteriores', 'info');
+    } } }
   );
 }
 
@@ -123,6 +113,10 @@ export function updatePointsAssignedLabel() {
   document.querySelectorAll('.q-points').forEach(inp => { sum += parseFloat(inp.value) || 0; });
   const total = _editorTotalPoints();
   label.textContent = `${fmtPoints(sum)} / ${fmtPoints(total)} pts`;
+  // Si la suma no coincide con el total, el botón lo señala (sin bloquear).
+  const off = Math.abs(sum - total) > 0.009;
+  label.closest('.toolbar-btn')?.classList.toggle('is-off', off);
+  label.title = off ? 'La suma de los puntos no coincide con el total del examen' : '';
 }
 
 // Vista previa en vivo del panel "Por tipo": mientras el docente

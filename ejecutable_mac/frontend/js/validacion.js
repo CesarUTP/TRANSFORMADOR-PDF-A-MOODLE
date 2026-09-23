@@ -3,7 +3,7 @@
  *
  * Son las MISMAS reglas que backend/validator.py, aplicadas mientras el
  * docente edita: lo que aquí sale como problema es lo que haría fallar
- * "Aprobar". La validación que manda sigue siendo la del backend.
+ * "Generar XML". La validación que manda sigue siendo la del backend.
  *
  * Lógica pura: no toca el DOM ni el estado global, así se puede probar
  * sola (ver frontend/pruebas.html).
@@ -12,7 +12,7 @@ import { findClozeBrackets, splitOptions } from './util.js';
 
 // ── Preguntas incompletas (revisión en vivo) ───────────────────────────
 // Mismas reglas que el validador del backend (validator.py): lo que
-// aquí se marca como incompleto es lo que haría fallar "Aprobar". Se
+// aquí se marca como incompleto es lo que haría fallar "Generar XML". Se
 // revisa mientras el docente edita, no recién al generar el XML.
 export function questionIssues(q, key) {
   const issues = [];

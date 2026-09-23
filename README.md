@@ -1,6 +1,8 @@
 <div align="center">
 
-# 📝 Conversor a Moodle XML
+<img src="frontend/img/icono.png" alt="Ícono del Conversor a Moodle XML" width="96" height="96">
+
+# Conversor a Moodle XML
 
 ### De un examen en PDF a un banco de preguntas de Moodle, en un par de clics
 
@@ -57,7 +59,7 @@ flowchart LR
 - **7 tipos de pregunta Moodle**: opción múltiple, verdadero/falso, emparejamiento, completar (Cloze), ensayo, respuesta corta y numérica.
 - **Respuestas múltiples** en opción múltiple y en cada espacio de un Cloze.
 - **Marcas leídas del PDF, no adivinadas**: color, resaltado, subrayado, negrita, ✓ y cuadros con X — resueltas **en código**, no por la IA.
-- **PDF escaneados**: "Normalizar con IA" lee las páginas como imagen (hasta 15).
+- **PDF escaneados**: "Leer el PDF con IA" lee las páginas como imagen (hasta 15).
 - **Rechaza lo que no es un examen**: si suben una presentación, un manual o un artículo, lo dice claro en vez de inventar preguntas.
 
 </td>
@@ -65,12 +67,14 @@ flowchart LR
 
 ### ✏️ Revisión antes de generar
 
-- **Panel de revisión** con el mapa del examen: la pregunta actual, las **incompletas en rojo** y las que conviene mirar en naranja. Aprobar no avanza mientras haya incompletas.
-- **Filtro por tipo** con conteo en vivo y color propio.
-- **Distribución de puntos** equitativa o por tipo, que siempre suma exacto.
+- **Mapa del examen** siempre a la vista: la pregunta actual, las **incompletas en rojo** y las que conviene mirar con **borde ámbar discontinuo**. *Generar XML* no avanza mientras haya incompletas.
+- **La primera pregunta a la vista**: avisos en una línea y herramientas plegadas (Mostrar por tipo · Puntos); *Añadir pregunta* va al final.
+- **Nada se pierde**: *Deshacer* al borrar una pregunta o repartir puntos, la revisión **se guarda sola** (*Retomar revisión* al volver a abrir la app), *Volver a la revisión* desde la pantalla final y *Descartar* con confirmación.
+- **Atajos de teclado**: <kbd>J</kbd>/<kbd>K</kbd> siguiente/anterior, <kbd>I</kbd> siguiente incompleta, <kbd>R</kbd> siguiente para revisar, <kbd>?</kbd> abre la guía.
 - **Constructor visual de Cloze**: sin escribir corchetes a mano.
-- **Progreso en vivo**: por qué pregunta va la IA y cuánto falta.
-- **Historial local** de conversiones, siempre redescargables.
+- **Progreso en vivo**: avance real de la subida del archivo, por qué pregunta va la IA y cuánto falta (se puede cancelar).
+- **Historial local** con **buscador** (nombre, categoría o fecha): cada XML se vuelve a descargar o se **reabre** en el editor para corregirlo.
+- **Accesible**: foco atrapado en las ventanas, contraste AA, anuncios para lector de pantalla y "reducir movimiento".
 
 </td>
 </tr>
@@ -192,19 +196,23 @@ Conversor a Moodle XML/
 │   ├── index.html        ← Estructura de la página
 │   ├── pruebas.html      ← Pruebas de la lógica pura (no se empaqueta)
 │   ├── css/              ← base (tokens, reset) · componentes · editor
+│   ├── img/icono.png     ← Ícono oficial (de assets/Icon.ico): cabecera, favicon y splash
 │   └── js/               ← Módulos ES
 │       ├── app.js        ← Entrada: conecta eventos y publica lo que usa el HTML
 │       ├── estado.js     ← Estado compartido + avisos (suscribir/notificar)
 │       ├── dom.js, util.js
-│       ├── carga.js      ← Subir el examen y leer el progreso en vivo
+│       ├── carga.js      ← Elegir el examen y leer el progreso en vivo
+│       ├── subida.js     ← Envío con avance real de la subida (XMLHttpRequest)
+│       ├── borrador.js   ← La revisión se guarda sola y se puede retomar
 │       ├── progreso.js   ← Pantalla de carga y tiempo estimado
 │       ├── puntos.js     ← Reparto del puntaje (lógica pura, con pruebas)
 │       ├── validacion.js ← Qué le falta a una pregunta (con pruebas)
 │       ├── resultado.js, historial.js, navegacion.js
 │       ├── editor/       ← tarjetas · panel · filtros · paneles · cloze · puntos-ui
-│       └── ui/           ← tema · toast · modales
+│       └── ui/           ← tema · toast (con Deshacer) · modales (foco atrapado) · confirmar
 │
-├── assets/Icon.ico       ← Ícono del ejecutable empaquetado
+├── assets/Icon.ico       ← Ícono oficial de la app (ejecutable, instalador y UI)
+├── errores.log           ← Trazas de errores inesperados (se crea solo, no versionado)
 ├── data/exams_history.db ← Historial (se crea solo, no versionado)
 ├── docs/                 ← Referencia del spec Moodle XML
 │
@@ -358,8 +366,10 @@ Las preguntas **cloze** usan corchetes en el cuerpo, con letras correlativas si 
 | `POST` | `/api/normalize_with_ai` | Camino para PDF escaneados (lee las páginas como imagen) |
 | `POST` | `/api/normalize_with_ai_stream` | Igual, con progreso en vivo |
 | `POST` | `/api/generate_xml` | Recibe las preguntas (editadas o no) y devuelve el Moodle XML final |
-| `GET` | `/api/history` | Últimos 50 exámenes convertidos (solo metadatos) |
+| `GET` | `/api/history` | Últimos 300 exámenes convertidos (solo metadatos; el buscador filtra sobre esta lista) |
 | `GET` | `/api/history/{id}/download` | Vuelve a descargar el XML de una conversión anterior |
+| `GET` | `/api/history/{id}/editor` | Preguntas tal como quedaron en el editor, para *Reabrir* esa revisión |
+| `DELETE` | `/api/history/{id}` | Borra una entrada del historial |
 
 <details>
 <summary><b>Detalle de respuestas</b></summary>
@@ -376,7 +386,9 @@ Las preguntas **cloze** usan corchetes en el cuerpo, con letras correlativas si 
 {"type": "error",    "status": 503, "detail": "…"}
 ```
 
-**`/api/generate_xml`** — descarga del `.xml`, con el header `X-Question-Stats` (JSON con conteo por tipo y puntajes calculados).
+**`/api/generate_xml`** — descarga del `.xml`, con el header `X-Question-Stats` (JSON con conteo por tipo y puntajes calculados). El nombre del archivo va en `Content-Disposition` con `filename*=UTF-8''…` (RFC 6266): así sirven nombres con tildes o ñ, incluidos los que macOS entrega en forma descompuesta (NFD).
+
+**Errores inesperados** — un fallo no previsto al procesar se **reintenta una vez** solo; si se repite, el mensaje trae el detalle técnico y la ruta de `errores.log`.
 
 </details>
 
@@ -402,7 +414,7 @@ En un PDF digital, `extract_text()` pierde justo las marcas de respuesta más co
 | `GEMINI_API_KEY` | — | Key de Google AI Studio (ver `.env.example`) |
 | `ENRICH_PDF_TEXT` | `1` | Marcas (color, resaltado, subrayado, negrita, tablas) anotadas y resueltas en código |
 | `NORMALIZER_MODE` | `json` | Carga normal. `json`: la IA devuelve JSON con esquema (más fiel) · `text`: formato propio (2–5× más rápido) |
-| `NORMALIZER_MODE_AI` | `text` | Botón "Normalizar con IA" (escaneados), donde el modo texto midió mejor |
+| `NORMALIZER_MODE_AI` | `text` | Botón "Leer el PDF con IA" (escaneados), donde el modo texto midió mejor |
 
 ### Qué pasa en cada situación
 
@@ -451,6 +463,21 @@ El `.exe` de PyInstaller usa `--noconsole`: si uvicorn falla al arrancar, la app
 ```bash
 backend/venv/bin/python dev/sync_ejecutable.py
 ```
+
+</details>
+
+<details>
+<summary><b>Aparece "Ocurrió un error inesperado"</b></summary>
+
+<br>
+
+Todo error no previsto queda con su traza completa en **`errores.log`**:
+
+- Desde el código: en la raíz del proyecto.
+- App instalada en macOS: `~/Library/Application Support/ConversorMoodleXML/errores.log`
+- App instalada en Windows: `%LOCALAPPDATA%\ConversorMoodleXML\errores.log`
+
+El mismo mensaje de error muestra la ruta. Ese archivo es lo primero que hay que mirar (o enviar) para saber la causa exacta.
 
 </details>
 

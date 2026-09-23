@@ -1,22 +1,17 @@
 /* componentes.css — piezas reutilizables: contenedores, stepper, botones,
-   zona de carga, formularios, tarjetas de resumen, modales, código y toast
+   zona de carga, formularios, resumen final, modales, código y toast
    Parte de la hoja de estilos del Conversor a Moodle XML.
    Se cargan en orden desde index.html. */
 
 /* ── CONTAINER & CARDS ───────────────────────────────────────────────── */
 .app-header {
   border-bottom: 1px solid var(--color-border);
-  /* Opaco a propósito (no el mismo --color-surface-card translúcido de
-     las glass-card): al ser sticky, cualquier contenido con borde
-     propio (el aviso de revisión, la barra de acciones fija de
-     "Revisar Preguntas") queda scrolleando justo debajo y se veía
-     "fantasma" a través del cristal semitransparente. Un header sólido
-     lo tapa por completo. */
+  /* Opaco a propósito: al ser sticky, el contenido que scrollea debajo
+     (tarjetas, avisos) no debe verse "fantasma" a través del header. */
   background: var(--color-bg-alt);
   position: sticky;
   top: 0;
   z-index: 100;
-  transition: border-color 0.3s;
 }
 .header-inner {
   max-width: 860px;
@@ -25,40 +20,40 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
+.header-nav { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
 .logo-container {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
-.logo-badge {
+.logo-img {
+  /* El ícono oficial (assets/Icon.ico) ya trae su propio mosaico
+     redondeado: se muestra tal cual, sin recuadro de color alrededor. */
   width: 44px;
   height: 44px;
-  background: var(--color-accent-gradient);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-glow);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@media (hover: hover) and (pointer: fine) {
-  .logo-badge:hover { transform: scale(1.05) rotate(-3deg); }
+  flex-shrink: 0;
+  display: block;
 }
 
 .brand-title {
   font-family: var(--font-heading);
+  /* Tamaños de título en px literales (= --text-title / --text-headline):
+     el detector de diseño no resuelve var() y los leía como 16px. */
   font-size: 19px;
   font-weight: 800;
   letter-spacing: -0.5px;
   line-height: 1.2;
-  color: var(--color-accent);
+  color: var(--color-text);
 }
 .brand-sub {
   font-size: 12px;
   color: var(--color-text-muted);
   font-weight: 500;
+  max-width: 60ch;
 }
 
 .main-wrapper {
@@ -67,7 +62,34 @@
   padding: 36px 24px 80px;
 }
 
-/* ── STEPPER (UI-UX Pro Max Flow) ────────────────────────────────────── */
+/* Títulos de cada pantalla (paso). Reciben el foco al cambiar de paso. */
+.screen-title {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+.screen-sub {
+  font-size: var(--text-md);
+  color: var(--color-text-muted);
+  margin-top: 4px;
+  max-width: 70ch;
+}
+.text-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-accent);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ── STEPPER ─────────────────────────────────────────────────────────── */
 .stepper {
   display: flex;
   align-items: center;
@@ -77,7 +99,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 12px 20px;
-  backdrop-filter: blur(12px);
+  list-style: none;
 }
 .step-item {
   display: flex;
@@ -86,14 +108,10 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--color-text-subtle);
-  transition: color 0.25s;
+  transition: color var(--dur-enter) ease;
 }
-.step-item.active {
-  color: var(--color-accent);
-}
-.step-item.completed {
-  color: var(--color-success);
-}
+.step-item.active { color: var(--color-accent); }
+.step-item.completed { color: var(--color-success); }
 .step-num {
   width: 28px;
   height: 28px;
@@ -105,14 +123,13 @@
   justify-content: center;
   font-size: 12px;
   font-weight: 800;
-  transition-property: background-color, border-color, color, box-shadow;
-  transition-duration: 0.25s;
+  transition-property: background-color, border-color, color;
+  transition-duration: var(--dur-enter);
 }
 .step-item.active .step-num {
   background: var(--color-primary);
   border-color: var(--color-accent);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 .step-item.completed .step-num {
   background: var(--color-success-solid);
@@ -124,26 +141,40 @@
   height: 2px;
   background: var(--color-border);
   margin: 0 12px;
-  border-radius: 2px;
-  transition: background 0.25s;
+  border-radius: var(--radius-full);
+  transition: background-color var(--dur-enter) ease;
 }
-.step-line.active {
-  background: var(--color-accent);
-}
+.step-line.active { background: var(--color-accent); }
 
 /* ── CARD COMPONENTS ─────────────────────────────────────────────────── */
+/* El nombre se conserva por compatibilidad, pero ya no es "vidrio": es
+   una superficie sólida con borde de 1px y sin blur. */
 .glass-card {
   background: var(--color-surface-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  transition: border-color 0.25s, box-shadow 0.25s;
 }
-.glass-card:hover {
-  border-color: var(--color-border-glow);
+
+/* Aviso de una línea (informativo, aviso o error) reutilizable. */
+.callout {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.55;
 }
+.callout > i, .callout > svg { flex-shrink: 0; margin-top: 2px; width: 15px; height: 15px; color: var(--color-accent); }
+.callout.is-warning { background: var(--color-warning-bg); border-color: var(--color-warning); }
+.callout.is-warning > i, .callout.is-warning > svg { color: var(--color-warning); }
+.callout.is-error { background: var(--color-error-bg); border-color: var(--color-error); }
+.callout.is-error > i, .callout.is-error > svg { color: var(--color-error); }
+.callout p { margin: 0; }
 
 /* ── BUTTONS ─────────────────────────────────────────────────────────── */
 .btn {
@@ -153,83 +184,55 @@
   gap: 8px;
   padding: 12px 22px;
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 700;
   border-radius: var(--radius-md);
   cursor: pointer;
   border: none;
-  transition-property: transform, box-shadow, filter, opacity;
-  transition-duration: 0.2s;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Pulsar responde rápido (120ms); los cambios de color al pasar el
+     mouse usan su propio `ease`, sin mover nada. */
+  transition: transform var(--dur-press) var(--ease-out),
+              background-color var(--dur-fast) ease,
+              border-color var(--dur-fast) ease,
+              color var(--dur-fast) ease;
   text-decoration: none;
   letter-spacing: -0.1px;
 }
-.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 
-.btn-primary {
-  background: var(--color-cta-gradient);
-  color: #ffffff;
-  box-shadow: var(--shadow-glow);
-}
-@media (hover: hover) and (pointer: fine) {
-  .btn-primary:hover:not(:disabled) {
-    filter: brightness(1.1);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  }
-}
-.btn-primary:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-}
+.btn-lg { padding: 15px 22px; font-size: var(--text-lg); }
+.btn-sm { padding: 7px 12px; font-size: var(--text-sm); }
+.btn-block { width: 100%; }
 
-/* Verde para acciones que avanzan/confirman (procesar examen, aprobar y
-   generar XML) — refuerza por color que es la acción positiva a tomar. */
-.btn-success {
-  background: var(--color-cta-success-gradient);
-  color: #ffffff;
-  box-shadow: var(--shadow-glow-success);
-}
-@media (hover: hover) and (pointer: fine) {
-  .btn-success:hover:not(:disabled) {
-    filter: brightness(1.1);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  }
-}
-.btn-success:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  box-shadow: none;
-  transform: none;
-}
-
-/* Rojo para la acción destructiva/de salida (cancelar) — por psicología
-   del color, contrasta con el verde de la acción de confirmar. */
-.btn-danger {
-  background: var(--color-cta-danger-gradient);
-  color: #ffffff;
-  box-shadow: var(--shadow-glow-danger);
-}
-@media (hover: hover) and (pointer: fine) {
-  .btn-danger:hover:not(:disabled) {
-    filter: brightness(1.1);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  }
-}
+.btn-primary { background: var(--color-cta); color: #ffffff; box-shadow: var(--shadow-sm); }
+/* Verde para la acción que avanza (procesar, generar el XML). */
+.btn-success { background: var(--color-cta-success); color: #ffffff; box-shadow: var(--shadow-sm); }
 
 .btn-ghost {
   background: var(--color-surface);
   border: 1.5px solid var(--color-border);
   color: var(--color-text);
 }
-.btn-ghost:hover:not(:disabled) {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-  background: var(--color-surface-hover);
+/* Acción de salida/descarte: discreta a propósito, nunca del mismo peso
+   que la acción principal a su lado. */
+.btn-quiet {
+  background: transparent;
+  border: 1.5px solid transparent;
+  color: var(--color-text-muted);
+}
+.btn-danger-text { color: var(--color-error); }
+/* Confirmación destructiva dentro de un diálogo. */
+.btn-danger { background: var(--color-error-solid); color: #ffffff; }
+
+.btn-icon {
+  padding: 7px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .btn-icon-text {
@@ -241,31 +244,40 @@
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
   cursor: pointer;
-  transition-property: color, border-color, background-color, filter;
-  transition-duration: 0.2s;
+  transition: transform var(--dur-press) var(--ease-out),
+              color var(--dur-fast) ease,
+              border-color var(--dur-fast) ease,
+              background-color var(--dur-fast) ease;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-.btn-icon-text:hover {
-  color: var(--color-text);
-  border-color: var(--color-border-glow);
-  background: var(--color-surface);
+.btn-icon-text:active { transform: scale(0.97); }
+
+/* La Guía es la puerta de entrada de ayuda para un usuario nuevo: se
+   distingue del resto de la navegación (que es neutra). */
+.btn-icon-text.btn-guide {
+  background: var(--color-cta);
+  border-color: transparent;
+  color: #ffffff;
 }
 
-/* Punto focal: la Guía es el primer lugar donde un usuario nuevo
-   encuentra ayuda, así que se destaca del resto de la navegación
-   (que es neutra) en vez de mezclarse con ella. */
-.btn-icon-text.btn-guide {
-  background: var(--color-cta-gradient);
-  border-color: transparent;
-  color: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-.btn-icon-text.btn-guide:hover {
-  color: #ffffff;
-  border-color: transparent;
-  filter: brightness(1.12);
+/* Hover solo con mouse: en pantallas táctiles el hover queda "pegado"
+   tras un toque. Sin elevar botones (translateY) — solo color. */
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover:not(:disabled) { background: var(--color-cta-hover); }
+  .btn-success:hover:not(:disabled) { background: var(--color-cta-success-hover); }
+  .btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
+  .btn-ghost:hover:not(:disabled) {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background: var(--color-surface-hover);
+  }
+  .btn-quiet:hover:not(:disabled) { color: var(--color-text); background: var(--color-surface-hover); }
+  .btn-icon:hover:not(:disabled) { background: var(--color-surface-hover); color: var(--color-text); }
+  .btn-icon.btn-danger-text:hover:not(:disabled) { color: var(--color-error); background: var(--color-error-bg); }
+  .btn-icon-text:hover { color: var(--color-text); border-color: var(--color-accent); background: var(--color-surface); }
+  .btn-icon-text.btn-guide:hover { color: #fff; border-color: transparent; background: var(--color-cta-hover); }
 }
 
 /* ── DROPZONE ────────────────────────────────────────────────────────── */
@@ -276,38 +288,66 @@
   text-align: center;
   cursor: pointer;
   background: var(--color-dropzone-bg);
-  transition-property: border-color, background-color, transform;
-  transition-duration: 0.25s;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-property: border-color, background-color;
+  transition-duration: var(--dur-enter);
+  transition-timing-function: ease;
 }
 #drop-zone.drag-over {
   border-color: var(--color-accent);
   background: var(--color-accent-glow);
-  transform: scale(1.01);
 }
+#drop-zone.has-error { border-color: var(--color-error); }
+/* Archivo elegido: la zona queda en verde (borde sólido) y cambia su
+   ícono y su texto, para que se note de un vistazo que ya hay algo. */
+#drop-zone.has-file {
+  border-style: solid;
+  border-color: var(--color-success);
+  background: var(--color-success-bg);
+}
+#drop-zone .drop-icon-ready { display: none; }
+#drop-zone.has-file .drop-icon-empty { display: none; }
+#drop-zone.has-file .drop-icon-ready { display: block; }
+#drop-zone.has-file .drop-icon-wrapper { background: var(--color-success-bg); border-color: var(--color-success); }
+#drop-zone.has-file .drop-title { color: var(--color-success); }
 @media (hover: hover) and (pointer: fine) {
-  #drop-zone:hover {
+  #drop-zone:not(.has-file):hover {
     border-color: var(--color-accent);
     background: var(--color-accent-glow);
-    transform: scale(1.01);
   }
 }
 .drop-icon-wrapper {
   width: 72px;
   height: 72px;
   background: var(--color-accent-glow);
-  border: 1px solid var(--color-border-glow);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px;
 }
+.drop-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-title);
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.drop-sub { font-size: var(--text-md); color: var(--color-text-muted); margin-bottom: 20px; }
+.file-ext {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent);
+}
 
 /* ── FILE PREVIEW ────────────────────────────────────────────────────── */
+/* Borde neutro: el verde de "archivo listo" ya lo lleva la zona de arriba. */
 #file-preview {
-  background: var(--color-accent-glow);
-  border: 1.5px solid var(--color-border-glow);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 14px 18px;
   display: flex;
@@ -316,7 +356,50 @@
   margin-top: 20px;
 }
 
+/* Barra de subida del archivo: avance real mientras se sube. Después,
+   mientras el conversor revisa el archivo ya recibido, queda llena y
+   atenuada, y el texto cuenta los segundos de espera (sin animaciones en
+   bucle: el contador y el ícono del botón ya dicen que sigue trabajando). */
+.upload-bar { margin-top: 8px; }
+.upload-bar[hidden] { display: none; }
+.upload-track {
+  position: relative;
+  height: 6px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.upload-fill {
+  position: absolute; inset: 0;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur-fast) linear, opacity var(--dur-enter) ease;
+}
+.upload-bar.is-waiting .upload-fill { transform: scaleX(1); opacity: 0.5; }
+.upload-text { font-size: var(--text-sm); color: var(--color-text-muted); margin: 4px 0 0; font-variant-numeric: tabular-nums; }
+
+/* ── BORRADOR RECUPERABLE ────────────────────────────────────────────── */
+#draft-banner {
+  display: none;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+#draft-banner.visible { display: flex; }
+#draft-banner .draft-text { flex: 1 1 260px; min-width: 0; }
+#draft-banner .draft-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
 /* ── FORM CONTROLS ───────────────────────────────────────────────────── */
+.config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 560px) { .config-grid { grid-template-columns: 1fr; gap: 16px; } }
 .form-group {
   display: flex;
   flex-direction: column;
@@ -343,73 +426,76 @@
   width: 100%;
   outline: none;
   transition-property: border-color, box-shadow;
-  transition-duration: 0.2s;
+  transition-duration: var(--dur-fast);
 }
+/* Anillo de foco: única excepción intencional a "sin halo" — es una señal
+   de accesibilidad funcional, no decoración (ver DESIGN.md). */
 .form-input:focus {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px var(--color-accent-glow);
 }
+.field-hint { font-size: var(--text-sm); color: var(--color-text-subtle); margin-top: 10px; }
+.field-error { font-size: var(--text-sm); color: var(--color-error); margin-top: 10px; }
 
-
-/* ── STATS CARDS ─────────────────────────────────────────────────────── */
-.stats-grid {
-  display: grid;
-  /* auto-fit (no auto-fill) para que, con menos de 4 tipos presentes en
-     el examen, las tarjetas restantes se repartan el ancho completo en
-     vez de dejar columnas vacías — nunca se genera una tarjeta para un
-     tipo con 0 preguntas (ver updateSuccessStats). */
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+/* ── RESUMEN FINAL (pantalla "Tu XML está listo") ─────────────────────── */
+.success-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
 }
-.stat-card {
+.success-actions .btn-success { flex: 2 1 240px; }
+.success-actions .btn-ghost { flex: 1 1 180px; }
+.success-next {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: -12px 0 24px;
+}
+.breakdown-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 16px 12px;
-  text-align: center;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  padding: 20px;
+  margin-bottom: 20px;
 }
-@media (hover: hover) and (pointer: fine) {
-  .stat-card:hover { transform: translateY(-3px); }
+.breakdown-title { font-size: 12px; font-weight: 700; color: var(--color-text-subtle); margin-bottom: 14px; }
+.breakdown-body { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; justify-content: center; }
+.breakdown-list {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 10px;
+  flex: 1 1 280px;
+  font-variant-numeric: tabular-nums;
 }
-.stat-card .stat-num {
-  font-family: var(--font-heading);
-  font-size: 32px;
-  font-weight: 800;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-.stat-card .stat-label {
-  font-size: 11.5px;
-  color: var(--color-text-muted);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-.stat-card .stat-grade {
-  font-size: 11px;
-  margin-top: 4px;
-  font-weight: 700;
-}
+.breakdown-swatch { width: 12px; height: 12px; border-radius: var(--radius-full); }
+.breakdown-label { font-size: 13.5px; font-weight: 600; color: var(--color-text); }
+.breakdown-count { font-size: var(--text-sm); color: var(--color-text-muted); text-align: right; white-space: nowrap; }
+.breakdown-points { font-size: var(--text-sm); font-weight: 700; text-align: right; white-space: nowrap; }
+.breakdown-total { border-top: 1px solid var(--color-border-subtle); padding-top: 10px; }
 
-/* ── MODALS (Help & History) ──────────────────────────────────────────── */
+/* ── MODALS ──────────────────────────────────────────────────────────── */
+/* Entrada 200ms, salida 150ms (la salida siempre más rápida). La caja
+   escala desde el centro: un modal no nace de un disparador concreto. */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(3, 7, 18, 0.72);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease;
+  visibility: hidden;
+  transition: opacity var(--dur-fast) ease, visibility 0s linear var(--dur-fast);
 }
-.modal-backdrop.open { opacity: 1; pointer-events: all; }
+.modal-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--dur-enter) ease, visibility 0s;
+}
 .modal-box {
   background: var(--color-surface-modal);
   border: 1px solid var(--color-border);
@@ -420,17 +506,34 @@
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  transform: translateY(20px) scale(0.96);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) ease;
 }
-.modal-backdrop.open .modal-box { transform: translateY(0) scale(1); }
+.modal-backdrop.open .modal-box {
+  opacity: 1;
+  transform: none;
+  transition: transform var(--dur-enter) var(--ease-out), opacity var(--dur-enter) ease;
+}
+.modal-box.modal-sm { max-width: 460px; }
 
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 20px 24px;
   border-bottom: 1px solid var(--color-border);
+}
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-heading);
+  font-size: var(--text-title);
+  font-weight: 800;
+  line-height: 1.3;
+  margin: 0;
 }
 .modal-tabs {
   display: flex;
@@ -442,9 +545,6 @@
      en vez de cortarse. */
   overflow-x: auto;
   scrollbar-width: none;
-  /* Con overflow, el navegador permite encogerla a 0 dentro de la
-     columna del modal: en pestañas largas (Formato, Prompt IA) la
-     cinta quedaba aplastada. */
   flex-shrink: 0;
 }
 .modal-tabs::-webkit-scrollbar { display: none; }
@@ -459,23 +559,60 @@
   border: none;
   background: transparent;
   border-bottom: 3px solid transparent;
-  transition-property: color, border-bottom-color;
-  transition-duration: 0.2s;
+  transition: color var(--dur-fast) ease, border-bottom-color var(--dur-fast) ease, transform var(--dur-press) var(--ease-out);
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.modal-tab.active {
+.modal-tab:active { transform: scale(0.97); }
+.modal-tab[aria-selected="true"] {
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .modal-tab:hover { color: var(--color-text); }
+  .modal-tab[aria-selected="true"]:hover { color: var(--color-accent); }
 }
 .modal-body {
   padding: 24px;
   overflow-y: auto;
   flex: 1;
 }
+/* Párrafos de la Guía: una línea cómoda de leer (antes llegaban a ~89
+   caracteres). */
+.modal-body p { max-width: 72ch; }
+/* Cambiar de pestaña es frecuente: sin animación, el contenido aparece
+   de inmediato. */
 .tab-panel { display: none; }
-.tab-panel.active { display: block; animation: fadeInUp 0.25s ease; }
+.tab-panel.active { display: block; }
+.modal-footer { display: flex; gap: 10px; padding: 16px 24px 24px; }
+.modal-footer .btn { flex: 1; }
+
+/* Alto fijo: la ventana no "salta" de tamaño mientras se escribe en el
+   buscador y la lista se achica o crece. */
+#modal-history .modal-box { height: min(85vh, 680px); }
+
+/* ── BUSCADOR DEL HISTORIAL ──────────────────────────────────────────── */
+.history-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+.history-search[hidden] { display: none; }
+.history-search > svg {
+  position: absolute; left: 38px; width: 16px; height: 16px;
+  color: var(--color-text-subtle); pointer-events: none;
+}
+.history-search .form-input { padding: 10px 14px 10px 40px; font-size: var(--text-md); }
+.history-count { font-size: var(--text-xs); color: var(--color-text-subtle); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.history-row mark { background: var(--color-accent-glow); color: inherit; box-shadow: 0 1px 0 var(--color-accent); }
+@media (max-width: 640px) {
+  .history-search { padding: 10px 18px; }
+  .history-search > svg { left: 32px; }
+}
 
 /* ── CODE BLOCKS ─────────────────────────────────────────────────────── */
 .code-block {
@@ -484,54 +621,101 @@
   border-radius: var(--radius-md);
   padding: 14px 16px;
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   line-height: 1.7;
   color: var(--color-text);
   white-space: pre-wrap;
   word-break: break-word;
   overflow-x: auto;
 }
+kbd {
+  font-family: var(--font-mono); font-size: 0.85em; font-weight: 600;
+  padding: 1px 6px; border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border); border-bottom-width: 2px;
+  background: var(--color-bg); color: var(--color-text);
+}
+code.inline {
+  background: var(--color-bg);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
 
 /* ── TOAST ───────────────────────────────────────────────────────────── */
+/* Centrado con márgenes automáticos (no con translateX) para que
+   "reducir movimiento" pueda anular el desplazamiento sin descolocarlo.
+   Transición (no keyframes): los avisos pueden encadenarse rápido y una
+   transición se reorienta a mitad de camino sin reiniciar. */
 .toast {
   position: fixed;
   bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%) translateY(80px) scale(0.96);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
+  max-width: min(92vw, 480px);
+  transform: translateY(16px);
   background: var(--color-success-solid);
   color: #ffffff;
-  padding: 12px 22px;
+  padding: 10px 12px 10px 18px;
   border-radius: var(--radius-full);
   font-size: 13.5px;
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 9px;
-  max-width: min(90vw, 440px);
+  gap: 10px;
   box-shadow: var(--shadow-lg);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  transition: transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) ease, visibility 0s linear var(--dur-fast);
   opacity: 0;
+  visibility: hidden;
   z-index: 9999;
-  pointer-events: none;
 }
-.toast.show  { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+.toast.show {
+  transform: none;
+  opacity: 1;
+  visibility: visible;
+  transition: transform var(--dur-enter) var(--ease-out), opacity var(--dur-enter) ease, visibility 0s;
+}
 .toast.error { background: var(--color-error-solid); }
-.toast.info  { background: var(--color-primary); }
-.toast i     { flex-shrink: 0; }
+.toast.info  { background: var(--color-cta); }
+.toast i, .toast svg { flex-shrink: 0; }
+.toast .toast-msg { padding-right: 6px; }
+.toast-action {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-weight: 800;
+  font-size: var(--text-sm);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-fast) ease;
+}
+.toast-action:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .toast-action:hover { background: rgba(255, 255, 255, 0.28); }
+}
 
 /* Responsive */
 @media (max-width: 640px) {
   .main-wrapper { padding: 20px 16px 60px; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .stepper { padding: 10px 12px; }
+  .stepper { padding: 10px 12px; margin-bottom: 20px; }
   .step-item span { display: none; }
+  /* La cabecera fija ocupaba hasta 4 líneas en celular (≈150px de
+     pantalla) por el subtítulo: se oculta aquí. */
+  .brand-sub { display: none; }
+  .header-inner { padding: 12px 16px; }
+  .logo-img { width: 38px; height: 38px; }
+  .modal-header { padding: 16px 18px; }
+  .modal-body { padding: 18px; }
+  .modal-tabs { padding: 0 12px; }
 }
 @media (max-width: 480px) {
-  /* El header no cabe con las 3 etiquetas de texto completas junto al
-     logo — se reduce a solo íconos (con aria-label/title ya presentes
-     para lectores de pantalla y tooltips) para evitar overflow
-     horizontal en pantallas de celular. */
-  .header-inner { padding: 14px 16px; }
+  /* Solo íconos en la navegación (con aria-label/title) para evitar
+     overflow horizontal en celular. */
   .btn-icon-text span { display: none; }
   .btn-icon-text { padding: 10px; }
+  .brand-title { font-size: 17px; }
 }

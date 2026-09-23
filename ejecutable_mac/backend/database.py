@@ -71,15 +71,22 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        # Migración: las preguntas tal como quedaron en el editor (JSON),
+        # para poder "Reabrir" una conversión y corregirla. Las entradas
+        # anteriores a esta columna quedan en NULL y solo se descargan.
+        cols = {row[1] for row in conn.execute('PRAGMA table_info(history)')}
+        if 'editor_json' not in cols:
+            conn.execute('ALTER TABLE history ADD COLUMN editor_json TEXT')
         conn.commit()
     logger.info("Database initialized at %s", get_db_path())
 
-def save_conversion(filename: str, category: str, total_points: float, xml_content: str) -> int:
+def save_conversion(filename: str, category: str, total_points: float, xml_content: str,
+                    editor_json: Optional[str] = None) -> int:
     with _connection() as conn:
         cursor = conn.execute('''
-            INSERT INTO history (filename, category, total_points, xml_content)
-            VALUES (?, ?, ?, ?)
-        ''', (filename, category, total_points, xml_content))
+            INSERT INTO history (filename, category, total_points, xml_content, editor_json)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (filename, category, total_points, xml_content, editor_json))
         record_id = cursor.lastrowid
         conn.commit()
         return record_id
@@ -87,19 +94,30 @@ def save_conversion(filename: str, category: str, total_points: float, xml_conte
 def get_history_list() -> List[Dict[str, Any]]:
     with _connection() as conn:
         conn.row_factory = sqlite3.Row
-        # Fetch all except xml_content to save memory
+        # Todo menos xml_content (pesado). Hasta 300: el buscador del
+        # Historial filtra en el navegador sobre esta lista.
         cursor = conn.execute('''
-            SELECT id, filename, category, total_points, created_at
+            SELECT id, filename, category, total_points, created_at,
+                   editor_json IS NOT NULL AS has_editor
             FROM history
             ORDER BY id DESC
-            LIMIT 50
+            LIMIT 300
         ''')
-        return [dict(row) for row in cursor.fetchall()]
+        return [{**dict(row), 'has_editor': bool(row['has_editor'])} for row in cursor.fetchall()]
 
 def get_xml_content(record_id: int) -> Optional[Dict[str, Any]]:
     with _connection() as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute('SELECT filename, xml_content FROM history WHERE id = ?', (record_id,)).fetchone()
+        return dict(row) if row else None
+
+def get_editor_data(record_id: int) -> Optional[Dict[str, Any]]:
+    with _connection() as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            'SELECT filename, category, total_points, editor_json FROM history WHERE id = ?',
+            (record_id,),
+        ).fetchone()
         return dict(row) if row else None
 
 def delete_history_item(record_id: int) -> bool:

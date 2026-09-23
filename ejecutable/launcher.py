@@ -11,6 +11,7 @@ Estrategia:
 import sys
 import os
 import base64
+import json
 import threading
 import time
 import traceback
@@ -75,7 +76,7 @@ URL  = f"http://{HOST}:{PORT}"
 # a la app principal en una fracción de segundo — la persona ni alcanzaba a
 # ver el logo o el crédito de los desarrolladores. Con esto la cinemática de
 # inicio siempre se ve completa, de forma consistente en cada arranque.
-MIN_SPLASH_SECONDS = 3.0
+MIN_SPLASH_SECONDS = 2.5
 
 
 # ── API expuesta a JavaScript ───────────────────────────────────────────────
@@ -135,175 +136,202 @@ class Api:
 
 
 # ── Splash Screen HTML ──────────────────────────────────────────────────────
-SPLASH_HTML = """<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+# Pantalla sobria de arranque: el ícono oficial, nombre, una barra fina que avanza con
+# las etapas REALES del arranque (el launcher las informa con setStage) y un
+# pie con créditos y versión. Sin tarjeta de vidrio, sin halos, sin texto en
+# degradado y sin mensajes inventados que rotan (ver DESIGN.md). Sigue el
+# tema claro/oscuro del sistema.
+APP_VERSION = "1.1"
 
+_SPLASH_STYLE = """
+    :root {
+      --bg: #090d16; --surface: #111a2e; --border: rgba(255,255,255,0.10);
+      --text: #f8fafc; --muted: #94a3b8; --subtle: #8f9db0;
+      --mark: #0369a1; --accent: #38bdf8; --error: #f43f5e;
+      --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+      color-scheme: dark;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f1f5f9; --surface: #ffffff; --border: #d5dde8;
+        --text: #0f172a; --muted: #475569; --subtle: #606f85;
+        --accent: #0273ae; --error: #d31b44;
+        color-scheme: light;
+      }
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
-      background: #090d16;
-      background-image: 
-        radial-gradient(at 0% 0%, rgba(2, 132, 199, 0.25) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.2) 0px, transparent 50%);
-      color: #f8fafc;
-      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      display: grid;
+      grid-template-rows: 1fr auto;
       user-select: none;
+      cursor: default;
       overflow: hidden;
       -webkit-font-smoothing: antialiased;
     }
-
-    .splash-card {
-      background: rgba(19, 28, 49, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 28px;
-      padding: 48px 40px;
-      text-align: center;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 30px rgba(56, 189, 248, 0.2);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      max-width: 420px;
-      width: 90%;
-      animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    main {
+      align-self: center;
+      justify-self: center;
+      width: min(440px, calc(100% - 64px));
+      animation: enter 320ms var(--ease-out) both;
     }
-
-    @keyframes popIn {
-      from { transform: scale(0.92) translateY(12px); opacity: 0; }
-      to   { transform: scale(1) translateY(0); opacity: 1; }
+    @keyframes enter {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: none; }
     }
-
-    .logo-wrap {
-      width: 76px;
-      height: 76px;
-      background: linear-gradient(135deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 24px;
-      box-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
-      animation: pulseGlow 3s infinite alternate cubic-bezier(0.16, 1, 0.3, 1);
+    .mark {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: var(--mark);
+      display: grid; place-items: center;
+      margin-bottom: 28px;
     }
-
-    @keyframes pulseGlow {
-      from { transform: scale(1); box-shadow: 0 0 25px rgba(56, 189, 248, 0.3); }
-      to   { transform: scale(1.04); box-shadow: 0 0 40px rgba(56, 189, 248, 0.6); }
-    }
-
-    .app-name {
-      font-family: 'Outfit', sans-serif;
-      font-size: 28px;
+    .logo { display: block; width: 64px; height: 64px; margin: 0 0 24px -3px; }
+    h1 {
+      font-family: 'Outfit', 'Hanken Grotesk', system-ui, sans-serif;
+      font-size: 30px;
       font-weight: 800;
       letter-spacing: -0.6px;
-      margin-bottom: 6px;
-      background: linear-gradient(135deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      line-height: 1.15;
     }
-
-    .app-sub {
-      font-size: 13.5px;
-      color: #94a3b8;
-      font-weight: 500;
-      margin-bottom: 36px;
+    .lead {
+      margin-top: 10px;
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--muted);
+      max-width: 46ch;
     }
-
-    .progress-wrap {
-      width: 100%;
-    }
-
-    .bar-bg {
-      height: 6px;
-      background: rgba(9, 13, 22, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    .status { margin-top: 40px; }
+    .track {
+      height: 3px;
+      background: var(--border);
       border-radius: 9999px;
       overflow: hidden;
-      margin-bottom: 14px;
     }
-
-    .bar-fill {
+    .fill {
       height: 100%;
-      background: linear-gradient(90deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
+      background: var(--accent);
       border-radius: 9999px;
-      animation: slide 1.6s ease-in-out infinite;
-      transform-origin: left center;
+      transform: scaleX(0.04);
+      transform-origin: left;
+      /* Avanza con cada etapa real; entre etapas, un tramo lento hace que
+         no parezca congelada mientras el servidor termina de arrancar. */
+      transition: transform 1.4s var(--ease-out);
     }
-
-    @keyframes slide {
-      0%   { transform: translateX(-100%) scaleX(.35); }
-      50%  { transform: translateX(55%)   scaleX(.65); }
-      100% { transform: translateX(210%)  scaleX(.35); }
-    }
-
-    .status-text {
+    .status-row {
+      display: flex; justify-content: space-between; gap: 16px;
+      margin-top: 12px;
       font-size: 13px;
-      color: #94a3b8;
-      font-weight: 600;
-      text-align: center;
-      min-height: 20px;
-      transition: opacity 0.25s;
+      color: var(--subtle);
+      font-variant-numeric: tabular-nums;
     }
-
-    .dev-credit {
-      position: fixed;
-      bottom: 28px;
+    #status { color: var(--muted); }
+    footer {
+      display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      padding: 18px 32px 22px;
+      border-top: 1px solid var(--border);
       font-size: 12px;
-      color: #64748b;
-      font-weight: 500;
-      letter-spacing: 0.2px;
+      color: var(--subtle);
     }
-  </style>
-</head>
-<body>
-  <div class="splash-card">
-    <div class="logo-wrap">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
-           stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    @media (max-width: 560px) {
+      footer { flex-direction: column; gap: 4px; text-align: center; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      main { animation-name: fade; }
+      .fill { transition-duration: 0.01ms; }
+    }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+"""
+
+_SPLASH_HEAD = """<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Conversor a Moodle XML</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>""" + _SPLASH_STYLE + """</style>
+</head>"""
+
+_MARK_SVG = """<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
         <polyline points="14 2 14 8 20 8"/>
         <line x1="16" y1="13" x2="8" y2="13"/>
         <line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>"""
+
+def _icono_data_uri() -> str:
+    """El ícono oficial (assets/Icon.ico, exportado a frontend/img/icono.png)
+    incrustado en el HTML: la splash se carga sin servidor, así que no puede
+    pedirlo por URL. Si falta, se usa el ícono de documento de siempre."""
+    try:
+        with open(os.path.join(BUNDLE_DIR, "frontend", "img", "icono.png"), "rb") as f:
+            return "data:image/png;base64," + base64.b64encode(f.read()).decode("ascii")
+    except OSError:
+        return ""
+
+
+_ICONO = _icono_data_uri()
+_MARCA = (f'<img class="logo" src="{_ICONO}" alt="" width="64" height="64">' if _ICONO
+          else f'<div class="mark">{_MARK_SVG}</div>')
+
+_FOOTER = f"""<footer>
+    <span>Desarrollado por los ingenieros C&eacute;sar Gonz&aacute;lez y Vicente Urriola</span>
+    <span>Versi&oacute;n {APP_VERSION}</span>
+  </footer>"""
+
+SPLASH_HTML = _SPLASH_HEAD + f"""
+<body>
+  <main>
+    {_MARCA}
+    <h1>Conversor a Moodle XML</h1>
+    <p class="lead">Convierte tus pruebas y ex&aacute;menes en PDF o TXT al formato de Moodle, con revisi&oacute;n antes de exportar.</p>
+    <div class="status" role="status" aria-live="polite">
+      <div class="track" aria-hidden="true"><div class="fill" id="fill"></div></div>
+      <div class="status-row">
+        <span id="status">Iniciando&hellip;</span>
+        <span id="pct" aria-hidden="true"></span>
+      </div>
+    </div>
+  </main>
+  {_FOOTER}
+  <script>
+    // El launcher llama setStage(fracción, texto) en cada etapa real.
+    window.setStage = function (f, texto) {{
+      document.getElementById('fill').style.transform = 'scaleX(' + Math.max(0.04, Math.min(f, 1)) + ')';
+      if (texto) document.getElementById('status').textContent = texto;
+    }};
+  </script>
+</body>
+</html>"""
+
+
+def _error_html(log_path: str) -> str:
+    """Pantalla cuando el servidor local no arranca: mismo lenguaje visual
+    que la splash, con qué pasó, qué hacer y dónde está el registro."""
+    import html as _html
+    return _SPLASH_HEAD + f"""
+<body style="user-select:text;">
+  <main>
+    <div class="mark" style="background:var(--error);">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
       </svg>
     </div>
-    <div class="app-name">Conversor a Moodle XML</div>
-    <div class="app-sub">Convierte tus pruebas, cuestionarios y ex&aacute;menes en XML para Moodle</div>
-    <div class="progress-wrap">
-      <div class="bar-bg"><div class="bar-fill"></div></div>
-      <div class="status-text" id="status">Iniciando aplicaci&oacute;n&hellip;</div>
-    </div>
-  </div>
-  <div class="dev-credit">Desarrollado por los ingenieros C&eacute;sar Gonz&aacute;lez y Vicente Urriola</div>
-  <script>
-    const msgs = [
-      "Iniciando aplicaci\u00f3n\u2026",
-      "Cargando dependencias\u2026",
-      "Configurando servidor backend\u2026",
-      "Preparando interfaz de alta precisi\u00f3n\u2026",
-      "Casi listo\u2026"
-    ];
-    let i = 0;
-    const el = document.getElementById('status');
-    setInterval(() => {
-      el.style.opacity = '0';
-      setTimeout(() => {
-        i = (i + 1) % msgs.length;
-        el.textContent = msgs[i];
-        el.style.opacity = '1';
-      }, 200);
-    }, 1400);
-  </script>
+    <h1>No se pudo iniciar el conversor</h1>
+    <p class="lead">El servidor interno de la aplicaci&oacute;n no respondi&oacute; a tiempo. Cierra esta ventana y vuelve a abrir la aplicaci&oacute;n; si sigue igual, reinicia el equipo.</p>
+    <p class="lead" style="margin-top:24px;font-size:13px;">Si el problema contin&uacute;a, env&iacute;a este registro al desarrollador:<br>
+      <span style="color:var(--text);font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all;">{_html.escape(log_path)}</span></p>
+  </main>
+  {_FOOTER}
 </body>
 </html>"""
 
@@ -348,12 +376,24 @@ def main():
     # Guardar referencia de la ventana en el api para los dialogos
     api._set_window(window)
 
+    def _stage(fraccion: float, texto: str) -> None:
+        # Informa una etapa REAL del arranque a la splash (barra + texto).
+        try:
+            window.evaluate_js(f"window.setStage && window.setStage({fraccion}, {json.dumps(texto)})")
+        except Exception:
+            pass
+
     def _start_backend():
         try:
             start_time = time.time()
+            _stage(0.35, "Iniciando el servidor local…")
             threading.Thread(target=_run_server, daemon=True).start()
+            time.sleep(0.4)
+            _stage(0.7, "Cargando el conversor…")
             server_ready = _wait_for_server()
 
+            if server_ready:
+                _stage(1.0, "Listo")
             # Completa el tiempo restante hasta el mínimo antes de navegar, para
             # que la splash dure siempre lo mismo (nunca menos) sin importar si
             # el servidor respondió en 200ms o en 4 segundos.
@@ -366,12 +406,7 @@ def main():
                 window.load_url(URL)
             else:
                 _log("El backend no respondio dentro del timeout.")
-                window.load_html(
-                    "<body style='background:#090d16;color:#f8fafc;"
-                    "font-family:sans-serif;padding:40px'>"
-                    "<h2>No se pudo iniciar el servidor</h2>"
-                    f"<p>Revisa el log: {LOG_PATH}</p></body>"
-                )
+                window.load_html(_error_html(LOG_PATH))
         except Exception:
             _log("EXCEPCION en _start_backend:\n" + traceback.format_exc())
 

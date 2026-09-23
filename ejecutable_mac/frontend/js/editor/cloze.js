@@ -2,6 +2,7 @@
  * cloze.js — constructor visual de preguntas de completar,
  * para no escribir la sintaxis de corchetes a mano.
  */
+import { autoGrowTextarea } from './tarjetas.js';
 import { showToast } from '../ui/toast.js';
 import { esc_html, findClozeBrackets, splitAnswers, splitOptions } from '../util.js';
 
@@ -49,20 +50,25 @@ export function renderClozeBuilder(qIdx, segments) {
   let html = `<div class="cloze-builder" id="cloze-builder-${qIdx}">`;
   html += `<div class="cloze-preview"></div>`;
   let blankNum = 0;
+  let textNum = 0;
   segments.forEach((seg) => {
     if (seg.type === 'text') {
+      textNum++;
+      // Textarea de una sola línea lógica que crece con el texto: antes
+      // era un <input> y los fragmentos largos quedaban cortados.
       html += `<div class="cloze-text-row">
-        <input type="text" class="form-input cloze-text-input" value="${seg.value.replace(/"/g, '&quot;')}" placeholder="Texto de la pregunta…" />
-        <button type="button" class="cloze-insert-btn" onclick="clozeInsertBlank(this)" title="Inserta un espacio en blanco donde esté el cursor">+ Espacio en blanco</button>
+        <textarea class="form-input cloze-text-input single-line" rows="1" placeholder="Texto de la pregunta…" aria-label="Fragmento de texto ${textNum}">${esc_html(seg.value)}</textarea>
+        <button type="button" class="cloze-insert-btn" onclick="clozeInsertBlank(this)" title="Inserta un espacio en blanco donde esté el cursor"><i data-lucide="plus"></i> Espacio en blanco</button>
       </div>`;
     } else {
-      const groupName = `cloze-correct-${qIdx}-${blankNum++}`;
+      const n = ++blankNum;
+      const groupName = `cloze-correct-${qIdx}-${n}`;
       const inputType = seg.multi ? 'checkbox' : 'radio';
-      html += `<div class="cloze-blank-card">
+      html += `<div class="cloze-blank-card" role="group" aria-label="Espacio en blanco ${n}">
         <div class="cloze-blank-header">
-          <strong><i data-lucide="circle-dot" style="width:12px;height:12px;vertical-align:-2px;"></i> Espacio en blanco — marca la opción correcta</strong>
-          <button type="button" class="btn btn-ghost" style="padding:4px 8px;color:var(--color-error);font-size:11px;" onclick="clozeRemoveBlank(this)" title="Quitar este espacio">
-            <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+          <strong><i data-lucide="circle-dot"></i> Espacio ${n} — marca la opción correcta</strong>
+          <button type="button" class="btn btn-icon btn-danger-text" onclick="clozeRemoveBlank(this)" aria-label="Quitar el espacio ${n}" title="Quitar este espacio">
+            <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
           </button>
         </div>
         <label class="cloze-multi-toggle">
@@ -73,15 +79,15 @@ export function renderClozeBuilder(qIdx, segments) {
       seg.options.forEach((opt, oi) => {
         const isChecked = seg.correctIndices.includes(oi);
         html += `<div class="cloze-option-row">
-          <input type="${inputType}" name="${groupName}" ${isChecked ? 'checked' : ''} title="Marcar como respuesta correcta" />
-          <input type="text" class="form-input cloze-option-input" value="${opt.replace(/"/g, '&quot;')}" placeholder="Opción ${oi + 1}" />
-          <button type="button" class="btn btn-ghost" style="padding:4px 8px;color:var(--color-error);" onclick="clozeRemoveOption(this)" title="Quitar esta opción">
-            <i data-lucide="x" style="width:13px;height:13px;"></i>
+          <input type="${inputType}" name="${groupName}" ${isChecked ? 'checked' : ''} aria-label="La opción ${oi + 1} es correcta" title="Marcar como respuesta correcta" />
+          <input type="text" class="form-input cloze-option-input" value="${esc_html(opt)}" placeholder="Opción ${oi + 1}" aria-label="Opción ${oi + 1} del espacio ${n}" />
+          <button type="button" class="btn btn-icon btn-danger-text" onclick="clozeRemoveOption(this)" aria-label="Quitar la opción ${oi + 1}" title="Quitar esta opción">
+            <i data-lucide="x" style="width:14px;height:14px;"></i>
           </button>
         </div>`;
       });
       html += `</div>
-        <button type="button" class="btn btn-ghost" style="margin-top:8px;padding:5px 10px;font-size:11.5px;color:var(--color-cl);" onclick="clozeAddOption(this)">+ Agregar opción</button>
+        <button type="button" class="btn btn-quiet btn-sm" style="margin-top:6px;" onclick="clozeAddOption(this)"><i data-lucide="plus" style="width:13px;height:13px;"></i> Agregar opción</button>
       </div>`;
     }
   });
@@ -128,10 +134,11 @@ function clozeUpdatePreview(builderEl) {
     } else {
       const correctTexts = seg.correctIndices.map(i => seg.options[i]).filter(t => t && t.trim());
       const label = correctTexts.length ? correctTexts.map(esc_html).join(' + ') : '(elige una opción)';
-      html += `<span class="blank-tag">${label} ${seg.multi ? '☑' : '▾'}</span>`;
+      html += `<span class="blank-tag">${label} <i data-lucide="${seg.multi ? 'list-checks' : 'chevron-down'}"></i></span>`;
     }
   });
   preview.innerHTML = html.trim() ? html : '<em>Escribe el enunciado de la pregunta…</em>';
+  if (window.lucide && preview.querySelector('[data-lucide]')) lucide.createIcons({ root: preview });
 }
 
 // Cambia un espacio de "una sola respuesta correcta" (radio) a "varias"
@@ -151,6 +158,7 @@ export function clozeToggleMulti(checkbox) {
 }
 
 export function initClozeBuilder(builderEl) {
+  builderEl.querySelectorAll('textarea').forEach(autoGrowTextarea);
   if (builderEl.dataset.bound) { clozeUpdatePreview(builderEl); return; }
   builderEl.addEventListener('input', () => clozeUpdatePreview(builderEl));
   builderEl.addEventListener('change', () => clozeUpdatePreview(builderEl));

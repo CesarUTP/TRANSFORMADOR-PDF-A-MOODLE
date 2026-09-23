@@ -2,7 +2,7 @@
  * progreso.js — pantalla de carga: barra, tiempo estimado y avance real.
  * Aprende de las conversiones anteriores (localStorage) para afinar la estimación.
  */
-import { formatMMSS } from './util.js';
+import { formatBytes, formatMMSS } from './util.js';
 
 // Progress Simulation + tiempo transcurrido/estimado
 //
@@ -58,7 +58,7 @@ let progressKind = 'text';
 
 let progressEstimatedTotal = TIMING_DEFAULTS.text;
 
-// Avance REAL que informa el backend (ver readProgressStream). Mientras
+// Avance REAL que informa el backend (ver lectorDeAvance en carga.js). Mientras
 // no llegue ningún evento se usa la secuencia estimada de siempre; en
 // cuanto llega uno, la pantalla pasa a reflejar lo que de verdad ocurre.
 let progressReal = false;
@@ -174,22 +174,59 @@ export function onProgressCount(ev) {
   }
 }
 
+// ── Subida del archivo (antes de que el servidor empiece a trabajar) ──
+// Mientras se sube, la barra COMPLETA muestra el avance real de la
+// subida ("12,3 MB de 60,0 MB") — con archivos grandes es una espera
+// visible. Al terminar, la barra vuelve a cero sin animación y empieza
+// la fase de procesamiento (el subtítulo cambia, así que se entiende).
+// Con archivos chicos todo esto dura un instante y ni se nota.
+let subiendo = false;
+let procesoDesde = 0;
+
+export function onUploadProgress(enviados, total) {
+  if (!total) return;
+  subiendo = true;
+  const f = enviados / total;
+  document.getElementById('progress-subtitle').textContent = 'Subiendo tu archivo…';
+  document.getElementById('progress-bar-fill').style.transform = `scaleX(${f})`;
+  _setProgressDetail(`${formatBytes(enviados)} de ${formatBytes(total)} (${Math.round(f * 100)}%)`);
+}
+
+export function onUploadDone() {
+  if (!subiendo) return;
+  subiendo = false;
+  const fill = document.getElementById('progress-bar-fill');
+  const prev = fill.style.transition;
+  fill.style.transition = 'none';
+  fill.style.transform = 'scaleX(0)';
+  void fill.offsetWidth;
+  fill.style.transition = prev;
+  document.getElementById('progress-subtitle').textContent = 'Leyendo el texto del examen…';
+  _setProgressDetail('');
+  // La barra simulada de procesamiento cuenta desde ahora, no desde el
+  // inicio de la subida (si no, saltaría hacia adelante). El reloj de
+  // "transcurrido" sí sigue contando desde el principio.
+  procesoDesde = Date.now();
+}
+
 export function startProgress(kind = 'text') {
   const pSubtitle = document.getElementById('progress-subtitle');
   const pFill = document.getElementById('progress-bar-fill');
   const elapsedEl = document.getElementById('progress-elapsed');
   const etaEl = document.getElementById('progress-eta');
   const sequence = [
-    { time: 0,  text: 'Extrayendo texto del examen...' },
-    { time: 3,  text: 'Analizando la estructura y preguntas...' },
-    { time: 7,  text: 'Aplicando prefiltro de consistencia IA...' },
-    { time: 14, text: 'Construyendo modelo de datos de preguntas...' }
+    { time: 0,  text: 'Leyendo el texto del examen…' },
+    { time: 3,  text: 'Identificando las preguntas…' },
+    { time: 7,  text: 'Ordenando preguntas y respuestas con IA…' },
+    { time: 14, text: 'Preparando la revisión…' }
   ];
 
   progressKind = kind;
   progressStartTime = Date.now();
   progressEstimatedTotal = _getEstimatedDuration(kind);
   progressReal = false;
+  subiendo = false;
+  procesoDesde = 0;
   aiStartTime = 0;
   aiExpected = 0;
   aiDone = 0;
@@ -197,6 +234,8 @@ export function startProgress(kind = 'text') {
   _setProgressDetail('');
 
   document.getElementById('progress-timer-row').style.display = 'flex';
+  document.getElementById('btn-cancel-progress').style.display = '';
+  document.getElementById('progress-title').textContent = 'Procesando tu examen…';
   pFill.style.transform = 'scaleX(0)';
   pSubtitle.textContent = sequence[0].text;
   elapsedEl.textContent = '0:00';
@@ -207,10 +246,11 @@ export function startProgress(kind = 'text') {
 
     // Sin eventos del backend todavía: secuencia estimada de siempre.
     // Con eventos, la barra y el texto los maneja onProgress*.
-    if (!progressReal) {
-      let pct = Math.min(elapsedSec * 7, 92);
+    if (!progressReal && !subiendo) {
+      const procesoSec = (Date.now() - (procesoDesde || progressStartTime)) / 1000;
+      let pct = Math.min(procesoSec * 7, 92);
       pFill.style.transform = `scaleX(${pct / 100})`;
-      const stage = sequence.slice().reverse().find(s => elapsedSec >= s.time);
+      const stage = sequence.slice().reverse().find(s => procesoSec >= s.time);
       if (stage && pSubtitle.textContent !== stage.text) {
         pSubtitle.textContent = stage.text;
       }

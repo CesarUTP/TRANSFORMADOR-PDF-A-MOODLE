@@ -11,6 +11,9 @@ import logging
 import queue
 import sys
 import threading
+import unicodedata
+from urllib.parse import quote
+import time
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -25,11 +28,72 @@ from extractor import pdf_has_embedded_images
 from pipeline import parse_document, normalize_document_with_ai
 from validator import validate_questions
 from xml_builder import build_xml, compute_grades
-from database import init_db, save_conversion, get_history_list, get_xml_content, delete_history_item
+from database import init_db, save_conversion, get_history_list, get_xml_content, delete_history_item, get_editor_data
 from pydantic import BaseModel
 from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
+
+
+# ── Registro de errores en archivo ─────────────────────────────────────────
+# El launcher arranca uvicorn con log_level="critical" y sin consola: una
+# excepción inesperada se perdía sin dejar rastro, y el docente solo veía
+# "Ocurrió un error inesperado". Ahora todo error (con su traza completa)
+# queda en errores.log: junto a la base de datos en el ejecutable, o en la
+# raíz del proyecto al correr desde el código.
+def _error_log_path() -> Path:
+    if getattr(sys, "frozen", False):
+        from database import _app_data_dir
+        return _app_data_dir() / "errores.log"
+    return Path(__file__).resolve().parent.parent / "errores.log"
+
+
+ERROR_LOG_PATH = _error_log_path()
+
+
+def _configurar_log_de_errores() -> None:
+    root = logging.getLogger()
+    if any(getattr(h, "_conversor_errores", False) for h in root.handlers):
+        return  # --reload vuelve a importar el módulo: sin handlers duplicados
+    try:
+        ERROR_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        handler = logging.FileHandler(ERROR_LOG_PATH, encoding="utf-8")
+    except OSError:
+        return
+    handler.setLevel(logging.ERROR)
+    handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s"))
+    handler._conversor_errores = True
+    root.addHandler(handler)
+
+
+_configurar_log_de_errores()
+
+
+def _nombre_nfc(nombre: str) -> str:
+    """macOS entrega los nombres de archivo en forma descompuesta (NFD):
+    "Panamá" llega como "Panama" + tilde combinada (U+0301). Se normaliza a
+    la forma compuesta (NFC) para guardarlo y mostrarlo siempre igual."""
+    return unicodedata.normalize("NFC", nombre or "")
+
+
+def _content_disposition(nombre: str) -> str:
+    """
+    Cabecera de descarga que acepta cualquier nombre (tildes, ñ, emojis).
+    Las cabeceras HTTP solo admiten latin-1: con un nombre NFD de macOS
+    ("Panamá" descompuesto) armar la respuesta lanzaba UnicodeEncodeError
+    DESPUÉS de generar el XML, y el docente veía "error inesperado". Se
+    envía una versión ASCII (filename) y la real en UTF-8 (filename*,
+    RFC 6266/5987), que es la que usan los navegadores.
+    """
+    nfc = _nombre_nfc(nombre)
+    ascii_ = unicodedata.normalize("NFKD", nfc).encode("ascii", "ignore").decode("ascii")
+    ascii_ = ascii_.replace('"', "").replace("\\", "").strip() or "examen_moodle.xml"
+    return f"attachment; filename=\"{ascii_}\"; filename*=UTF-8''{quote(nfc, safe='')}"
+
+
+def _detalle_tecnico(exc: Exception) -> str:
+    texto = str(exc).strip().replace("\n", " ")
+    return f"{type(exc).__name__}: {texto[:160]}" if texto else type(exc).__name__
 
 app = FastAPI(title="PDF → Moodle XML", version="1.1")
 
@@ -63,7 +127,7 @@ if _fe.exists():
     app.mount("/static", StaticFiles(directory=str(_fe)), name="static")
     # index.html se sirve en "/", así que sus rutas relativas ("css/base.css",
     # "js/app.js") caen en la raíz: cada carpeta del frontend se monta ahí.
-    for _sub in ("css", "js"):
+    for _sub in ("css", "js", "img"):
         _dir = _fe / _sub
         if _dir.is_dir():
             app.mount(f"/{_sub}", StaticFiles(directory=str(_dir)), name=_sub)
@@ -85,7 +149,7 @@ async def api_check_special_cases(
     prefiltro de IA no garantiza transcribir al 100%. El frontend usa esto
     para mostrar un disclaimer y dejar que el usuario decida cómo proceder.
     """
-    filename = file.filename or "upload"
+    filename = _nombre_nfc(file.filename) or "upload"
     suffix = Path(filename).suffix.lower()
 
     if suffix != ".pdf":
@@ -110,7 +174,7 @@ async def api_parse(
     # ~2 min con imágenes), así que corre en threadpool para no bloquear
     # el event loop de FastAPI.
     raw_bytes = await file.read()
-    return await run_in_threadpool(parse_document, raw_bytes, file.filename or "upload")
+    return await run_in_threadpool(parse_document, raw_bytes, _nombre_nfc(file.filename) or "upload")
 
 
 @app.post("/api/normalize_with_ai")
@@ -124,7 +188,7 @@ async def api_normalize_with_ai(
     PDFs con imágenes incrustadas y PDFs escaneados sin capa de texto.
     """
     raw_bytes = await file.read()
-    return await run_in_threadpool(normalize_document_with_ai, raw_bytes, file.filename or "upload")
+    return await run_in_threadpool(normalize_document_with_ai, raw_bytes, _nombre_nfc(file.filename) or "upload")
 
 
 def _ndjson_progress_stream(fn, raw_bytes: bytes, filename: str) -> StreamingResponse:
@@ -145,15 +209,33 @@ def _ndjson_progress_stream(fn, raw_bytes: bytes, filename: str) -> StreamingRes
     events: "queue.Queue" = queue.Queue()
 
     def worker() -> None:
+        # Un fallo inesperado (no un error ya previsto, que llega como
+        # HTTPException con su propio mensaje) se reintenta UNA vez: la IA
+        # no responde igual dos veces, y lo más común es que una respuesta
+        # puntual con una forma rara rompa algún paso posterior. Si vuelve
+        # a fallar, el mensaje dice qué pasó y dónde quedó la traza.
         try:
-            result = fn(raw_bytes, filename, progress=events.put)
-            events.put({"type": "result", "data": result})
-        except HTTPException as exc:
-            events.put({"type": "error", "status": exc.status_code, "detail": exc.detail})
-        except Exception:  # noqa: BLE001
-            logger.exception("Error inesperado procesando '%s'", filename)
-            events.put({"type": "error", "status": 500,
-                        "detail": "Ocurrió un error inesperado al procesar el archivo."})
+            for intento in (1, 2):
+                try:
+                    result = fn(raw_bytes, filename, progress=events.put)
+                    events.put({"type": "result", "data": result})
+                    return
+                except HTTPException as exc:
+                    events.put({"type": "error", "status": exc.status_code, "detail": exc.detail})
+                    return
+                except Exception as exc:  # noqa: BLE001
+                    logger.exception("Error inesperado procesando '%s' (intento %d de 2)", filename, intento)
+                    if intento == 1:
+                        events.put({"type": "stage", "key": "retry",
+                                    "message": "Hubo un problema inesperado; reintentando en 2 s…"})
+                        time.sleep(2)
+                        continue
+                    events.put({"type": "error", "status": 500, "detail": (
+                        "Ocurrió un error inesperado al procesar el archivo, incluso después de "
+                        "reintentarlo. Vuelve a intentarlo en un momento; si se repite con este "
+                        f"mismo archivo, envía al desarrollador el registro «{ERROR_LOG_PATH}». "
+                        f"(Detalle técnico: {_detalle_tecnico(exc)})"
+                    )})
         finally:
             events.put(None)
 
@@ -180,14 +262,14 @@ def _ndjson_progress_stream(fn, raw_bytes: bytes, filename: str) -> StreamingRes
 async def api_parse_stream(file: UploadFile = File(...)):
     """Igual que /api/parse, pero informando el avance (ver _ndjson_progress_stream)."""
     raw_bytes = await file.read()
-    return _ndjson_progress_stream(parse_document, raw_bytes, file.filename or "upload")
+    return _ndjson_progress_stream(parse_document, raw_bytes, _nombre_nfc(file.filename) or "upload")
 
 
 @app.post("/api/normalize_with_ai_stream")
 async def api_normalize_with_ai_stream(file: UploadFile = File(...)):
     """Igual que /api/normalize_with_ai, pero informando el avance."""
     raw_bytes = await file.read()
-    return _ndjson_progress_stream(normalize_document_with_ai, raw_bytes, file.filename or "upload")
+    return _ndjson_progress_stream(normalize_document_with_ai, raw_bytes, _nombre_nfc(file.filename) or "upload")
 
 
 # ── Modelos Pydantic para Generación de XML ────────────────────────────────
@@ -241,7 +323,12 @@ def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any
         )
 
     # ── 8.5 Guardar en historial ─────────────────────────────────────────
-    save_conversion(req.filename, req.category, req.total_points, xml_content)
+    # Junto al XML se guardan las preguntas tal como quedaron en el editor,
+    # para que el docente pueda reabrir la revisión desde el Historial.
+    editor_json = json.dumps(
+        {"questions": req.questions, "answer_key": req.answer_key}, ensure_ascii=False
+    )
+    save_conversion(req.filename, req.category, req.total_points, xml_content, editor_json)
     return xml_content, stats, grades
 
 
@@ -253,40 +340,50 @@ async def api_generate_xml(req: GenerateXmlRequest):
     except ValueError:
         raise HTTPException(status_code=422, detail="Las claves de answer_key deben ser enteros.")
 
-    xml_content, stats, grades = await run_in_threadpool(_generate_xml_sync, req, parsed_answer_key)
+    req.filename = _nombre_nfc(req.filename)
+    try:
+        xml_content, stats, grades = await run_in_threadpool(_generate_xml_sync, req, parsed_answer_key)
 
-    # ── 9. Return as downloadable file ──────────────────────────────────
-    stem = Path(req.filename).stem
-    output_filename = f"{stem}.xml"
-
-    stats_header = json.dumps({
-        "multichoice": stats.multichoice,
-        "truefalse":   stats.truefalse,
-        "matching":    stats.matching,
-        "cloze":       stats.cloze,
-        "essay":       stats.essay,
-        "shortanswer": stats.shortanswer,
-        "numerical":   stats.numerical,
-        "total_points": req.total_points,
-        "grades": {
-            "multichoice": grades.get("multichoice", 1.0),
-            "truefalse":   grades.get("truefalse", 1.0),
-            "matching":    grades.get("matching", 1.0),
-            "cloze":       grades.get("cloze", 1.0),
-            "essay":       grades.get("essay", 1.0),
-            "shortanswer": grades.get("shortanswer", 1.0),
-            "numerical":   grades.get("numerical", 1.0),
-        },
-    })
-
-    return Response(
-        content=xml_content.encode("utf-8"),
-        media_type="application/xml",
-        headers={
-            "Content-Disposition": f'attachment; filename="{output_filename}"',
-            "X-Question-Stats": stats_header,
-        },
-    )
+        # ── 9. Return as downloadable file ──────────────────────────────
+        output_filename = f"{Path(req.filename).stem}.xml"
+        stats_header = json.dumps({
+            "multichoice": stats.multichoice,
+            "truefalse":   stats.truefalse,
+            "matching":    stats.matching,
+            "cloze":       stats.cloze,
+            "essay":       stats.essay,
+            "shortanswer": stats.shortanswer,
+            "numerical":   stats.numerical,
+            "total_points": req.total_points,
+            "grades": {
+                "multichoice": grades.get("multichoice", 1.0),
+                "truefalse":   grades.get("truefalse", 1.0),
+                "matching":    grades.get("matching", 1.0),
+                "cloze":       grades.get("cloze", 1.0),
+                "essay":       grades.get("essay", 1.0),
+                "shortanswer": grades.get("shortanswer", 1.0),
+                "numerical":   grades.get("numerical", 1.0),
+            },
+        })
+        return Response(
+            content=xml_content.encode("utf-8"),
+            media_type="application/xml",
+            headers={
+                "Content-Disposition": _content_disposition(output_filename),
+                "X-Question-Stats": stats_header,
+            },
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        # Cubre TODO el endpoint, también armar la respuesta: antes un fallo
+        # ahí salía como 500 sin cuerpo y sin rastro en ningún registro.
+        logger.exception("Error inesperado generando el XML de '%s'", req.filename)
+        raise HTTPException(status_code=500, detail=(
+            "Ocurrió un error inesperado al generar el XML. Tu revisión sigue intacta: vuelve a "
+            f"la revisión e inténtalo de nuevo. Si se repite, envía al desarrollador el registro "
+            f"«{ERROR_LOG_PATH}». (Detalle técnico: {_detalle_tecnico(exc)})"
+        ))
 
 @app.get("/api/history")
 async def api_get_history():
@@ -298,16 +395,31 @@ async def api_download_history(record_id: int):
     if not record:
         raise HTTPException(status_code=404, detail="Registro no encontrado")
         
-    stem = Path(record["filename"]).stem
-    output_filename = f"{stem}.xml"
-    
+    output_filename = f"{Path(record['filename']).stem}.xml"
     return Response(
         content=record["xml_content"].encode("utf-8"),
         media_type="application/xml",
-        headers={
-            "Content-Disposition": f'attachment; filename="{output_filename}"',
-        },
+        headers={"Content-Disposition": _content_disposition(output_filename)},
     )
+
+@app.get("/api/history/{record_id}/editor")
+async def api_history_editor(record_id: int):
+    record = get_editor_data(record_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Registro no encontrado")
+    if not record["editor_json"]:
+        raise HTTPException(
+            status_code=404,
+            detail="Esta conversión es anterior a la opción de reabrir: solo se puede descargar.",
+        )
+    data = json.loads(record["editor_json"])
+    return {
+        "filename": record["filename"],
+        "category": record["category"],
+        "total_points": record["total_points"],
+        "questions": data.get("questions", []),
+        "answer_key": data.get("answer_key", {}),
+    }
 
 @app.delete("/api/history/{record_id}")
 async def api_delete_history(record_id: int):

@@ -124,16 +124,46 @@ function hexToRgb(hex) {
   return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
 }
 
-// Luminancia relativa (WCAG) para elegir texto blanco o negro legible
-// encima de cada porción coloreada, sin importar el tono ni el tema.
-export function textColorOnFill(hex) {
+// Texto blanco o casi-negro encima de cada porción coloreada: se elige
+// el que da MÁS contraste (WCAG). Antes se cortaba en luminancia 0,5, que
+// ponía blanco sobre tonos medios (ámbar, violeta del modo claro) donde
+// el negro contrasta bastante más.
+function relativeLuminance(hex) {
   const { r, g, b } = hexToRgb(hex);
   const [rs, gs, bs] = [r, g, b].map(v => {
     v /= 255;
     return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
   });
-  const luminance = 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-  return luminance > 0.5 ? '#0f172a' : '#ffffff';
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+}
+
+export function textColorOnFill(hex) {
+  const L = relativeLuminance(hex);
+  const DARK = '#0f172a';
+  const contrastWhite = 1.05 / (L + 0.05);
+  const contrastDark = (L + 0.05) / (relativeLuminance(DARK) + 0.05);
+  return contrastDark > contrastWhite ? DARK : '#ffffff';
+}
+
+// "Reducir movimiento" del sistema: el scroll animado (saltar de la
+// pregunta 1 a la 50 recorre miles de px) pasa a ser instantáneo.
+export function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+export function scrollBehavior() {
+  return prefersReducedMotion() ? 'auto' : 'smooth';
+}
+
+// "hace 5 min", "hace 2 h", "ayer"… para el aviso de borrador.
+export function timeAgo(ts) {
+  const min = Math.round((Date.now() - ts) / 60000);
+  if (min < 1) return 'hace un momento';
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.round(h / 24);
+  return d === 1 ? 'ayer' : `hace ${d} días`;
 }
 
 export function polarToCartesian(cx, cy, r, angleDeg) {

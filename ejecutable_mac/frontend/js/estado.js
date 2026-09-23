@@ -21,6 +21,8 @@ export const estado = {
   disclaimerAcknowledgedFor: null,
   /** Puntaje total que espera la conversión tras aceptar el aviso. */
   pendingConversionPoints: null,
+  /** Conversión en curso: permite cancelarla desde la pantalla de progreso. */
+  conversionAbort: null,
 };
 
 // ── Quién quiere enterarse de que el examen cambió ────────────────────────

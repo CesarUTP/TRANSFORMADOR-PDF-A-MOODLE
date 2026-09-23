@@ -3,12 +3,15 @@
    Parte de la hoja de estilos del Conversor a Moodle XML.
    Se cargan en orden desde index.html. */
 
-/* ── PANEL DE REVISIÓN (mapa del examen + Aprobar/Cancelar) ─────────────
+/* ── PANEL DE REVISIÓN (mapa del examen + Generar XML) ──────────────────
    Vive FUERA de #panel-editor: la animación de entrada de las
    secciones usa transform, y un position: fixed dentro de un ancestro
    con transform deja de ser fijo respecto a la ventana.
-   ≥1320px: columna a la derecha del contenido (860px), sin tapar nada.
-   Más angosto: barra fija abajo; "12/55" despliega la grilla. */
+   ≥1140px: columna a la derecha del contenido. Para que quepa en un
+   portátil de 1280px, el contenido y la cabecera se corren a la
+   izquierda la mitad del ancho del panel (antes el panel solo aparecía
+   desde 1320px y en 1280 se perdía el mapa siempre visible).
+   Más angosto: barra fija abajo; "12 de 55" despliega la grilla. */
 .review-rail { display: none; }
 body.editor-active .review-rail { display: flex; }
 .review-rail {
@@ -20,7 +23,7 @@ body.editor-active .review-rail { display: flex; }
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 14px;
-  box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,0.12));
+  box-shadow: var(--shadow-md);
 }
 .rail-head { display: flex; flex-direction: column; gap: 8px; }
 .rail-pos {
@@ -28,71 +31,98 @@ body.editor-active .review-rail { display: flex; }
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   font-size: 13px; font-weight: 700; color: var(--color-text);
   font-family: var(--font-heading);
+  font-variant-numeric: tabular-nums;
 }
-.rail-pos .rail-pos-short, .rail-pos .rail-warn-short { display: none; }
+.rail-pos .rail-pos-short, .rail-pos .rail-pill { display: none; }
+.rail-pill {
+  align-items: center; gap: 3px;
+  font-family: var(--font-body); font-size: var(--text-xs); font-weight: 800;
+  padding: 2px 7px; border-radius: var(--radius-full);
+}
+.rail-pill svg { width: 12px; height: 12px; }
+.rail-pill.is-error { color: var(--color-error); background: var(--color-error-bg); }
+.rail-pill.is-warning { color: var(--color-warning); background: var(--color-warning-bg); }
 .rail-bar { height: 4px; background: var(--color-border-subtle); border-radius: var(--radius-full); overflow: hidden; }
-#review-progress-fill { height: 100%; width: 0%; background: var(--color-accent); border-radius: var(--radius-full); transition: width 0.15s ease; }
+/* scaleX en vez de width: se actualiza en cada fotograma de scroll y
+   animar width obliga a recalcular el layout (ver DESIGN.md). */
+#review-progress-fill {
+  height: 100%; width: 100%;
+  transform: scaleX(0); transform-origin: left;
+  background: var(--color-accent); border-radius: var(--radius-full);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
 .rail-grid-wrap { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 .rail-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
   gap: 5px;
   overflow-y: auto;
-  padding: 2px;
+  padding: 3px;
 }
 .rail-item {
   all: unset;
   box-sizing: border-box;
+  width: 100%;
   height: 30px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11.5px; font-weight: 600;
+  font-size: var(--text-xs); font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
   position: relative;
+  transition: transform var(--dur-press) var(--ease-out), border-color var(--dur-fast) ease, color var(--dur-fast) ease;
 }
-.rail-item:hover { border-color: var(--color-accent); color: var(--color-text); }
+.rail-item:active { transform: scale(0.95); }
 .rail-item:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
-.rail-item.needs-review { border-color: var(--color-warning); color: var(--color-warning); }
-.rail-item.needs-review::after {
-  content: ""; position: absolute; top: 3px; right: 3px;
-  width: 5px; height: 5px; border-radius: 50%; background: var(--color-warning);
-}
-/* Incompleta (falta enunciado, opciones o respuesta): rojo, y manda
-   sobre el naranja de "para revisar". */
-.rail-item.incomplete { border-color: var(--color-error); color: var(--color-error); background: var(--color-error-bg); }
-.rail-item.incomplete::after {
-  content: ""; position: absolute; top: 3px; right: 3px;
-  width: 5px; height: 5px; border-radius: 50%; background: var(--color-error);
-}
-.rail-item.current { background: var(--color-accent); border-color: var(--color-accent); color: #fff; }
-.rail-item.current::after { background: #fff; }
+/* "Para revisar": borde discontinuo además del color, para que no
+   dependa solo del ámbar (que además se parece al de Emparejamiento). */
+.rail-item.needs-review { border: 1.5px dashed var(--color-warning); color: var(--color-warning); }
+/* Incompleta (falta enunciado, opciones o respuesta): rojo con fondo, y
+   manda sobre el aviso de "para revisar". */
+.rail-item.incomplete { border: 1.5px solid var(--color-error); color: var(--color-error); background: var(--color-error-bg); font-weight: 800; }
+/* La pregunta actual: contorno de acento. Ya no se rellena encima del
+   estado, así una incompleta sigue viéndose roja aunque sea la actual.
+   Solo una pregunta sin avisos recibe el relleno completo. */
+.rail-item.current { outline: 2px solid var(--color-accent); outline-offset: 1px; color: var(--color-text); font-weight: 800; }
+.rail-item.current:not(.incomplete):not(.needs-review) { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent); }
 .rail-review-next {
   all: unset;
   display: none; align-items: center; gap: 6px;
   font-size: 12px; font-weight: 600; color: var(--color-warning);
   cursor: pointer;
+  border-radius: var(--radius-sm);
 }
+.rail-review-next svg { width: 14px; height: 14px; flex-shrink: 0; }
+.rail-review-next:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .rail-review-next.visible { display: flex; }
 .rail-review-next.is-error { color: var(--color-error); }
 .rail-links { display: flex; flex-direction: column; gap: 6px; }
-.rail-review-next:hover { text-decoration: underline; }
-.rail-actions { display: flex; flex-direction: column; gap: 8px; }
-.rail-actions .btn { width: 100%; justify-content: center; padding: 11px 12px; font-size: 13.5px; }
+.rail-actions { display: flex; flex-direction: column; gap: 6px; }
+.rail-actions .btn { width: 100%; justify-content: center; padding: 11px 12px; font-size: 13.5px; white-space: nowrap; }
+.rail-actions #btn-discard-review { padding: 8px 12px; font-size: var(--text-sm); }
+@media (hover: hover) and (pointer: fine) {
+  .rail-item:hover { border-color: var(--color-accent); color: var(--color-text); }
+  .rail-review-next:hover { text-decoration: underline; text-underline-offset: 3px; }
+}
 
-@media (min-width: 1320px) {
+@media (min-width: 1140px) {
+  body.editor-active .main-wrapper,
+  body.editor-active .header-inner {
+    margin-left: max(24px, calc(50% - 430px - 108px));
+  }
   .review-rail {
     top: calc(var(--header-h, 80px) + 24px);
-    left: calc(50% + 430px + 20px);
+    left: max(calc(24px + 860px + 20px), calc(50% + 430px - 108px + 20px));
     width: 196px;
     max-height: calc(100vh - var(--header-h, 80px) - 48px);
   }
   .rail-grid { max-height: none; flex: 1; }
   .rail-grid-wrap { flex: 1; overflow: hidden; }
 }
-@media (max-width: 1319.98px) {
+@media (max-width: 1139.98px) {
   .review-rail {
     left: 0; right: 0; bottom: 0;
     flex-direction: row; align-items: center;
@@ -101,18 +131,22 @@ body.editor-active .review-rail { display: flex; }
     background: var(--color-bg-alt);
   }
   body.editor-active .main-wrapper { padding-bottom: 110px; }
+  /* El aviso flotante sube por encima de la barra: antes tapaba "Generar
+     XML" durante 3,5 s justo después de pulsarlo. */
+  body.editor-active .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
   .rail-head { flex: 0 0 auto; }
   .rail-pos {
-    cursor: pointer; padding: 8px 12px;
+    cursor: pointer; padding: 8px 12px; min-height: 22px;
     border: 1px solid var(--color-border); border-radius: var(--radius-md);
     background: var(--color-surface);
   }
   .rail-pos .rail-pos-long { display: none; }
-  .rail-pos .rail-pos-short, .rail-pos .rail-warn-short.visible { display: inline; }
+  .rail-pos .rail-pos-short { display: inline; }
+  .rail-pos .rail-pill.visible { display: inline-flex; }
   .rail-bar { display: none; }
-  .rail-actions { flex: 1; flex-direction: row; }
-  .rail-actions .btn-success { flex: 2; }
-  .rail-actions .btn-danger { flex: 1; }
+  .rail-actions { flex: 1; flex-direction: row; justify-content: flex-end; align-items: center; }
+  .rail-actions .btn-success { flex: 1 1 auto; max-width: 260px; }
+  .rail-actions #btn-discard-review { flex: 0 0 auto; width: auto; padding: 10px 12px; }
   .rail-grid-wrap {
     display: none;
     position: absolute; left: 12px; right: 12px; bottom: calc(100% + 8px);
@@ -121,11 +155,110 @@ body.editor-active .review-rail { display: flex; }
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     padding: 12px;
-    box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,0.18));
+    box-shadow: var(--shadow-md);
   }
   .review-rail.grid-open .rail-grid-wrap { display: flex; }
   .rail-grid { max-height: 45vh; }
 }
+@media (max-width: 420px) {
+  .rail-actions #btn-discard-review .btn-label { display: none; }
+}
+
+/* ── LISTA DE ATAJOS (en la Guía, pestaña Revisión) ────────────────── */
+.shortcuts-list { margin: 0; display: flex; flex-direction: column; gap: 7px; }
+.shortcuts-list > div { display: grid; grid-template-columns: 44px 1fr; align-items: center; gap: 8px; }
+.shortcuts-list dt { margin: 0; }
+.shortcuts-list dd { margin: 0; font-size: 13px; color: var(--color-text); }
+
+/* ── CABECERA Y HERRAMIENTAS DEL EDITOR ──────────────────────────────── */
+.editor-head { margin-bottom: 16px; }
+.editor-notices { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+
+/* Preguntas omitidas: una línea que se expande (antes era un muro de
+   avisos que empujaba la primera pregunta 1-2 pantallas hacia abajo). */
+.skipped-details {
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+}
+.skipped-details > summary {
+  list-style: none;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 11px 14px;
+  font-size: 13.5px; font-weight: 700; color: var(--color-warning);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+.skipped-details > summary::-webkit-details-marker { display: none; }
+.skipped-details > summary svg { width: 16px; height: 16px; flex-shrink: 0; }
+.skipped-details > summary .summary-more { margin-left: auto; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 4px; }
+.skipped-details > summary .summary-more svg { transition: transform var(--dur-fast) var(--ease-out); width: 14px; height: 14px; }
+.skipped-details[open] > summary .summary-more svg { transform: rotate(180deg); }
+.skipped-details > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.skipped-body { padding: 0 14px 12px; }
+.skipped-item { padding: 10px 0; border-top: 1px solid var(--color-border-subtle); }
+.skipped-item p { margin: 0; line-height: 1.5; }
+.skipped-preview { font-size: 13px; font-weight: 700; color: var(--color-text); margin-bottom: 4px !important; }
+.skipped-reason { font-size: 12px; color: var(--color-text-muted); }
+.skipped-num { font-size: 12px; color: var(--color-text-subtle); margin-top: 2px !important; }
+
+.editor-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.toolbar-btn {
+  flex: 1 1 220px;
+  justify-content: flex-start;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.toolbar-btn strong { font-weight: 800; }
+.toolbar-btn .chev { margin-left: auto; width: 15px; height: 15px; transition: transform var(--dur-fast) var(--ease-out); }
+.toolbar-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.toolbar-btn.is-off strong { color: var(--color-warning); }
+
+/* Paneles plegables (Filtrar / Distribuir puntos / Añadir pregunta):
+   arrancan plegados; se abren con un fundido corto en vez de aparecer de
+   golpe. */
+.collapsible-panel {
+  display: none;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
+}
+.collapsible-panel.panel-open { opacity: 1; transform: none; transition-duration: var(--dur-enter); }
+#editor-questions-container { display: flex; flex-direction: column; gap: 18px; }
+.editor-tools { margin-bottom: 4px; }
+
+.points-help { font-size: 12px; color: var(--color-text-muted); line-height: 1.6; }
+.points-weight-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.points-weight-row .type-name { font-size: 13px; font-weight: 700; }
+.points-weight-preview { font-size: var(--text-xs); color: var(--color-text-subtle); min-width: 78px; text-align: right; font-variant-numeric: tabular-nums; }
+.points-weight-input { width: 72px !important; padding: 6px 8px !important; font-size: var(--text-sm) !important; text-align: right; }
+
+/* ── AÑADIR PREGUNTA (al final de la lista) ──────────────────────────── */
+.add-question-block {
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+}
+.add-question-block .add-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.add-question-block .add-head p { font-size: 13px; color: var(--color-text-muted); margin: 0; }
+.add-type-grid {
+  /* display lo pone togglePanel() ('grid') al abrirse. */
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.add-type-grid .filter-chip { flex: none; min-width: 0; }
 
 /* ── EDITOR CARDS (Interactive Question Editor) ──────────────────────── */
 .editor-card {
@@ -133,16 +266,34 @@ body.editor-active .review-rail { display: flex; }
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 20px;
-  transition: border-color 0.2s;
+  transition: border-color var(--dur-fast) ease;
+  scroll-margin-top: calc(var(--header-h, 80px) + 16px);
 }
-.editor-card:hover {
-  border-color: var(--color-border-glow);
-}
+.editor-card:focus-within { border-color: var(--color-accent); }
 .editor-card.is-incomplete { border-color: var(--color-error); }
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.card-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.card-title h3 {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.card-meta { display: flex; align-items: center; gap: 6px; }
+.card-meta .pts-unit { font-size: var(--text-xs); color: var(--color-text-subtle); }
+.q-points { width: 70px !important; padding: 6px 8px !important; font-size: var(--text-sm) !important; text-align: right; margin-top: 0 !important; }
+.card-flags { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 12px; }
 .card-issues {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  margin: -4px 0 12px; font-size: 12.5px; font-weight: 600; color: var(--color-error);
+  margin: -4px 0 12px; font-size: var(--text-sm); font-weight: 600; color: var(--color-error);
 }
+.card-issues svg { width: 14px; height: 14px; flex-shrink: 0; }
+.card-note { font-size: var(--text-xs); color: var(--color-text-subtle); margin: 4px 0 0; }
 .editor-card textarea, .editor-card input {
   background: var(--color-bg);
   border: 1px solid var(--color-border);
@@ -152,12 +303,13 @@ body.editor-active .review-rail { display: flex; }
   width: 100%;
   font-family: inherit;
   font-size: 13.5px;
+  line-height: 1.5;
   margin-top: 6px;
   outline: none;
 }
-/* Sin arrastre manual (podía estirarse hasta romper el layout de la
-   tarjeta) — en su lugar, autoJustarTextarea() la hace crecer con el
-   contenido para que el enunciado siempre se vea completo. */
+/* Sin arrastre manual (podía romper el layout de la tarjeta): los campos
+   de texto crecen solos con el contenido (ver autoGrowTextarea), así el
+   enunciado, las parejas y los fragmentos se ven siempre completos. */
 .editor-card textarea {
   resize: none;
   overflow: hidden;
@@ -166,13 +318,18 @@ body.editor-active .review-rail { display: flex; }
   border-color: var(--color-accent);
 }
 .type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
   font-weight: 800;
   padding: 4px 10px;
   border-radius: var(--radius-sm);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
+.type-badge svg { width: 12px; height: 12px; }
 .type-badge.multichoice { background: var(--color-mc-bg); color: var(--color-mc); border: 1px solid var(--color-mc-border); }
 .type-badge.truefalse   { background: var(--color-tf-bg); color: var(--color-tf); border: 1px solid var(--color-tf-border); }
 .type-badge.matching    { background: var(--color-mt-bg); color: var(--color-mt); border: 1px solid var(--color-mt-border); }
@@ -180,6 +337,40 @@ body.editor-active .review-rail { display: flex; }
 .type-badge.essay       { background: var(--color-es-bg); color: var(--color-es); border: 1px solid var(--color-es-border); }
 .type-badge.shortanswer { background: var(--color-sa-bg); color: var(--color-sa); border: 1px solid var(--color-sa-border); }
 .type-badge.numerical   { background: var(--color-nu-bg); color: var(--color-nu); border: 1px solid var(--color-nu-border); }
+/* Señales de procedencia (no son tipos): mismo lenguaje que los avisos. */
+.type-badge.flag-review { background: var(--color-warning-bg); color: var(--color-warning); border: 1px solid var(--color-warning); text-transform: none; letter-spacing: 0; }
+.type-badge.flag-neutral { background: transparent; color: var(--color-text-subtle); border: 1px solid var(--color-border); text-transform: none; letter-spacing: 0; }
+
+/* ── EMPAREJAMIENTO ─────────────────────────────────────────────────── */
+.matching-box {
+  margin-top: 14px;
+  background: var(--color-bg);
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+.matching-pairs-list { display: flex; flex-direction: column; gap: 8px; }
+.matching-pair-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  gap: 8px;
+  align-items: start;
+  background: var(--color-surface);
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+}
+.matching-pair-row textarea { margin-top: 0 !important; }
+.pair-arrow { color: var(--color-text-subtle); width: 16px; height: 16px; margin-top: 12px; }
+.matching-pair-row .btn-icon { margin-top: 3px; }
+@media (max-width: 640px) {
+  /* En celular cada pareja se apila: concepto arriba, pareja abajo. */
+  .matching-pair-row { grid-template-columns: 1fr auto; }
+  .matching-pair-row .pair-left { grid-column: 1; grid-row: 1; }
+  .matching-pair-row .btn-icon { grid-column: 2; grid-row: 1; }
+  .matching-pair-row .pair-arrow { display: none; }
+  .matching-pair-row .pair-right { grid-column: 1; grid-row: 2; }
+}
 
 /* ── CLOZE BUILDER (editor de "completar" sin sintaxis de corchetes) ──── */
 .cloze-preview {
@@ -193,7 +384,9 @@ body.editor-active .review-rail { display: flex; }
   line-height: 1.8;
 }
 .cloze-preview .blank-tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: var(--color-cl-bg);
   color: var(--color-cl);
   border: 1px solid var(--color-cl-border);
@@ -202,23 +395,28 @@ body.editor-active .review-rail { display: flex; }
   font-weight: 700;
   margin: 2px 2px;
 }
-.cloze-text-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.cloze-preview .blank-tag svg { width: 12px; height: 12px; }
+.cloze-text-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
 .cloze-text-row .cloze-text-input { flex: 1; margin-top: 0; }
 .cloze-insert-btn {
   flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 4px;
   background: var(--color-surface-hover);
   border: 1px dashed var(--color-border);
-  color: var(--color-text-subtle);
+  color: var(--color-text-muted);
   border-radius: var(--radius-sm);
   padding: 9px 10px;
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition-property: color, border-color, background-color;
-  transition-duration: 0.2s;
+  transition: transform var(--dur-press) var(--ease-out), color var(--dur-fast) ease, border-color var(--dur-fast) ease, background-color var(--dur-fast) ease;
 }
-.cloze-insert-btn:hover { color: var(--color-cl); border-color: var(--color-cl-border); background: var(--color-cl-bg); }
+.cloze-insert-btn svg { width: 13px; height: 13px; }
+.cloze-insert-btn:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .cloze-insert-btn:hover { color: var(--color-cl); border-color: var(--color-cl-border); background: var(--color-cl-bg); }
+}
 .cloze-blank-card {
   background: var(--color-cl-bg);
   border: 1px solid var(--color-cl-border);
@@ -227,11 +425,12 @@ body.editor-active .review-rail { display: flex; }
   margin-bottom: 10px;
 }
 .cloze-blank-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.cloze-blank-header strong { color: var(--color-cl); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.4px; }
+.cloze-blank-header strong { display: inline-flex; align-items: center; gap: 6px; color: var(--color-cl); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.4px; }
+.cloze-blank-header strong svg { width: 12px; height: 12px; }
 .cloze-option-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .cloze-option-row input[type="text"] { flex: 1; margin-top: 0; }
 .cloze-option-row input[type="radio"],
-.cloze-option-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--color-success); cursor: pointer; }
+.cloze-option-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--color-success); cursor: pointer; margin-top: 0; }
 .cloze-multi-toggle {
   display: flex;
   align-items: center;
@@ -243,29 +442,22 @@ body.editor-active .review-rail { display: flex; }
   margin-bottom: 10px;
   user-select: none;
 }
-.cloze-multi-toggle input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--color-cl); cursor: pointer; }
+.cloze-multi-toggle input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--color-cl); cursor: pointer; margin-top: 0; }
+@media (max-width: 480px) {
+  /* En celular el botón de insertar va debajo del fragmento, a lo ancho,
+     para que el texto tenga todo el espacio. */
+  .cloze-text-row { flex-direction: column; align-items: stretch; }
+  .cloze-insert-btn { justify-content: center; }
+}
 
 /* ── SELECCIÓN MÚLTIPLE: casilla de "correcta" por opción ────────────── */
 .mc-option-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-.mc-option-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--color-success); cursor: pointer; }
+.mc-option-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--color-success); cursor: pointer; margin-top: 0; }
 .mc-option-row .mc-option-letter { font-weight: 800; color: var(--color-mc); width: 16px; flex-shrink: 0; }
 .mc-option-row .q-opt { flex: 1; margin-top: 0; }
 
-/* Paneles colapsables (Filtrar / Añadir nueva pregunta): sin esto
-   aparecían/desaparecían de golpe con display:none — se sentía roto. */
-#add-question-types, #filter-chips-bar, #points-tool-panel {
-  opacity: 0;
-  transform: translateY(-6px);
-  transition-property: opacity, transform;
-  transition-duration: 0.2s;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-}
-#add-question-types.panel-open, #filter-chips-bar.panel-open, #points-tool-panel.panel-open {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* ── FILTER CHIPS (Revisar Preguntas) ────────────────────────────────── */
+.filter-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .filter-chip {
   display: inline-flex;
   align-items: center;
@@ -273,24 +465,24 @@ body.editor-active .review-rail { display: flex; }
   gap: 6px;
   flex: 1 1 0;
   min-width: fit-content;
-  padding: 6px 13px;
-  font-size: 12.5px;
+  padding: 7px 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
   border-radius: var(--radius-full);
   border: 1.5px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text-muted);
   cursor: pointer;
-  transition-property: background-color, border-color, color;
-  transition-duration: 0.2s;
+  transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease;
 }
-.filter-chip:hover { border-color: var(--color-border-glow); color: var(--color-text); }
+.filter-chip:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .filter-chip:hover { border-color: currentColor; }
+}
 
-/* Estado inactivo: cada chip ya lleva el color de su tipo (mismo tono
-   que el botón "+ Añadir" y el type-badge de las tarjetas), no solo al
-   seleccionarlo — así el filtro se lee como parte del mismo lenguaje
-   visual de colores por tipo, en vez de una lista de píldoras grises. */
-.filter-chip[data-filter="all"]         { background: var(--color-accent-glow); border-color: var(--color-border-glow); color: var(--color-accent); }
+/* Estado inactivo: cada chip lleva el color de su tipo (mismo tono que
+   el type-badge de las tarjetas). */
+.filter-chip[data-filter="all"]         { background: var(--color-accent-glow); border-color: var(--color-border); color: var(--color-accent); }
 .filter-chip[data-filter="multichoice"] { background: var(--color-mc-bg); border-color: var(--color-mc-border); color: var(--color-mc); }
 .filter-chip[data-filter="truefalse"]   { background: var(--color-tf-bg); border-color: var(--color-tf-border); color: var(--color-tf); }
 .filter-chip[data-filter="matching"]    { background: var(--color-mt-bg); border-color: var(--color-mt-border); color: var(--color-mt); }
@@ -299,15 +491,16 @@ body.editor-active .review-rail { display: flex; }
 .filter-chip[data-filter="shortanswer"] { background: var(--color-sa-bg); border-color: var(--color-sa-border); color: var(--color-sa); }
 .filter-chip[data-filter="numerical"]   { background: var(--color-nu-bg); border-color: var(--color-nu-border); color: var(--color-nu); }
 
-/* Estado activo: mismo color pero sólido, con texto blanco — distingue
-   claramente cuál filtro está aplicado ahora mismo. */
-.filter-chip.active { color: #ffffff; border-color: transparent; }
-.filter-chip.active[data-filter="all"]        { background: var(--color-primary); }
-.filter-chip.active[data-filter="multichoice"] { background: var(--color-mc); }
-.filter-chip.active[data-filter="truefalse"]   { background: var(--color-tf); }
-.filter-chip.active[data-filter="matching"]    { background: var(--color-mt); }
-.filter-chip.active[data-filter="cloze"]       { background: var(--color-cl); }
-.filter-chip.active[data-filter="essay"]       { background: var(--color-es); }
-.filter-chip.active[data-filter="shortanswer"] { background: var(--color-sa); }
-.filter-chip.active[data-filter="numerical"]   { background: var(--color-nu); }
-.filter-chip .count { opacity: 0.75; font-weight: 600; }
+/* Estado activo: mismo color pero sólido. El texto usa --color-on-accent
+   (casi negro en oscuro, blanco en claro): el blanco sobre los rellenos
+   claros del tema oscuro quedaba entre 1,7:1 y 2,7:1. */
+.filter-chip[aria-pressed="true"] { color: var(--color-on-accent); border-color: transparent; }
+.filter-chip[aria-pressed="true"][data-filter="all"]        { background: var(--color-accent); }
+.filter-chip[aria-pressed="true"][data-filter="multichoice"] { background: var(--color-mc); }
+.filter-chip[aria-pressed="true"][data-filter="truefalse"]   { background: var(--color-tf); }
+.filter-chip[aria-pressed="true"][data-filter="matching"]    { background: var(--color-mt); }
+.filter-chip[aria-pressed="true"][data-filter="cloze"]       { background: var(--color-cl); }
+.filter-chip[aria-pressed="true"][data-filter="essay"]       { background: var(--color-es); }
+.filter-chip[aria-pressed="true"][data-filter="shortanswer"] { background: var(--color-sa); }
+.filter-chip[aria-pressed="true"][data-filter="numerical"]   { background: var(--color-nu); }
+.filter-chip .count { opacity: 0.8; font-weight: 600; font-variant-numeric: tabular-nums; }

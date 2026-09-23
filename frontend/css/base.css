@@ -18,8 +18,11 @@
   --color-bg-alt:         #0f172a;
   --color-surface:        #131c31;
   --color-surface-hover:  #1e293b;
-  --color-surface-card:   rgba(19, 28, 49, 0.75);
-  --color-surface-modal:  rgba(15, 23, 42, 0.88);
+  /* Sólidas a propósito: sin vidrio ni desenfoque (ver DESIGN.md, "Sin
+     Halo"). Una tarjeta se separa del fondo por su borde y su tono, no
+     por un blur decorativo que además cuesta rendimiento. */
+  --color-surface-card:   #111a2e;
+  --color-surface-modal:  #0f172a;
   --color-dropzone-bg:    rgba(19, 28, 49, 0.25);
   --color-tabstrip-bg:    rgba(0, 0, 0, 0.1);
   --color-border:         rgba(255, 255, 255, 0.12);
@@ -35,24 +38,22 @@
   --color-primary-glow:   rgba(2, 132, 199, 0.25);
 
   --color-accent:         #38bdf8;
-  --color-accent-gradient: linear-gradient(135deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
-  --color-accent-glow:   rgba(56, 189, 248, 0.2);
+  --color-accent-glow:   rgba(56, 189, 248, 0.14);
+  /* Texto encima de un relleno de --color-accent o de un color de tipo
+     (chip de filtro activo, pregunta actual del panel). En oscuro esos
+     rellenos son claros (#38bdf8, #fbbf24…) y el blanco quedaba en
+     1,7-2,7:1; un casi-negro da ≥7:1 en todos. En claro los rellenos son
+     oscuros y vuelve a ser blanco. */
+  --color-on-accent:     #06101f;
 
-  /* Gradiente dedicado para botones con texto blanco encima: a diferencia
-     de --color-accent-gradient (decorativo, para logo/marca), este se
-     mantiene lo bastante oscuro en todo su recorrido para que el texto
-     blanco cumpla WCAG AA (>=4.5:1) en cualquier punto del degradado. */
-  --color-cta-gradient: linear-gradient(135deg, #075985 0%, #0369a1 50%, #4338ca 100%);
-
-  /* Variantes CTA para acciones positivas/negativas (aprobar y generar,
-     cancelar) — mismo criterio de contraste que --color-cta-gradient:
-     se mantienen igual de oscuras en modo claro y oscuro, porque lo que
-     importa es el contraste del texto blanco contra el botón, no el
-     fondo de la página. */
-  --color-cta-success-gradient: linear-gradient(135deg, #065f46 0%, #047857 50%, #04845e 100%);
-  --color-cta-danger-gradient:  linear-gradient(135deg, #7f1d2e 0%, #be123c 50%, #e11d48 100%);
-  --shadow-glow-success: 0 8px 20px rgba(0, 0, 0, 0.35);
-  --shadow-glow-danger:  0 8px 20px rgba(0, 0, 0, 0.35);
+  /* Botones con texto blanco: colores SÓLIDOS, sin degradado (los
+     degradados azul→índigo eran vocabulario genérico de "app de IA").
+     Se mantienen igual de oscuros en ambos temas porque lo que importa es
+     el contraste del texto blanco contra el botón: todos ≥5,5:1. */
+  --color-cta:          #0369a1;
+  --color-cta-hover:    #075985;
+  --color-cta-success:  #047857;
+  --color-cta-success-hover: #065f46;
 
   --color-success:        #10b981;
   --color-success-bg:     rgba(16, 185, 129, 0.12);
@@ -61,7 +62,7 @@
   --color-warning-bg:     rgba(245, 158, 11, 0.12);
   --color-error:          #f43f5e;
   --color-error-bg:       rgba(244, 63, 94, 0.12);
-  --color-error-solid:    #e80d33;
+  --color-error-solid:    #be123c;
 
   --color-mc:             #38bdf8;
   --color-mc-bg:          rgba(56, 189, 248, 0.15);
@@ -98,6 +99,24 @@
   --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.45);
   --shadow-glow: 0 8px 20px rgba(0, 0, 0, 0.35);
 
+  /* Escala tipográfica: todo tamaño de texto sale de aquí (antes había
+     16/18/20/15px sueltos en estilos en línea, fuera de cualquier escala). */
+  --text-xs: 11.5px;
+  --text-sm: 12.5px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-title: 19px;
+  --text-headline: 22px;
+
+  /* Movimiento (lente Emil Kowalski): ease-out fuerte para lo que entra
+     o responde, ease-in-out para lo que se mueve en pantalla. Nada de UI
+     pasa de 250ms; las salidas son más rápidas que las entradas. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-press: 120ms;
+  --dur-fast: 150ms;
+  --dur-enter: 200ms;
+
   /* Typography */
   --font-body: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
   --font-heading: 'Outfit', 'Hanken Grotesk', system-ui, sans-serif;
@@ -110,8 +129,8 @@
   --color-bg-alt:         #e2e8f0;
   --color-surface:        #ffffff;
   --color-surface-hover:  #f8fafc;
-  --color-surface-card:   rgba(255, 255, 255, 0.85);
-  --color-surface-modal:  rgba(255, 255, 255, 0.94);
+  --color-surface-card:   #ffffff;
+  --color-surface-modal:  #ffffff;
   --color-dropzone-bg:    rgba(2, 132, 199, 0.05);
   --color-tabstrip-bg:    rgba(15, 23, 42, 0.03);
   --color-border:         #cbd5e1;
@@ -127,8 +146,8 @@
   --color-primary-glow:   rgba(2, 132, 199, 0.15);
 
   --color-accent:         #0273ae;
-  --color-accent-gradient: linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #4f46e5 100%);
-  --color-accent-glow:   rgba(2, 132, 199, 0.15);
+  --color-accent-glow:   rgba(2, 132, 199, 0.1);
+  --color-on-accent:     #ffffff;
 
   --color-success:        #047d58;
   --color-success-bg:     #ecfdf5;
@@ -137,7 +156,7 @@
   --color-warning-bg:     #fffbeb;
   --color-error:          #d31b44;
   --color-error-bg:       #fff1f2;
-  --color-error-solid:    #d31b44;
+  --color-error-solid:    #be123c;
 
   --color-mc:             #0270a9;
   --color-mc-bg:          rgba(2, 132, 199, 0.12);
@@ -170,19 +189,36 @@
 /* ── BASE STYLES & RESET ─────────────────────────────────────────────── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Fondo liso: los dos halos radiales de las esquinas se quitaron por la
+   Regla Sin Halo de DESIGN.md. El cambio de tema es instantáneo a
+   propósito: antes solo el body tenía transición y el resto de
+   superficies cambiaba de golpe, así que se veía desincronizado. */
 body {
   background: var(--color-bg);
-  background-image: 
-    radial-gradient(at 0% 0%, var(--color-primary-glow) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, var(--color-accent-glow) 0px, transparent 50%);
-  background-attachment: fixed;
   color: var(--color-text);
   font-family: var(--font-body);
   min-height: 100vh;
   line-height: 1.6;
-  transition: background-color 0.3s ease, color 0.3s ease;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Superficies que el navegador dibuja por su cuenta: también llevan la
+   paleta del sistema. */
+::selection { background: var(--color-primary); color: #fff; }
+input, textarea, select { caret-color: var(--color-accent); }
+button { font-family: inherit; }
+
+/* Solo para lectores de pantalla (antes el título del paso 1 usaba
+   display:none, que también lo oculta de ellos). */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Los títulos de pantalla reciben el foco al cambiar de paso (para que el
+   lector de pantalla anuncie dónde está el usuario); no necesitan anillo
+   porque no son interactivos. */
+[tabindex="-1"]:focus { outline: none; }
 
 /* Focus visible for accessibility (WCAG AA) */
 :focus-visible {
@@ -193,36 +229,40 @@ body {
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-text-subtle); }
 
 /* ── KEYFRAMES & ANIMATIONS (Emil Design Eng) ────────────────────────── */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes scaleUp {
-  from { opacity: 0; transform: scale(0.96); }
+  from { opacity: 0; transform: scale(0.97); }
   to   { opacity: 1; transform: scale(1); }
 }
 @keyframes spinSlow {
   to { transform: rotate(360deg); }
 }
-
-.animate-fadeIn { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-scaleUp { animation: scaleUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-/* Con "reducir movimiento" activado en el sistema, las secciones siguen
-   apareciendo (opacidad) para no perder la señal de cambio de estado,
-   pero sin el desplazamiento/escala que puede incomodar a quien activó
-   esa preferencia. El spinner de carga queda fuera a propósito: es la
-   única señal de "proceso en curso" en la pantalla de progreso. */
-@media (prefers-reduced-motion: reduce) {
-  .animate-fadeIn, .animate-scaleUp {
-    animation-name: fadeOnly;
-  }
-}
 @keyframes fadeOnly {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+/* Cambio de pantalla: se repite en cada paso, así que es corto (200ms) y
+   casi sin desplazamiento — confirma el cambio sin hacer esperar. */
+.animate-fadeIn { animation: fadeInUp var(--dur-enter) var(--ease-out) both; }
+.animate-scaleUp { animation: scaleUp var(--dur-enter) var(--ease-out) both; }
+
+/* "Reducir movimiento": se conservan los fundidos de opacidad (sí ayudan
+   a notar un cambio de estado) y se quita todo desplazamiento, escala y
+   scroll animado. El spinner de carga se queda a propósito: es la única
+   señal de "proceso en curso" en la pantalla de progreso. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-fadeIn, .animate-scaleUp { animation-name: fadeOnly; }
+  .btn, .btn-icon-text, .filter-chip, .rail-item, .modal-tab, .cloze-insert-btn,
+  .modal-box, .toast, .collapsible-panel, #drop-zone {
+    transform: none !important;
+  }
 }

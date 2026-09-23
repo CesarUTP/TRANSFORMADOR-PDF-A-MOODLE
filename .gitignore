@@ -38,3 +38,6 @@ dev/api_resp.json
 # Secretos locales (API keys) — nunca se versionan
 .env
 backend/.env
+
+# Registro de errores del backend (se genera solo, para depurar)
+errores.log

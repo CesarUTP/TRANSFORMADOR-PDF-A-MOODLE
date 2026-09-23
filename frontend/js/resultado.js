@@ -1,6 +1,7 @@
 /**
  * resultado.js — generar el XML, resumen final y descarga.
  */
+import { borrarBorrador, guardarBorradorAhora } from './borrador.js';
 import { showError } from './carga.js';
 import { selectFilter } from './editor/filtros.js';
 import { buildReviewRail, refreshQuestionIssues, scrollToEditorCard } from './editor/panel.js';
@@ -12,11 +13,9 @@ import { showToast } from './ui/toast.js';
 import { describeArcSlice, esc_html, friendlyHttpError, getCssVar, humanizeSkipReason, polarToCartesian, textColorOnFill } from './util.js';
 
 // Recibe las preguntas TAL COMO se acaban de enviar a generar el XML
-// (con su `type` y `points` reales) — ya no depende del header
-// X-Question-Stats del backend. Antes asumía un único "grade" uniforme
-// por tipo (`count × gradePerQ`), que dejó de ser cierto en cuanto el
-// docente puede poner un puntaje distinto a cada pregunta individual;
-// ahora suma los puntos reales de cada una.
+// (con su `type` y `points` reales) y arma el resumen final: una sola
+// vista con preguntas y puntos por tipo (antes había tarjetas por tipo Y
+// un pastel que repetían el mismo dato).
 function updateSuccessStats(questions) {
   const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '') + ' pts';
   const counts = {};
@@ -28,20 +27,18 @@ function updateSuccessStats(questions) {
     sums[q.type] += Number(q.points) || 0;
   });
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const totalPts = Object.values(sums).reduce((a, b) => a + b, 0);
 
-  // Balance final: si el modo tolerante omitió alguna pregunta (ver
-  // renderEditor), se refleja aquí también, no solo en el editor — es
-  // el resumen que el usuario se lleva de toda la conversión.
   const skippedCount = (estado.currentParseResult && estado.currentParseResult.skipped_questions)
     ? estado.currentParseResult.skipped_questions.length : 0;
   const skippedNote = skippedCount > 0
-    ? ` · ${skippedCount} omitida${skippedCount !== 1 ? 's' : ''}`
+    ? ` · ${skippedCount} no incluida${skippedCount !== 1 ? 's' : ''}`
     : '';
-  document.getElementById('success-subtitle').textContent = `${total} pregunta${total !== 1 ? 's' : ''} extraída${total !== 1 ? 's' : ''}${skippedNote} • ${estado.downloadFilename}`;
+  document.getElementById('success-subtitle').textContent =
+    `${total} pregunta${total !== 1 ? 's' : ''}${skippedNote} · ${estado.downloadFilename}`;
 
-  // Mismo motivo y misma solución que se mostraban en el editor, ahora
-  // también aquí — para que no dependa de la memoria del docente entre
-  // una pantalla y otra.
+  // Omitidas: mismo motivo que en el editor. Ahora se puede volver a la
+  // revisión para añadirlas (antes el texto decía "la próxima vez").
   const skippedNoticeEl = document.getElementById('success-skipped-notice');
   if (skippedCount > 0) {
     const skippedItemsHtml = estado.currentParseResult.skipped_questions.map(sq => `
@@ -50,100 +47,85 @@ function updateSuccessStats(questions) {
         — ${esc_html(humanizeSkipReason(sq.reasons[0]))}
       </li>`).join('');
     skippedNoticeEl.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px;color:var(--color-warning);margin-bottom:8px;">
-        <i data-lucide="alert-triangle" style="width:16px;height:16px;"></i>
-        ${skippedCount} pregunta${skippedCount !== 1 ? 's' : ''} no incluida${skippedCount !== 1 ? 's' : ''} en este XML
-      </div>
-      <ul style="margin:0 0 8px 20px;padding:0;font-size:13px;color:var(--color-text-muted);line-height:1.5;">${skippedItemsHtml}</ul>
-      <p style="margin:0;font-size:12px;color:var(--color-text-subtle);">Para incluirlas: corrige lo que falte en el documento original y vuelve a convertirlo, o agrégalas manualmente la próxima vez con "Añadir nueva pregunta".</p>`;
-    skippedNoticeEl.style.display = 'block';
+      <i data-lucide="alert-triangle"></i>
+      <div style="min-width:0;">
+        <p style="font-weight:700;font-size:13.5px;color:var(--color-warning);margin:0 0 6px;">${skippedCount} pregunta${skippedCount !== 1 ? 's' : ''} no incluida${skippedCount !== 1 ? 's' : ''} en este XML</p>
+        <ul style="margin:0 0 8px 18px;padding:0;font-size:13px;line-height:1.5;">${skippedItemsHtml}</ul>
+        <p style="margin:0;font-size:12px;">Para incluirlas, vuelve a la revisión y usa "Añadir pregunta", o corrige el documento original y conviértelo de nuevo.</p>
+      </div>`;
+    skippedNoticeEl.style.display = 'flex';
     if (window.lucide) lucide.createIcons();
   } else {
     skippedNoticeEl.style.display = 'none';
   }
 
-  // Solo entra a la lista (tarjeta + porción del pastel) el tipo que
-  // realmente tiene preguntas en este examen — si no hubo, por ejemplo,
-  // preguntas de completar, ese tipo simplemente no aparece en ningún
-  // lado, en vez de mostrar una tarjeta en 0.
   const items = QUESTION_TYPE_DEFS
     .map(t => ({ ...t, count: counts[t.key], subtotal: sums[t.key] || 0 }))
     .filter(t => t.count > 0);
 
-  // El subtotal ya es la SUMA real de los puntos de cada pregunta de
-  // ese tipo (pueden valer distinto entre sí) — se muestra directo en
-  // la tarjeta en vez de un "X pts/preg" que ya no describe nada si no
-  // son todas iguales.
-  document.getElementById('stats-grid').innerHTML = items.map(item => `
-    <div class="stat-card" style="border-top:3px solid ${item.colorVar};">
-      <div class="stat-num" style="color:${item.colorVar};">${item.count}</div>
-      <div class="stat-label">${item.label}</div>
-      ${item.subtotal ? `<div class="stat-grade" style="color:${item.colorVar};">${fmt(item.subtotal)}</div>` : ''}
-    </div>
-  `).join('');
+  document.getElementById('points-pie-legend').innerHTML = items.map(item => `
+    <span class="breakdown-swatch" style="background:${item.colorVar};"></span>
+    <span class="breakdown-label">${item.label}</span>
+    <span class="breakdown-count">${item.count} pregunta${item.count !== 1 ? 's' : ''}</span>
+    <span class="breakdown-points" style="color:${item.colorVar};">${fmt(item.subtotal)}</span>
+  `).join('') + `
+    <span class="breakdown-total"></span>
+    <span class="breakdown-total breakdown-label" style="font-weight:800;">Total</span>
+    <span class="breakdown-total breakdown-count">${total} pregunta${total !== 1 ? 's' : ''}</span>
+    <span class="breakdown-total breakdown-points" style="color:var(--color-text);">${fmt(totalPts)}</span>`;
 
   renderPointsPie(items);
 }
 
-function renderPointsPie(items) {
-  const card = document.getElementById('points-chart-card');
-  const svg = document.getElementById('points-pie-svg');
-  const legend = document.getElementById('points-pie-legend');
+// El pastel solo aparece con 2 tipos o más (con uno sería un círculo
+// entero que no dice nada). La lista de al lado ya lleva los números.
+// El color del texto de cada porción depende del tema: al cambiarlo se
+// vuelve a dibujar con los colores nuevos.
+let _ultimoPastel = null;
+window.addEventListener('themechange', () => { if (_ultimoPastel) renderPointsPie(_ultimoPastel); });
 
-  // Con 0 o 1 tipo presente un pastel no aporta nada (1 sola porción es
-  // siempre el 100%) — se oculta la tarjeta entera en vez de mostrar un
-  // círculo trivial.
-  if (items.length < 2) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
+function renderPointsPie(items) {
+  _ultimoPastel = items;
+  const svg = document.getElementById('points-pie-svg');
+  // Un tipo con 0 pts no tiene porción (dibujaría solo una raya); y si al
+  // final queda un solo tipo con puntos, el pastel sería un círculo entero.
+  items = items.filter(i => i.subtotal > 0);
+  if (items.length < 2) { svg.style.display = 'none'; return; }
+  svg.style.display = '';
 
   const grandTotal = items.reduce((sum, i) => sum + i.subtotal, 0) || 1;
   const cx = 100, cy = 100, r = 90;
-  const gapDeg = 1.5; // separador angular entre porciones (spacer, no borde)
+  // Separación entre porciones: un trazo del color de la tarjeta, de
+  // grosor PAREJO. Antes era un hueco angular (1,5°), que por geometría
+  // es una cuña: ancho en el borde y casi nulo hacia el centro.
+  const sepColor = 'var(--color-surface)';
   const fmt = n => Number(n).toFixed(2).replace(/\.?0+$/, '') + ' pts';
 
   let cursor = 0;
   let svgHtml = '';
-  let legendHtml = '';
 
   items.forEach(item => {
     const pct = item.subtotal / grandTotal * 100;
     const sweep = pct / 100 * 360;
-    const start = cursor + gapDeg / 2;
-    const end = Math.max(cursor + sweep - gapDeg / 2, start);
+    const start = cursor;
+    const end = cursor + sweep;
     cursor += sweep;
 
     const colorHex = getCssVar(item.colorVar.slice(4, -1)); // "var(--x)" -> "--x"
     const path = describeArcSlice(cx, cy, r, start, end);
-    svgHtml += `<path d="${path}" fill="${item.colorVar}">
+    svgHtml += `<path d="${path}" fill="${item.colorVar}" stroke="${sepColor}" stroke-width="2.5" stroke-linejoin="round">
       <title>${item.label}: ${item.count} pregunta${item.count !== 1 ? 's' : ''} · ${fmt(item.subtotal)} (${pct.toFixed(1)}%)</title>
     </path>`;
 
-    // Etiqueta directa solo si la porción es lo bastante ancha para que
-    // el texto quepa cómodo (evita amontonar números en porciones finas).
+    // Etiqueta directa solo si la porción es lo bastante ancha.
     if (pct >= 8) {
       const mid = start + (end - start) / 2;
       const pos = polarToCartesian(cx, cy, r * 0.65, mid);
-      svgHtml += `<text x="${pos.x}" y="${pos.y}" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="800" fill="${textColorOnFill(colorHex)}">${pct.toFixed(0)}%</text>`;
+      svgHtml += `<text x="${pos.x}" y="${pos.y}" text-anchor="middle" dominant-baseline="middle" font-size="13" font-weight="800" fill="${textColorOnFill(colorHex)}" aria-hidden="true">${pct.toFixed(0)}%</text>`;
     }
-
-    // El porcentaje ya se ve en la propia porción del pastel — aquí solo
-    // hace falta el subtotal en puntos, en una píldora con el mismo
-    // color del tipo (tenue, como el type-badge de las tarjetas de
-    // pregunta) para reforzar la identidad visual sin repetir el dato.
-    // Los 3 elementos son hijos directos del grid de #points-pie-legend
-    // (swatch / etiqueta / píldora), no un <div> por fila — así CSS
-    // Grid alinea cada columna (etiqueta, píldora) al ancho de su
-    // contenido más largo automáticamente, sin medir nada por JS y sin
-    // el hueco irregular que dejaba una fila flex de ancho variable.
-    legendHtml += `
-      <span style="width:12px;height:12px;border-radius:3px;background:${item.colorVar};"></span>
-      <span style="font-size:13px;font-weight:600;color:var(--color-text);white-space:nowrap;">${item.label}</span>
-      <span style="font-size:12px;font-weight:700;color:${item.colorVar};background:${item.bgVar};border:1px solid ${item.borderVar};border-radius:var(--radius-sm);padding:3px 10px;white-space:nowrap;text-align:center;">${fmt(item.subtotal)}</span>
-    `;
   });
 
   svg.innerHTML = svgHtml;
-  legend.innerHTML = legendHtml;
 }
 
 // Conversion Step 2: Generate XML
@@ -160,11 +142,11 @@ export async function generateXml() {
     const first = document.querySelector('#editor-questions-container .editor-card.is-incomplete');
     if (first) {
       if (first.style.display === 'none') selectFilter('all');
-      scrollToEditorCard(first);
+      scrollToEditorCard(first, { enfocar: true });
     }
     showToast(incomplete === 1
-      ? 'Falta completar 1 pregunta antes de aprobar'
-      : `Faltan completar ${incomplete} preguntas antes de aprobar`, 'error');
+      ? 'Falta completar 1 pregunta antes de generar el XML'
+      : `Faltan completar ${incomplete} preguntas antes de generar el XML`, 'error');
     return;
   }
   const { questions, answer_key } = collectEditorData();
@@ -176,13 +158,18 @@ export async function generateXml() {
     answer_key
   };
 
+  // Se guarda el borrador antes de salir del editor: si algo falla aquí,
+  // el trabajo sigue a salvo.
+  guardarBorradorAhora();
   showPanel('progress');
-  document.getElementById('progress-subtitle').textContent = 'Construyendo estructura Moodle XML...';
+  document.getElementById('progress-title').textContent = 'Generando el archivo XML…';
+  document.getElementById('progress-subtitle').textContent = 'Verificando cada pregunta y armando el archivo…';
+  document.getElementById('progress-detail').textContent = '';
   document.getElementById('progress-bar-fill').style.transform = 'scaleX(0.6)';
-  // Este paso es local (sin llamada a IA) y casi instantáneo — no tiene
-  // sentido mostrar un tiempo transcurrido/estimado que quedó pegado
-  // del paso anterior.
+  // Este paso es local (sin llamada a IA) y casi instantáneo: sin
+  // cronómetro ni botón de cancelar.
   document.getElementById('progress-timer-row').style.display = 'none';
+  document.getElementById('btn-cancel-progress').style.display = 'none';
 
   try {
     const res = await fetch('/api/generate_xml', {
@@ -204,10 +191,15 @@ export async function generateXml() {
     // backend — una sola fuente de verdad, y el resumen final siempre
     // coincide exactamente con el XML que se generó.
     const disposition = res.headers.get('Content-Disposition');
+    // El nombre real (con tildes) viene en filename*=UTF-8''…; filename="…"
+    // es solo una versión ASCII de respaldo.
     let filename = 'examen_moodle.xml';
-    if (disposition && disposition.includes('filename=')) {
-      const match = disposition.match(/filename="(.+)"/);
-      if (match) filename = match[1];
+    const utf8 = disposition && disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    const ascii = disposition && disposition.match(/filename="([^"]+)"/);
+    if (utf8) {
+      try { filename = decodeURIComponent(utf8[1]); } catch (_) { if (ascii) filename = ascii[1]; }
+    } else if (ascii) {
+      filename = ascii[1];
     }
 
     const blob = await res.blob();
@@ -217,13 +209,18 @@ export async function generateXml() {
     // Después de guardar el nombre del archivo: el resumen lo muestra, y
     // si se calculaba antes salía un "•" suelto al final de la frase.
     updateSuccessStats(questions);
+    const dlLabel = document.getElementById('btn-download-label');
+    if (dlLabel) dlLabel.textContent = 'Descargar Moodle XML';
     showPanel('success');
+    // Ya quedó en el Historial (desde donde se puede reabrir): el
+    // borrador local deja de hacer falta.
+    borrarBorrador();
     // El guardado nativo se dispara solo una vez, cuando el usuario
     // presiona "Descargar Moodle XML" — no automáticamente aquí, para
     // no pedirle guardar el mismo archivo dos veces seguidas.
   } catch (err) {
     stopProgress(false);
-    showError("Error de comunicación: " + err.message, 'editor');
+    showError('No se pudo conectar con el conversor para generar el archivo. Tu revisión está intacta: vuelve e inténtalo de nuevo. (Detalle: ' + err.message + ')', 'editor');
   }
 }
 
@@ -250,7 +247,7 @@ export async function saveFileToUser(blob, filename, successMsg) {
     const b64 = await _readBlobAsBase64(blob);
     const res = await window.pywebview.api.save_xml_file(filename, b64);
     if (res && res.saved) showToast(successMsg);
-    return;
+    return !!(res && res.saved);
   }
 
   const url = URL.createObjectURL(blob);
@@ -260,4 +257,5 @@ export async function saveFileToUser(blob, filename, successMsg) {
   a.click();
   URL.revokeObjectURL(url);
   showToast(successMsg);
+  return true;
 }

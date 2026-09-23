@@ -3,7 +3,7 @@
  * y navegación entre ellas.
  */
 import { collectEditorData } from './tarjetas.js';
-import { esc_html } from '../util.js';
+import { esc_html, scrollBehavior } from '../util.js';
 import { questionIssues } from '../validacion.js';
 
 // ── Panel de revisión (mapa del examen) ────────────────────────────────
@@ -21,9 +21,13 @@ function _headerBottom() {
   return document.querySelector('.app-header')?.getBoundingClientRect().bottom || 0;
 }
 
-export function scrollToEditorCard(card) {
+// Lleva a una tarjeta. Con "reducir movimiento", el salto es instantáneo.
+// `enfocar` mueve también el foco del teclado a la tarjeta, para que Tab
+// siga desde ahí (y el lector de pantalla la anuncie).
+export function scrollToEditorCard(card, { enfocar = false } = {}) {
   const top = card.getBoundingClientRect().top + window.scrollY - _headerBottom() - 16;
-  window.scrollTo({ top, behavior: 'smooth' });
+  window.scrollTo({ top, behavior: scrollBehavior() });
+  if (enfocar) card.focus({ preventScroll: true });
 }
 
 // Marca cada tarjeta (borde rojo + qué le falta) y devuelve cuántas
@@ -48,7 +52,8 @@ export function refreshQuestionIssues() {
         box.setAttribute('role', 'status');
         card.firstElementChild.insertAdjacentElement('afterend', box);
       }
-      box.textContent = '✕ ' + issues.join(' · ');
+      box.innerHTML = `<i data-lucide="circle-alert"></i><span>${esc_html(issues.join(' · '))}</span>`;
+      if (window.lucide) lucide.createIcons({ root: box });
     } else if (box) {
       box.remove();
     }
@@ -79,32 +84,36 @@ export function buildReviewRail() {
     const review = !missing && c.dataset.review === '1';
     const cls = missing ? ' incomplete' : review ? ' needs-review' : '';
     const tip = missing ? ` — ${missing}` : review ? ' — tiene un aviso para revisar' : '';
-    return `<button type="button" role="listitem" class="rail-item${cls}" data-pos="${i}"
-      title="Pregunta ${c.dataset.qnum}${esc_html(tip)}">${c.dataset.qnum}</button>`;
+    return `<div role="listitem"><button type="button" class="rail-item${cls}" data-pos="${i}"
+      title="Pregunta ${c.dataset.qnum}${esc_html(tip)}" aria-label="Pregunta ${c.dataset.qnum}${esc_html(tip)}">${c.dataset.qnum}</button></div>`;
   }).join('');
   grid.querySelectorAll('.rail-item').forEach(btn => {
     btn.addEventListener('click', () => {
       const card = _visibleEditorCards()[Number(btn.dataset.pos)];
-      if (card) scrollToEditorCard(card);
-      rail.classList.remove('grid-open');
+      if (card) scrollToEditorCard(card, { enfocar: true });
+      closeRailGrid();
     });
   });
   const missing = cards.filter(c => c.dataset.issues).length;
   const pending = cards.filter(c => !c.dataset.issues && c.dataset.review === '1').length;
+  // Íconos dibujados (Lucide), no glifos ✕/⚠ de texto.
   const nextMissing = document.getElementById('rail-incomplete-next');
   nextMissing.classList.toggle('visible', missing > 0);
-  nextMissing.textContent = missing === 1 ? '✕ 1 pregunta incompleta' : `✕ ${missing} preguntas incompletas`;
+  nextMissing.innerHTML = `<i data-lucide="circle-alert"></i>${missing === 1 ? '1 pregunta incompleta' : `${missing} preguntas incompletas`}`;
   nextMissing.title = 'Ir a la siguiente pregunta incompleta';
   const next = document.getElementById('rail-review-next');
   next.classList.toggle('visible', pending > 0);
-  next.textContent = pending === 1 ? '⚠ 1 pregunta para revisar' : `⚠ ${pending} preguntas para revisar`;
+  next.innerHTML = `<i data-lucide="eye"></i>${pending === 1 ? '1 pregunta para revisar' : `${pending} preguntas para revisar`}`;
   next.title = 'Ir a la siguiente pregunta con aviso';
   const errShort = document.getElementById('rail-error-short');
   errShort.classList.toggle('visible', missing > 0);
-  errShort.textContent = `✕${missing}`;
+  errShort.innerHTML = `<i data-lucide="circle-alert"></i>${missing}`;
+  errShort.setAttribute('aria-label', `${missing} incompleta${missing !== 1 ? 's' : ''}`);
   const warnShort = document.getElementById('rail-warn-short');
   warnShort.classList.toggle('visible', pending > 0);
-  warnShort.textContent = `⚠${pending}`;
+  warnShort.innerHTML = `<i data-lucide="eye"></i>${pending}`;
+  warnShort.setAttribute('aria-label', `${pending} para revisar`);
+  if (window.lucide) lucide.createIcons({ root: rail });
   _railCurrent = -1;
   updateReviewProgress();
 }
@@ -119,15 +128,37 @@ export function jumpToNextFlagged(kind) {
   const flagged = cards.map((c, i) => [c, i]).filter(([c]) => match(c));
   if (!flagged.length) return;
   const target = flagged.find(([, i]) => i > _railCurrent) || flagged[0];
-  scrollToEditorCard(target[0]);
-  document.getElementById('review-rail')?.classList.remove('grid-open');
+  scrollToEditorCard(target[0], { enfocar: true });
+  closeRailGrid();
+}
+
+// J / K: siguiente / anterior pregunta (solo cuando no se está escribiendo
+// en un campo). Sin animación extra: es una acción de teclado repetida.
+export function jumpRelative(delta) {
+  const cards = _visibleEditorCards();
+  if (!cards.length) return;
+  const base = _railCurrent < 0 ? 0 : _railCurrent;
+  const i = Math.min(Math.max(base + delta, 0), cards.length - 1);
+  const card = cards[i];
+  const top = card.getBoundingClientRect().top + window.scrollY - _headerBottom() - 16;
+  window.scrollTo({ top, behavior: 'auto' });
+  card.focus({ preventScroll: true });
 }
 
 // En pantallas angostas la grilla se abre como un panel sobre la barra
 // de abajo. En escritorio siempre está visible y el botón no hace nada.
 export function toggleRailGrid() {
-  if (window.matchMedia('(min-width: 1320px)').matches) return;
-  document.getElementById('review-rail')?.classList.toggle('grid-open');
+  if (window.matchMedia('(min-width: 1140px)').matches) return;
+  const rail = document.getElementById('review-rail');
+  const open = rail?.classList.toggle('grid-open');
+  rail?.querySelector('.rail-pos')?.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+export function closeRailGrid() {
+  const rail = document.getElementById('review-rail');
+  if (!rail?.classList.contains('grid-open')) return;
+  rail.classList.remove('grid-open');
+  rail.querySelector('.rail-pos')?.setAttribute('aria-expanded', 'false');
 }
 
 // "Pregunta X de N": la primera tarjeta visible cuyo borde superior ya
@@ -142,8 +173,8 @@ export function updateReviewProgress() {
   const fill = document.getElementById('review-progress-fill');
   if (!label || !cards.length) {
     if (label) label.textContent = 'Sin preguntas';
-    if (short) short.textContent = '0/0';
-    if (fill) fill.style.width = '0%';
+    if (short) short.textContent = '0 de 0';
+    if (fill) fill.style.transform = 'scaleX(0)';
     return;
   }
   const threshold = _headerBottom() + 24;
@@ -161,15 +192,17 @@ export function updateReviewProgress() {
   label.textContent = String(current + 1) === qnum
     ? `Pregunta ${qnum} de ${cards.length}`
     : `Pregunta ${qnum} · ${current + 1} de ${cards.length}`;
-  if (short) short.textContent = `${current + 1}/${cards.length}`;
-  fill.style.width = `${Math.round(((current + 1) / cards.length) * 100)}%`;
+  if (short) short.textContent = `${current + 1} de ${cards.length}`;
+  fill.style.transform = `scaleX(${(current + 1) / cards.length})`;
   if (current !== _railCurrent) {
     _railCurrent = current;
     const grid = document.getElementById('review-rail-grid');
     grid?.querySelectorAll('.rail-item.current').forEach(b => b.classList.remove('current'));
+    grid?.querySelectorAll('.rail-item[aria-current]').forEach(b => b.removeAttribute('aria-current'));
     const item = grid?.querySelector(`.rail-item[data-pos="${current}"]`);
     if (item) {
       item.classList.add('current');
+      item.setAttribute('aria-current', 'true');
       // Mantiene visible el cuadrito actual dentro de la grilla (con 150
       // preguntas la grilla tiene su propio scroll), sin mover la página.
       const g = grid.getBoundingClientRect(), r = item.getBoundingClientRect();

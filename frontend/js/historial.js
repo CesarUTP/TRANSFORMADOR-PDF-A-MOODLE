@@ -1,62 +1,150 @@
 /**
  * historial.js — historial de conversiones guardadas.
  */
+import { abrirEnEditor } from './borrador.js';
 import { modalHistory } from './dom.js';
 import { saveFileToUser } from './resultado.js';
+import { abrirModal, cerrarModal } from './ui/modales.js';
 import { showToast } from './ui/toast.js';
 import { esc_html } from './util.js';
 
-export async function loadHistoryList() {
+export async function openHistory() {
+  searchInput.value = '';
+  abrirModal(modalHistory, { foco: document.getElementById('btn-close-history') });
+  await loadHistoryList();
+  // Con entradas, el cursor queda listo en el buscador.
+  if (!searchWrap.hidden && modalHistory.classList.contains('open')) searchInput.focus();
+}
+
+export function closeHistory() {
+  cerrarModal(modalHistory);
+}
+
+function _fecha(iso) {
+  // SQLite guarda "YYYY-MM-DD HH:MM:SS" en UTC, sin zona: se marca como
+  // UTC para que se muestre en la hora local del docente.
+  const d = new Date(String(iso).replace(' ', 'T') + (String(iso).endsWith('Z') ? '' : 'Z'));
+  return isNaN(d) ? String(iso) : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+// ── Buscador ────────────────────────────────────────────────────────────
+// Filtra en el navegador, al instante, por nombre de archivo, categoría o
+// fecha. No distingue mayúsculas ni tildes ("examen" encuentra "Exámen").
+let _datos = [];
+const searchWrap = document.getElementById('history-search-wrap');
+const searchInput = document.getElementById('history-search');
+const countEl = document.getElementById('history-count');
+
+function _norm(t) {
+  return String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+// Resalta la coincidencia en el texto original. Solo si cada carácter
+// normaliza a exactamente uno (casi siempre): así los índices coinciden.
+function _resaltar(texto, q) {
+  const safe = esc_html(texto);
+  if (!q) return safe;
+  const chars = [...String(texto)];
+  const norm = chars.map(_norm);
+  if (norm.some(c => c.length !== 1)) return safe;
+  const i = norm.join('').indexOf(q);
+  if (i < 0) return safe;
+  const antes = chars.slice(0, i).join(''), med = chars.slice(i, i + q.length).join(''), desp = chars.slice(i + q.length).join('');
+  return `${esc_html(antes)}<mark>${esc_html(med)}</mark>${esc_html(desp)}`;
+}
+
+searchInput.addEventListener('input', () => renderHistoryList());
+// Escape con texto escrito borra la búsqueda; sin texto, cierra el modal.
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && searchInput.value) {
+    e.preventDefault();
+    e.stopPropagation();
+    searchInput.value = '';
+    renderHistoryList();
+  }
+});
+
+/** `enfocarId`: tras recargar la lista, devuelve el foco a la papelera de esa entrada. */
+export async function loadHistoryList(enfocarId = null) {
   const list = document.getElementById('history-list');
-  list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--color-text-muted);">Cargando historial de conversiones...</div>';
+  list.setAttribute('aria-busy', 'true');
+  list.innerHTML = '<p style="padding:24px;text-align:center;color:var(--color-text-muted);">Cargando historial…</p>';
 
   try {
     const res = await fetch('/api/history');
     if (!res.ok) throw new Error('Error al consultar servidor');
-    const data = await res.json();
-    if (data.length === 0) {
-      list.innerHTML = `<div style="padding:36px 24px;text-align:center;">
-        <i data-lucide="inbox" style="width:32px;height:32px;color:var(--color-text-subtle);margin-bottom:12px;"></i>
-        <p style="color:var(--color-text-muted);font-size:14px;margin-bottom:4px;">No hay conversiones guardadas aún.</p>
-        <p style="color:var(--color-text-subtle);font-size:12.5px;margin-bottom:16px;">Cada examen que conviertas queda aquí para que puedas volver a descargarlo cuando lo necesites.</p>
-        <button type="button" class="btn btn-primary" onclick="closeHistory()" style="padding:10px 20px;font-size:13px;">Convertir tu primer examen</button>
-      </div>`;
-      lucide.createIcons();
-      return;
-    }
-    list.innerHTML = data.map(item => `
-      <div style="padding:14px 16px;border-bottom:1px solid var(--color-border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;">
-        <div style="min-width:0;">
-          <strong style="display:block;font-size:14px;color:var(--color-text);">${esc_html(item.filename)}</strong>
-          <span style="font-size:12px;color:var(--color-text-muted);">${esc_html(item.category)} &bull; ${item.total_points} pts &bull; ${new Date(item.created_at).toLocaleString()}</span>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-          <button class="btn btn-ghost" data-filename="${esc_html(item.filename)}" onclick="downloadHistory(${item.id}, this.dataset.filename)" style="padding:6px 12px;font-size:12.5px;">
-            <i data-lucide="download" style="width:14px;height:14px;"></i> Descargar XML
-          </button>
-          <div class="history-action-slot" data-id="${item.id}" style="display:flex;align-items:center;">
-            <button type="button" class="btn btn-ghost" onclick="startDeleteHistory(this)" style="padding:6px 10px;color:var(--color-error);" title="Borrar del historial" aria-label="Borrar esta entrada del historial">
-              <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    `).join('');
+    _datos = (await res.json()).map(item => ({ ...item, fecha: _fecha(item.created_at) }));
+    searchWrap.hidden = _datos.length === 0;
+    renderHistoryList(enfocarId);
     lucide.createIcons();
   } catch (err) {
+    searchWrap.hidden = true;
     list.innerHTML = `<div style="padding:24px;text-align:center;">
-      <p style="color:var(--color-error);font-size:14px;margin-bottom:12px;">No se pudo cargar el historial.</p>
-      <button type="button" class="btn btn-ghost" onclick="loadHistoryList()" style="padding:8px 16px;font-size:13px;">
+      <p style="color:var(--color-error);font-size:var(--text-md);margin:0 auto 12px;">No se pudo cargar el historial.</p>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="loadHistoryList()">
         <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Reintentar
       </button>
     </div>`;
     lucide.createIcons();
+  } finally {
+    list.removeAttribute('aria-busy');
   }
 }
 
-export function closeHistory() {
-  modalHistory.classList.remove('open');
-  document.body.style.overflow = '';
+export function renderHistoryList(enfocarId = null) {
+  const list = document.getElementById('history-list');
+  if (_datos.length === 0) {
+    countEl.textContent = '';
+    list.innerHTML = `<div style="padding:36px 24px;text-align:center;">
+      <i data-lucide="inbox" style="width:32px;height:32px;color:var(--color-text-subtle);margin-bottom:12px;"></i>
+      <p style="color:var(--color-text);font-size:var(--text-md);font-weight:700;margin:0 auto 4px;">Todavía no hay conversiones guardadas</p>
+      <p style="color:var(--color-text-muted);font-size:var(--text-sm);margin:0 auto 16px;">Cada examen que conviertas queda aquí para volver a descargarlo o reabrir su revisión.</p>
+      <button type="button" class="btn btn-primary btn-sm" onclick="closeHistory()">Convertir tu primer examen</button>
+    </div>`;
+    lucide.createIcons();
+    return;
+  }
+
+  const q = _norm(searchInput.value.trim());
+  const visibles = q
+    ? _datos.filter(item => _norm(`${item.filename} ${item.category} ${item.fecha}`).includes(q))
+    : _datos;
+  countEl.textContent = q ? `${visibles.length} de ${_datos.length}` : `${_datos.length} en total`;
+
+  if (visibles.length === 0) {
+    list.innerHTML = `<div style="padding:32px 24px;text-align:center;">
+      <p style="color:var(--color-text);font-size:var(--text-md);font-weight:700;margin:0 auto 4px;">Sin resultados para «${esc_html(searchInput.value.trim())}»</p>
+      <p style="color:var(--color-text-muted);font-size:var(--text-sm);margin:0 auto 14px;">Prueba con parte del nombre del archivo, la categoría o la fecha (ej. «sep 2026»).</p>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-history-clear">Borrar búsqueda</button>
+    </div>`;
+    document.getElementById('btn-history-clear').addEventListener('click', () => {
+      searchInput.value = '';
+      renderHistoryList();
+      searchInput.focus();
+    });
+    return;
+  }
+
+  list.innerHTML = `<ul style="list-style:none;margin:0;padding:0;">${visibles.map(item => `
+    <li class="history-row" data-id="${item.id}" style="padding:14px 8px;border-bottom:1px solid var(--color-border-subtle);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <div style="min-width:0;flex:1 1 220px;">
+        <strong style="display:block;font-size:var(--text-md);color:var(--color-text);overflow-wrap:anywhere;">${_resaltar(item.filename, q)}</strong>
+        <span style="font-size:12px;color:var(--color-text-muted);">${_resaltar(item.category, q)} · ${esc_html(item.total_points)} pts · ${_resaltar(item.fecha, q)}</span>
+      </div>
+      <div class="history-action-slot" style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+        ${item.has_editor ? `<button type="button" class="btn btn-ghost btn-sm" onclick="reopenHistory(${item.id})" title="Abrir de nuevo la revisión de este examen">
+          <i data-lucide="pencil" style="width:14px;height:14px;"></i> Reabrir
+        </button>` : ''}
+        <button type="button" class="btn btn-ghost btn-sm" data-filename="${esc_html(item.filename)}" onclick="downloadHistory(${item.id}, this.dataset.filename)">
+          <i data-lucide="download" style="width:14px;height:14px;"></i> Descargar XML
+        </button>
+        <button type="button" class="btn btn-icon btn-danger-text history-delete" onclick="startDeleteHistory(this)" title="Borrar del historial" aria-label="Borrar «${esc_html(item.filename)}» del historial">
+          <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
+        </button>
+      </div>
+    </li>`).join('')}</ul>`;
+  lucide.createIcons();
+  if (enfocarId != null) list.querySelector(`.history-row[data-id="${enfocarId}"] .history-delete`)?.focus();
 }
 
 export async function downloadHistory(id, originalFilename) {
@@ -64,37 +152,57 @@ export async function downloadHistory(id, originalFilename) {
     const res = await fetch(`/api/history/${id}/download`);
     if (!res.ok) throw new Error('Falló descarga');
     const blob = await res.blob();
-    const stem = originalFilename.split('.').slice(0, -1).join('.') || originalFilename;
-    const outName = stem + '.xml';
-
-    await saveFileToUser(blob, outName, 'XML descargado exitosamente');
+    const nombre = String(originalFilename).normalize('NFC');
+    const stem = nombre.split('.').slice(0, -1).join('.') || nombre;
+    await saveFileToUser(blob, stem + '.xml', 'XML guardado en tu equipo');
   } catch (err) {
-    showToast("Error descargando historial: " + err.message, 'error');
+    showToast('No se pudo descargar ese XML. Vuelve a intentarlo.', 'error');
   }
 }
 
-// Borrar una entrada del historial: pide confirmación en línea (Sí/No)
-// en vez de un window.confirm() nativo, que en la ventana de escritorio
-// (pywebview) no siempre se muestra de forma consistente entre SO.
+// Reabre en el editor un examen ya convertido (con sus ediciones y
+// puntos), para corregirlo y generar el XML otra vez.
+export async function reopenHistory(id) {
+  try {
+    const res = await fetch(`/api/history/${id}/editor`);
+    if (!res.ok) throw new Error('sin datos');
+    const d = await res.json();
+    closeHistory();
+    abrirEnEditor(
+      { filename: d.filename, category: d.category, total_points: d.total_points },
+      { questions: d.questions, answer_key: d.answer_key, skipped_questions: d.skipped_questions || [] },
+    );
+    showToast(`Revisión de «${d.filename}» reabierta`, 'info');
+  } catch (_) {
+    showToast('No se pudo reabrir esa revisión', 'error');
+  }
+}
+
+// Borrar una entrada: confirmación en línea (en vez de window.confirm(),
+// que en la ventana de escritorio no se ve igual en todos los sistemas).
+// Botones de tamaño completo y el foco en la opción segura.
 export function startDeleteHistory(btn) {
-  const slot = btn.closest('.history-action-slot');
+  const row = btn.closest('.history-row');
+  const slot = row?.querySelector('.history-action-slot');
   if (!slot) return;
-  const id = slot.dataset.id;
+  const id = row.dataset.id;
   slot.innerHTML = `
-    <span style="font-size:12px;color:var(--color-text-muted);margin-right:2px;">¿Borrar?</span>
-    <button type="button" onclick="confirmDeleteHistory(${id})" style="background:none;border:none;color:var(--color-error);font-weight:800;font-size:12.5px;cursor:pointer;padding:4px 6px;">Sí</button>
-    <button type="button" onclick="loadHistoryList()" style="background:none;border:none;color:var(--color-text-muted);font-size:12.5px;cursor:pointer;padding:4px 6px;">No</button>
+    <span style="font-size:var(--text-sm);color:var(--color-text);font-weight:700;margin-right:2px;" id="del-q-${id}">¿Borrar del historial?</span>
+    <button type="button" class="btn btn-danger btn-sm" onclick="confirmDeleteHistory(${id})" aria-describedby="del-q-${id}">Borrar</button>
+    <button type="button" class="btn btn-ghost btn-sm history-cancel" onclick="renderHistoryList(${id})">Cancelar</button>
   `;
+  slot.querySelector('.history-cancel').focus();
 }
 
 export async function confirmDeleteHistory(id) {
   try {
     const res = await fetch(`/api/history/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('delete failed');
-    showToast('Entrada eliminada del historial', 'info');
+    showToast('Entrada borrada del historial', 'info');
   } catch (err) {
     showToast('No se pudo borrar la entrada', 'error');
   } finally {
-    loadHistoryList();
+    await loadHistoryList();
+    document.getElementById('btn-close-history')?.focus();
   }
 }

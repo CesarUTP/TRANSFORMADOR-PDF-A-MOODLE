@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Conversor a Moodle XML</title>
+  <link rel="icon" type="image/png" href="img/icono.png">
   <meta name="description"
     content="Plataforma de ingeniería de evaluación académica para convertir pruebas, quices y exámenes (PDF o TXT) al formato Moodle XML con validación estructural e IA." />
 
@@ -24,35 +25,30 @@
 <body>
 
   <!-- ════════════════════════════ HEADER ════════════════════════════ -->
-  <header class="app-header" role="banner">
+  <header class="app-header">
     <div class="header-inner">
       <!-- Logo + Branding -->
       <div class="logo-container">
-        <div class="logo-badge" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-          </svg>
-        </div>
-        <div>
+        <img src="img/icono.png" class="logo-img" alt="" width="44" height="44">
+        <div style="min-width:0;">
           <h1 class="brand-title">Conversor a Moodle XML</h1>
           <p class="brand-sub">Convierte tus pruebas, cuestionarios y exámenes en un archivo XML listo para importar en Moodle.</p>
         </div>
       </div>
 
       <!-- Action Navigation -->
-      <nav style="display:flex; align-items:center; gap:8px;" aria-label="Navegación principal">
-        <button id="btn-history" class="btn-icon-text" aria-label="Abrir historial de conversiones" title="Historial">
+      <nav class="header-nav" aria-label="Navegación principal">
+        <button type="button" id="btn-history" class="btn-icon-text" aria-label="Abrir historial de conversiones" title="Historial">
           <i data-lucide="clock" style="width:16px;height:16px;"></i>
           <span>Historial</span>
         </button>
-        <button id="btn-help" class="btn-icon-text btn-guide" aria-label="Abrir guía de uso" title="Guía">
+        <button type="button" id="btn-help" class="btn-icon-text btn-guide" aria-label="Abrir guía de uso" title="Guía">
           <i data-lucide="book-open" style="width:16px;height:16px;"></i>
           <span>Guía</span>
         </button>
-        <button id="theme-toggle-btn" class="btn-icon-text" aria-label="Cambiar tema claro u oscuro" title="Modo Claro/Oscuro" style="padding:8px 10px;">
+        <!-- El ícono muestra la ACCIÓN (a qué tema cambia), no el estado
+             actual: luna en modo claro, sol en modo oscuro. -->
+        <button type="button" id="theme-toggle-btn" class="btn-icon-text" aria-label="Cambiar a tema claro" title="Cambiar a tema claro" style="padding:8px 10px;">
           <i data-lucide="sun" id="icon-sun" style="width:16px;height:16px;"></i>
           <i data-lucide="moon" id="icon-moon" style="width:16px;height:16px;display:none;"></i>
         </button>
@@ -61,43 +57,63 @@
   </header>
 
   <!-- ════════════════════════════ MAIN CONTENT ════════════════════════════ -->
-  <main class="main-wrapper" role="main">
+  <main class="main-wrapper" id="main">
 
     <!-- Stepper Indicator -->
-    <div class="stepper" aria-label="Pasos del proceso">
-      <div class="step-item active" id="step-1-indicator">
-        <div class="step-num">1</div>
-        <span>Cargar y Configurar</span>
-      </div>
-      <div class="step-line" id="step-line-1"></div>
-      <div class="step-item" id="step-2-indicator">
-        <div class="step-num">2</div>
-        <span>Revisar Preguntas</span>
-      </div>
-      <div class="step-line" id="step-line-2"></div>
-      <div class="step-item" id="step-3-indicator">
-        <div class="step-num">3</div>
+    <ol class="stepper" aria-label="Pasos del proceso">
+      <li class="step-item active" id="step-1-indicator" aria-current="step">
+        <div class="step-num" aria-hidden="true">1</div>
+        <span>Cargar y configurar</span>
+      </li>
+      <li class="step-line" id="step-line-1" aria-hidden="true"></li>
+      <li class="step-item" id="step-2-indicator">
+        <div class="step-num" aria-hidden="true">2</div>
+        <span>Revisar preguntas</span>
+      </li>
+      <li class="step-line" id="step-line-2" aria-hidden="true"></li>
+      <li class="step-item" id="step-3-indicator">
+        <div class="step-num" aria-hidden="true">3</div>
         <span>Descargar XML</span>
-      </div>
-    </div>
+      </li>
+    </ol>
 
     <!-- ── PANEL 1: UPLOAD & CONFIGURATION ── -->
     <section id="panel-upload" class="animate-fadeIn" aria-labelledby="upload-heading">
-      <h2 id="upload-heading" class="sr-only" style="display:none;">Zona de Carga de Archivos</h2>
+      <h2 id="upload-heading" class="screen-title sr-only" tabindex="-1">Paso 1: carga tu examen</h2>
 
-      <!-- Drop Zone -->
-      <div id="drop-zone" role="button" tabindex="0" aria-label="Zona interactiva de carga de archivos PDF o TXT">
-        <input type="file" id="file-input" accept=".pdf,.txt" style="display:none;" />
-        <div class="drop-icon-wrapper">
-          <i data-lucide="upload-cloud" style="width:34px;height:34px;color:var(--color-accent);"></i>
+      <!-- Revisión sin terminar (se guarda sola en este equipo). Se
+           rellena en borrador.js al abrir la app. -->
+      <div id="draft-banner" role="region" aria-label="Revisión sin terminar">
+        <i data-lucide="history" style="width:20px;height:20px;color:var(--color-accent);flex-shrink:0;"></i>
+        <div class="draft-text">
+          <p style="font-weight:700;font-size:var(--text-md);margin:0;">Tienes una revisión sin terminar</p>
+          <p id="draft-detail" style="font-size:var(--text-sm);color:var(--color-text-muted);margin:0;"></p>
         </div>
-        <p style="font-family:var(--font-heading);font-size:19px;font-weight:800;margin-bottom:6px;">Arrastra tu examen aquí</p>
-        <p style="font-size:14px;color:var(--color-text-muted);margin-bottom:20px;">o haz clic para explorar en tu computadora</p>
-        <div style="display:flex;justify-content:center;gap:8px;">
-          <span style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:4px 14px;font-size:12px;font-weight:700;color:var(--color-accent);">.PDF</span>
-          <span style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:4px 14px;font-size:12px;font-weight:700;color:var(--color-accent);">.TXT</span>
+        <div class="draft-actions">
+          <button type="button" id="btn-draft-resume" class="btn btn-primary btn-sm">Retomar revisión</button>
+          <button type="button" id="btn-draft-discard" class="btn btn-ghost btn-sm">Descartar</button>
         </div>
       </div>
+
+      <!-- Drop Zone -->
+      <div id="drop-zone" role="button" tabindex="0" aria-label="Elegir el examen: arrastra un archivo PDF o TXT, o pulsa para buscarlo" aria-describedby="drop-error">
+        <input type="file" id="file-input" accept=".pdf,.txt" style="display:none;" />
+        <!-- Con un archivo elegido la zona se pinta de verde y cambia su
+             texto (clase .has-file, ver carga.js). -->
+        <div class="drop-icon-wrapper">
+          <i data-lucide="upload-cloud" class="drop-icon-empty" style="width:34px;height:34px;color:var(--color-accent);"></i>
+          <i data-lucide="file-check-2" class="drop-icon-ready" style="width:34px;height:34px;color:var(--color-success);"></i>
+        </div>
+        <p class="drop-title" id="drop-title">Arrastra tu examen aquí</p>
+        <p class="drop-sub" id="drop-sub">o haz clic para buscarlo en tu computadora</p>
+        <div style="display:flex;justify-content:center;gap:8px;">
+          <span class="file-ext">.PDF</span>
+          <span class="file-ext">.TXT</span>
+        </div>
+      </div>
+      <!-- Formato no soportado: aviso en el mismo lugar, sin sacar al
+           docente a una pantalla de error completa. -->
+      <p id="drop-error" class="field-error" role="alert" style="display:none;text-align:center;"></p>
 
       <!-- Selected File Preview -->
       <div id="file-preview" style="display:none;" class="animate-scaleUp">
@@ -106,16 +122,24 @@
         </div>
         <div style="flex:1;min-width:0;">
           <p id="file-name" style="font-weight:700;font-size:14.5px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></p>
-          <p id="file-size" style="font-size:12.5px;color:var(--color-text-muted);margin:0;"></p>
+          <p id="file-size" style="font-size:var(--text-sm);color:var(--color-text-muted);margin:0;"></p>
+          <!-- Avance de la subida del archivo (solo aparece si tarda: con
+               archivos grandes). Ver subida.js. -->
+          <div id="upload-bar" class="upload-bar" hidden>
+            <div class="upload-track" role="progressbar" aria-label="Subiendo el archivo" aria-valuemin="0" aria-valuemax="100"><div class="upload-fill"></div></div>
+            <!-- Sin aria-live: el contador de segundos no se anuncia cada vez;
+                 el estado lo comunica el botón (aria-busy). -->
+            <p class="upload-text"></p>
+          </div>
         </div>
-        <button id="btn-remove-file" class="btn btn-ghost" style="padding:6px 10px;" aria-label="Remover archivo seleccionado">
+        <button type="button" id="btn-remove-file" class="btn btn-icon" aria-label="Quitar el archivo elegido" title="Quitar archivo">
           <i data-lucide="x" style="width:16px;height:16px;"></i>
         </button>
       </div>
 
       <!-- Config Card -->
       <div class="glass-card" style="margin-top:24px;padding:24px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="config-grid">
           <!-- Category -->
           <div class="form-group">
             <label class="field-label" for="category-input">
@@ -129,179 +153,176 @@
           <div class="form-group">
             <label class="field-label" for="points-input">
               <i data-lucide="award" style="width:14px;height:14px;color:var(--color-accent);"></i>
-              Puntaje Total del Examen
+              Puntaje total del examen
             </label>
             <div style="position:relative;">
-              <input id="points-input" class="form-input" type="number" min="1" step="0.5" value="100" style="padding-right:50px;" />
-              <span style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--color-text-muted);font-weight:800;">pts</span>
+              <input id="points-input" class="form-input" type="number" min="1" step="0.5" value="100" style="padding-right:50px;" aria-describedby="points-error" />
+              <span style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--color-text-muted);font-weight:800;" aria-hidden="true">pts</span>
             </div>
           </div>
         </div>
 
-        <p id="points-error" style="font-size:12.5px;color:var(--color-error);margin-top:10px;display:none;">⚠ Ingresa un valor numérico mayor a 0.</p>
-        
-        <div style="margin-top:16px;padding:10px 14px;background:var(--color-surface);border-radius:var(--radius-sm);border:1px solid var(--color-border-subtle);font-size:12.5px;color:var(--color-text-muted);display:flex;align-items:center;gap:8px;">
-          <i data-lucide="info" style="width:15px;height:15px;color:var(--color-accent);flex-shrink:0;"></i>
-          <span>No repartas los puntos tú mismo: escribe el total del examen y el sistema lo divide entre todas las preguntas, dando un poco más de valor a las de emparejar y completar por ser más laboriosas.</span>
-        </div>
+        <p id="points-error" class="field-error" role="alert" style="display:none;">Escribe un número mayor a 0.</p>
+
       </div>
 
       <!-- Action Button -->
-      <button id="btn-convert" class="btn btn-success" style="width:100%;margin-top:20px;padding:16px;font-size:16px;" disabled>
+      <button type="button" id="btn-convert" class="btn btn-success btn-lg btn-block" style="margin-top:20px;" disabled aria-describedby="convert-hint">
         <i data-lucide="zap" style="width:20px;height:20px;"></i>
-        Procesar y Convertir Examen
+        Procesar y convertir examen
       </button>
+      <!-- Por qué el botón está deshabilitado (antes no se decía). -->
+      <p id="convert-hint" class="field-hint" style="text-align:center;margin-top:8px;">Primero elige un archivo PDF o TXT.</p>
 
       <!-- Privacy Banner -->
-      <div style="margin-top:16px;text-align:center;font-size:12.5px;color:var(--color-text-subtle);display:flex;align-items:center;justify-content:center;gap:6px;">
-        <i data-lucide="shield-check" style="width:15px;height:15px;color:var(--color-success);"></i>
+      <div style="margin-top:16px;text-align:center;font-size:var(--text-sm);color:var(--color-text-subtle);display:flex;align-items:center;justify-content:center;gap:6px;">
+        <i data-lucide="shield-check" style="width:15px;height:15px;color:var(--color-success);flex-shrink:0;"></i>
         <span>Tu archivo nunca sale de tu equipo. Solo el texto extraído se envía a un servicio de IA para normalizar su formato antes de procesarlo.</span>
       </div>
     </section>
 
     <!-- ── PANEL 2: PROGRESS ── -->
-    <section id="panel-progress" style="display:none;" class="glass-card animate-fadeIn" aria-live="polite">
-      <div style="padding:60px 32px;text-align:center;">
-        <div style="width:72px;height:72px;background:var(--color-accent-glow);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;position:relative;">
-          <i data-lucide="loader-2" id="spinner-icon" style="width:36px;height:36px;color:var(--color-accent);animation:spinSlow 1.2s linear infinite;"></i>
+    <section id="panel-progress" style="display:none;" class="glass-card animate-fadeIn" aria-labelledby="progress-title">
+      <div style="padding:56px 32px 40px;text-align:center;">
+        <div style="width:72px;height:72px;background:var(--color-accent-glow);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
+          <i data-lucide="loader-2" id="spinner-icon" style="width:36px;height:36px;color:var(--color-accent);animation:spinSlow 0.8s linear infinite;"></i>
         </div>
-        <h3 id="progress-title" style="font-family:var(--font-heading);font-size:22px;font-weight:800;margin-bottom:8px;">Procesando documento…</h3>
-        <p id="progress-subtitle" style="font-size:14.5px;color:var(--color-text-muted);margin-bottom:6px;">Extrayendo texto del examen...</p>
-        <!-- Avance real que informa el backend ("12 de ~40 preguntas
-             procesadas"). aria-live="off": se actualiza varias veces por
-             segundo y no debe leerse en voz alta cada vez; el subtítulo de
-             arriba (etapa) sí se anuncia. -->
-        <p id="progress-detail" aria-live="off" style="font-size:12.5px;color:var(--color-text-subtle);min-height:18px;margin-bottom:22px;font-variant-numeric:tabular-nums;"></p>
-        
+        <h2 id="progress-title" class="screen-title" tabindex="-1" style="margin-bottom:8px;">Procesando tu examen…</h2>
+        <!-- Solo la etapa se anuncia al lector de pantalla. El cronómetro y
+             el conteo cambian varias veces por segundo y NO están dentro
+             de ninguna región viva (antes se anunciaban cada segundo). -->
+        <p id="progress-subtitle" role="status" style="font-size:14.5px;color:var(--color-text-muted);margin-bottom:6px;">Leyendo el texto del examen…</p>
+        <p id="progress-detail" style="font-size:var(--text-sm);color:var(--color-text-subtle);min-height:18px;margin-bottom:22px;font-variant-numeric:tabular-nums;"></p>
+
         <div style="height:8px;background:var(--color-bg);border-radius:var(--radius-full);overflow:hidden;max-width:480px;margin:0 auto;border:1px solid var(--color-border-subtle);">
-          <div id="progress-bar-fill" style="height:100%;width:100%;transform:scaleX(0);transform-origin:left;background:var(--color-accent-gradient);border-radius:var(--radius-full);transition:transform 0.4s ease-out;"></div>
+          <div id="progress-bar-fill" style="height:100%;width:100%;transform:scaleX(0);transform-origin:left;background:var(--color-accent);border-radius:var(--radius-full);transition:transform 0.4s linear;"></div>
         </div>
 
-        <div id="progress-timer-row" style="display:flex;justify-content:center;gap:18px;margin-top:14px;font-size:12.5px;color:var(--color-text-subtle);">
+        <div id="progress-timer-row" style="display:flex;justify-content:center;gap:18px;margin-top:14px;font-size:var(--text-sm);color:var(--color-text-subtle);font-variant-numeric:tabular-nums;">
           <span><i data-lucide="clock" style="width:13px;height:13px;vertical-align:-2px;"></i> <span id="progress-elapsed">0:00</span> transcurrido</span>
           <span id="progress-eta-wrap">· ~<span id="progress-eta">--:--</span> restante estimado</span>
         </div>
+
+        <!-- Cancelar una espera que puede durar hasta 90 s (antes no se
+             podía salir de esta pantalla). Conserva el archivo elegido. -->
+        <button type="button" id="btn-cancel-progress" class="btn btn-ghost btn-sm" style="margin-top:22px;">
+          <i data-lucide="x" style="width:14px;height:14px;"></i>
+          Cancelar y volver
+        </button>
       </div>
     </section>
 
     <!-- ── PANEL 3: INTERACTIVE QUESTION EDITOR ── -->
-    <section id="panel-editor" style="display:none;" class="animate-fadeIn">
-      <div style="margin-bottom:20px;">
-        <h2 style="font-family:var(--font-heading);font-size:20px;font-weight:800;">Revisión de Preguntas Parseadas</h2>
-        <p style="font-size:13.5px;color:var(--color-text-muted);margin-top:4px;">Inspecciona y edita cualquier pregunta antes de generar el paquete Moodle XML.</p>
+    <section id="panel-editor" style="display:none;" class="animate-fadeIn" aria-labelledby="editor-title">
+      <div class="editor-head">
+        <h2 id="editor-title" class="screen-title" tabindex="-1">Revisa las preguntas</h2>
+        <p class="screen-sub" id="editor-sub">Compara cada pregunta con tu documento: la transcripción puede traer errores o respuestas faltantes. Corrige lo que haga falta y genera el XML cuando esté listo. <button type="button" class="text-link" onclick="openHelp('review')">¿Cómo reviso?</button></p>
       </div>
 
-      <div id="editor-questions-container" style="display:flex;flex-direction:column;gap:18px;"></div>
+      <div id="editor-questions-container"></div>
     </section>
 
     <!-- ── PANEL 4: SUCCESS ── -->
-    <section id="panel-success" style="display:none;" class="glass-card animate-fadeIn">
+    <section id="panel-success" style="display:none;" class="glass-card animate-fadeIn" aria-labelledby="success-title">
       <div style="padding:32px;">
         <!-- Header -->
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;">
-          <div style="width:54px;height:54px;background:var(--color-success-bg);border:1px solid rgba(16,185,129,0.3);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+          <div style="width:54px;height:54px;background:var(--color-success-bg);border:1px solid var(--color-success);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <i data-lucide="check" style="width:28px;height:28px;color:var(--color-success);"></i>
           </div>
-          <div>
-            <h2 style="font-family:var(--font-heading);font-size:22px;font-weight:800;margin:0;">¡Conversión Completada con Éxito!</h2>
-            <p id="success-subtitle" style="font-size:14px;color:var(--color-text-muted);margin-top:2px;"></p>
+          <div style="min-width:0;">
+            <h2 id="success-title" class="screen-title" tabindex="-1">Tu XML está listo</h2>
+            <p id="success-subtitle" style="font-size:var(--text-md);color:var(--color-text-muted);margin-top:2px;overflow-wrap:anywhere;"></p>
           </div>
         </div>
 
-        <!-- Preguntas omitidas: en el editor se explica el motivo y la
-             solución con detalle, pero esa información se perdía al llegar
-             aquí (solo quedaba el conteo en el subtítulo) — el docente podía
-             olvidar qué faltaba corregir justo cuando ya iba a descargar el
-             archivo. Se rellena en updateSuccessStats(). -->
-        <div id="success-skipped-notice" style="display:none;background:var(--color-warning-bg);border:1px solid var(--color-warning);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:20px;"></div>
-
-        <!-- Stats grid: se rellena en updateSuccessStats() — solo aparece una
-             tarjeta por tipo si el examen realmente tiene preguntas de ese
-             tipo (ej. si no hubo preguntas de completar, esa tarjeta no se
-             genera en absoluto). -->
-        <div class="stats-grid" id="stats-grid"></div>
-
-        <!-- Points pie chart: distribución de los puntos totales por tipo de
-             pregunta (subtotal = preguntas del tipo × pts/pregunta), no solo
-             el conteo de preguntas. Se rellena en updateSuccessStats(). -->
-        <div id="points-chart-card" style="display:none;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:20px;margin-bottom:20px;">
-          <p style="font-size:12px;font-weight:700;color:var(--color-text-subtle);letter-spacing:0.2px;margin-bottom:16px;">Distribución de puntos por tipo</p>
-          <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap;justify-content:center;">
-            <svg id="points-pie-svg" viewBox="0 0 200 200" style="width:180px;height:180px;flex-shrink:0;"></svg>
-            <div id="points-pie-legend" style="display:grid;grid-template-columns:auto auto auto;align-items:center;column-gap:10px;row-gap:10px;"></div>
-          </div>
-        </div>
-
-        <!-- Action buttons -->
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <button id="btn-download" class="btn btn-primary" style="flex:1;padding:14px;">
+        <!-- Acciones arriba de todo: Descargar ya no queda bajo el pliegue
+             cuando hay preguntas omitidas. -->
+        <div class="success-actions">
+          <button type="button" id="btn-download" class="btn btn-success btn-lg">
             <i data-lucide="download" style="width:18px;height:18px;"></i>
-            Descargar Moodle XML
+            <span id="btn-download-label">Descargar Moodle XML</span>
           </button>
-          <button id="btn-reset-success" class="btn btn-ghost" style="flex:1;padding:14px;">
-            <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
-            Convertir Otro Examen
+          <button type="button" id="btn-back-to-review" class="btn btn-ghost btn-lg">
+            <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+            Volver a la revisión
           </button>
         </div>
+        <p class="success-next">Siguiente paso: impórtalo en Moodle, en <em>Banco de preguntas → Importar</em>. <button type="button" class="text-link" onclick="openHelp('moodle')">Ver cómo, paso a paso</button></p>
+
+        <!-- Preguntas omitidas: se rellena en updateSuccessStats(). -->
+        <div id="success-skipped-notice" class="callout is-warning" style="display:none;margin-bottom:20px;"></div>
+
+        <!-- Desglose por tipo: preguntas y puntos, con el pastel cuando
+             hay 2 tipos o más. Una sola vista (antes había tarjetas Y un
+             pastel que repetían el mismo dato). -->
+        <div id="points-chart-card" class="breakdown-card">
+          <p class="breakdown-title">Preguntas y puntos por tipo</p>
+          <div class="breakdown-body">
+            <svg id="points-pie-svg" viewBox="0 0 200 200" style="width:168px;height:168px;flex-shrink:0;" role="img" aria-label="Distribución de puntos por tipo de pregunta"></svg>
+            <div id="points-pie-legend" class="breakdown-list"></div>
+          </div>
+        </div>
+
+        <button type="button" id="btn-reset-success" class="btn btn-ghost btn-block">
+          <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
+          Convertir otro examen
+        </button>
       </div>
     </section>
 
     <!-- ── PANEL 5: ERROR ── -->
-    <section id="panel-error" style="display:none;" class="glass-card animate-fadeIn">
+    <section id="panel-error" style="display:none;" class="glass-card animate-fadeIn" aria-labelledby="error-title">
       <div style="padding:28px;">
         <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:20px;">
-          <div style="width:48px;height:48px;background:var(--color-error-bg);border:1px solid rgba(244,63,94,0.3);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <div style="width:48px;height:48px;background:var(--color-error-bg);border:1px solid var(--color-error);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <i data-lucide="alert-triangle" style="width:24px;height:24px;color:var(--color-error);"></i>
           </div>
           <div style="flex:1;min-width:0;">
-            <h3 style="font-family:var(--font-heading);font-size:19px;font-weight:800;color:var(--color-error);margin:0 0 6px;">Error en el Procesamiento</h3>
-            <div id="error-message" style="font-size:14px;color:var(--color-text-muted);line-height:1.65;"></div>
+            <h2 id="error-title" class="screen-title" tabindex="-1" style="font-size:var(--text-title);margin:0 0 6px;">No se pudo leer el examen</h2>
+            <div id="error-message" role="alert" style="font-size:var(--text-md);color:var(--color-text-muted);line-height:1.65;"></div>
           </div>
         </div>
 
         <!-- OCR Hint -->
-        <div id="error-ocr-hint" style="display:none;background:var(--color-cl-bg);border:1px solid var(--color-cl-border);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:20px;">
-          <p style="font-size:13.5px;font-weight:700;color:var(--color-cl);margin:0 0 6px;display:flex;align-items:center;gap:6px;">
-            <i data-lucide="bot" style="width:16px;height:16px;"></i> ¿Tu archivo PDF es una imagen o documento escaneado?
+        <div id="error-ocr-hint" style="display:none;background:var(--color-surface);border:1px solid var(--color-accent);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:20px;">
+          <p style="font-size:13.5px;font-weight:700;color:var(--color-text);margin:0 0 6px;display:flex;align-items:center;gap:6px;">
+            <i data-lucide="scan-line" style="width:16px;height:16px;color:var(--color-accent);"></i> ¿Tu PDF es una foto o un documento escaneado?
           </p>
           <p style="font-size:13px;color:var(--color-text-muted);margin:0 0 10px;">
-            Los PDFs escaneados no tienen texto que extraer directamente, pero el sistema puede leerlos igual con IA.
+            Los PDF escaneados no tienen texto que extraer directamente, pero el sistema puede leerlos igual con IA.
           </p>
-          <button id="btn-error-normalize" class="btn btn-primary" style="width:100%;margin-bottom:8px;">
+          <button type="button" id="btn-error-normalize" class="btn btn-primary btn-block" style="margin-bottom:8px;">
             <i data-lucide="sparkles" style="width:16px;height:16px;"></i>
-            Normalizar con IA
+            Leer el PDF con IA
           </button>
           <p style="font-size:12px;color:var(--color-text-subtle);margin:0;text-align:center;">
-            o usa nuestro
-            <button onclick="openHelp('prompt')" style="background:none;border:none;padding:0;cursor:pointer;font-family:inherit;font-weight:800;color:var(--color-cl);text-decoration:underline;">
-              Prompt IA Profesional
-            </button>
-            con tu propia IA de preferencia.
+            o usa las <button type="button" class="text-link" onclick="openHelp('prompt')">instrucciones para otra IA</button> con la que prefieras.
           </p>
         </div>
 
-        <button id="btn-reset-error" class="btn btn-ghost" style="width:100%;">
-          <i data-lucide="refresh-cw" style="width:16px;height:16px;"></i>
-          Intentar Nuevamente
+        <button type="button" id="btn-reset-error" class="btn btn-ghost btn-block">
+          <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+          <span id="btn-reset-error-label">Volver e intentar de nuevo</span>
         </button>
       </div>
     </section>
 
   </main>
 
-  <!-- Panel de revisión: mapa del examen + Aprobar/Cancelar (ver .review-rail) -->
-  <aside id="review-rail" class="review-rail" aria-label="Navegación y acciones de la revisión">
+  <!-- Panel de revisión: mapa del examen + Generar XML (ver .review-rail) -->
+  <aside id="review-rail" class="review-rail" aria-label="Mapa del examen y acciones">
     <div class="rail-head">
-      <button type="button" class="rail-pos" onclick="toggleRailGrid()" aria-controls="review-rail-grid">
+      <button type="button" class="rail-pos" onclick="toggleRailGrid()" aria-controls="review-rail-grid" aria-expanded="false">
         <span class="rail-pos-long" id="review-progress-label">Pregunta 1 de 1</span>
-        <span class="rail-pos-short" id="review-progress-short">1/1</span>
-        <span id="rail-error-short" class="rail-warn-short" style="color:var(--color-error);"></span>
-        <span id="rail-warn-short" class="rail-warn-short" style="color:var(--color-warning);"></span>
+        <span class="rail-pos-short" id="review-progress-short">1 de 1</span>
+        <span id="rail-error-short" class="rail-pill is-error"></span>
+        <span id="rail-warn-short" class="rail-pill is-warning"></span>
       </button>
-      <div class="rail-bar"><div id="review-progress-fill"></div></div>
+      <div class="rail-bar" aria-hidden="true"><div id="review-progress-fill"></div></div>
     </div>
     <div class="rail-grid-wrap">
-      <div class="rail-grid" id="review-rail-grid" role="list"></div>
+      <div class="rail-grid" id="review-rail-grid" role="list" aria-label="Ir a una pregunta"></div>
       <div class="rail-links">
         <button type="button" class="rail-review-next is-error" id="rail-incomplete-next" onclick="jumpToNextFlagged('incomplete')"></button>
         <button type="button" class="rail-review-next" id="rail-review-next" onclick="jumpToNextFlagged('review')"></button>
@@ -309,47 +330,51 @@
     </div>
     <div class="rail-actions">
       <button type="button" id="btn-generate-xml" class="btn btn-success" onclick="generateXml()">
-        <i data-lucide="check-circle" style="width:17px;height:17px;"></i>
-        Aprobar
+        <i data-lucide="file-check-2" style="width:17px;height:17px;"></i>
+        Generar XML
       </button>
-      <button type="button" class="btn btn-danger" onclick="resetAll()">Cancelar</button>
+      <button type="button" id="btn-discard-review" class="btn btn-ghost" onclick="confirmDiscardReview()" aria-label="Descartar esta revisión">
+        <i data-lucide="x" style="width:15px;height:15px;"></i>
+        <span class="btn-label">Descartar</span>
+      </button>
     </div>
   </aside>
 
-  <!-- Toast Notification -->
-  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+  <!-- Toast: una sola región viva, cortés. Puede llevar una acción
+       ("Deshacer"); mientras el mouse o el foco están encima, no se va. -->
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <!-- ════════════════════════════ HELP MODAL ════════════════════════════ -->
   <div id="modal-help" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-box">
       <div class="modal-header">
-        <div style="display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:18px;font-weight:800;" id="modal-title">
+        <h2 class="modal-title" id="modal-title">
           <i data-lucide="book-open" style="width:20px;height:20px;color:var(--color-accent);"></i>
-          Guía del Sistema
-        </div>
-        <button id="btn-close-modal" class="btn btn-ghost" style="padding:6px 10px;" aria-label="Cerrar ventana de guía">
+          Guía del sistema
+        </h2>
+        <button type="button" id="btn-close-modal" class="btn btn-icon" aria-label="Cerrar la guía" title="Cerrar">
           <i data-lucide="x" style="width:18px;height:18px;"></i>
         </button>
       </div>
 
-      <div class="modal-tabs">
-        <button class="modal-tab active" data-tab="about">
+      <div class="modal-tabs" role="tablist" aria-label="Secciones de la guía">
+        <button type="button" class="modal-tab active" role="tab" id="tab-about" aria-controls="modal-panel-about" aria-selected="true" data-tab="about">
           <i data-lucide="target" style="width:15px;height:15px;"></i>
           ¿Qué es?
         </button>
-        <button class="modal-tab" data-tab="review">
+        <button type="button" class="modal-tab" role="tab" id="tab-review" aria-controls="modal-panel-review" aria-selected="false" tabindex="-1" data-tab="review">
           <i data-lucide="list-checks" style="width:15px;height:15px;"></i>
           Revisión
         </button>
-        <button class="modal-tab" data-tab="format">
+        <button type="button" class="modal-tab" role="tab" id="tab-format" aria-controls="modal-panel-format" aria-selected="false" tabindex="-1" data-tab="format">
           <i data-lucide="file-code" style="width:15px;height:15px;"></i>
           Formato
         </button>
-        <button class="modal-tab" data-tab="prompt">
+        <button type="button" class="modal-tab" role="tab" id="tab-prompt" aria-controls="modal-panel-prompt" aria-selected="false" tabindex="-1" data-tab="prompt">
           <i data-lucide="bot" style="width:15px;height:15px;"></i>
-          Prompt IA
+          Con otra IA
         </button>
-        <button class="modal-tab" data-tab="moodle">
+        <button type="button" class="modal-tab" role="tab" id="tab-moodle" aria-controls="modal-panel-moodle" aria-selected="false" tabindex="-1" data-tab="moodle">
           <i data-lucide="graduation-cap" style="width:15px;height:15px;"></i>
           Importar
         </button>
@@ -357,7 +382,7 @@
 
       <div class="modal-body">
         <!-- Tab 0: About / Purpose -->
-        <div class="tab-panel active" id="modal-panel-about">
+        <div class="tab-panel active" id="modal-panel-about" role="tabpanel" aria-labelledby="tab-about" tabindex="0">
           <div style="display:flex;flex-direction:column;gap:16px;">
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
@@ -366,7 +391,7 @@
                 Moodle no permite pegar un examen en formato "normal" y ya está: cada pregunta debe cargarse a mano en el banco de preguntas, o construirse a mano en un XML con una sintaxis estricta y poco intuitiva. Hacerlo manualmente para un examen de 30-40 preguntas —especialmente con emparejamientos y respuestas de completar— es lento y fácil de arruinar con un error de tipeo.
               </p>
               <p style="font-size:14px;line-height:1.7;color:var(--color-text);margin-top:10px;">
-                Este sistema toma tu examen tal como ya lo tienes (PDF o TXT), lo interpreta con ayuda de IA, y genera directamente el archivo <strong>Moodle XML</strong> listo para importar en <em>Banco de preguntas → Importar</em>. Lo que antes tomaba horas de carga manual, aquí se reduce a revisar y aprobar.
+                Este sistema toma tu examen tal como ya lo tienes (PDF o TXT), lo interpreta con ayuda de IA, y genera directamente el archivo <strong>Moodle XML</strong> listo para importar en <em>Banco de preguntas → Importar</em>. Lo que antes tomaba horas de carga manual, aquí se reduce a revisar y generar.
               </p>
             </div>
 
@@ -378,8 +403,8 @@
                   <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Pruebas, parciales y quices en PDF o TXT</strong> con preguntas de <strong style="color:var(--color-text);">opción múltiple, verdadero/falso, emparejamiento, completar, ensayo, respuesta corta o numérica</strong>. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <i data-lucide="scan-line" style="width:16px;height:16px;color:var(--color-cl);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">PDF escaneados.</strong> Si el PDF es una foto o un escaneo (sin texto seleccionable), el sistema lo avisa y ofrece <strong style="color:var(--color-text);">Normalizar con IA</strong>, que lee las páginas como imagen (hasta 15).</span>
+                  <i data-lucide="scan-line" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">PDF escaneados.</strong> Si el PDF es una foto o un escaneo (sin texto seleccionable), el sistema lo avisa y ofrece <strong style="color:var(--color-text);">Leer el PDF con IA</strong>, que lee las páginas como imagen (hasta 15).</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="x-circle" style="width:16px;height:16px;color:var(--color-error);flex-shrink:0;margin-top:2px;"></i>
@@ -392,11 +417,11 @@
               <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">¿Cómo reconoce la respuesta correcta?</p>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <i data-lucide="list-ordered" style="width:16px;height:16px;color:var(--color-mc);flex-shrink:0;margin-top:2px;"></i>
+                  <i data-lucide="list-ordered" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
                   <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Clave de respuestas</strong> al final del documento, con la letra (“1. c”) o el texto de la opción.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <i data-lucide="highlighter" style="width:16px;height:16px;color:var(--color-warning);flex-shrink:0;margin-top:2px;"></i>
+                  <i data-lucide="highlighter" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
                   <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Marcas en el propio examen:</strong> texto en color (rojo, azul, verde…), resaltado, subrayado, negrita, o un ✓ / asterisco junto a la opción. En un PDF digital estas marcas se leen directamente del archivo, no las adivina la IA.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
@@ -418,7 +443,7 @@
                   <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Rápido.</strong> Un examen de 40 preguntas queda listo para revisar en menos de un minuto, con el avance en pantalla.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <i data-lucide="edit-3" style="width:16px;height:16px;color:var(--color-mt);flex-shrink:0;margin-top:2px;"></i>
+                  <i data-lucide="edit-3" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
                   <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Siempre revisas antes de descargar.</strong> Cada pregunta se puede corregir, y el sistema te señala las incompletas y las que conviene mirar dos veces.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
@@ -426,7 +451,7 @@
                   <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">El XML sale válido.</strong> Antes de generarlo se verifica que cada pregunta cumpla lo que Moodle exige, así no importas un examen roto sin saberlo.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <i data-lucide="lock" style="width:16px;height:16px;color:var(--color-cl);flex-shrink:0;margin-top:2px;"></i>
+                  <i data-lucide="lock" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
                   <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Tu archivo se procesa en tu equipo.</strong> Al servicio de IA solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas en imágenes o PDF escaneados).</span>
                 </div>
               </div>
@@ -436,69 +461,110 @@
         </div>
 
         <!-- Tab: Revisar preguntas -->
-        <div class="tab-panel" id="modal-panel-review">
+        <div class="tab-panel" id="modal-panel-review" role="tabpanel" aria-labelledby="tab-review" tabindex="0">
           <div style="display:flex;flex-direction:column;gap:16px;">
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
               <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Panel de navegación</p>
-              <p style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);margin-bottom:10px;">A la derecha (o abajo, en pantallas pequeñas) hay un cuadro por pregunta. Haz clic en uno para ir a esa pregunta.</p>
+              <p style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);margin-bottom:10px;">A la derecha (o abajo, en pantallas pequeñas) hay un cuadro por pregunta. Haz clic en uno para ir a esa pregunta, o usa las teclas <kbd>J</kbd> y <kbd>K</kbd> para pasar a la siguiente o a la anterior.</p>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <span style="width:22px;height:22px;border-radius:6px;flex-shrink:0;margin-top:1px;background:var(--color-accent);"></span>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Azul:</strong> la pregunta que estás viendo.</span>
+                  <span style="width:22px;height:22px;border-radius:var(--radius-sm);flex-shrink:0;margin-top:1px;background:var(--color-accent);outline:2px solid var(--color-accent);outline-offset:1px;"></span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Contorno azul:</strong> la pregunta que estás viendo.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <span style="width:22px;height:22px;border-radius:6px;flex-shrink:0;margin-top:1px;border:1.5px solid var(--color-error);background:var(--color-error-bg);"></span>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Rojo: incompleta.</strong> Falta el enunciado, opciones, la respuesta correcta o una pareja. La tarjeta dice qué falta, y <strong style="color:var(--color-text);">Aprobar</strong> no avanza hasta completarlas.</span>
+                  <span style="width:22px;height:22px;border-radius:var(--radius-sm);flex-shrink:0;margin-top:1px;border:1.5px solid var(--color-error);background:var(--color-error-bg);"></span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Rojo: incompleta.</strong> Falta el enunciado, opciones, la respuesta correcta o una pareja. La tarjeta dice qué falta, y <strong style="color:var(--color-text);">Generar XML</strong> no avanza hasta completarlas.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <span style="width:22px;height:22px;border-radius:6px;flex-shrink:0;margin-top:1px;border:1.5px solid var(--color-warning);"></span>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Naranja: para revisar.</strong> Está completa, pero conviene compararla con el documento original.</span>
+                  <span style="width:22px;height:22px;border-radius:var(--radius-sm);flex-shrink:0;margin-top:1px;border:1.5px dashed var(--color-warning);"></span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Borde discontinuo ámbar: para revisar.</strong> Está completa, pero conviene compararla con el documento original.</span>
                 </div>
               </div>
-              <p style="font-size:12.5px;color:var(--color-text-subtle);margin-top:10px;">Los contadores “✕ incompletas” y “⚠ para revisar” te llevan a la siguiente de cada tipo.</p>
+              <p style="font-size:12.5px;color:var(--color-text-subtle);margin-top:10px;">Los contadores de “incompletas” y “para revisar” te llevan a la siguiente de cada tipo.</p>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
               <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Etiquetas de cada pregunta</p>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <span class="type-badge" style="flex-shrink:0;background:transparent;color:var(--color-text-subtle);border:1px solid var(--color-border);"><i data-lucide="highlighter" style="width:12px;height:12px;vertical-align:-2px;"></i> respuesta por marca</span>
+                  <span class="type-badge flag-neutral" style="flex-shrink:0;"><i data-lucide="highlighter"></i> respuesta por marca</span>
                   <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">La respuesta se tomó de la marca del documento (color, resaltado, subrayado, negrita o X).</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <span class="type-badge" style="flex-shrink:0;background:var(--color-cl-bg);color:var(--color-cl);border:1px solid var(--color-cl-border);"><i data-lucide="palette" style="width:12px;height:12px;vertical-align:-2px;"></i> revisar marca</span>
+                  <span class="type-badge flag-review" style="flex-shrink:0;"><i data-lucide="palette"></i> revisar marca</span>
                   <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">El documento tiene marcas en esa página, pero no se pudieron leer con certeza.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <span class="type-badge" style="flex-shrink:0;background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);"><i data-lucide="eye-off" style="width:12px;height:12px;vertical-align:-2px;"></i> confianza baja</span>
+                  <span class="type-badge flag-review" style="flex-shrink:0;"><i data-lucide="eye-off"></i> confianza baja</span>
                   <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">La pregunta depende de una imagen (código, marca) que la IA no leyó con total claridad.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <span class="type-badge" style="flex-shrink:0;background:var(--color-warning-bg);color:var(--color-warning);border:1px solid var(--color-warning);"><i data-lucide="table-2" style="width:12px;height:12px;vertical-align:-2px;"></i> convertida de tabla</span>
+                  <span class="type-badge flag-review" style="flex-shrink:0;"><i data-lucide="table-2"></i> convertida de tabla</span>
                   <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);">Un cuadro del documento se convirtió en emparejamiento.</span>
                 </div>
               </div>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
-              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Otras herramientas</p>
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Herramientas de la revisión</p>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="filter" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Mostrar:</strong> deja ver solo un tipo de pregunta (por ejemplo, solo Emparejamiento). El mapa del examen sigue ese filtro; las preguntas ocultas igual se incluyen en el XML.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="scale" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Distribuir puntos:</strong> <em>Equitativo</em> reparte el total entre todas las preguntas; <em>Por tipo</em> usa pesos (un tipo con peso 2 vale el doble que uno con peso 1). Siempre suma exacto el total que definiste.</span>
-                </div>
-                <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <i data-lucide="filter" style="width:16px;height:16px;color:var(--color-mc);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Filtrar</strong> muestra solo un tipo de pregunta; el panel de navegación sigue ese filtro.</span>
-                </div>
-                <div style="display:flex;gap:10px;align-items:flex-start;">
-                  <i data-lucide="plus-circle" style="width:16px;height:16px;color:var(--color-mt);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Añadir nueva pregunta</strong> si faltó alguna, de cualquiera de los 7 tipos.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Puntos:</strong> muestra cuánto suman los puntos frente al total del examen (se marca en ámbar si no coinciden). Al abrirlo puedes repartirlos <em>Igual para todas</em> o <em>Según el tipo</em>, con pesos: un tipo con peso 2 vale el doble que uno con peso 1. El reparto siempre suma exacto el total.</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="alert-triangle" style="width:16px;height:16px;color:var(--color-warning);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Preguntas que no se pudieron incluir:</strong> aparecen arriba con el motivo. Si solo les falta la respuesta, usa <em>Añadir con lo ya extraído</em> y márcala tú.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Preguntas que no se pudieron incluir:</strong> aparecen arriba en una sola línea; ábrela con <em>Ver motivos</em>. Si a una solo le falta la respuesta, usa <em>Añadir con lo ya extraído</em> y márcala tú.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="plus-circle" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Añadir pregunta:</strong> al final de la lista, si faltó alguna del documento, de cualquiera de los 7 tipos.</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Atajos de teclado</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <p style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);margin:0;">Mientras revisas, sin estar escribiendo en un campo. La tecla <kbd>?</kbd> abre esta guía directamente aquí.</p>
+                <dl class="shortcuts-list" style="margin-top:4px;">
+                  <div><dt><kbd>J</kbd></dt><dd>Siguiente pregunta</dd></div>
+                  <div><dt><kbd>K</kbd></dt><dd>Pregunta anterior</dd></div>
+                  <div><dt><kbd>I</kbd></dt><dd>Siguiente pregunta incompleta</dd></div>
+                  <div><dt><kbd>R</kbd></dt><dd>Siguiente pregunta para revisar</dd></div>
+                  <div><dt><kbd>?</kbd></dt><dd>Abrir esta guía en «Revisión»</dd></div>
+                  <div><dt><kbd>Esc</kbd></dt><dd>Cerrar ventanas y menús</dd></div>
+                </dl>
+              </div>
+            </div>
+
+            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:18px;">
+              <p style="font-size:13px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;margin-bottom:10px;">Si te equivocas</p>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="undo-2" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Deshacer:</strong> al borrar una pregunta o aplicar un reparto de puntos aparece un aviso abajo con el botón <em>Deshacer</em> (dura unos segundos; si pasas el mouse encima, espera).</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="save" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Tu revisión se guarda sola</strong> en este equipo mientras trabajas. Si la ventana se cierra, al volver a abrir la app aparece <em>Retomar revisión</em>.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="arrow-left" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Volver a la revisión:</strong> desde la pantalla final puedes regresar a corregir algo y generar el XML de nuevo.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="x" style="width:16px;height:16px;color:var(--color-error);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Descartar:</strong> pide confirmación antes de borrar la revisión completa.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="clock" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Historial:</strong> cada XML generado queda guardado. Búscalo por nombre, categoría o fecha, y usa <em>Reabrir</em> para volver a su revisión.</span>
                 </div>
               </div>
             </div>
@@ -507,25 +573,25 @@
         </div>
 
         <!-- Tab 1: Format -->
-        <div class="tab-panel" id="modal-panel-format">
+        <div class="tab-panel" id="modal-panel-format" role="tabpanel" aria-labelledby="tab-format" tabindex="0">
           <p style="font-size:13.5px;color:var(--color-text-muted);margin-bottom:16px;">
-            <strong style="color:var(--color-text);">No es obligatorio:</strong> el sistema entiende exámenes con el formato habitual. Úsalo si escribes el examen directamente en un <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">.txt</code>: preguntas con <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">Pregunta N:</code> y la sección <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">RESPUESTAS</code> al final, sin lugar a dudas.
+            <strong style="color:var(--color-text);">No es obligatorio:</strong> el sistema entiende exámenes con el formato habitual. Úsalo si escribes el examen directamente en un <code class="inline">.txt</code>: preguntas con <code class="inline">Pregunta N:</code> y la sección <code class="inline">RESPUESTAS</code> al final, sin lugar a dudas.
           </p>
 
           <div style="display:flex;flex-direction:column;gap:14px;">
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
-              <span class="type-badge multichoice">1. Selección Múltiple</span>
+              <span class="type-badge multichoice">1. Opción múltiple</span>
               <div class="code-block" style="margin-top:8px;">Pregunta 1:
 ¿Cuál es la función principal de un compilador?
 A. Ejecutar código línea por línea
 B. Traducir código fuente a lenguaje máquina
 C. Gestionar la memoria RAM del sistema
 D. Diseñar interfaces gráficas de usuario</div>
-              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">No estás limitado a 4 opciones: si tu pregunta tiene 5 o 6, agrega <code style="background:var(--color-bg);padding:1px 5px;border-radius:4px;">E.</code>, <code style="background:var(--color-bg);padding:1px 5px;border-radius:4px;">F.</code>, etc. — el sistema las reconoce todas. Tampoco tiene que ser una sola respuesta correcta: si la pregunta dice "selecciona todas las que correspondan", el sistema lo detecta automáticamente por cuántas respuestas listes en RESPUESTAS.</p>
+              <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">No estás limitado a 4 opciones: si tu pregunta tiene 5 o 6, agrega <code class="inline">E.</code>, <code class="inline">F.</code>, etc. — el sistema las reconoce todas. Tampoco tiene que ser una sola respuesta correcta: si la pregunta dice "selecciona todas las que correspondan", el sistema lo detecta automáticamente por cuántas respuestas listes en RESPUESTAS.</p>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
-              <span class="type-badge truefalse">2. Cierto / Falso</span>
+              <span class="type-badge truefalse">2. Verdadero / Falso</span>
               <div class="code-block" style="margin-top:8px;">Pregunta 2:
 Afirmación: La arquitectura REST utiliza el protocolo HTTP para comunicarse.</div>
             </div>
@@ -548,7 +614,7 @@ c. Estructural</div>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
-              <span class="type-badge cloze">4. Completar Espacios (Cloze)</span>
+              <span class="type-badge cloze">4. Completar espacios</span>
               <div class="code-block" style="margin-top:8px;">Pregunta 4:
 En Python, la palabra clave para definir una función es [A: def / function / void] y para las clases es [B: class / struct / type].</div>
               <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Cada espacio admite <strong>una</strong> respuesta correcta (el caso más común, el estudiante ve un desplegable) o <strong>varias a la vez</strong> si la pregunta pide "selecciona todas las que correspondan" (el estudiante ve casillas de verificación) — se indica en RESPUESTAS, no en la pregunta.</p>
@@ -562,7 +628,7 @@ Explica con tus propias palabras las causas principales de la Revolución France
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:14px;">
-              <span class="type-badge shortanswer">6. Respuesta Corta</span>
+              <span class="type-badge shortanswer">6. Respuesta corta</span>
               <div class="code-block" style="margin-top:8px;">Pregunta 6:
 ¿Cómo se llama el proceso mediante el cual las plantas convierten la luz solar en energía?</div>
               <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas que esperan una sola palabra o frase corta como respuesta. Moodle la califica comparando el texto, sin distinguir mayúsculas y aceptando la respuesta sin tildes. No acepta otras formas de redactarla: si la respuesta admite variantes, usa Ensayo.</p>
@@ -575,8 +641,8 @@ Explica con tus propias palabras las causas principales de la Revolución France
               <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">Para preguntas cuya respuesta es un número. En RESPUESTAS va solo el número (ej. "60"), sin palabras ni unidades.</p>
             </div>
 
-            <div style="background:var(--color-surface);border:1px solid var(--color-border-glow);border-radius:var(--radius-md);padding:14px;">
-              <span style="font-size:12px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;">Sección RESPUESTAS (Al final del archivo)</span>
+            <div style="background:var(--color-surface);border:1px solid var(--color-accent);border-radius:var(--radius-md);padding:14px;">
+              <span style="font-size:12px;font-weight:800;color:var(--color-accent);letter-spacing:0.2px;">Sección RESPUESTAS (al final del archivo)</span>
               <div class="code-block" style="margin-top:8px;">RESPUESTAS
 Nº Tipo Respuesta correcta
 1 múltiple Traducir código fuente a lenguaje máquina
@@ -587,24 +653,24 @@ Nº Tipo Respuesta correcta
 6 respuestacorta Fotosíntesis
 7 numerico 60</div>
               <p style="font-size:12px;color:var(--color-text-subtle);margin-top:8px;">
-                Para <strong>emparejamiento</strong>, cada par es "número-letra" (el número de la Columna A y la letra de la Columna B que le corresponde), separados por punto y coma. No hace falta que sigan un orden alfabético: una clave como <code style="background:var(--color-bg);padding:1px 5px;border-radius:4px;">1-c; 2-a; 3-b</code> es perfectamente válida y se procesa exactamente igual de bien.
+                Para <strong>emparejamiento</strong>, cada par es "número-letra" (el número de la Columna A y la letra de la Columna B que le corresponde), separados por punto y coma. No hace falta que sigan un orden alfabético: una clave como <code class="inline">1-c; 2-a; 3-b</code> es perfectamente válida y se procesa exactamente igual de bien.
               </p>
               <p style="font-size:12px;color:var(--color-text-subtle);margin-top:6px;">
-                Para <strong>completar</strong> con varios espacios, sepáralos con punto y coma como en el ejemplo ("A. ...; B. ..."). Si un espacio (o una pregunta de <strong>selección múltiple</strong>) acepta varias respuestas correctas a la vez, sepáralas con <code style="background:var(--color-bg);padding:1px 5px;border-radius:4px;">" | "</code>, por ejemplo <code style="background:var(--color-bg);padding:1px 5px;border-radius:4px;">A. opción1 | opción3</code>.
+                Para <strong>completar</strong> con varios espacios, sepáralos con punto y coma como en el ejemplo ("A. ...; B. ..."). Si un espacio (o una pregunta de <strong>selección múltiple</strong>) acepta varias respuestas correctas a la vez, sepáralas con <code class="inline">" | "</code>, por ejemplo <code class="inline">A. opción1 | opción3</code>.
               </p>
             </div>
           </div>
         </div>
 
         <!-- Tab 2: AI Prompt -->
-        <div class="tab-panel" id="modal-panel-prompt">
+        <div class="tab-panel" id="modal-panel-prompt" role="tabpanel" aria-labelledby="tab-prompt" tabindex="0">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
             <p style="font-size:13.5px;color:var(--color-text-muted);flex:1 1 260px;margin:0;">
-              <strong style="color:var(--color-text);">Alternativa, normalmente no hace falta.</strong> Si el sistema no reconoce bien tu documento, pega este prompt en tu IA de preferencia junto con el examen, guarda la respuesta como .txt y súbela en el Paso 1.
+              <strong style="color:var(--color-text);">Alternativa, normalmente no hace falta.</strong> Si el sistema no reconoce bien tu documento, pega estas instrucciones en la IA que prefieras junto con el examen, guarda la respuesta como .txt y súbela en el paso 1.
             </p>
-            <button id="btn-copy-prompt" class="btn btn-ghost" style="padding:8px 14px;font-size:13px;white-space:nowrap;flex-shrink:0;">
+            <button type="button" id="btn-copy-prompt" class="btn btn-ghost btn-sm" style="white-space:nowrap;flex-shrink:0;">
               <i data-lucide="copy" id="copy-icon" style="width:14px;height:14px;"></i>
-              <span id="copy-label">Copiar Prompt</span>
+              <span id="copy-label">Copiar instrucciones</span>
             </button>
           </div>
 
@@ -710,14 +776,14 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </div>
 
         <!-- Tab 3: Import into Moodle -->
-        <div class="tab-panel" id="modal-panel-moodle">
+        <div class="tab-panel" id="modal-panel-moodle" role="tabpanel" aria-labelledby="tab-moodle" tabindex="0">
           <p style="font-size:13.5px;color:var(--color-text-muted);margin-bottom:16px;">
-            Ya tienes tu archivo <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px;">.xml</code> descargado. Así lo subes a Moodle:
+            Ya tienes tu archivo <code class="inline">.xml</code> descargado. Así lo subes a Moodle:
           </p>
 
           <div style="display:flex;flex-direction:column;gap:14px;">
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
-              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:var(--text-sm);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</span>
               <div>
                 <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Crea el cuestionario en tu curso</p>
                 <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Dentro de tu curso, activa la edición y agrega una actividad de tipo <strong>Cuestionario</strong> (esto crea el "parcial" o examen donde irán las preguntas). Ponle un nombre y guarda.</p>
@@ -725,7 +791,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
-              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:var(--text-sm);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</span>
               <div>
                 <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Entra al Banco de preguntas</p>
                 <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Desde el menú del curso (o desde el cuestionario que acabas de crear), busca la opción <strong>Banco de preguntas</strong>.</p>
@@ -733,7 +799,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
-              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:var(--text-sm);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</span>
               <div>
                 <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Importa el archivo</p>
                 <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Dentro del Banco de preguntas, ve a la pestaña <strong>Importar</strong>. Elige el formato <strong>"Formato XML de Moodle"</strong>, selecciona tu archivo .xml y presiona Importar. Moodle te mostrará cuántas preguntas se cargaron correctamente.</p>
@@ -741,15 +807,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
-              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</span>
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:var(--text-sm);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</span>
               <div>
                 <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Añade las preguntas al cuestionario</p>
                 <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Las preguntas importadas quedan guardadas en el banco, pero todavía no están dentro del examen. Abre tu cuestionario, entra a "Editar cuestionario" y usa la opción para <strong>agregar preguntas desde el banco</strong> — selecciona las que acabas de importar.</p>
               </div>
             </div>
 
-            <div style="background:var(--color-surface);border:1px solid var(--color-border-glow);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
-              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-success-solid);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">5</span>
+            <div style="background:var(--color-surface);border:1px solid var(--color-success);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-success-solid);color:#fff;font-size:var(--text-sm);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">5</span>
               <div>
                 <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Termina de configurar y publica</p>
                 <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Ajusta lo que falte del cuestionario: fecha y hora de apertura/cierre, tiempo límite, intentos permitidos y cómo se calcula la nota. Guarda los cambios y el examen queda listo para tus estudiantes.</p>
@@ -757,8 +823,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
             </div>
           </div>
 
-          <div style="margin-top:16px;padding:10px 14px;background:var(--color-mc-bg);border:1px solid var(--color-mc-border);border-radius:var(--radius-sm);font-size:12.5px;color:var(--color-text-muted);display:flex;align-items:center;gap:8px;">
-            <i data-lucide="info" style="width:15px;height:15px;color:var(--color-mc);flex-shrink:0;"></i>
+          <div class="callout" style="margin-top:16px;">
+            <i data-lucide="info"></i>
             <span>Los nombres exactos de los menús pueden variar levemente según la versión de Moodle de tu institución, pero estos 5 pasos son siempre los mismos.</span>
           </div>
         </div>
@@ -770,44 +836,65 @@ Ahora convierte el examen adjunto a este formato.</pre>
   <div id="modal-history" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="history-title">
     <div class="modal-box">
       <div class="modal-header">
-        <div style="display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:18px;font-weight:800;" id="history-title">
+        <h2 class="modal-title" id="history-title">
           <i data-lucide="clock" style="width:20px;height:20px;color:var(--color-accent);"></i>
-          Historial de Exámenes Convertidos
-        </div>
-        <button id="btn-close-history" class="btn btn-ghost" style="padding:6px 10px;" aria-label="Cerrar historial" onclick="closeHistory()">
+          Historial de exámenes convertidos
+        </h2>
+        <button type="button" id="btn-close-history" class="btn btn-icon" aria-label="Cerrar el historial" title="Cerrar">
           <i data-lucide="x" style="width:18px;height:18px;"></i>
         </button>
       </div>
-      <div class="modal-body" id="history-list" style="padding:16px 24px;">
+      <!-- Buscador: filtra al instante por nombre, categoría o fecha. -->
+      <div class="history-search" id="history-search-wrap" hidden>
+        <i data-lucide="search" aria-hidden="true"></i>
+        <input type="search" id="history-search" class="form-input" placeholder="Buscar por nombre, categoría o fecha" aria-label="Buscar en el historial" aria-describedby="history-count" autocomplete="off" />
+        <span id="history-count" class="history-count" aria-live="polite"></span>
+      </div>
+      <div class="modal-body" id="history-list" style="padding:8px 16px 16px;">
         <!-- Dynamically rendered -->
       </div>
     </div>
   </div>
 
   <!-- ════════════════ DISCLAIMER: PDF CON IMÁGENES (CASO ESPECIAL) ════════════════ -->
-  <div id="modal-disclaimer" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title">
-    <div class="modal-box" style="max-width:480px;">
+  <div id="modal-disclaimer" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="disclaimer-title" aria-describedby="disclaimer-body">
+    <div class="modal-box modal-sm">
       <div class="modal-header">
-        <div style="display:flex;align-items:center;gap:10px;font-family:var(--font-heading);font-size:18px;font-weight:800;color:var(--color-warning);" id="disclaimer-title">
-          <i data-lucide="alert-triangle" style="width:20px;height:20px;"></i>
+        <h2 class="modal-title" id="disclaimer-title">
+          <i data-lucide="alert-triangle" style="width:20px;height:20px;color:var(--color-warning);"></i>
           Tu documento tiene imágenes incrustadas
-        </div>
-        <button id="btn-close-disclaimer" class="btn btn-ghost" style="padding:6px 10px;" aria-label="Cerrar aviso">
+        </h2>
+        <button type="button" id="btn-close-disclaimer" class="btn btn-icon" aria-label="Cerrar el aviso" title="Cerrar">
           <i data-lucide="x" style="width:18px;height:18px;"></i>
         </button>
       </div>
-      <div class="modal-body" style="padding:18px 24px;">
-        <p style="font-size:13.5px;line-height:1.7;color:var(--color-text);margin-bottom:0;">
-          Detectamos <strong>imágenes incrustadas</strong> en tu PDF. El sistema las leerá automáticamente con IA, pero <strong>no es 100% fiable</strong>: es posible que alguna marca o transcripción no se detecte correctamente. Revisa cada pregunta en el editor antes de aprobar la conversión.
+      <div class="modal-body" style="padding:18px 24px 4px;">
+        <p id="disclaimer-body" style="font-size:13.5px;line-height:1.7;color:var(--color-text);margin:0;">
+          Detectamos <strong>imágenes incrustadas</strong> en tu PDF. El sistema las leerá automáticamente con IA, pero <strong>no es 100% fiable</strong>: es posible que alguna marca o transcripción no se detecte correctamente. Revisa cada pregunta antes de generar el XML.
         </p>
       </div>
-      <div style="display:flex;gap:10px;padding:16px 24px 24px;">
-        <button id="btn-disclaimer-continue" class="btn btn-primary" style="flex:1;">
-          Continuar
-        </button>
-        <button id="btn-disclaimer-cancel" class="btn btn-ghost" style="flex:1;">
-          Cancelar
-        </button>
+      <div class="modal-footer">
+        <button type="button" id="btn-disclaimer-continue" class="btn btn-primary">Continuar</button>
+        <button type="button" id="btn-disclaimer-cancel" class="btn btn-ghost">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ CONFIRMACIÓN GENÉRICA (acciones que descartan trabajo) ════════════════
+       Diálogo propio en vez de window.confirm(): en la ventana de
+       escritorio (pywebview) el confirm nativo no se muestra igual en
+       todos los sistemas. Se rellena en ui/confirmar.js. -->
+  <div id="modal-confirm" class="modal-backdrop" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-body">
+    <div class="modal-box modal-sm">
+      <div class="modal-header" style="border-bottom:none;padding-bottom:4px;">
+        <h2 class="modal-title" id="confirm-title"></h2>
+      </div>
+      <div class="modal-body" style="padding:4px 24px 8px;">
+        <p id="confirm-body" style="font-size:var(--text-md);line-height:1.6;color:var(--color-text-muted);margin:0;"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-confirm-cancel" class="btn btn-ghost">Seguir revisando</button>
+        <button type="button" id="btn-confirm-ok" class="btn btn-danger">Descartar</button>
       </div>
     </div>
   </div>
