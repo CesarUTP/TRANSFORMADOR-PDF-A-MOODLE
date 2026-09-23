@@ -363,6 +363,12 @@ def main():
         height=750,
         resizable=True,
         min_size=(500, 600),
+        # Abre ocupando toda la pantalla (maximizada) desde la splash; la app
+        # principal se carga en esta misma ventana, así que también. Se usa
+        # maximizada y no el modo "pantalla completa" del sistema para que
+        # la barra de título (cerrar, minimizar) siga visible: en Windows,
+        # fullscreen no deja botón para cerrar.
+        maximized=True,
     )
 
     # Guardar referencia de la ventana en el api para los dialogos
