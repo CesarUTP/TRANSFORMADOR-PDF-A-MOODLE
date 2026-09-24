@@ -44,6 +44,8 @@ cmd = [
     "--collect-all", "certifi",
     "--collect-all", "charset_normalizer",
     "--collect-all", "idna",
+    # API de Gemini: clave.dat cifrado (backend/credenciales.py).
+    "--collect-all", "cryptography",
     # ── PyWebView y su backend para macOS (Cocoa/WebKit vía pyobjc) ─────
     "--collect-all", "webview",
     "--hidden-import", "webview.platforms.cocoa",

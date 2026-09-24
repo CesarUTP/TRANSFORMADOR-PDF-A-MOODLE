@@ -65,21 +65,19 @@ def _load_dotenv() -> None:
 _load_dotenv()
 
 # ── Gemini API ──────────────────────────────────────────────────────────────
-# La key se lee de la variable de entorno GEMINI_API_KEY o de un archivo
-# .env (ver _load_dotenv y .env.example). Nunca va en el código: la
-# anterior quedó en el historial del repo y hubo que rotarla.
-GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "").strip()
+# La clave de cada usuario se pega en el modal de bienvenida y se guarda
+# cifrada en la carpeta de datos (ver credenciales.py). GEMINI_API_KEY
+# en el entorno o en un .env sigue sirviendo para desarrollo. Nunca va en
+# el código: la anterior quedó en el historial del repo y hubo que rotarla.
+ENV_PATH = _app_data_dir() / ".env"
 # Mensaje único para cuando falta: lo muestra la app tal cual (ver
 # formatter._generate_with_retries), así el usuario sabe qué hacer en vez
 # de ver un error técnico de la API.
-ENV_PATH = _app_data_dir() / ".env"
 MISSING_API_KEY_MESSAGE = (
-    "Falta configurar la clave de la IA (GEMINI_API_KEY). Abre el archivo "
-    f"«{ENV_PATH}», pega tu clave después de «GEMINI_API_KEY=», guárdalo y vuelve "
-    "a abrir la aplicación. La clave se obtiene gratis en https://aistudio.google.com/apikey."
+    "Falta configurar tu API de Gemini. Ábrela desde «API de Gemini», arriba "
+    "a la derecha, y pega tu clave de Google AI Studio (se obtiene gratis en "
+    "https://aistudio.google.com/apikey)."
 )
-if not GEMINI_API_KEY:
-    _logger.warning(MISSING_API_KEY_MESSAGE)
 # Se puede cambiar con la variable GEMINI_MODEL (p. ej. para comparar
 # modelos con dev/eval.py sin tocar el código).
 GEMINI_MODEL_NAME: str = os.environ.get("GEMINI_MODEL", "").strip() or "gemini-3.1-flash-lite"

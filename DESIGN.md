@@ -286,6 +286,9 @@ Pastel con separadores de grosor parejo (trazo de 2,5px del color de la tarjeta)
 ### Modales
 Todos pasan por `abrirModal`/`cerrarModal` (ui/modales.js): el foco entra al modal, el resto de la página queda `inert`, Escape cierra el de más arriba y el foco vuelve a quien lo abrió. Entrada 200ms, salida 150ms, desde el centro (no desde un disparador).
 
+### API de Gemini (`#modal-apikey`, ui/clave.js)
+Lo primero después del splash en una instalación nueva (título "Conecta tu API de Gemini"): ancho medio (`.modal-md`, 560px), sin botón de cerrar y sin cerrar con Escape ni clic fuera, porque sin clave la app no sirve. Tres pasos numerados (círculos de acento de 24px) con un botón ghost que abre Google AI Studio en el navegador del sistema, un `.callout` "Es gratis, con límites de uso", y el campo en monoespaciada, oculto como contraseña, con botón de ojo. El botón principal ocupa todo el ancho y muestra "Comprobando con Google…" con spinner mientras valida; el error va debajo del campo, en rojo y con el borde del campo en rojo. Desde "API de Gemini" en la cabecera se abre el mismo modal con X, un recuadro verde "Ya tienes una clave guardada · Termina en ····abcd" y "Quitar clave" (con confirmación).
+
 ## Motion
 Tokens en base.css: `--ease-out: cubic-bezier(0.23, 1, 0.32, 1)`, `--ease-in-out: cubic-bezier(0.77, 0, 0.175, 1)`, `--dur-press` 120ms, `--dur-fast` 150ms, `--dur-enter` 200ms.
 - Nada de UI pasa de 250ms; las salidas son más rápidas que las entradas.

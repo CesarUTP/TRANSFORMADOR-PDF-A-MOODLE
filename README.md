@@ -74,6 +74,7 @@ flowchart LR
 - **Constructor visual de Cloze**: sin escribir corchetes a mano.
 - **Progreso en vivo**: avance real de la subida del archivo, por qué pregunta va la IA y cuánto falta (se puede cancelar).
 - **Historial local** con **buscador** (nombre, categoría o fecha): cada XML se vuelve a descargar o se **reabre** en el editor para corregirlo.
+- **API de Gemini propia**: la primera vez, un paso de bienvenida explica cómo obtener la clave gratis en Google AI Studio, la comprueba con Google y la guarda **cifrada** en el equipo (Mac y Windows). Se cambia o se quita desde *API de Gemini*.
 - **Accesible**: foco atrapado en las ventanas, contraste AA, anuncios para lector de pantalla y "reducir movimiento".
 
 </td>
@@ -91,7 +92,8 @@ flowchart LR
 1️⃣  Descarga o clona el proyecto
 2️⃣  Doble clic en iniciar.command (macOS) o iniciar.bat (Windows)
 3️⃣  La primera vez instala todo solo (unos minutos); después abre directo
-4️⃣  Sube el examen → revisa las preguntas → descarga el .xml
+4️⃣  La primera vez pega tu clave de la API de Gemini (gratis; la app explica cómo obtenerla)
+5️⃣  Sube el examen → revisa las preguntas → descarga el .xml
 ```
 
 En Moodle: **Banco de preguntas → Importar**.
@@ -100,7 +102,7 @@ En Moodle: **Banco de preguntas → Importar**.
 > ¿Quieres un instalador de verdad, sin que el usuario final necesite Python?
 > · **Windows** → [`ejecutable/LEEME_WINDOWS.txt`](ejecutable/LEEME_WINDOWS.txt) (`Setup.exe` con ícono, acceso directo y desinstalador)
 > · **macOS** → [`ejecutable_mac/LEEME_MAC.txt`](ejecutable_mac/LEEME_MAC.txt) (`.dmg` que se arrastra a Aplicaciones)
-> En ambos casos corre antes `dev/sync_ejecutable.py`. La app **ya no trae la API key**: cada instalación necesita su propio `.env` en la carpeta de datos de la app (ver "Dice que falta configurar la clave de la IA").
+> En ambos casos corre antes `dev/sync_ejecutable.py`. La app **no trae ninguna API key**: al abrirla por primera vez pide la del usuario (ver "La API de Gemini").
 
 ---
 
@@ -179,6 +181,7 @@ Conversor a Moodle XML/
 ├── backend/
 │   ├── main.py           ← API FastAPI (endpoints)
 │   ├── config.py         ← Configuración centralizada + prompt del sistema (IA)
+│   ├── credenciales.py   ← Clave de la API de Gemini, cifrada en clave.dat
 │   ├── extractor.py      ← Extracción de texto (.pdf / .txt)
 │   ├── pipeline.py       ← Flujo completo (lo usan la API y dev/eval.py)
 │   ├── formatter.py      ← Llamada a Gemini (modo texto o JSON con esquema)
@@ -209,7 +212,7 @@ Conversor a Moodle XML/
 │       ├── validacion.js ← Qué le falta a una pregunta (con pruebas)
 │       ├── resultado.js, historial.js, navegacion.js
 │       ├── editor/       ← tarjetas · panel · filtros · paneles · cloze · puntos-ui
-│       └── ui/           ← tema · toast (con Deshacer) · modales (foco atrapado) · confirmar
+│       └── ui/           ← tema · toast (con Deshacer) · modales (foco atrapado) · confirmar · clave
 │
 ├── assets/Icon.ico       ← Ícono oficial de la app (ejecutable, instalador y UI)
 ├── errores.log           ← Trazas de errores inesperados (se crea solo, no versionado)
@@ -370,6 +373,9 @@ Las preguntas **cloze** usan corchetes en el cuerpo, con letras correlativas si 
 | `GET` | `/api/history/{id}/download` | Vuelve a descargar el XML de una conversión anterior |
 | `GET` | `/api/history/{id}/editor` | Preguntas tal como quedaron en el editor, para *Reabrir* esa revisión |
 | `DELETE` | `/api/history/{id}` | Borra una entrada del historial |
+| `GET` | `/api/api-key` | Si hay clave de la API de Gemini guardada (solo sus 4 últimos caracteres, nunca la clave) |
+| `POST` | `/api/api-key` | Comprueba la clave con Google (sin costo) y la guarda cifrada; reemplaza la anterior si la había |
+| `DELETE` | `/api/api-key` | Quita la clave de este equipo |
 
 <details>
 <summary><b>Detalle de respuestas</b></summary>
@@ -387,6 +393,8 @@ Las preguntas **cloze** usan corchetes en el cuerpo, con letras correlativas si 
 ```
 
 **`/api/generate_xml`** — descarga del `.xml`, con el header `X-Question-Stats` (JSON con conteo por tipo y puntajes calculados). El nombre del archivo va en `Content-Disposition` con `filename*=UTF-8''…` (RFC 6266): así sirven nombres con tildes o ñ, incluidos los que macOS entrega en forma descompuesta (NFD).
+
+**`/api/api-key`** — solo acepta peticiones de la propia app (mismo origen): otra página abierta en el navegador no puede cambiarla ni borrarla, aunque el CORS general sea abierto.
 
 **Errores inesperados** — un fallo no previsto al procesar se **reintenta una vez** solo; si se repite, el mensaje trae el detalle técnico y la ruta de `errores.log`.
 
@@ -411,7 +419,7 @@ En un PDF digital, `extract_text()` pierde justo las marcas de respuesta más co
 
 | Variable | Por defecto | Qué hace |
 |---|:---:|---|
-| `GEMINI_API_KEY` | — | Key de Google AI Studio (ver `.env.example`) |
+| `GEMINI_API_KEY` | — | Solo para desarrollo: la app usa la clave que el usuario pega al abrirla (guardada cifrada en `clave.dat`, que tiene prioridad). Ver `.env.example` |
 | `GEMINI_MODEL` | `gemini-3.1-flash-lite` | Modelo de Gemini. Sirve para comparar modelos con `dev/eval.py` sin tocar el código (ver la comparación con 3.5-flash-lite en [`RESULTADOS.md`](dev/eval_results/RESULTADOS.md)) |
 | `ENRICH_PDF_TEXT` | `1` | Marcas (color, resaltado, subrayado, negrita, tablas) anotadas y resueltas en código |
 | `NORMALIZER_MODE` | `json` | Carga normal. `json`: la IA devuelve JSON con esquema (más fiel) · `text`: formato propio (2–5× más rápido) |
@@ -438,7 +446,7 @@ En un PDF digital, `extract_text()` pierde justo las marcas de respuesta más co
 ```
 fastapi==0.115.12          pdfplumber==0.11.6         requests>=2.31
 uvicorn[standard]==0.34.2  lxml>=5.3.2                Pillow>=10.0
-python-multipart==0.0.20   pydantic>=2.11.3
+python-multipart==0.0.20   pydantic>=2.11.3           cryptography>=42
 ```
 
 > [!NOTE]
@@ -483,18 +491,22 @@ El mismo mensaje de error muestra la ruta. Ese archivo es lo primero que hay que
 </details>
 
 <details>
-<summary><b>Dice que falta configurar la clave de la IA</b></summary>
+<summary><b>La API de Gemini (pedirla, cambiarla, dónde queda)</b></summary>
 
 <br>
 
-La app **no trae ninguna API key incluida**. Cada instalación necesita un archivo `.env` en la carpeta de datos de la app (la misma del historial), con la línea `GEMINI_API_KEY=tu_clave`:
+La app **no trae ninguna API key incluida**: cada usuario usa la suya. La primera vez que se abre aparece un paso de bienvenida que explica cómo obtenerla **gratis** en [Google AI Studio](https://aistudio.google.com/apikey), con un botón que abre la página directo. La clave se **comprueba con Google** antes de guardarse (listar modelos: no gasta tokens) y queda **cifrada** en la carpeta de datos de la app:
 
-- macOS: `~/Library/Application Support/ConversorMoodleXML/.env` (Finder → Cmd+Shift+G)
-- Windows: `%LOCALAPPDATA%\ConversorMoodleXML\.env` (Windows+R)
+- macOS: `~/Library/Application Support/ConversorMoodleXML/clave.dat`
+- Windows: `%LOCALAPPDATA%\ConversorMoodleXML\clave.dat`
 
-Esa ubicación sobrevive a recompilar o reinstalar la app. El mensaje de error muestra la ruta exacta. Desde el código también vale el `.env` de la raíz del proyecto.
+Cifrado Fernet (AES + HMAC) con una llave derivada del identificador de **ese equipo y ese usuario** (más una sal al azar): copiado a otra computadora, el archivo no sirve. No se guarda un hash porque la app necesita la clave tal cual para llamar a Google. No se usa el Llavero de macOS porque, con una app sin firma de desarrollador, pediría permiso después de cada actualización.
 
-Se obtiene gratis en [Google AI Studio](https://aistudio.google.com/apikey). Ver [`.env.example`](.env.example).
+Desde **API de Gemini**, arriba a la derecha, se pega una clave nueva (reemplaza la anterior solo si Google la acepta) o se quita. Si el archivo no se puede descifrar (otro equipo, cambio de placa), la app simplemente vuelve a pedir la clave.
+
+Las instalaciones anteriores que tenían la clave en texto plano en `…/ConversorMoodleXML/.env` la **cifran solas** en `clave.dat` al abrir la versión nueva, y la línea del `.env` queda vacía.
+
+Desde el código, un `.env` en la raíz del proyecto con `GEMINI_API_KEY=` sigue sirviendo para desarrollo (ver [`.env.example`](.env.example)).
 
 </details>
 

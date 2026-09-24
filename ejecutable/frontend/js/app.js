@@ -18,6 +18,7 @@ import { estado, suscribir } from './estado.js';
 import { closeHistory, confirmDeleteHistory, downloadHistory, loadHistoryList, openHistory, renderHistoryList, reopenHistory, startDeleteHistory } from './historial.js';
 import { confirmDiscardReview, resetAll, showPanel } from './navegacion.js';
 import { generateXml, saveFileToUser } from './resultado.js';
+import { abrirAjustesClave, claveObligatoria, comprobarClaveAlIniciar } from './ui/clave.js';
 import { cerrarConfirmacion } from './ui/confirmar.js';
 import { cerrarModal, closeDisclaimer, closeHelp, fileFingerprint, modalActivo, onTabKeydown, openDisclaimer, openHelp, switchTab } from './ui/modales.js';
 import { applyTheme } from './ui/tema.js';
@@ -50,6 +51,11 @@ applyTheme(false);
 
 // ¿Quedó una revisión a medias la última vez? Se ofrece retomarla.
 mostrarAvisoBorrador();
+
+// Cliente nuevo (sin clave de la API de Gemini guardada): lo primero es el modal de
+// bienvenida para pegarla.
+comprobarClaveAlIniciar();
+document.getElementById('btn-apikey').addEventListener('click', abrirAjustesClave);
 document.getElementById('btn-draft-resume').addEventListener('click', retomarBorrador);
 document.getElementById('btn-draft-discard').addEventListener('click', () => {
   borrarBorrador();
@@ -74,6 +80,8 @@ document.addEventListener('keydown', e => {
   const activo = modalActivo();
   if (!activo) return;
   e.preventDefault();
+  // El modal de bienvenida (sin clave) no se puede saltar.
+  if (activo.id === 'modal-apikey' && claveObligatoria()) return;
   if (activo.id === 'modal-confirm') cerrarConfirmacion();
   else cerrarModal(activo);
 });

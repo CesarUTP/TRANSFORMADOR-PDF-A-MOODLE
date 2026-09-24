@@ -30,45 +30,25 @@ app. Al abrirlo, aparece una ventana con "ConvertidorMoodle.app" y
 un acceso directo a la carpeta Aplicaciones — arrastrando el ícono
 ahí queda "instalada" como cualquier app de Mac.
 
-Clave de Gemini (API key)
+API de Gemini (clave)
 ------------------------------------------------
-La app NO trae ninguna clave adentro. Cada Mac donde se use necesita
-un archivo ".env" en la carpeta de datos de la app (la misma donde
-queda el historial):
+La app NO trae ninguna clave adentro: cada persona usa la suya. La
+primera vez que se abre, después del splash, aparece un paso de
+bienvenida que explica cómo obtenerla gratis en Google AI Studio
+(https://aistudio.google.com/apikey), con un botón que abre la página.
+Se pega en el cuadro de texto, la app la comprueba con Google y la
+guarda cifrada en:
 
-    ~/Library/Application Support/ConversorMoodleXML/.env
+    ~/Library/Application Support/ConversorMoodleXML/clave.dat
 
-con una sola línea:
+Ese archivo solo se puede descifrar en esta Mac y con este usuario.
 
-    GEMINI_API_KEY=tu_clave_aqui
+Para cambiarla o quitarla: botón "API de Gemini", arriba a la
+derecha. Una clave nueva reemplaza a la anterior solo si Google la
+acepta.
 
-Para llegar ahí: en el Finder, menú Ir → "Ir a la carpeta…"
-(Cmd+Shift+G) y pega la ruta de arriba. Si la carpeta no existe,
-abre la app una vez y se crea sola. El archivo se edita con TextEdit
-(Formato → Convertir a texto normal).
-
-Esta ubicación sobrevive a recompilar o reinstalar la app. (Antes la
-clave iba DENTRO del paquete .app, y se perdía cada vez que se volvía
-a compilar.)
-
-La clave se obtiene gratis en https://aistudio.google.com/apikey
-
-Sin ese archivo la app abre igual, pero al convertir un examen avisa
-que falta configurar la clave.
-
-"Apple no puede verificar que esta app esté libre de malware"
-------------------------------------------------
-Como la app no está firmada con una cuenta de Apple Developer
-($99/año) ni notarizada, macOS (Gatekeeper) le muestra este aviso a
-CUALQUIERA que la abra por primera vez — no es un error de
-compilación. Dos formas de abrirla igual:
-
-  a) Clic derecho (o Ctrl+clic) sobre la app → "Abrir" → confirmar
-     en el diálogo. Solo hace falta la primera vez.
-
-  b) Por Terminal, quitarle el atributo de cuarentena:
-       xattr -cr /Applications/ConvertidorMoodle.app
-     (o la ruta donde haya quedado la app)
+Si antes tenías la clave en el .env de esa misma carpeta, la versión
+nueva la cifra sola en clave.dat y deja esa línea vacía.
 
 La app se queda cargando (splash) y nunca abre
 ------------------------------------------------

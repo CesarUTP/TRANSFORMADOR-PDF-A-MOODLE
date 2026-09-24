@@ -16,7 +16,7 @@ from urllib.parse import quote
 import time
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response, StreamingResponse
@@ -24,6 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from lxml import etree
 
 from config import DEFAULT_CATEGORY, DEFAULT_TOTAL_POINTS
+import credenciales
 from extractor import pdf_has_embedded_images
 from pipeline import parse_document, normalize_document_with_ai
 from validator import validate_questions
@@ -426,3 +427,57 @@ async def api_delete_history(record_id: int):
     if not delete_history_item(record_id):
         raise HTTPException(status_code=404, detail="Registro no encontrado")
     return {"deleted": True}
+
+
+# ── API de Gemini ───────────────────────────────────────────────────────────
+# El docente pega su clave en el modal de bienvenida; se guarda cifrada en
+# la carpeta de datos (ver credenciales.py). Nunca se devuelve completa.
+
+# El CORS de arriba acepta cualquier origen; para la clave eso no basta:
+# otra página web abierta en el navegador podría cambiarla o borrarla.
+# Solo se aceptan peticiones de la propia app (mismo origen que el servidor).
+def _solo_la_app(request: Request) -> None:
+    origen = request.headers.get("origin")
+    if origen is not None and origen != f"http://{request.headers.get('host', '')}":
+        raise HTTPException(status_code=403, detail="Origen no permitido")
+
+
+class ApiKeyBody(BaseModel):
+    clave: str
+
+
+@app.get("/api/api-key")
+def api_key_status(request: Request):
+    _solo_la_app(request)
+    return credenciales.estado()
+
+
+@app.post("/api/api-key")
+def api_key_save(body: ApiKeyBody, request: Request):
+    _solo_la_app(request)
+    # Al copiar suelen colarse espacios o saltos de línea.
+    clave = "".join(body.clave.split())
+    if not clave:
+        raise HTTPException(status_code=422, detail="Pega tu clave en el cuadro de texto.")
+    if len(clave) < 20:
+        raise HTTPException(status_code=422, detail="Esa clave es demasiado corta. Revisa que la copiaste completa.")
+    try:
+        credenciales.validar(clave)
+    except credenciales.ClaveInvalida:
+        raise HTTPException(status_code=422, detail="Google no aceptó esa clave. Revisa que la copiaste completa, sin espacios de más.")
+    except credenciales.SinConexion as exc:
+        logger.warning("No se pudo comprobar la clave de la API de Gemini: %s", exc)
+        raise HTTPException(status_code=503, detail="No se pudo comprobar la clave con Google. Revisa tu conexión a internet e inténtalo otra vez.")
+    try:
+        credenciales.guardar(clave)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("No se pudo guardar la clave de la API de Gemini")
+        raise HTTPException(status_code=500, detail=f"La clave es válida, pero no se pudo guardar ({type(exc).__name__}).")
+    return credenciales.estado()
+
+
+@app.delete("/api/api-key")
+def api_key_delete(request: Request):
+    _solo_la_app(request)
+    credenciales.borrar()
+    return credenciales.estado()

@@ -588,6 +588,62 @@
 .modal-footer { display: flex; gap: 10px; padding: 16px 24px 24px; }
 .modal-footer .btn { flex: 1; }
 
+/* ── API DE GEMINI (modal de bienvenida y ajustes) ───────────────────── */
+.modal-box.modal-md { max-width: 560px; }
+.apikey-body { padding: 22px 24px 24px; display: flex; flex-direction: column; gap: 18px; }
+.apikey-body p { margin: 0; }
+.apikey-intro { font-size: var(--text-md); line-height: 1.6; color: var(--color-text); }
+.apikey-subtitle {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 0 0 -8px;
+}
+.apikey-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.apikey-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.apikey-steps p { font-size: var(--text-md); line-height: 1.55; color: var(--color-text); }
+.apikey-step-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  margin-top: 1px;
+}
+.apikey-link { margin-top: 8px; }
+.apikey-current {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-success);
+  background: var(--color-success-bg);
+}
+.apikey-current[hidden] { display: none; }
+.apikey-current > i, .apikey-current > svg { flex-shrink: 0; color: var(--color-success-solid); }
+.apikey-current p { flex: 1; font-size: var(--text-sm); line-height: 1.5; color: var(--color-text); }
+.apikey-current p span { color: var(--color-text-muted); }
+.apikey-form { display: flex; flex-direction: column; gap: 6px; }
+.apikey-field { position: relative; }
+.apikey-field .form-input { padding-right: 48px; font-family: var(--font-mono, ui-monospace, monospace); font-size: 14px; }
+.apikey-field .form-input::placeholder { font-family: var(--font-body); }
+/* Paso obligatorio: sin botón de cerrar (.btn-icon fija display). */
+#btn-close-apikey[hidden] { display: none; }
+.apikey-form.has-error .form-input { border-color: var(--color-error); }
+.apikey-reveal { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); }
+.apikey-reveal:active { transform: translateY(-50%) scale(0.97); }
+.apikey-form .field-hint, .apikey-form .field-error { margin-top: 4px; }
+.apikey-form .field-error[hidden] { display: none; }
+.apikey-form .btn-primary { margin-top: 10px; }
+
 /* Alto fijo: la ventana no "salta" de tamaño mientras se escribe en el
    buscador y la lista se achica o crece. */
 #modal-history .modal-box { height: min(85vh, 680px); }

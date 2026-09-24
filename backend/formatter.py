@@ -27,8 +27,8 @@ import requests
 from fastapi import HTTPException
 from PIL import Image
 
+from credenciales import get_api_key
 from config import (
-    GEMINI_API_KEY,
     MISSING_API_KEY_MESSAGE,
     GEMINI_MODEL_NAME,
     GEMINI_MAX_RETRIES,
@@ -186,7 +186,7 @@ def _stream_generate(body: dict, timeout: int, on_text: Optional[Callable[[str],
     deadline = time.monotonic() + timeout
     resp = requests.post(
         url,
-        headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+        headers={"x-goog-api-key": get_api_key(), "Content-Type": "application/json"},
         json=body,
         stream=True,
         # (conexión, lectura entre fragmentos): una respuesta que deja de
@@ -413,7 +413,7 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
     quota_waits_left = 5
     overload_waits = list(_OVERLOAD_WAITS)
 
-    if not GEMINI_API_KEY:
+    if not get_api_key():
         raise HTTPException(status_code=503, detail=MISSING_API_KEY_MESSAGE)
 
     attempt = 0

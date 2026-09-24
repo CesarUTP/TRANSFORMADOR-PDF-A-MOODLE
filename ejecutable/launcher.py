@@ -133,6 +133,17 @@ class Api:
             print("SAVE ERROR:", traceback.format_exc())
             return {"saved": False, "error": "Python error: " + str(exc)}
 
+    # Enlaces que la app puede abrir en el navegador del sistema (la
+    # ventana de escritorio no abre pestañas nuevas). Lista cerrada: solo
+    # las páginas de Google para obtener la clave y ver precios.
+    _URLS_PERMITIDAS = ("https://aistudio.google.com/", "https://ai.google.dev/")
+
+    def open_url(self, url: str) -> bool:
+        if not isinstance(url, str) or not url.startswith(self._URLS_PERMITIDAS):
+            return False
+        import webbrowser
+        return webbrowser.open(url)
+
 
 
 # ── Splash Screen HTML ──────────────────────────────────────────────────────

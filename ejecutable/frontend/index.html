@@ -42,6 +42,10 @@
           <i data-lucide="clock" style="width:16px;height:16px;"></i>
           <span>Historial</span>
         </button>
+        <button type="button" id="btn-apikey" class="btn-icon-text" aria-label="API de Gemini" title="API de Gemini">
+          <i data-lucide="key-round" style="width:16px;height:16px;"></i>
+          <span>API de Gemini</span>
+        </button>
         <button type="button" id="btn-help" class="btn-icon-text btn-guide" aria-label="Abrir guía de uso" title="Guía">
           <i data-lucide="book-open" style="width:16px;height:16px;"></i>
           <span>Guía</span>
@@ -876,6 +880,78 @@ Ahora convierte el examen adjunto a este formato.</pre>
       <div class="modal-footer">
         <button type="button" id="btn-disclaimer-continue" class="btn btn-primary">Continuar</button>
         <button type="button" id="btn-disclaimer-cancel" class="btn btn-ghost">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ API DE GEMINI (bienvenida y ajustes) ════════════════
+       La primera vez que se abre la app, sin clave guardada, aparece
+       como paso obligatorio (sin botón de cerrar). Después se abre desde
+       "API de Gemini" en la cabecera para cambiarla o quitarla.
+       Lógica en ui/clave.js. -->
+  <div id="modal-apikey" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="apikey-title" aria-describedby="apikey-intro">
+    <div class="modal-box modal-md">
+      <div class="modal-header">
+        <h2 class="modal-title" id="apikey-title">
+          <i data-lucide="key-round" style="width:20px;height:20px;color:var(--color-accent);"></i>
+          <span id="apikey-title-text">Conecta tu API de Gemini</span>
+        </h2>
+        <button type="button" id="btn-close-apikey" class="btn btn-icon" aria-label="Cerrar" title="Cerrar">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+      <div class="modal-body apikey-body">
+        <p id="apikey-intro" class="apikey-intro">
+          La aplicación usa la IA de Google (Gemini) para leer tus exámenes. Para eso necesita tu propia <strong>clave de la API de Gemini</strong>, que se obtiene <strong>gratis</strong> en un par de minutos.
+        </p>
+
+        <div id="apikey-current" class="apikey-current" hidden>
+          <i data-lucide="check-circle-2" style="width:18px;height:18px;"></i>
+          <p><strong>Ya tienes una clave guardada</strong><br><span id="apikey-current-detail"></span></p>
+          <button type="button" id="btn-apikey-delete" class="btn btn-quiet btn-danger-text btn-sm">Quitar clave</button>
+        </div>
+
+        <h3 class="apikey-subtitle" id="apikey-steps-title">Cómo obtener tu clave</h3>
+        <ol class="apikey-steps" aria-labelledby="apikey-steps-title">
+          <li>
+            <span class="apikey-step-num" aria-hidden="true">1</span>
+            <div>
+              <p>Abre Google AI Studio e inicia sesión con tu cuenta de Google.</p>
+              <button type="button" id="btn-apikey-open" class="btn btn-ghost btn-sm apikey-link" data-url="https://aistudio.google.com/apikey">
+                <i data-lucide="external-link" style="width:14px;height:14px;"></i> Abrir Google AI Studio
+              </button>
+            </div>
+          </li>
+          <li>
+            <span class="apikey-step-num" aria-hidden="true">2</span>
+            <div><p>Pulsa <strong>«Create API key»</strong> (Crear clave de API). Si te pregunta por un proyecto, elige el que aparece o crea uno nuevo.</p></div>
+          </li>
+          <li>
+            <span class="apikey-step-num" aria-hidden="true">3</span>
+            <div><p>Copia la clave que aparece y pégala en el cuadro de abajo.</p></div>
+          </li>
+        </ol>
+
+        <div class="callout apikey-limits">
+          <i data-lucide="info"></i>
+          <p><strong>Es gratis, con límites de uso.</strong> Alcanzan para el trabajo normal de un docente, pero en horas de mucha demanda Google puede tardar más o pedirte esperar unos minutos. Si algún día lo necesitas, puedes activar el plan de pago en tu cuenta de Google para quitar esos límites.</p>
+        </div>
+
+        <form id="apikey-form" class="apikey-form" novalidate>
+          <label class="field-label" for="apikey-input" id="apikey-input-label">Pega aquí tu clave</label>
+          <div class="apikey-field">
+            <input type="password" id="apikey-input" class="form-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Pega tu clave de Google AI Studio" aria-describedby="apikey-hint apikey-error">
+            <button type="button" id="btn-apikey-reveal" class="btn btn-icon apikey-reveal" aria-label="Mostrar la clave" aria-pressed="false" title="Mostrar la clave">
+              <i data-lucide="eye" id="apikey-eye" style="width:17px;height:17px;"></i>
+              <i data-lucide="eye-off" id="apikey-eye-off" style="width:17px;height:17px;display:none;"></i>
+            </button>
+          </div>
+          <p class="field-error" id="apikey-error" role="alert" hidden></p>
+          <p class="field-hint" id="apikey-hint">Antes de guardarla se comprueba con Google. Queda guardada cifrada en este equipo y solo se usa para hablar con Google.</p>
+          <button type="submit" id="btn-apikey-save" class="btn btn-primary btn-block">
+            <span id="btn-apikey-save-label">Guardar y comenzar</span>
+          </button>
+        </form>
       </div>
     </div>
   </div>
