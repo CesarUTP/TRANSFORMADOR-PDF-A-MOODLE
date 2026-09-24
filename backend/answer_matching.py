@@ -83,6 +83,17 @@ def find_cloze_brackets(text: str) -> List[Tuple[int, int, str, str]]:
     texto entre "Letra:" y ese "]", todavía sin partir por " / "
     (usar split_options para eso).
     """
+    # Una sola pasada con una pila empareja cada "[" con su "]" (antes se
+    # buscaba el cierre desde cada "[", y un texto con miles de "[A:" sin
+    # cerrar tardaba minutos). Da lo mismo: "Letra:" no tiene corchetes.
+    cierre_de = {}
+    pila: List[int] = []
+    for idx, ch in enumerate(text):
+        if ch == "[":
+            pila.append(idx)
+        elif ch == "]" and pila:
+            cierre_de[pila.pop()] = idx
+
     out: List[Tuple[int, int, str, str]] = []
     i, n = 0, len(text)
     while i < n:
@@ -90,20 +101,10 @@ def find_cloze_brackets(text: str) -> List[Tuple[int, int, str, str]]:
             i += 1
             continue
         m = _CLOZE_SLOT_OPEN.match(text, i + 1)
-        if not m:
-            i += 1
-            continue
-        body_start = m.end()
-        depth, j = 1, body_start
-        while j < n and depth:
-            if text[j] == "[":
-                depth += 1
-            elif text[j] == "]":
-                depth -= 1
-            j += 1
-        if depth:
+        j = cierre_de.get(i)
+        if not m or j is None:
             i += 1  # sin cierre — no es un espacio válido, sigue buscando
             continue
-        out.append((i, j, m.group(1), text[body_start:j - 1]))
-        i = j
+        out.append((i, j + 1, m.group(1), text[m.end():j]))
+        i = j + 1
     return out

@@ -1,6 +1,7 @@
 /**
  * historial.js — historial de conversiones guardadas.
  */
+import { apiFetch } from './api.js';
 import { abrirEnEditor } from './borrador.js';
 import { modalHistory } from './dom.js';
 import { saveFileToUser } from './resultado.js';
@@ -71,7 +72,7 @@ export async function loadHistoryList(enfocarId = null) {
   list.innerHTML = '<p style="padding:24px;text-align:center;color:var(--color-text-muted);">Cargando historial…</p>';
 
   try {
-    const res = await fetch('/api/history');
+    const res = await apiFetch('/api/history');
     if (!res.ok) throw new Error('Error al consultar servidor');
     _datos = (await res.json()).map(item => ({ ...item, fecha: _fecha(item.created_at) }));
     searchWrap.hidden = _datos.length === 0;
@@ -81,7 +82,7 @@ export async function loadHistoryList(enfocarId = null) {
     searchWrap.hidden = true;
     list.innerHTML = `<div style="padding:24px;text-align:center;">
       <p style="color:var(--color-error);font-size:var(--text-md);margin:0 auto 12px;">No se pudo cargar el historial.</p>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="loadHistoryList()">
+      <button type="button" class="btn btn-ghost btn-sm" data-accion="loadHistoryList">
         <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Reintentar
       </button>
     </div>`;
@@ -99,7 +100,7 @@ export function renderHistoryList(enfocarId = null) {
       <i data-lucide="inbox" style="width:32px;height:32px;color:var(--color-text-subtle);margin-bottom:12px;"></i>
       <p style="color:var(--color-text);font-size:var(--text-md);font-weight:700;margin:0 auto 4px;">Todavía no hay conversiones guardadas</p>
       <p style="color:var(--color-text-muted);font-size:var(--text-sm);margin:0 auto 16px;">Cada examen que conviertas queda aquí para volver a descargarlo o reabrir su revisión.</p>
-      <button type="button" class="btn btn-primary btn-sm" onclick="closeHistory()">Convertir tu primer examen</button>
+      <button type="button" class="btn btn-primary btn-sm" data-accion="closeHistory">Convertir tu primer examen</button>
     </div>`;
     lucide.createIcons();
     return;
@@ -132,13 +133,13 @@ export function renderHistoryList(enfocarId = null) {
         <span style="font-size:12px;color:var(--color-text-muted);">${_resaltar(item.category, q)} · ${esc_html(item.total_points)} pts · ${_resaltar(item.fecha, q)}</span>
       </div>
       <div class="history-action-slot" style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-        ${item.has_editor ? `<button type="button" class="btn btn-ghost btn-sm" onclick="reopenHistory(${item.id})" title="Abrir de nuevo la revisión de este examen">
+        ${item.has_editor ? `<button type="button" class="btn btn-ghost btn-sm" data-accion="reopenHistory" data-arg-n="${item.id}" title="Abrir de nuevo la revisión de este examen">
           <i data-lucide="pencil" style="width:14px;height:14px;"></i> Reabrir
         </button>` : ''}
-        <button type="button" class="btn btn-ghost btn-sm" data-filename="${esc_html(item.filename)}" onclick="downloadHistory(${item.id}, this.dataset.filename)">
+        <button type="button" class="btn btn-ghost btn-sm" data-filename="${esc_html(item.filename)}" data-id="${item.id}" data-accion="downloadHistoryDesdeBoton" data-este>
           <i data-lucide="download" style="width:14px;height:14px;"></i> Descargar XML
         </button>
-        <button type="button" class="btn btn-icon btn-danger-text history-delete" onclick="startDeleteHistory(this)" title="Borrar del historial" aria-label="Borrar «${esc_html(item.filename)}» del historial">
+        <button type="button" class="btn btn-icon btn-danger-text history-delete" data-accion="startDeleteHistory" data-este title="Borrar del historial" aria-label="Borrar «${esc_html(item.filename)}» del historial">
           <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
         </button>
       </div>
@@ -147,9 +148,14 @@ export function renderHistoryList(enfocarId = null) {
   if (enfocarId != null) list.querySelector(`.history-row[data-id="${enfocarId}"] .history-delete`)?.focus();
 }
 
+/** Botón «Descargar» de una entrada: el id y el nombre van en sus data-*. */
+export function downloadHistoryDesdeBoton(btn) {
+  return downloadHistory(Number(btn.dataset.id), btn.dataset.filename);
+}
+
 export async function downloadHistory(id, originalFilename) {
   try {
-    const res = await fetch(`/api/history/${id}/download`);
+    const res = await apiFetch(`/api/history/${id}/download`);
     if (!res.ok) throw new Error('Falló descarga');
     const blob = await res.blob();
     const nombre = String(originalFilename).normalize('NFC');
@@ -164,7 +170,7 @@ export async function downloadHistory(id, originalFilename) {
 // puntos), para corregirlo y generar el XML otra vez.
 export async function reopenHistory(id) {
   try {
-    const res = await fetch(`/api/history/${id}/editor`);
+    const res = await apiFetch(`/api/history/${id}/editor`);
     if (!res.ok) throw new Error('sin datos');
     const d = await res.json();
     closeHistory();
@@ -188,15 +194,15 @@ export function startDeleteHistory(btn) {
   const id = row.dataset.id;
   slot.innerHTML = `
     <span style="font-size:var(--text-sm);color:var(--color-text);font-weight:700;margin-right:2px;" id="del-q-${id}">¿Borrar del historial?</span>
-    <button type="button" class="btn btn-danger btn-sm" onclick="confirmDeleteHistory(${id})" aria-describedby="del-q-${id}">Borrar</button>
-    <button type="button" class="btn btn-ghost btn-sm history-cancel" onclick="renderHistoryList(${id})">Cancelar</button>
+    <button type="button" class="btn btn-danger btn-sm" data-accion="confirmDeleteHistory" data-arg-n="${id}" aria-describedby="del-q-${id}">Borrar</button>
+    <button type="button" class="btn btn-ghost btn-sm history-cancel" data-accion="renderHistoryList" data-arg-n="${id}">Cancelar</button>
   `;
   slot.querySelector('.history-cancel').focus();
 }
 
 export async function confirmDeleteHistory(id) {
   try {
-    const res = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/api/history/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('delete failed');
     showToast('Entrada borrada del historial', 'info');
   } catch (err) {

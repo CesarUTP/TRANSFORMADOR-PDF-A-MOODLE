@@ -257,7 +257,7 @@ function _matchingPairRowHtml(p, n) {
     <textarea class="pair-left form-input single-line" rows="1" placeholder="Concepto (columna A)" aria-label="Concepto ${n}, columna A">${esc_html(p.left)}</textarea>
     <i data-lucide="arrow-right" class="pair-arrow" aria-hidden="true"></i>
     <textarea class="pair-right form-input single-line" rows="1" placeholder="Su pareja correcta (columna B)" aria-label="Pareja correcta del concepto ${n}, columna B">${esc_html(p.right)}</textarea>
-    <button type="button" class="btn btn-icon btn-danger-text" onclick="removeMatchingPairRow(this)" aria-label="Quitar la pareja ${n}" title="Quitar pareja">
+    <button type="button" class="btn btn-icon btn-danger-text" data-accion="removeMatchingPairRow" data-este aria-label="Quitar la pareja ${n}" title="Quitar pareja">
       <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
     </button>
   </div>`;
@@ -277,7 +277,43 @@ export function removeMatchingPairRow(btn) {
 //   2. Barra de herramientas plegada: Filtrar · Distribuir puntos.
 //   3. Las tarjetas de pregunta.
 //   4. "¿Falta alguna pregunta?" → Añadir pregunta, al final.
+// Los datos llegan del servidor, del historial o del borrador guardado en
+// este equipo, y se dibujan como HTML: "num" y "type" se fuerzan a valores
+// conocidos antes de usarlos (un "type" con comillas o etiquetas podía
+// colar código en la página al reabrir una revisión). Una pregunta de tipo
+// desconocido no se podría exportar a Moodle: se descarta.
+function _entero(v, porDefecto) {
+  const n = Number(v);
+  return Number.isInteger(n) ? n : porDefecto;
+}
+
+function _sanearDatos(data) {
+  const tipos = new Set(QUESTION_TYPE_DEFS.map(t => t.key));
+  const esObjeto = v => v !== null && typeof v === 'object';
+  data.questions = (Array.isArray(data.questions) ? data.questions : [])
+    .filter(q => esObjeto(q) && tipos.has(q.type) && esObjeto(q.data));
+  // Un número inválido se reemplaza por el primero libre (no por la
+  // posición, que podía repetir el de otra pregunta y cruzar su clave).
+  data.questions.forEach(q => { q.num = _entero(q.num, null); });
+  const usados = new Set(data.questions.map(q => q.num));
+  let libre = 1;
+  data.questions.forEach(q => {
+    if (q.num !== null) return;
+    while (usados.has(libre)) libre++;
+    q.num = libre;
+    usados.add(libre);
+  });
+  if (!esObjeto(data.answer_key)) data.answer_key = {};
+  data.skipped_questions = (Array.isArray(data.skipped_questions) ? data.skipped_questions : []).filter(esObjeto);
+  data.skipped_questions.forEach(sq => {
+    sq.num = _entero(sq.num, 0);
+    if (!Array.isArray(sq.reasons)) sq.reasons = [String(sq.reasons ?? '')];
+    if (!tipos.has(sq.type)) sq.recoverable_data = null;
+  });
+}
+
 export function renderEditor(data) {
+  _sanearDatos(data);
   estado.currentParseResult = data;
   const container = document.getElementById('editor-questions-container');
   const total = data.questions.length;
@@ -286,7 +322,7 @@ export function renderEditor(data) {
   const sub = document.getElementById('editor-sub');
   if (sub) {
     const skippedN = (data.skipped_questions || []).length;
-    sub.innerHTML = `${total} pregunta${total !== 1 ? 's' : ''}${skippedN ? ` · ${skippedN} no incluida${skippedN !== 1 ? 's' : ''}` : ''}. Compara cada una con tu documento: la transcripción puede traer errores o respuestas faltantes. <button type="button" class="text-link" onclick="openHelp('review')">¿Cómo reviso?</button>`;
+    sub.innerHTML = `${total} pregunta${total !== 1 ? 's' : ''}${skippedN ? ` · ${skippedN} no incluida${skippedN !== 1 ? 's' : ''}` : ''}. Compara cada una con tu documento: la transcripción puede traer errores o respuestas faltantes. <button type="button" class="text-link" data-accion="openHelp" data-arg="review">¿Cómo reviso?</button>`;
   }
 
   // Preguntas que el sistema NO pudo procesar: una línea plegable con el
@@ -298,8 +334,8 @@ export function renderEditor(data) {
       <div class="skipped-item">
         <p class="skipped-preview">${sq.preview ? esc_html(sq.preview) : `<em>(sin texto identificable — tipo ${esc_html(QUESTION_TYPE_LABEL_MAP[sq.type] || sq.type)})</em>`}</p>
         <p class="skipped-reason">${esc_html(humanizeSkipReason(sq.reasons[0]))}</p>
-        <p class="skipped-num">Ubicada como pregunta #${sq.num} — este número es del sistema, puede no coincidir con el del documento original.</p>
-        ${sq.recoverable_data ? `<button type="button" class="btn btn-ghost btn-sm" onclick="recoverSkippedQuestion(${sIdx})" style="margin-top:8px;">
+        <p class="skipped-num">Ubicada como pregunta #${esc_html(sq.num)} — este número es del sistema, puede no coincidir con el del documento original.</p>
+        ${sq.recoverable_data ? `<button type="button" class="btn btn-ghost btn-sm" data-accion="recoverSkippedQuestion" data-arg-n="${sIdx}" style="margin-top:8px;">
           <i data-lucide="wand-2" style="width:13px;height:13px;"></i> Añadir con lo ya extraído
         </button>` : ''}
       </div>`).join('');
@@ -336,12 +372,12 @@ export function renderEditor(data) {
   const typesPresent = [...new Set(data.questions.map(q => q.type))];
   const toolbarHtml = `<div class="editor-tools">
     <div class="editor-toolbar">
-      <button type="button" class="btn btn-ghost toolbar-btn" onclick="toggleFilterMenu()" aria-expanded="false" aria-controls="filter-chips-bar">
+      <button type="button" class="btn btn-ghost toolbar-btn" data-accion="toggleFilterMenu" aria-expanded="false" aria-controls="filter-chips-bar">
         <i data-lucide="filter" style="width:16px;height:16px;"></i>
         Mostrar: <strong id="filter-current-label">Todas</strong>
         <i data-lucide="chevron-down" class="chev" aria-hidden="true"></i>
       </button>
-      <button type="button" class="btn btn-ghost toolbar-btn" onclick="togglePointsToolMenu()" aria-expanded="false" aria-controls="points-tool-panel">
+      <button type="button" class="btn btn-ghost toolbar-btn" data-accion="togglePointsToolMenu" aria-expanded="false" aria-controls="points-tool-panel">
         <i data-lucide="calculator" style="width:16px;height:16px;"></i>
         Puntos: <strong id="points-assigned-label">0 / 0 pts</strong>
         <i data-lucide="chevron-down" class="chev" aria-hidden="true"></i>
@@ -350,23 +386,23 @@ export function renderEditor(data) {
     <div id="filter-chips-bar" class="collapsible-panel"></div>
     <div id="points-tool-panel" class="collapsible-panel" style="flex-direction:column;gap:12px;">
       <div style="display:flex;gap:8px;" role="group" aria-label="Cómo repartir los puntos">
-        <button type="button" id="points-mode-equal" class="btn btn-ghost btn-sm" aria-pressed="false" onclick="setPointsToolMode('equal')" style="flex:1;">Igual para todas</button>
-        <button type="button" id="points-mode-byType" class="btn btn-primary btn-sm" aria-pressed="true" onclick="setPointsToolMode('byType')" style="flex:1;">Según el tipo</button>
+        <button type="button" id="points-mode-equal" class="btn btn-ghost btn-sm" aria-pressed="false" data-accion="setPointsToolMode" data-arg="equal" style="flex:1;">Igual para todas</button>
+        <button type="button" id="points-mode-byType" class="btn btn-primary btn-sm" aria-pressed="true" data-accion="setPointsToolMode" data-arg="byType" style="flex:1;">Según el tipo</button>
       </div>
       <p class="points-help">Cada número es un <strong style="color:var(--color-text);">peso relativo</strong>: un tipo con peso 2 vale el doble que uno con peso 1. A la derecha ves cuánto quedaría cada pregunta; el reparto siempre suma el total del examen, <strong style="color:var(--color-text);">${fmtPoints(_editorTotalPoints())} pts</strong>.</p>
       <div id="points-weights-editor" style="display:flex;flex-direction:column;gap:8px;">
         ${typesPresent.map(t => {
           const def = QUESTION_TYPE_DEFS.find(d => d.key === t) || { label: t, colorVar: 'var(--color-text)' };
           return `<div class="points-weight-row">
-            <span class="type-name" style="color:${def.colorVar};">${def.label}</span>
+            <span class="type-name" style="color:${def.colorVar};">${esc_html(def.label)}</span>
             <div style="display:flex;align-items:center;gap:8px;">
-              <span class="points-weight-preview" data-type="${t}">—</span>
-              <input type="number" class="form-input points-weight-input" data-type="${t}" min="0" step="0.5" value="${DEFAULT_TYPE_WEIGHTS[t] || 1}" aria-label="Peso relativo de ${def.label}" />
+              <span class="points-weight-preview" data-type="${esc_html(t)}">—</span>
+              <input type="number" class="form-input points-weight-input" data-type="${esc_html(t)}" min="0" step="0.5" value="${esc_html(DEFAULT_TYPE_WEIGHTS[t] || 1)}" aria-label="Peso relativo de ${esc_html(def.label)}" />
             </div>
           </div>`;
         }).join('')}
       </div>
-      <button type="button" class="btn btn-primary btn-sm" onclick="applyPointsDistribution()">Aplicar a todas las preguntas</button>
+      <button type="button" class="btn btn-primary btn-sm" data-accion="applyPointsDistribution">Aplicar a todas las preguntas</button>
     </div>
   </div>`;
 
@@ -375,12 +411,12 @@ export function renderEditor(data) {
   const addQuestionHtml = `<div class="add-question-block">
     <div class="add-head">
       <p>¿Falta alguna pregunta del documento?</p>
-      <button type="button" class="btn btn-ghost btn-sm" onclick="toggleAddQuestionMenu()" aria-expanded="false" aria-controls="add-question-types">
+      <button type="button" class="btn btn-ghost btn-sm" data-accion="toggleAddQuestionMenu" aria-expanded="false" aria-controls="add-question-types">
         <i data-lucide="plus" style="width:15px;height:15px;"></i> Añadir pregunta
       </button>
     </div>
     <div id="add-question-types" class="collapsible-panel add-type-grid" role="group" aria-label="Tipo de la pregunta nueva" style="background:none;border:none;padding:0;margin:12px 0 0;">
-      ${QUESTION_TYPE_DEFS.map(t => `<button type="button" class="filter-chip" data-filter="${t.key}" onclick="addNewQuestion('${t.key}')">
+      ${QUESTION_TYPE_DEFS.map(t => `<button type="button" class="filter-chip" data-filter="${t.key}" data-accion="addNewQuestion" data-arg="${t.key}">
         <i data-lucide="plus" style="width:13px;height:13px;"></i> ${t.label}
       </button>`).join('')}
     </div>
@@ -416,16 +452,19 @@ function _cardHtml(q, i, keyInfo) {
     q.data.answer_from_marks && _flagBadge('flag-neutral', 'highlighter', 'respuesta por marca', 'La respuesta se tomó directamente de la marca del documento (color, resaltado, subrayado, negrita o X en un cuadro), leída del PDF sin que la IA la interprete.'),
   ].filter(Boolean).join('');
 
-  let html = `<article class="editor-card" tabindex="-1" data-idx="${i}" data-qnum="${q.num}" data-qtype="${q.type}"${needsReview ? ' data-review="1"' : ''} aria-labelledby="q-title-${i}">
+  // num y type ya vienen saneados (_sanearDatos); se escapan igual, por si
+  // algún día se llama a esta función con datos sin pasar por ahí.
+  const N = esc_html(q.num), T = esc_html(q.type);
+  let html = `<article class="editor-card" tabindex="-1" data-idx="${i}" data-qnum="${N}" data-qtype="${T}"${needsReview ? ' data-review="1"' : ''} aria-labelledby="q-title-${i}">
     <div class="card-head">
       <div class="card-title">
-        <h3 id="q-title-${i}">Pregunta ${q.num}</h3>
-        <span class="type-badge ${q.type}">${QUESTION_TYPE_LABEL_MAP[q.type] || esc_html(q.type)}</span>
+        <h3 id="q-title-${i}">Pregunta ${N}</h3>
+        <span class="type-badge ${T}">${esc_html(QUESTION_TYPE_LABEL_MAP[q.type] || q.type)}</span>
       </div>
       <div class="card-meta">
-        <input type="number" class="q-points form-input" step="0.01" min="0" value="${q.points != null ? esc_html(q.points) : ''}" aria-label="Puntos de la pregunta ${q.num}" title="Puntos que vale esta pregunta" />
+        <input type="number" class="q-points form-input" step="0.01" min="0" value="${q.points != null ? esc_html(q.points) : ''}" aria-label="Puntos de la pregunta ${N}" title="Puntos que vale esta pregunta" />
         <span class="pts-unit" aria-hidden="true">pts</span>
-        <button type="button" class="btn btn-icon btn-danger-text" onclick="deleteQuestionCard(this)" aria-label="Eliminar la pregunta ${q.num}" title="Eliminar pregunta">
+        <button type="button" class="btn btn-icon btn-danger-text" data-accion="deleteQuestionCard" data-este aria-label="Eliminar la pregunta ${N}" title="Eliminar pregunta">
           <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
         </button>
       </div>
@@ -500,7 +539,7 @@ function _cardHtml(q, i, keyInfo) {
       <div id="matching-pairs-list-${i}" class="matching-pairs-list">
         ${pairs.map((p, pIdx) => _matchingPairRowHtml(p, pIdx + 1)).join('')}
       </div>
-      <button type="button" class="btn btn-ghost btn-sm btn-block" onclick="addMatchingPairRow(${i})" style="margin-top:10px;">
+      <button type="button" class="btn btn-ghost btn-sm btn-block" data-accion="addMatchingPairRow" data-arg-n="${i}" style="margin-top:10px;">
         <i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar pareja
       </button>
     </div>`;

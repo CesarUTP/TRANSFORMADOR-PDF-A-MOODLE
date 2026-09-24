@@ -22,7 +22,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 # Archivos del frontend que son de desarrollo y no viajan en el instalador.
-SOLO_DESARROLLO = {"pruebas.html"}
+SOLO_DESARROLLO = {"pruebas.html", "pruebas.js"}
 DESTS = [ROOT / "ejecutable", ROOT / "ejecutable_mac"]
 
 

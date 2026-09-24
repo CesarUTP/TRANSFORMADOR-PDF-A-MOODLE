@@ -9,6 +9,7 @@
  * La clave nunca vuelve al navegador: el backend solo informa si hay una
  * y sus 4 últimos caracteres.
  */
+import { apiFetch } from '../api.js';
 import { abrirModal, cerrarModal } from './modales.js';
 import { confirmar } from './confirmar.js';
 import { showToast } from './toast.js';
@@ -29,7 +30,7 @@ const revealBtn = document.getElementById('btn-apikey-reveal');
 let _estado = { configurada: false };
 
 async function _pedirEstado() {
-  const res = await fetch('/api/api-key');
+  const res = await apiFetch('/api/api-key');
   if (!res.ok) throw new Error('estado');
   _estado = await res.json();
   return _estado;
@@ -157,7 +158,7 @@ form.addEventListener('submit', async e => {
   _mostrarError('');
   _ocupado(true);
   try {
-    const res = await fetch('/api/api-key', {
+    const res = await apiFetch('/api/api-key', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ clave }),
@@ -191,7 +192,7 @@ document.getElementById('btn-apikey-delete').addEventListener('click', async () 
   });
   if (!ok) return;
   try {
-    const res = await fetch('/api/api-key', { method: 'DELETE' });
+    const res = await apiFetch('/api/api-key', { method: 'DELETE' });
     if (!res.ok) throw new Error('delete');
     _estado = await res.json();
     showToast('Clave quitada de este equipo', 'info');

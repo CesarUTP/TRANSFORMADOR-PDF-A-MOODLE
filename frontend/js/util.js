@@ -185,6 +185,7 @@ export function describeArcSlice(cx, cy, r, startAngle, endAngle) {
 // flujo (archivo muy pesado, límite de la API de IA, backend caído).
 export function friendlyHttpError(status) {
   const known = {
+    401: 'La app perdió la conexión segura con su servidor interno. Cierra la aplicación y vuelve a abrirla.',
     413: 'El archivo es demasiado pesado para procesarlo. Intenta con un PDF más liviano o divide el examen en partes.',
     429: 'El servicio de IA está recibiendo demasiadas solicitudes en este momento. Espera un minuto y vuelve a intentarlo.',
     500: 'Ocurrió un error inesperado en el servidor al procesar tu examen.',

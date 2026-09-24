@@ -17,8 +17,11 @@ from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import HTTPException
 
-from config import ENRICH_PDF_TEXT, NORMALIZER_MODE, NORMALIZER_MODE_AI
+from config import ENRICH_PDF_TEXT, MISSING_API_KEY_MESSAGE, NORMALIZER_MODE, NORMALIZER_MODE_AI
+from credenciales import get_api_key
 from extractor import (
+    DocumentoDemasiadoGrande,
+    comprobar_paginas,
     extract_pages_text,
     extract_pages_enriched_and_tables,
     get_colored_pages,
@@ -138,6 +141,21 @@ def _tag_color_review_hints(valid_questions: List[Dict[str, Any]], colored_pages
             q["data"]["color_review_hint"] = True
 
 
+def _comprobar_entrada(raw_bytes: bytes, suffix: str) -> None:
+    """Antes de leer el documento (lo más caro después de Gemini): sin
+    clave de la API no hay conversión posible, y un PDF con demasiadas
+    páginas se rechaza sin procesarlo."""
+    if not get_api_key():
+        raise HTTPException(status_code=503, detail=MISSING_API_KEY_MESSAGE)
+    if suffix == ".pdf":
+        try:
+            comprobar_paginas(raw_bytes)
+        except DocumentoDemasiadoGrande as exc:
+            raise HTTPException(status_code=413, detail=str(exc))
+        except Exception:  # noqa: BLE001 — un PDF dañado lo informa la extracción, como siempre
+            pass
+
+
 def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback = None) -> Dict[str, Any]:
     """Flujo de /api/parse: texto (+ imágenes de páginas con imagen incrustada)."""
     suffix = Path(filename).suffix.lower()
@@ -146,6 +164,7 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
             status_code=400,
             detail=f"Formato no soportado '{suffix}'. Solo se aceptan archivos .pdf o .txt.",
         )
+    _comprobar_entrada(raw_bytes, suffix)
 
     # ── Extraer texto (+ imágenes de páginas con contenido visual) ─────
     # Las imágenes son solo de páginas que de verdad tienen una incrustada
@@ -244,6 +263,7 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
             status_code=400,
             detail="Normalizar con IA solo aplica a archivos .pdf (un .txt ya es texto plano).",
         )
+    _comprobar_entrada(raw_bytes, suffix)
 
     _emit(progress, type="stage", key="extract", message="Preparando las páginas del documento…")
     try:

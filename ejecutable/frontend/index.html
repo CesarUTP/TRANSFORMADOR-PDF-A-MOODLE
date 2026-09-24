@@ -14,8 +14,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   
-  <!-- Lucide Icons (versión fija: "@latest" puede romper la UI sin aviso si Lucide publica un cambio incompatible) -->
-  <script src="https://unpkg.com/lucide@1.44.0/dist/umd/lucide.min.js"></script>
+  <!-- Lucide Icons 1.44.0 (ISC, ver js/vendor/LICENSE-lucide.txt), copiado dentro de la app: un script
+       de otro servidor correría con acceso al puente nativo de la ventana. -->
+  <script src="js/vendor/lucide.min.js"></script>
 
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/componentes.css">
@@ -220,7 +221,7 @@
     <section id="panel-editor" style="display:none;" class="animate-fadeIn" aria-labelledby="editor-title">
       <div class="editor-head">
         <h2 id="editor-title" class="screen-title" tabindex="-1">Revisa las preguntas</h2>
-        <p class="screen-sub" id="editor-sub">Compara cada pregunta con tu documento: la transcripción puede traer errores o respuestas faltantes. Corrige lo que haga falta y genera el XML cuando esté listo. <button type="button" class="text-link" onclick="openHelp('review')">¿Cómo reviso?</button></p>
+        <p class="screen-sub" id="editor-sub">Compara cada pregunta con tu documento: la transcripción puede traer errores o respuestas faltantes. Corrige lo que haga falta y genera el XML cuando esté listo. <button type="button" class="text-link" data-accion="openHelp" data-arg="review">¿Cómo reviso?</button></p>
       </div>
 
       <div id="editor-questions-container"></div>
@@ -252,7 +253,7 @@
             Volver a la revisión
           </button>
         </div>
-        <p class="success-next">Siguiente paso: impórtalo en Moodle, en <em>Banco de preguntas → Importar</em>. <button type="button" class="text-link" onclick="openHelp('moodle')">Ver cómo, paso a paso</button></p>
+        <p class="success-next">Siguiente paso: impórtalo en Moodle, en <em>Banco de preguntas → Importar</em>. <button type="button" class="text-link" data-accion="openHelp" data-arg="moodle">Ver cómo, paso a paso</button></p>
 
         <!-- Preguntas omitidas: se rellena en updateSuccessStats(). -->
         <div id="success-skipped-notice" class="callout is-warning" style="display:none;margin-bottom:20px;"></div>
@@ -301,7 +302,7 @@
             Leer el PDF con IA
           </button>
           <p style="font-size:12px;color:var(--color-text-subtle);margin:0;text-align:center;">
-            o usa las <button type="button" class="text-link" onclick="openHelp('prompt')">instrucciones para otra IA</button> con la que prefieras.
+            o usa las <button type="button" class="text-link" data-accion="openHelp" data-arg="prompt">instrucciones para otra IA</button> con la que prefieras.
           </p>
         </div>
 
@@ -317,7 +318,7 @@
   <!-- Panel de revisión: mapa del examen + Generar XML (ver .review-rail) -->
   <aside id="review-rail" class="review-rail" aria-label="Mapa del examen y acciones">
     <div class="rail-head">
-      <button type="button" class="rail-pos" onclick="toggleRailGrid()" aria-controls="review-rail-grid" aria-expanded="false">
+      <button type="button" class="rail-pos" data-accion="toggleRailGrid" aria-controls="review-rail-grid" aria-expanded="false">
         <span class="rail-pos-long" id="review-progress-label">Pregunta 1 de 1</span>
         <span class="rail-pos-short" id="review-progress-short">1 de 1</span>
         <span id="rail-error-short" class="rail-pill is-error"></span>
@@ -328,16 +329,16 @@
     <div class="rail-grid-wrap">
       <div class="rail-grid" id="review-rail-grid" role="list" aria-label="Ir a una pregunta"></div>
       <div class="rail-links">
-        <button type="button" class="rail-review-next is-error" id="rail-incomplete-next" onclick="jumpToNextFlagged('incomplete')"></button>
-        <button type="button" class="rail-review-next" id="rail-review-next" onclick="jumpToNextFlagged('review')"></button>
+        <button type="button" class="rail-review-next is-error" id="rail-incomplete-next" data-accion="jumpToNextFlagged" data-arg="incomplete"></button>
+        <button type="button" class="rail-review-next" id="rail-review-next" data-accion="jumpToNextFlagged" data-arg="review"></button>
       </div>
     </div>
     <div class="rail-actions">
-      <button type="button" id="btn-generate-xml" class="btn btn-success" onclick="generateXml()">
+      <button type="button" id="btn-generate-xml" class="btn btn-success" data-accion="generateXml">
         <i data-lucide="file-check-2" style="width:17px;height:17px;"></i>
         Generar XML
       </button>
-      <button type="button" id="btn-discard-review" class="btn btn-ghost" onclick="confirmDiscardReview()" aria-label="Descartar esta revisión">
+      <button type="button" id="btn-discard-review" class="btn btn-ghost" data-accion="confirmDiscardReview" aria-label="Descartar esta revisión">
         <i data-lucide="x" style="width:15px;height:15px;"></i>
         <span class="btn-label">Descartar</span>
       </button>

@@ -1,10 +1,13 @@
 /**
  * app.js — punto de entrada: conecta los eventos de la página.
  * 
- * Al final expone en `window` las funciones que el HTML llama desde
- * atributos onclick. Es el único lugar donde se toca `window`.
+ * Los botones que se dibujan como HTML no llevan onclick="…" (la política
+ * de seguridad de la página prohíbe el JS en línea): llevan
+ * data-accion="nombre" y un solo oyente, aquí, llama a la función.
  */
 
+// Primero: lee el token de la URL antes de que nada la toque (ver api.js).
+import './api.js';
 import { borrarBorrador, guardarBorrador, guardarBorradorAhora, mostrarAvisoBorrador, retomarBorrador } from './borrador.js';
 import { cancelConversion, clearFile, handleFileSelected, runConversion, runNormalizeWithAI } from './carga.js';
 import { aiPromptText, btnConvert, btnCopyPrompt, btnRemoveFile, copyIcon, copyLabel, dropZone, fileInput, modalDisclaimer, modalHelp, modalHistory, modalTabs, pointsError, pointsInput } from './dom.js';
@@ -15,7 +18,7 @@ import { toggleAddQuestionMenu } from './editor/paneles.js';
 import { applyPointsDistribution, setPointsToolMode, togglePointsToolMenu, updatePointsAssignedLabel, updatePointsWeightPreview } from './editor/puntos-ui.js';
 import { addMatchingPairRow, addNewQuestion, deleteQuestionCard, recoverSkippedQuestion, removeMatchingPairRow } from './editor/tarjetas.js';
 import { estado, suscribir } from './estado.js';
-import { closeHistory, confirmDeleteHistory, downloadHistory, loadHistoryList, openHistory, renderHistoryList, reopenHistory, startDeleteHistory } from './historial.js';
+import { closeHistory, confirmDeleteHistory, downloadHistoryDesdeBoton, loadHistoryList, openHistory, renderHistoryList, reopenHistory, startDeleteHistory } from './historial.js';
 import { confirmDiscardReview, resetAll, showPanel } from './navegacion.js';
 import { generateXml, saveFileToUser } from './resultado.js';
 import { abrirAjustesClave, claveObligatoria, comprobarClaveAlIniciar } from './ui/clave.js';
@@ -36,10 +39,31 @@ suscribir(() => {
   guardarBorrador();
 });
 
-// ── Funciones que el HTML llama desde atributos onclick ──────────────────
-// Los módulos tienen ámbito propio, así que las que usa el HTML inline se
-// publican aquí, en un solo lugar y de forma explícita.
-Object.assign(window, { addMatchingPairRow, addNewQuestion, applyPointsDistribution, closeHistory, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDeleteHistory, confirmDiscardReview, deleteQuestionCard, downloadHistory, generateXml, jumpToNextFlagged, loadHistoryList, openHelp, renderHistoryList, recoverSkippedQuestion, removeMatchingPairRow, reopenHistory, resetAll, selectFilter, setPointsToolMode, startDeleteHistory, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid });
+// ── Acciones de los botones dibujados como HTML ──────────────────────────
+// data-accion="nombre" (clic) o data-accion-cambio="nombre" (change) llama a
+// ACCIONES[nombre] con: data-arg (texto), data-arg-n (número), data-este (el
+// propio elemento) o nada. Solo las funciones de esta lista: un atributo
+// inyectado no puede llamar a otra cosa.
+const ACCIONES = { addMatchingPairRow, addNewQuestion, applyPointsDistribution, closeHistory, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDeleteHistory, confirmDiscardReview, deleteQuestionCard, downloadHistoryDesdeBoton, generateXml, jumpToNextFlagged, loadHistoryList, openHelp, renderHistoryList, recoverSkippedQuestion, removeMatchingPairRow, reopenHistory, resetAll, selectFilter, setPointsToolMode, startDeleteHistory, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
+
+function _ejecutarAccion(el, nombre) {
+  if (!Object.hasOwn(ACCIONES, nombre)) return;
+  const d = el.dataset;
+  const args = d.arg !== undefined ? [d.arg]
+    : d.argN !== undefined ? [Number(d.argN)]
+    : d.este !== undefined ? [el]
+    : [];
+  ACCIONES[nombre](...args);
+}
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-accion]');
+  if (el && !el.disabled) _ejecutarAccion(el, el.dataset.accion);
+});
+document.addEventListener('change', e => {
+  const el = e.target.closest('[data-accion-cambio]');
+  if (el) _ejecutarAccion(el, el.dataset.accionCambio);
+});
 
 // Init Lucide Icons
 lucide.createIcons();

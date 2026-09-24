@@ -16,15 +16,15 @@ from urllib.parse import quote
 import time
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from lxml import etree
 
-from config import DEFAULT_CATEGORY, DEFAULT_TOTAL_POINTS
+from config import DEFAULT_CATEGORY, DEFAULT_TOTAL_POINTS, SERVER_PORT
 import credenciales
+import seguridad
 from extractor import pdf_has_embedded_images
 from pipeline import parse_document, normalize_document_with_ai
 from validator import validate_questions
@@ -98,21 +98,37 @@ def _detalle_tecnico(exc: Exception) -> str:
 
 app = FastAPI(title="PDF → Moodle XML", version="1.1")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    # No usamos cookies/sesiones ni cabeceras de credenciales — "*" +
-    # allow_credentials=True es una combinación inválida según el spec CORS
-    # (los navegadores la rechazan si de verdad se envían credenciales).
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["X-Question-Stats", "X-Was-Reformatted", "Content-Disposition"],
-)
+# Sin CORS: la interfaz se sirve desde este mismo servidor, así que ninguna
+# otra página necesita (ni debe poder) leer sus respuestas. Host, Origin,
+# token por arranque, tamaño máximo y CSP: ver seguridad.py.
+app.add_middleware(seguridad.SoloLaApp)
 
 @app.on_event("startup")
 def startup_event():
     init_db()
+    if not seguridad.EN_LAUNCHER:
+        # Arrancado a mano (uvicorn, ver README): sin el token en la URL la
+        # interfaz no puede usar la API.
+        print(f"\n  Abre la app en: http://127.0.0.1:{SERVER_PORT}/#t={seguridad.TOKEN}\n"
+              "  (si arrancaste uvicorn con otro --port, cambia el número)\n", flush=True)
+
+
+# El launcher confirma con esta firma que quien responde en el puerto es
+# este servidor y no otro programa (ver launcher._wait_for_server).
+@app.get(seguridad.RUTA_SALUD, include_in_schema=False)
+def api_salud(n: str = ""):
+    return {"firma": seguridad.firma_salud(n)}
+
+
+# Conversiones a la vez: cada una lee el PDF, renderiza páginas y llama a
+# Gemini. Las demás esperan su turno en vez de agotar memoria e hilos.
+_CUPOS_CONVERSION = threading.BoundedSemaphore(2)
+
+
+def _con_cupo(fn, *args, **kwargs):
+    with _CUPOS_CONVERSION:
+        return fn(*args, **kwargs)
+
 
 # ── Serve frontend static files ─────────────────────────────────────────────
 # Works both in development (relative path) and inside a PyInstaller bundle.
@@ -175,7 +191,7 @@ async def api_parse(
     # ~2 min con imágenes), así que corre en threadpool para no bloquear
     # el event loop de FastAPI.
     raw_bytes = await file.read()
-    return await run_in_threadpool(parse_document, raw_bytes, _nombre_nfc(file.filename) or "upload")
+    return await run_in_threadpool(_con_cupo, parse_document, raw_bytes, _nombre_nfc(file.filename) or "upload")
 
 
 @app.post("/api/normalize_with_ai")
@@ -189,7 +205,7 @@ async def api_normalize_with_ai(
     PDFs con imágenes incrustadas y PDFs escaneados sin capa de texto.
     """
     raw_bytes = await file.read()
-    return await run_in_threadpool(normalize_document_with_ai, raw_bytes, _nombre_nfc(file.filename) or "upload")
+    return await run_in_threadpool(_con_cupo, normalize_document_with_ai, raw_bytes, _nombre_nfc(file.filename) or "upload")
 
 
 def _ndjson_progress_stream(fn, raw_bytes: bytes, filename: str) -> StreamingResponse:
@@ -215,6 +231,7 @@ def _ndjson_progress_stream(fn, raw_bytes: bytes, filename: str) -> StreamingRes
         # no responde igual dos veces, y lo más común es que una respuesta
         # puntual con una forma rara rompa algún paso posterior. Si vuelve
         # a fallar, el mensaje dice qué pasó y dónde quedó la traza.
+        _CUPOS_CONVERSION.acquire()
         try:
             for intento in (1, 2):
                 try:
@@ -238,6 +255,7 @@ def _ndjson_progress_stream(fn, raw_bytes: bytes, filename: str) -> StreamingRes
                         f"(Detalle técnico: {_detalle_tecnico(exc)})"
                     )})
         finally:
+            _CUPOS_CONVERSION.release()
             events.put(None)
 
     threading.Thread(target=worker, daemon=True).start()
@@ -433,28 +451,17 @@ async def api_delete_history(record_id: int):
 # El docente pega su clave en el modal de bienvenida; se guarda cifrada en
 # la carpeta de datos (ver credenciales.py). Nunca se devuelve completa.
 
-# El CORS de arriba acepta cualquier origen; para la clave eso no basta:
-# otra página web abierta en el navegador podría cambiarla o borrarla.
-# Solo se aceptan peticiones de la propia app (mismo origen que el servidor).
-def _solo_la_app(request: Request) -> None:
-    origen = request.headers.get("origin")
-    if origen is not None and origen != f"http://{request.headers.get('host', '')}":
-        raise HTTPException(status_code=403, detail="Origen no permitido")
-
-
 class ApiKeyBody(BaseModel):
     clave: str
 
 
 @app.get("/api/api-key")
-def api_key_status(request: Request):
-    _solo_la_app(request)
+def api_key_status():
     return credenciales.estado()
 
 
 @app.post("/api/api-key")
-def api_key_save(body: ApiKeyBody, request: Request):
-    _solo_la_app(request)
+def api_key_save(body: ApiKeyBody):
     # Al copiar suelen colarse espacios o saltos de línea.
     clave = "".join(body.clave.split())
     if not clave:
@@ -477,7 +484,6 @@ def api_key_save(body: ApiKeyBody, request: Request):
 
 
 @app.delete("/api/api-key")
-def api_key_delete(request: Request):
-    _solo_la_app(request)
+def api_key_delete():
     credenciales.borrar()
     return credenciales.estado()

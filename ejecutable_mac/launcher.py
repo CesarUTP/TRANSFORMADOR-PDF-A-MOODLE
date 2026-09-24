@@ -12,10 +12,13 @@ import sys
 import os
 import base64
 import json
+import secrets
+import socket
 import threading
 import time
 import traceback
 import urllib.request
+import webbrowser
 
 # ── Log de arranque (para depurar fallos silenciosos del backend) ──────────
 def _app_data_dir() -> str:
@@ -64,11 +67,33 @@ BACKEND_DIR = os.path.join(BUNDLE_DIR, "backend")
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-from config import SERVER_HOST, SERVER_PORT
+from config import SERVER_HOST
+import seguridad
 
 HOST = SERVER_HOST
-PORT = SERVER_PORT
+
+
+def _abrir_socket() -> socket.socket:
+    """
+    El launcher reserva el puerto ANTES de arrancar el servidor y se lo
+    entrega a uvicorn. Antes se usaba siempre el 8000: si otro programa lo
+    ocupaba primero, la ventana cargaba SU página (con el puente nativo
+    disponible) sin avisar. Con el puerto 0 el sistema da uno libre, y como
+    el socket ya es nuestro nadie más puede escuchar en él.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if sys.platform == "win32":
+        # En Windows otro proceso podría enlazar el mismo puerto con
+        # SO_REUSEADDR si no se pide exclusividad.
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+    sock.bind((HOST, 0))
+    return sock
+
+
+_SOCK = _abrir_socket()
+PORT = _SOCK.getsockname()[1]
 URL  = f"http://{HOST}:{PORT}"
+seguridad.EN_LAUNCHER = True
 
 # Tiempo mínimo que se muestra la splash screen, sin importar qué tan rápido
 # arranque el backend. Sin este mínimo, cuando el servidor respondía casi de
@@ -80,70 +105,85 @@ MIN_SPLASH_SECONDS = 2.5
 
 
 # ── API expuesta a JavaScript ───────────────────────────────────────────────
-class Api:
-    """Funciones Python accesibles desde el JS de la app via window.pywebview.api"""
+# Funciones sueltas publicadas con window.expose(), no un objeto js_api:
+# pywebview resuelve el nombre que pide el JS recorriendo atributos con
+# getattr, sin filtrar los que empiezan con "_". Con un objeto que guardaba
+# la ventana, un JS en la página podía llegar a Api._window.gui… y de ahí
+# a os.system. Ahora la ventana vive en una variable del módulo, fuera del
+# alcance del puente, y lo único que el JS puede llamar son estas dos.
+_VENTANA = None
 
-    def __init__(self):
-        self._window = None
+# Enlaces que la app puede abrir en el navegador del sistema (la
+# ventana de escritorio no abre pestañas nuevas). Lista cerrada: solo
+# las páginas de Google para obtener la clave y ver precios.
+_URLS_PERMITIDAS = ("https://aistudio.google.com/", "https://ai.google.dev/")
 
-    def _set_window(self, window):
-        self._window = window
 
-    def save_xml_file(self, filename: str, b64_content: str) -> dict:
-        """
-        Abre el dialogo nativo 'Guardar como', escribe el XML y devuelve
-        {'saved': True, 'path': '...'} o {'saved': False}.
-        """
-        try:
-            if self._window is None:
-                return {"saved": False, "error": "Ventana no disponible"}
+def save_xml_file(filename: str, b64_content: str) -> dict:
+    """
+    Abre el dialogo nativo 'Guardar como', escribe el XML y devuelve
+    {'saved': True, 'path': '...'} o {'saved': False}.
+    """
+    try:
+        if _VENTANA is None:
+            return {"saved": False, "error": "Ventana no disponible"}
 
-            import webview
+        import webview
 
-            # Carpeta inicial: Descargas del usuario
-            downloads = os.path.join(os.path.expanduser("~"), "Downloads")
-            if not os.path.isdir(downloads):
-                downloads = os.path.expanduser("~")
+        # Carpeta inicial: Descargas del usuario
+        downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+        if not os.path.isdir(downloads):
+            downloads = os.path.expanduser("~")
 
-            result = self._window.create_file_dialog(
-                webview.SAVE_DIALOG,
-                directory=downloads,
-                save_filename=filename,
-                file_types=("Archivos XML (*.xml)", "Todos los archivos (*.*)"),
-            )
+        result = _VENTANA.create_file_dialog(
+            webview.SAVE_DIALOG,
+            directory=downloads,
+            save_filename=os.path.basename(str(filename)),
+            file_types=("Archivos XML (*.xml)", "Todos los archivos (*.*)"),
+        )
 
-            if not result:
-                return {"saved": False}
+        if not result:
+            return {"saved": False}
 
-            save_path = result[0] if isinstance(result, (list, tuple)) else result
+        save_path = result[0] if isinstance(result, (list, tuple)) else result
 
-            # Asegurar extension .xml
-            if not save_path.lower().endswith(".xml"):
-                save_path += ".xml"
+        # Asegurar extension .xml
+        if not save_path.lower().endswith(".xml"):
+            save_path += ".xml"
 
-            import base64
-            content_bytes = base64.b64decode(b64_content)
-            with open(save_path, "wb") as f:
-                f.write(content_bytes)
-            
-            return {"saved": True, "path": save_path}
-        
-        except Exception as exc:
-            import traceback
-            print("SAVE ERROR:", traceback.format_exc())
-            return {"saved": False, "error": "Python error: " + str(exc)}
+        content_bytes = base64.b64decode(b64_content)
+        with open(save_path, "wb") as f:
+            f.write(content_bytes)
 
-    # Enlaces que la app puede abrir en el navegador del sistema (la
-    # ventana de escritorio no abre pestañas nuevas). Lista cerrada: solo
-    # las páginas de Google para obtener la clave y ver precios.
-    _URLS_PERMITIDAS = ("https://aistudio.google.com/", "https://ai.google.dev/")
+        return {"saved": True, "path": save_path}
 
-    def open_url(self, url: str) -> bool:
-        if not isinstance(url, str) or not url.startswith(self._URLS_PERMITIDAS):
-            return False
-        import webbrowser
-        return webbrowser.open(url)
+    except Exception as exc:
+        print("SAVE ERROR:", traceback.format_exc())
+        return {"saved": False, "error": "Python error: " + str(exc)}
 
+
+def open_url(url: str) -> bool:
+    if not isinstance(url, str) or not url.startswith(_URLS_PERMITIDAS):
+        return False
+    return _abrir_en_navegador(url)
+
+
+# pywebview abre en el navegador del sistema los enlaces que piden ventana
+# nueva (window.open, target="_blank") llamando a webbrowser.open, y en
+# Windows eso termina en os.startfile, que abre CUALQUIER cosa: una ruta
+# file:// a un .exe incluida. Se reemplaza por una versión que solo deja
+# pasar la lista de arriba.
+_abrir_en_navegador = webbrowser.open
+
+
+def _abrir_solo_permitidas(url, new=0, autoraise=True):
+    if isinstance(url, str) and url.startswith(_URLS_PERMITIDAS):
+        return _abrir_en_navegador(url, new, autoraise)
+    _log(f"Enlace externo bloqueado: {str(url)[:200]}")
+    return False
+
+
+webbrowser.open = _abrir_solo_permitidas
 
 
 # ── Splash Screen HTML ──────────────────────────────────────────────────────
@@ -344,17 +384,29 @@ def _run_server():
     try:
         _log(f"Iniciando uvicorn en {HOST}:{PORT} (BACKEND_DIR={BACKEND_DIR})")
         import uvicorn
-        uvicorn.run("main:app", host=HOST, port=PORT, log_level="critical")
-    except Exception:
+        servidor = uvicorn.Server(uvicorn.Config("main:app", log_level="critical"))
+        servidor.run(sockets=[_SOCK])
+    except BaseException:
         _log("EXCEPCION en _run_server:\n" + traceback.format_exc())
+
+
+def _es_nuestro_servidor() -> bool:
+    """Quien responde tiene que firmar un número al azar con el token de
+    este arranque: otro programa no lo conoce (y el token nunca se envía)."""
+    nonce = secrets.token_urlsafe(16)
+    with urllib.request.urlopen(f"{URL}{seguridad.RUTA_SALUD}?n={nonce}", timeout=1) as r:
+        firma = json.loads(r.read().decode("utf-8")).get("firma", "")
+    return secrets.compare_digest(str(firma), seguridad.firma_salud(nonce))
 
 
 def _wait_for_server(timeout: int = 30) -> bool:
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            urllib.request.urlopen(URL, timeout=1)
-            return True
+            if _es_nuestro_servidor():
+                return True
+            _log("Quien responde en el puerto no es el servidor de la app.")
+            return False
         except Exception:
             time.sleep(0.4)
     return False
@@ -364,12 +416,11 @@ def _wait_for_server(timeout: int = 30) -> bool:
 def main():
     import webview
 
-    api = Api()
+    global _VENTANA
 
     window = webview.create_window(
         title="Conversor a Moodle XML",
         html=SPLASH_HTML,
-        js_api=api,          # <-- expone api.save_xml_file() a JS
         width=800,
         height=750,
         resizable=True,
@@ -382,8 +433,9 @@ def main():
         maximized=True,
     )
 
-    # Guardar referencia de la ventana en el api para los dialogos
-    api._set_window(window)
+    # Lo único que el JS de la ventana puede llamar en Python (ver arriba).
+    _VENTANA = window
+    window.expose(save_xml_file, open_url)
 
     def _stage(fraccion: float, texto: str) -> None:
         # Informa una etapa REAL del arranque a la splash (barra + texto).
@@ -412,7 +464,10 @@ def main():
                 time.sleep(remaining)
 
             if server_ready:
-                window.load_url(URL)
+                # El token va en el fragmento (#): el navegador no lo envía al
+                # servidor ni queda en registros; la página lo lee y lo manda
+                # en cada petición a /api/ (ver frontend/js/api.js).
+                window.load_url(f"{URL}/#t={seguridad.TOKEN}")
             else:
                 _log("El backend no respondio dentro del timeout.")
                 window.load_html(_error_html(LOG_PATH))

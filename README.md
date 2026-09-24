@@ -267,16 +267,16 @@ source venv/bin/activate          # macOS / Linux
 
 # 3. Dependencias
 pip install -r requirements.txt
-pip install pywebview             # solo para la app de escritorio
+pip install "pywebview==6.2.1"    # solo para la app de escritorio
 
-# 4. Backend
-uvicorn main:app --reload --port 8000
+# 4. Backend (CONVERSOR_TOKEN fija el token para que no cambie en cada recarga)
+CONVERSOR_TOKEN=dev uvicorn main:app --reload --port 8000
 ```
 
 | | |
 |---|---|
-| 🌐 App | `http://localhost:8000` — el backend sirve el frontend |
-| 📚 Swagger | `http://localhost:8000/docs` |
+| 🌐 App | `http://localhost:8000/#t=dev` — el backend sirve el frontend; sin `#t=…` la API responde 401 (ver [Seguridad del servidor local](#seguridad-del-servidor-local)) |
+| 📚 Swagger | `http://localhost:8000/docs` (las rutas `/api/` piden la cabecera `X-Conversor-Token`) |
 | 🧪 Pruebas del frontend | `http://localhost:8000/static/pruebas.html` |
 | 🖥️ App de escritorio | `python launcher.py` desde la raíz |
 
@@ -394,7 +394,19 @@ Las preguntas **cloze** usan corchetes en el cuerpo, con letras correlativas si 
 
 **`/api/generate_xml`** — descarga del `.xml`, con el header `X-Question-Stats` (JSON con conteo por tipo y puntajes calculados). El nombre del archivo va en `Content-Disposition` con `filename*=UTF-8''…` (RFC 6266): así sirven nombres con tildes o ñ, incluidos los que macOS entrega en forma descompuesta (NFD).
 
-**`/api/api-key`** — solo acepta peticiones de la propia app (mismo origen): otra página abierta en el navegador no puede cambiarla ni borrarla, aunque el CORS general sea abierto.
+**`/api/api-key`** — la clave nunca se devuelve completa (solo sus 4 últimos caracteres).
+
+#### Seguridad del servidor local
+
+El servidor escucha solo en `127.0.0.1`, pero cualquier página web abierta en el navegador o cualquier programa del equipo puede enviarle peticiones. Por eso ([`backend/seguridad.py`](backend/seguridad.py) y [`launcher.py`](launcher.py)):
+
+- **Token por arranque.** Toda ruta `/api/` exige la cabecera `X-Conversor-Token`. El launcher genera un token nuevo en cada arranque y abre la ventana en `…/#t=TOKEN`; el fragmento `#` nunca viaja al servidor y [`frontend/js/api.js`](frontend/js/api.js) lo guarda en `sessionStorage`.
+- **Sin CORS, Host y Origin fijos.** Solo se aceptan `Host` `127.0.0.1` o `localhost` con el puerto real, lo que corta el *DNS rebinding*. Si llega un `Origin`, tiene que ser la propia app.
+- **Puerto aleatorio.** El launcher reserva un puerto libre y le entrega el socket a uvicorn, así que otro programa no puede ocupar el puerto antes. Antes de cargar la app comprueba con `/api/salud` que quien responde firma con el token.
+- **Puente nativo mínimo.** El JavaScript solo puede llamar a `save_xml_file` y `open_url`, publicadas con `window.expose`. Antes se usaba un objeto `js_api` que guardaba la ventana, y pywebview resuelve atributos con `_`, de modo que el JS podía llegar hasta `os.system`. Los enlaces externos (`window.open`) solo abren las páginas de Google de la lista permitida.
+- **CSP.** No se ejecutan scripts en línea ni de otros servidores. Por eso los botones dibujados como HTML usan `data-accion="función"` en vez de `onclick`, y un solo oyente en `app.js` los despacha. Lucide va dentro de la app, en `frontend/js/vendor/`. `'unsafe-eval'` se permite solo porque pywebview arma su API con `new Function`.
+- **Datos que se dibujan.** `num` y `type` de cada pregunta se validan en el servidor (`validate_questions`) y se sanean al dibujar el editor.
+- **Límites.** El cuerpo de una petición admite 40 MB y un PDF, 150 páginas. Cada página se renderiza con 12 MP como máximo. Corren 2 conversiones a la vez. La búsqueda de marcas se omite en páginas con demasiados objetos. Sin clave de la API no se lee el documento.
 
 **Errores inesperados** — un fallo no previsto al procesar se **reintenta una vez** solo; si se repite, el mensaje trae el detalle técnico y la ruta de `errores.log`.
 

@@ -24,6 +24,7 @@ from config import (
     MIN_MATCHING_PAIRS,
     MIN_CLOZE_OPTIONS,
     TRANSCRIPTION_FAILED_MARKER,
+    VALID_QUESTION_TYPES,
 )
 from answer_matching import find_cloze_brackets, is_truncated_answer_match, split_answers, split_options
 
@@ -67,6 +68,23 @@ def validate_questions(
     """
     result = ValidationResult()
     target = result.errors if strict else result.warnings
+
+    # 0. Forma de cada pregunta. Los datos llegan del navegador (el editor)
+    # y se guardan en el historial, que luego se vuelve a dibujar como HTML:
+    # un "type" o "num" arbitrario podía colar código en la página. Sin
+    # forma válida no se sigue validando (ni se guarda nada).
+    for pos, q in enumerate(questions, start=1):
+        num = q.get("num") if isinstance(q, dict) else None
+        if not isinstance(num, int) or isinstance(num, bool):
+            result.errors.append(f"Error: la pregunta en la posición {pos} no tiene un número válido.")
+        elif "error" in q:
+            continue  # ya viene marcada por el parser; se informa más abajo
+        elif q.get("type") not in VALID_QUESTION_TYPES:
+            result.errors.append(f"Error: la Pregunta {num} tiene un tipo desconocido.")
+        elif not isinstance(q.get("data"), dict):
+            result.errors.append(f"Error: la Pregunta {num} no tiene datos válidos.")
+    if result.errors:
+        return result
 
     # 1. Cruzar la clave de respuestas con las preguntas procesadas para encontrar faltantes o fallidas
     parsed_nums = {q["num"] for q in questions if "error" not in q}
@@ -601,7 +619,9 @@ def estimate_question_count(raw_text: str) -> int:
     preguntas de las que el documento realmente tiene) — no para bloquear
     nada, solo para poder mostrarle un aviso al usuario.
     """
-    matches = re.findall(r'(?:^|\n)\s*\d{1,3}\s*[.\)]\s', raw_text)
+    # [ \t]* y no \s*: con \s* un texto de miles de saltos de línea hacía
+    # retroceder la expresión en cada uno (tiempo cuadrático).
+    matches = re.findall(r'(?m)^[ \t]*\d{1,3}[ \t]*[.\)]\s', raw_text)
     return len(matches)
 
 
@@ -618,8 +638,8 @@ def estimate_expected_questions(raw_text: str) -> int:
     exacta en 14 de 16 exámenes del set de regresión, y el mayor desvío
     medido fue de ±30 %.
     """
-    nums = {int(n) for n in re.findall(r"(?im)^\s*pregunta\s*(\d{1,3})\b", raw_text)}
-    nums |= {int(n) for n in re.findall(r"(?m)^\s*(\d{1,3})\s*[.):\-]", raw_text)}
+    nums = {int(n) for n in re.findall(r"(?im)^[ \t]*pregunta[ \t]*(\d{1,3})\b", raw_text)}
+    nums |= {int(n) for n in re.findall(r"(?m)^[ \t]*(\d{1,3})[ \t]*[.):\-]", raw_text)}
     k = 0
     while k + 1 in nums:
         k += 1

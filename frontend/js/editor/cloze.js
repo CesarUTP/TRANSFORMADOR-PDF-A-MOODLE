@@ -58,7 +58,7 @@ export function renderClozeBuilder(qIdx, segments) {
       // era un <input> y los fragmentos largos quedaban cortados.
       html += `<div class="cloze-text-row">
         <textarea class="form-input cloze-text-input single-line" rows="1" placeholder="Texto de la pregunta…" aria-label="Fragmento de texto ${textNum}">${esc_html(seg.value)}</textarea>
-        <button type="button" class="cloze-insert-btn" onclick="clozeInsertBlank(this)" title="Inserta un espacio en blanco donde esté el cursor"><i data-lucide="plus"></i> Espacio en blanco</button>
+        <button type="button" class="cloze-insert-btn" data-accion="clozeInsertBlank" data-este title="Inserta un espacio en blanco donde esté el cursor"><i data-lucide="plus"></i> Espacio en blanco</button>
       </div>`;
     } else {
       const n = ++blankNum;
@@ -67,12 +67,12 @@ export function renderClozeBuilder(qIdx, segments) {
       html += `<div class="cloze-blank-card" role="group" aria-label="Espacio en blanco ${n}">
         <div class="cloze-blank-header">
           <strong><i data-lucide="circle-dot"></i> Espacio ${n} — marca la opción correcta</strong>
-          <button type="button" class="btn btn-icon btn-danger-text" onclick="clozeRemoveBlank(this)" aria-label="Quitar el espacio ${n}" title="Quitar este espacio">
+          <button type="button" class="btn btn-icon btn-danger-text" data-accion="clozeRemoveBlank" data-este aria-label="Quitar el espacio ${n}" title="Quitar este espacio">
             <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
           </button>
         </div>
         <label class="cloze-multi-toggle">
-          <input type="checkbox" class="cloze-multi-checkbox" ${seg.multi ? 'checked' : ''} onchange="clozeToggleMulti(this)" />
+          <input type="checkbox" class="cloze-multi-checkbox" ${seg.multi ? 'checked' : ''} data-accion-cambio="clozeToggleMulti" data-este />
           Permitir varias respuestas correctas en este espacio
         </label>
         <div class="cloze-options">`;
@@ -81,13 +81,13 @@ export function renderClozeBuilder(qIdx, segments) {
         html += `<div class="cloze-option-row">
           <input type="${inputType}" name="${groupName}" ${isChecked ? 'checked' : ''} aria-label="La opción ${oi + 1} es correcta" title="Marcar como respuesta correcta" />
           <input type="text" class="form-input cloze-option-input" value="${esc_html(opt)}" placeholder="Opción ${oi + 1}" aria-label="Opción ${oi + 1} del espacio ${n}" />
-          <button type="button" class="btn btn-icon btn-danger-text" onclick="clozeRemoveOption(this)" aria-label="Quitar la opción ${oi + 1}" title="Quitar esta opción">
+          <button type="button" class="btn btn-icon btn-danger-text" data-accion="clozeRemoveOption" data-este aria-label="Quitar la opción ${oi + 1}" title="Quitar esta opción">
             <i data-lucide="x" style="width:14px;height:14px;"></i>
           </button>
         </div>`;
       });
       html += `</div>
-        <button type="button" class="btn btn-quiet btn-sm" style="margin-top:6px;" onclick="clozeAddOption(this)"><i data-lucide="plus" style="width:13px;height:13px;"></i> Agregar opción</button>
+        <button type="button" class="btn btn-quiet btn-sm" style="margin-top:6px;" data-accion="clozeAddOption" data-este><i data-lucide="plus" style="width:13px;height:13px;"></i> Agregar opción</button>
       </div>`;
     }
   });

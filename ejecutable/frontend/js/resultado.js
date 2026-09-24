@@ -1,6 +1,7 @@
 /**
  * resultado.js — generar el XML, resumen final y descarga.
  */
+import { apiFetch } from './api.js';
 import { borrarBorrador, guardarBorradorAhora } from './borrador.js';
 import { showError } from './carga.js';
 import { selectFilter } from './editor/filtros.js';
@@ -172,7 +173,7 @@ export async function generateXml() {
   document.getElementById('btn-cancel-progress').style.display = 'none';
 
   try {
-    const res = await fetch('/api/generate_xml', {
+    const res = await apiFetch('/api/generate_xml', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

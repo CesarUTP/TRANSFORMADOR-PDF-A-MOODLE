@@ -1,0 +1,181 @@
+/**
+ * pruebas.js — pruebas de la lógica pura del editor (ver pruebas.html).
+ * En archivo aparte y no dentro del HTML: la política de seguridad de las
+ * páginas (backend/seguridad.py) no deja correr scripts en línea.
+ */
+import { autoDistributePoints, fmtPoints, DEFAULT_TYPE_WEIGHTS } from './puntos.js';
+import { questionIssues } from './validacion.js';
+import { esc_html, findClozeBrackets, splitAnswers, splitOptions } from './util.js';
+
+const lista = document.getElementById('lista');
+let ok = 0, mal = 0;
+
+function prueba(nombre, fn) {
+  try {
+    fn();
+    ok++;
+    lista.insertAdjacentHTML('beforeend', `<li>✅ ${nombre}</li>`);
+  } catch (e) {
+    mal++;
+    lista.insertAdjacentHTML('beforeend', `<li class="mal">❌ ${nombre} — ${e.message}</li>`);
+  }
+}
+function igual(a, b, msg = '') {
+  const x = JSON.stringify(a), y = JSON.stringify(b);
+  if (x !== y) throw new Error(`${msg} esperado ${y}, obtenido ${x}`);
+}
+
+const preguntas = (tipos) => tipos.map((t, i) => ({ num: i + 1, type: t }));
+const suma = (qs) => Math.round(qs.reduce((a, q) => a + q.points, 0) * 100) / 100;
+
+// ── Separadores de respuestas y opciones ────────────────────────────
+prueba('varias respuestas se separan por " | "', () => {
+  igual(splitAnswers('Opción B | Opción D'), ['Opción B', 'Opción D']);
+});
+prueba('la opción "|" sola es texto, no separador', () => {
+  igual(splitAnswers('|'), ['|']);
+  igual(splitAnswers('| | &'), ['|', '&']);
+});
+prueba('"km/h" y "TCP/IP" no se parten como opciones Cloze', () => {
+  igual(splitOptions('km/h / m/s² / kg/m'), ['km/h', 'm/s²', 'kg/m']);
+  igual(splitOptions('TCP/IP / UDP'), ['TCP/IP', 'UDP']);
+});
+prueba('findClozeBrackets no corta un hueco con código como "arr[0]"', () => {
+  const bs = findClozeBrackets('[A: opción1 / arr[0] / arr[1]] y otro [B: uno / dos]');
+  igual(bs.map(b => b.letter), ['A', 'B']);
+  igual(splitOptions(bs[0].optionsRaw), ['opción1', 'arr[0]', 'arr[1]']);
+});
+prueba('esc_html también escapa comillas (seguro dentro de un atributo)', () => {
+  const out = esc_html('a" onmouseover="alert(1)<b>x</b>');
+  igual(out.includes('"'), false);
+  igual(out.includes('<b>'), false);
+});
+prueba('questionIssues no confunde un hueco Cloze con código', () => {
+  const q = { type: 'cloze', data: { text: '¿Qué imprime arr[0] si arr = [A: [10, 20, 30] / 10 / arr[1]]?' } };
+  igual(questionIssues(q, { answer: '' }), []);
+});
+
+// ── Reparto de puntos ───────────────────────────────────────────────
+prueba('equitativo: la suma cuadra exacto', () => {
+  const qs = preguntas(['multichoice', 'truefalse', 'cloze']);
+  autoDistributePoints(qs, 100, 'equal');
+  igual(suma(qs), 100);
+});
+
+prueba('equitativo con decimales feos (7 preguntas, 20 pts)', () => {
+  const qs = preguntas(Array(7).fill('multichoice'));
+  autoDistributePoints(qs, 20, 'equal');
+  igual(suma(qs), 20);
+});
+
+prueba('por tipo: peso 2 vale el doble que peso 1', () => {
+  const qs = preguntas(['multichoice', 'truefalse']);   // pesos 2 y 1
+  autoDistributePoints(qs, 30, 'byType');
+  igual([qs[0].points, qs[1].points], [20, 10]);
+});
+
+prueba('por tipo: la suma cuadra con pesos personalizados', () => {
+  const qs = preguntas(['multichoice', 'matching', 'essay', 'truefalse', 'cloze']);
+  autoDistributePoints(qs, 17.5, 'byType', { multichoice: 4, matching: 1, essay: 1, truefalse: 1, cloze: 1 });
+  igual(suma(qs), 17.5);
+});
+
+prueba('peso 0 se respeta (no se convierte en 1)', () => {
+  const qs = preguntas(['multichoice', 'truefalse']);
+  autoDistributePoints(qs, 10, 'byType', { multichoice: 1, truefalse: 0 });
+  igual([qs[0].points, qs[1].points], [10, 0]);
+});
+
+prueba('todos los pesos en 0 cae a reparto equitativo', () => {
+  const qs = preguntas(['multichoice', 'truefalse']);
+  autoDistributePoints(qs, 10, 'byType', { multichoice: 0, truefalse: 0 });
+  igual([qs[0].points, qs[1].points], [5, 5]);
+});
+
+prueba('dos preguntas del mismo tipo difieren como mucho en 0.01', () => {
+  const qs = preguntas(Array(3).fill('multichoice'));
+  autoDistributePoints(qs, 10, 'byType');
+  const p = qs.map(q => q.points);
+  igual(Math.max(...p) - Math.min(...p) <= 0.01, true);
+});
+
+prueba('total inválido no toca los puntos', () => {
+  const qs = preguntas(['multichoice']);
+  qs[0].points = 7;
+  autoDistributePoints(qs, 0, 'equal');
+  autoDistributePoints(qs, NaN, 'equal');
+  igual(qs[0].points, 7);
+});
+
+prueba('fmtPoints deja los números legibles', () => {
+  igual([fmtPoints(2), fmtPoints(2.5), fmtPoints(1.333)], ['2', '2.5', '1.33']);
+});
+
+prueba('los pesos por defecto cubren los 7 tipos', () => {
+  igual(Object.keys(DEFAULT_TYPE_WEIGHTS).sort(),
+    ['cloze', 'essay', 'matching', 'multichoice', 'numerical', 'shortanswer', 'truefalse']);
+});
+
+// ── Preguntas incompletas ───────────────────────────────────────────
+const mc = (extra = {}, key = 'Dos') => [
+  { num: 1, type: 'multichoice', data: { stem: '¿Pregunta?', options: { A: 'Uno', B: 'Dos' }, ...extra } },
+  { type: 'multichoice', answer: key },
+];
+
+prueba('pregunta completa no tiene problemas', () => {
+  igual(questionIssues(...mc()), []);
+});
+
+prueba('falta el enunciado', () => {
+  igual(questionIssues(...mc({ stem: '   ' })), ['Falta el enunciado']);
+});
+
+prueba('falta marcar la respuesta correcta', () => {
+  igual(questionIssues(...mc({}, '')), ['Falta marcar la respuesta correcta']);
+});
+
+prueba('menos de dos opciones', () => {
+  igual(questionIssues(...mc({ options: { A: 'Uno' } })), ['Faltan opciones (mínimo 2)']);
+});
+
+prueba('una opción vacía entre varias', () => {
+  igual(questionIssues(...mc({ options: { A: 'Uno', B: 'Dos', C: '' } })), ['Hay una opción vacía']);
+});
+
+prueba('verdadero/falso sin elegir', () => {
+  igual(questionIssues({ num: 1, type: 'truefalse', data: { stem: 'Afirmación.' } },
+    { type: 'truefalse', answer: '' }), ['Falta elegir Verdadero o Falso']);
+  igual(questionIssues({ num: 1, type: 'truefalse', data: { stem: 'Afirmación.' } },
+    { type: 'truefalse', answer: 'Falso' }), []);
+});
+
+prueba('emparejamiento: pareja a medias y mínimo de 2', () => {
+  const q = { num: 1, type: 'matching', data: { stem: 'Une', col_a: { 1: 'Perú', 2: 'Chile' }, col_b: { a: 'Lima', b: '' } } };
+  igual(questionIssues(q, { type: 'matching', answer: '1-a' }),
+    ['Hay una pareja incompleta', 'Faltan parejas (mínimo 2)']);
+});
+
+prueba('completar: sin espacios y con un espacio vacío', () => {
+  igual(questionIssues({ num: 1, type: 'cloze', data: { text: 'Sin espacios' } }, { answer: '' }),
+    ['Faltan los espacios para completar']);
+  igual(questionIssues({ num: 1, type: 'cloze', data: { text: 'La capital es [A: ]' } }, { answer: '' }),
+    ['Un espacio no tiene opciones']);
+  igual(questionIssues({ num: 1, type: 'cloze', data: { text: 'La capital es [A: Lima / Quito]' } }, { answer: 'A. Lima' }), []);
+});
+
+prueba('respuesta corta y numérica', () => {
+  igual(questionIssues({ num: 1, type: 'shortanswer', data: { stem: '¿Capital?' } }, { answer: '' }),
+    ['Falta la respuesta']);
+  igual(questionIssues({ num: 1, type: 'numerical', data: { stem: '2+2' } }, { answer: 'cuatro' }),
+    ['La respuesta debe ser un número']);
+  igual(questionIssues({ num: 1, type: 'numerical', data: { stem: '2+2' } }, { answer: '4,5' }), []);
+});
+
+prueba('ensayo solo necesita enunciado', () => {
+  igual(questionIssues({ num: 1, type: 'essay', data: { stem: 'Explica…' } }, { answer: '' }), []);
+});
+
+const resumen = document.getElementById('resumen');
+resumen.textContent = mal === 0 ? `✅ ${ok} pruebas, todas pasan` : `❌ ${mal} fallan de ${ok + mal}`;
+resumen.className = mal === 0 ? 'ok' : 'fail';
+window.__resultado = { ok, mal };

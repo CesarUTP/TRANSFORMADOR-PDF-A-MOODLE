@@ -66,6 +66,10 @@ cmd = [
     # no como código analizado por PyInstaller) su import nunca se detecta
     # automáticamente y hay que declararlo a mano ──────────────────────────
     "--hidden-import", "sqlite3",
+    # seguridad.py y extractor.py (backend/ va como datos: sus imports no se detectan)
+    "--hidden-import", "hmac",
+    "--hidden-import", "secrets",
+    "--hidden-import", "bisect",
     # ── extractor.py renderiza páginas de PDF como imagen (PIL/Pillow vía
     # pypdfium2, para que Gemini pueda leer código en capturas de pantalla
     # y respuestas marcadas solo por color) — mismo problema que sqlite3:

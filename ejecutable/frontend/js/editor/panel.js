@@ -85,7 +85,7 @@ export function buildReviewRail() {
     const cls = missing ? ' incomplete' : review ? ' needs-review' : '';
     const tip = missing ? ` — ${missing}` : review ? ' — tiene un aviso para revisar' : '';
     return `<div role="listitem"><button type="button" class="rail-item${cls}" data-pos="${i}"
-      title="Pregunta ${c.dataset.qnum}${esc_html(tip)}" aria-label="Pregunta ${c.dataset.qnum}${esc_html(tip)}">${c.dataset.qnum}</button></div>`;
+      title="Pregunta ${esc_html(c.dataset.qnum)}${esc_html(tip)}" aria-label="Pregunta ${esc_html(c.dataset.qnum)}${esc_html(tip)}">${esc_html(c.dataset.qnum)}</button></div>`;
   }).join('');
   grid.querySelectorAll('.rail-item').forEach(btn => {
     btn.addEventListener('click', () => {

@@ -30,7 +30,7 @@ if [ ! -f "$PYTHON_BIN" ]; then
     "$VENV_DIR/bin/pip" install -r backend/requirements.txt --quiet
 
     echo "[3/3] Instalando interfaz de ventana nativa..."
-    "$VENV_DIR/bin/pip" install pywebview --quiet
+    "$VENV_DIR/bin/pip" install "pywebview==6.2.1" --quiet
 
     echo ""
     echo "Instalación completada."

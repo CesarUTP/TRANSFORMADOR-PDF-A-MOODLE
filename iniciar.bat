@@ -23,7 +23,7 @@ if not exist "%~dp0backend\venv\Scripts\python.exe" (
     "%~dp0backend\venv\Scripts\pip.exe" install -r "%~dp0backend\requirements.txt" --quiet
 
     echo  [3/3] Instalando interfaz de ventana nativa...
-    "%~dp0backend\venv\Scripts\pip.exe" install pywebview --quiet
+    "%~dp0backend\venv\Scripts\pip.exe" install "pywebview==6.2.1" --quiet
 
     echo.
     echo  Instalacion completada.

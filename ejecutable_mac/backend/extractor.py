@@ -3,6 +3,7 @@ extractor.py — Handles text extraction from uploaded files.
 Supports .pdf (via pdfplumber) and .txt (direct UTF-8 read).
 """
 import pdfplumber
+import bisect
 import io
 import logging
 import re
@@ -23,6 +24,43 @@ logging.getLogger("pdfminer").setLevel(logging.ERROR)
 # de las páginas restantes (el texto de esas páginas se sigue extrayendo
 # normalmente, solo se pierde la lectura de código/color en imagen ahí).
 MAX_IMAGE_PAGES = 15
+
+# Límites para que un PDF enorme o armado a propósito no deje la app sin
+# memoria ni CPU. Un examen real queda muy por debajo de todos.
+MAX_PAGINAS = 150
+# Píxeles por página renderizada (~12 MP = carta a 200 DPI con holgura).
+# Una página gigante se renderiza a menos DPI en vez de ocupar cientos de MB.
+MAX_PIXELES_RENDER = 12_000_000
+# Objetos gráficos (líneas, rectángulos, anotaciones) y caracteres por
+# página por encima de los cuales no se buscan marcas (color, subrayado,
+# resaltado): esa página se lee con extract_text(), como sin marcas.
+MAX_OBJETOS_MARCAS = 2_000
+MAX_CARACTERES_MARCAS = 20_000
+
+
+class DocumentoDemasiadoGrande(ValueError):
+    pass
+
+
+def comprobar_paginas(file_bytes: bytes) -> None:
+    """Rechaza un PDF con más páginas que MAX_PAGINAS antes de procesarlo."""
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        if len(pdf.pages) > MAX_PAGINAS:
+            raise DocumentoDemasiadoGrande(
+                f"El PDF tiene {len(pdf.pages)} páginas; el máximo es {MAX_PAGINAS}. "
+                "Divide el documento en partes más pequeñas."
+            )
+
+
+def _render(page, dpi: int = 200) -> Image.Image:
+    """Renderiza una página a `dpi`, o a menos si pasaría de MAX_PIXELES_RENDER."""
+    ancho, alto = float(page.width), float(page.height)
+    if ancho <= 0 or alto <= 0:
+        raise ValueError("Página del PDF con tamaño inválido.")
+    escala = dpi / 72
+    if ancho * alto * escala * escala > MAX_PIXELES_RENDER:
+        dpi = max(1, int(72 * (MAX_PIXELES_RENDER / (ancho * alto)) ** 0.5))
+    return page.to_image(resolution=dpi).original
 
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
@@ -72,8 +110,7 @@ def extract_text_and_images_from_pdf(file_bytes: bytes) -> tuple[str, List[Image
                 # 200 DPI en vez de 150: el color de las marcas de respuesta
                 # se distingue mejor a esta resolución, sin disparar
                 # demasiado el tamaño de la imagen.
-                rendered = page.to_image(resolution=200)
-                images.append(rendered.original)
+                images.append(_render(page))
     return full_text, images
 
 
@@ -92,8 +129,7 @@ def render_all_pages_as_images(file_bytes: bytes) -> List[Image.Image]:
         for page in pdf.pages:
             if len(images) >= MAX_IMAGE_PAGES:
                 break
-            rendered = page.to_image(resolution=200)
-            images.append(rendered.original)
+            images.append(_render(page))
     return images
 
 
@@ -106,7 +142,7 @@ def pdf_has_embedded_images(file_bytes: bytes) -> bool:
     usuario ANTES de arrancar el procesamiento pesado, no después.
     """
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-        for page in pdf.pages:
+        for page in pdf.pages[:MAX_PAGINAS]:
             if page.images:
                 return True
     return False
@@ -205,11 +241,16 @@ def _underline_segments(page) -> List[tuple]:
     menos de 1.5 pt de alto, que es como se dibuja un subrayado."""
     segs = [(l["x0"], l["x1"], l["top"]) for l in page.lines if abs(l["top"] - l["bottom"]) < 1.5]
     segs += [(r["x0"], r["x1"], r["top"]) for r in page.rects if r["height"] < 1.5 and r["width"] > 3]
-    return segs
+    # Ordenados por altura: _word_style solo revisa los que están cerca del
+    # borde inferior de cada palabra (bisect), no todos contra todas.
+    return sorted(segs, key=lambda s: s[2])
 
 
-def _word_style(word: dict, highlights: List[tuple], underlines: List[tuple]) -> str | None:
-    """Marca de estilo de una palabra (sin contar el color de texto)."""
+def _word_style(word: dict, highlights: List[tuple], underlines: List[tuple],
+                under_y: List[float] | None = None) -> str | None:
+    """Marca de estilo de una palabra (sin contar el color de texto).
+    `underlines` ordenado por y; `under_y` son esas alturas (se calculan una
+    vez por página y se pasan aquí para no recorrerlas en cada palabra)."""
     if highlights and any(_in_bbox(word, b) for b in highlights):
         return "resaltado"
     if underlines:
@@ -220,7 +261,12 @@ def _word_style(word: dict, highlights: List[tuple], underlines: List[tuple]) ->
         # silencio para esa palabra en vez de solo no encontrar nada.
         width = abs(word["x1"] - word["x0"]) or 1.0
         height = abs(word["bottom"] - word["top"]) or 1.0
-        for x0, x1, y in underlines:
+        # underlines viene ordenado por y (ver _underline_segments): solo los
+        # de la ventana [bottom - 4, bottom + 3] pueden cumplir la condición.
+        ys = under_y if under_y is not None else [u[2] for u in underlines]
+        desde = bisect.bisect_left(ys, word["bottom"] - 4.0)
+        hasta = bisect.bisect_right(ys, word["bottom"] + 3)
+        for x0, x1, y in underlines[desde:hasta]:
             overlap = min(x1, word["x1"]) - max(x0, word["x0"])
             # Word dibuja el subrayado sobre la línea base, hasta ~3 pt POR
             # ENCIMA del borde inferior del cuadro de la palabra (Aptos 12 pt:
@@ -258,6 +304,12 @@ def _enriched_page_text(page) -> str:
     """
     from pdfplumber.utils import cluster_objects
 
+    # Página con demasiados objetos o caracteres (un PDF armado a propósito,
+    # o un plano/diagrama): buscar marcas en ella costaría minutos de CPU.
+    if (len(page.lines) + len(page.rects) + len(page.annots or []) > MAX_OBJETOS_MARCAS
+            or len(page.chars) > MAX_CARACTERES_MARCAS):
+        return page.extract_text() or ""
+
     tables = []
     try:
         for t in page.find_tables():
@@ -271,6 +323,7 @@ def _enriched_page_text(page) -> str:
     words = [w for w in words if not any(_in_bbox(w, bbox) for bbox, _ in tables)]
     highlights = _highlight_boxes(page)
     underlines = _underline_segments(page)
+    under_y = [u[2] for u in underlines]
 
     blocks = []  # (top, texto)
     for line in cluster_objects(words, "top", tolerance=3):
@@ -280,7 +333,7 @@ def _enriched_page_text(page) -> str:
         for w in line:
             color = w.get("non_stroking_color")
             name = _color_name(color) if _char_has_color({"text": w["text"], "non_stroking_color": color}) else None
-            name = name or _word_style(w, highlights, underlines)
+            name = name or _word_style(w, highlights, underlines, under_y)
             if name != current:
                 if current:
                     parts[-1] += f"⟦/{current}⟧"

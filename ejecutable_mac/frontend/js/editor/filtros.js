@@ -27,7 +27,7 @@ export function refreshFilterChips() {
   if (activeFilter !== 'all' && typeCounts[activeFilter] === 0) activeFilter = 'all';
 
   const chip = (type, label, count) =>
-    `<button type="button" class="filter-chip" data-filter="${type}" aria-pressed="${activeFilter === type}" onclick="selectFilter('${type}')">${label} <span class="count">(${count})</span></button>`;
+    `<button type="button" class="filter-chip" data-filter="${type}" aria-pressed="${activeFilter === type}" data-accion="selectFilter" data-arg="${type}">${label} <span class="count">(${count})</span></button>`;
   let html = chip('all', 'Todas', cards.length);
   Object.entries(typeCounts).forEach(([type, count]) => {
     if (count > 0) html += chip(type, QUESTION_TYPE_LABEL_MAP[type], count);

@@ -7,6 +7,7 @@
  * También va entregando la respuesta a medida que llega (onTexto), que
  * es lo que usa la lectura del avance en vivo (NDJSON).
  */
+import { CABECERA_TOKEN, TOKEN } from './api.js';
 import { formatBytes } from './util.js';
 
 /**
@@ -22,6 +23,7 @@ export function subir(url, formData, { onSubida, onSubido, onTexto, signal } = {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url);
+    xhr.setRequestHeader(CABECERA_TOKEN, TOKEN);
     if (onSubida) xhr.upload.onprogress = e => { if (e.lengthComputable) onSubida(e.loaded, e.total); };
     if (onSubido) xhr.upload.onload = () => onSubido();
     if (onTexto) xhr.onprogress = () => onTexto(xhr.responseText);
