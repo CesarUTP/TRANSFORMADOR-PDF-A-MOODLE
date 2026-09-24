@@ -571,38 +571,20 @@ def generate_warnings_report(result: ValidationResult) -> str:
 
 def pre_validate_raw_text(text: str) -> None:
     """
-    Realiza una validación local previa del texto extraído antes de enviarlo a la API de Gemini.
-    
-    Verifica que:
-      - El texto no esté vacío y tenga una longitud mínima (ej. 100 caracteres).
-      - Contenga indicios de preguntas (ej. la palabra 'pregunta' o numeraciones)
+    Validación local previa del texto extraído, antes de enviarlo a Gemini.
+
+    Solo descarta lo obvio: un documento vacío o casi sin texto. Ya NO se
+    buscan "indicios de preguntas" (numeración, la palabra "pregunta",
+    signos "¿?"): cada regla así rechazaba exámenes reales antes de que la
+    IA los viera — preguntas sin número (samples/parcial 2.pdf, exportado
+    de un formulario), sin signos de interrogación ("Mencione…",
+    "Seleccione…", "Complete: …") o una clave de respuestas sin la palabra
+    "respuesta" (samples/golden/s04). Decidir si el documento es una prueba
+    lo hace la IA (NOT_AN_EXAM_SENTINEL), que sí entiende el contenido; el
+    costo de mandarle un documento que no lo es resulta despreciable.
     """
-    text_clean = text.strip()
-    if len(text_clean) < 100:
+    if len(text.strip()) < 100:
         raise ValueError("El texto extraído es demasiado corto para ser un examen válido (mínimo 100 caracteres).")
-
-    lower_text = text_clean.lower()
-
-    # Comprobar si tiene patrones de numeración de preguntas o la palabra 'pregunta'.
-    # La numeración puede venir como "1.", "1)", "1-" o "1:" — limitarse a "1."
-    # rechazaba exámenes reales y válidos que simplemente usan otro separador
-    # (ej. "1) ¿Cuál es...?"), antes incluso de darle la oportunidad a la IA
-    # de normalizarlos.
-    has_questions = (
-        "pregunta" in lower_text
-        or "nº" in lower_text
-        or re.search(r'(?:^|\n)\s*[1-5]\s*[.\)\-:]', text_clean) is not None
-    )
-    
-    # Ya NO se exige una palabra como "respuesta" o "correcta": un examen
-    # real puede marcar las respuestas en rojo, con un asterisco o con una
-    # clave titulada "CLAVE" / "Solucionario", sin usar nunca esa palabra —
-    # y se rechazaba entero antes de llegar a la IA (lo detectó el set de
-    # regresión, samples/golden/s04). Un examen sin ninguna respuesta
-    # marcada tampoco debe bloquearse aquí: el modo tolerante deja esas
-    # preguntas como "rescatables" para marcarlas a mano en el editor.
-    if not has_questions:
-        raise ValueError("No se encontraron indicios de preguntas en el documento (ej. 'Pregunta N:' o numeraciones).")
 
 
 def estimate_question_count(raw_text: str) -> int:
