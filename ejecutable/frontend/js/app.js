@@ -21,8 +21,9 @@ import { estado, suscribir } from './estado.js';
 import { closeHistory, confirmDeleteHistory, downloadHistoryDesdeBoton, loadHistoryList, openHistory, renderHistoryList, reopenHistory, startDeleteHistory } from './historial.js';
 import { confirmDiscardReview, resetAll, showPanel } from './navegacion.js';
 import { generateXml, saveFileToUser } from './resultado.js';
+import { abrirAcerca } from './ui/acerca.js';
 import { avisarSiHayVersionNueva } from './ui/actualizacion.js';
-import { abrirAjustesClave, claveObligatoria, comprobarClaveAlIniciar } from './ui/clave.js';
+import { claveObligatoria, comprobarClaveAlIniciar } from './ui/clave.js';
 import { cerrarConfirmacion } from './ui/confirmar.js';
 import { cerrarModal, closeDisclaimer, closeHelp, fileFingerprint, modalActivo, onTabKeydown, openDisclaimer, openHelp, switchTab } from './ui/modales.js';
 import { applyTheme } from './ui/tema.js';
@@ -82,7 +83,7 @@ mostrarAvisoBorrador();
 comprobarClaveAlIniciar();
 // Unos segundos después, sin estorbar el arranque: ¿hay versión nueva?
 setTimeout(avisarSiHayVersionNueva, 4000);
-document.getElementById('btn-apikey').addEventListener('click', abrirAjustesClave);
+document.getElementById('btn-acerca').addEventListener('click', abrirAcerca);
 document.getElementById('btn-draft-resume').addEventListener('click', retomarBorrador);
 document.getElementById('btn-draft-discard').addEventListener('click', () => {
   borrarBorrador();

@@ -181,6 +181,17 @@ ok(len(_con(200, json.dumps({"version": "99.0", "url": pref, "notas": "n" * 5000
 actualizaciones._cache = {"hay": False, "actual": actualizaciones.APP_VERSION}
 ok(c.get("/api/actualizacion").status_code == 401 and c.get("/api/actualizacion", headers=H).status_code == 200, "/api/actualizacion pide token")
 
+print("Acerca de")
+ok(c.get("/api/acerca").status_code == 401, "/api/acerca pide token")
+r = c.get("/api/acerca", headers=H).json()
+ok(r["version"] == actualizaciones.APP_VERSION and r["clave"].endswith("clave.dat"), "/api/acerca: versión y rutas")
+r = c.get("/legal/avisos-terceros.txt")
+ok(r.status_code == 200 and "AVISOS DE TERCEROS" in r.text and "Lucide" in r.text, "avisos de terceros servidos desde la app")
+llamadas = []
+actualizaciones.requests.get = lambda *a, **k: llamadas.append(1) or _Resp(404, b"")
+c.get("/api/actualizacion", headers=H); c.get("/api/actualizacion?forzar=true", headers=H)
+ok(len(llamadas) == 1, "«Buscar actualizaciones» vuelve a consultar; al arrancar se usa la respuesta guardada")
+
 print("Límites de PDF")
 import extractor  # noqa: E402
 

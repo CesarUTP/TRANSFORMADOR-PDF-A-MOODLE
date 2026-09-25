@@ -30,7 +30,7 @@ from extractor import pdf_has_embedded_images
 from pipeline import parse_document, normalize_document_with_ai
 from validator import validate_questions
 from xml_builder import build_xml, compute_grades
-from database import init_db, save_conversion, get_history_list, get_xml_content, delete_history_item, get_editor_data
+from database import get_db_path, init_db, save_conversion, get_history_list, get_xml_content, delete_history_item, get_editor_data
 from pydantic import BaseModel
 from typing import Dict, List, Any
 
@@ -127,8 +127,25 @@ def api_salud(n: str = ""):
 # ¿Hay una versión nueva? (ver actualizaciones.py). Corre en threadpool: la
 # consulta a internet puede tardar unos segundos.
 @app.get("/api/actualizacion")
-def api_actualizacion():
-    return actualizaciones.comprobar()
+def api_actualizacion(forzar: bool = False):
+    return actualizaciones.comprobar(forzar)
+
+
+# Datos para «Acerca de»: versión y dónde guarda la app lo del docente.
+@app.get("/api/acerca")
+def api_acerca():
+    casa = str(Path.home())
+
+    def corta(p) -> str:  # "~/Library/…" en vez de "/Users/nombre/Library/…"
+        p = str(p)
+        return "~" + p[len(casa):] if casa and p.startswith(casa) else p
+
+    return {
+        "version": APP_VERSION,
+        "historial": corta(get_db_path()),
+        "clave": corta(credenciales.ARCHIVO),
+        "registro": corta(ERROR_LOG_PATH),
+    }
 
 
 # Conversiones a la vez: cada una lee el PDF, renderiza páginas y llama a
@@ -155,7 +172,7 @@ if _fe.exists():
     app.mount("/static", StaticFiles(directory=str(_fe)), name="static")
     # index.html se sirve en "/", así que sus rutas relativas ("css/base.css",
     # "js/app.js") caen en la raíz: cada carpeta del frontend se monta ahí.
-    for _sub in ("css", "js", "img", "fonts"):
+    for _sub in ("css", "js", "img", "fonts", "legal"):
         _dir = _fe / _sub
         if _dir.is_dir():
             app.mount(f"/{_sub}", StaticFiles(directory=str(_dir)), name=_sub)

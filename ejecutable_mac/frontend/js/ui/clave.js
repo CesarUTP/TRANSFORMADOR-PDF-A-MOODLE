@@ -4,7 +4,7 @@
  * Al abrir la app sin clave guardada aparece el modal de bienvenida como
  * paso obligatorio: explica cómo obtenerla gratis, abre Google AI Studio
  * y la comprueba con Google antes de guardarla. Después el mismo modal
- * se abre desde "API de Gemini" para cambiarla o quitarla.
+ * se abre desde «Acerca de → API de Gemini» para cambiarla o quitarla.
  *
  * La clave nunca vuelve al navegador: el backend solo informa si hay una
  * y sus 4 últimos caracteres.
@@ -100,7 +100,7 @@ export async function comprobarClaveAlIniciar() {
   }
 }
 
-/** Desde "API de Gemini" en la cabecera. */
+/** Desde «Acerca de → API de Gemini». */
 export async function abrirAjustesClave() {
   try { await _pedirEstado(); } catch (_) { /* se abre con el último estado conocido */ }
   _abrir(!_estado.configurada);
@@ -167,6 +167,7 @@ form.addEventListener('submit', async e => {
     }
     _estado = data;
     input.value = '';
+    document.dispatchEvent(new CustomEvent('clave-cambiada'));
     modal.dataset.obligatorio = 'false';
     cerrarModal(modal);
     showToast(eraPrimeraVez ? 'Clave guardada. Ya puedes convertir tus exámenes.' : 'Clave actualizada', 'success');
@@ -190,6 +191,7 @@ document.getElementById('btn-apikey-delete').addEventListener('click', async () 
     if (!res.ok) throw new Error('delete');
     _estado = await res.json();
     showToast('Clave quitada de este equipo', 'info');
+    document.dispatchEvent(new CustomEvent('clave-cambiada'));
     // Sin clave (y sin .env de desarrollo), vuelve a ser paso obligatorio.
     _abrir(!_estado.configurada);
   } catch (_) {

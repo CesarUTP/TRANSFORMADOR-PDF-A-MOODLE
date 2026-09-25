@@ -129,7 +129,13 @@ class SoloLaApp:
         async def enviar(mensaje):
             if mensaje["type"] == "http.response.start":
                 mensaje.setdefault("headers", [])
-                mensaje["headers"] = list(mensaje["headers"]) + [
+                extra = []
+                # Tras actualizar la app, la ventana no debe mezclar el JS o
+                # el CSS nuevos con copias viejas guardadas: siempre revalida
+                # (es un servidor local, no cuesta nada).
+                if not any(k.lower() == b"cache-control" for k, _ in mensaje["headers"]):
+                    extra.append((b"cache-control", b"no-cache"))
+                mensaje["headers"] = list(mensaje["headers"]) + extra + [
                     (b"content-security-policy", CSP.encode()),
                     (b"x-content-type-options", b"nosniff"),
                     (b"referrer-policy", b"no-referrer"),

@@ -2,7 +2,7 @@
 credenciales.py — dónde vive la clave de la API de Gemini de cada usuario.
 
 Cada instalación usa la clave de su propio docente, que la pega en el
-modal de bienvenida la primera vez (o la cambia desde "API de Gemini").
+modal de bienvenida la primera vez (o la cambia desde «Acerca de → API de Gemini»).
 Se guarda CIFRADA en la carpeta de datos de la app, junto al historial:
 
   macOS:   ~/Library/Application Support/ConversorMoodleXML/clave.dat

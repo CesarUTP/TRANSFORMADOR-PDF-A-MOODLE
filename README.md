@@ -74,7 +74,8 @@ flowchart LR
 - **Constructor visual de Cloze**: sin escribir corchetes a mano.
 - **Progreso en vivo**: avance real de la subida del archivo, por qué pregunta va la IA y cuánto falta (se puede cancelar).
 - **Historial local** con **buscador** (nombre, categoría o fecha): cada XML se vuelve a descargar o se **reabre** en el editor para corregirlo.
-- **API de Gemini propia**: la primera vez, un paso de bienvenida explica cómo obtener la clave gratis en Google AI Studio, la comprueba con Google y la guarda **cifrada** en el equipo (Mac y Windows). Se cambia o se quita desde *API de Gemini*.
+- **API de Gemini propia**: la primera vez, un paso de bienvenida explica cómo obtener la clave gratis en Google AI Studio, la comprueba con Google y la guarda **cifrada** en el equipo (Mac y Windows). Se cambia o se quita desde *Acerca de → API de Gemini*.
+- **Acerca de**: versión instalada con «Buscar actualizaciones» y «Descargar» cuando hay una nueva, la API de Gemini, privacidad y datos (qué se guarda, qué sale del equipo, cookies), información legal, avisos de terceros con los textos completos de las licencias, y créditos.
 - **Accesible**: foco atrapado en las ventanas, contraste AA, anuncios para lector de pantalla y "reducir movimiento".
 
 </td>
@@ -372,6 +373,8 @@ Las preguntas **cloze** usan corchetes en el cuerpo, con letras correlativas si 
 | `GET` | `/api/history/{id}/download` | Vuelve a descargar el XML de una conversión anterior |
 | `GET` | `/api/history/{id}/editor` | Preguntas tal como quedaron en el editor, para *Reabrir* esa revisión |
 | `DELETE` | `/api/history/{id}` | Borra una entrada del historial |
+| `GET` | `/api/acerca` | Versión y rutas donde se guardan historial, clave y registro (para «Acerca de») |
+| `GET` | `/api/actualizacion` | Si hay una versión nueva (`?forzar=true` vuelve a consultar) |
 | `GET` | `/api/api-key` | Si hay clave de la API de Gemini guardada (solo sus 4 últimos caracteres, nunca la clave) |
 | `POST` | `/api/api-key` | Comprueba la clave con Google (sin costo) y la guarda cifrada; reemplaza la anterior si la había |
 | `DELETE` | `/api/api-key` | Quita la clave de este equipo |
@@ -411,6 +414,7 @@ El servidor escucha solo en `127.0.0.1`, pero cualquier página web abierta en e
 - **Compilación.** Los dos `build.py` se niegan a empaquetar un `.env`, `clave.dat`, una base de datos o un registro. `dev/sync_ejecutable.py` corre `dev/test_casos_borde.py` y `dev/test_seguridad.py` antes de actualizar `ejecutable/` y `ejecutable_mac/`. `test_seguridad.py` corre en una copia temporal, sin tu `.env`, tu clave ni tu historial.
 - **Registros con tope.** `errores.log` y `launcher_error.log` rotan al pasar 1 MB.
 - **Aviso de versión nueva.** Al arrancar, la app lee `version.json` en `config.URL_ACTUALIZACIONES`. Si ahí hay una versión mayor que `config.APP_VERSION`, muestra un aviso con el botón «Descargar». El enlace solo puede apuntar a `config.PREFIJO_DESCARGAS`. La dirección tiene que ser **pública**: mientras el repositorio sea privado, GitHub responde 404 y la app no avisa nada.
+- **Avisos de terceros.** `dev/generar_avisos_terceros.py` arma `frontend/legal/avisos-terceros.txt` con el texto de la licencia de cada paquete que va dentro de la app. Los dos `build.py` lo regeneran con el Python de compilación antes de empaquetar, porque Windows y macOS no llevan los mismos paquetes. La app lo muestra en «Acerca de».
 - **Desinstalar en Windows** pregunta si también se borran el historial y la clave guardados en `%LOCALAPPDATA%\ConversorMoodleXML`. La respuesta por defecto es «No».
 
 **Errores inesperados** — un fallo no previsto al procesar se **reintenta una vez** solo; si se repite, el mensaje trae el detalle técnico y la ruta de `errores.log`.
@@ -519,7 +523,7 @@ La app **no trae ninguna API key incluida**: cada usuario usa la suya. La primer
 
 Cifrado Fernet (AES + HMAC) con una llave derivada del identificador de **ese equipo y ese usuario** (más una sal al azar): copiado a otra computadora, el archivo no sirve. No se guarda un hash porque la app necesita la clave tal cual para llamar a Google. No se usa el Llavero de macOS porque, con una app sin firma de desarrollador, pediría permiso después de cada actualización.
 
-Desde **API de Gemini**, arriba a la derecha, se pega una clave nueva (reemplaza la anterior solo si Google la acepta) o se quita. Si el archivo no se puede descifrar (otro equipo, cambio de placa), la app simplemente vuelve a pedir la clave.
+Desde **Acerca de → API de Gemini** («Cambiar o quitar la clave»), arriba a la derecha, se pega una clave nueva (reemplaza la anterior solo si Google la acepta) o se quita. Si el archivo no se puede descifrar (otro equipo, cambio de placa), la app simplemente vuelve a pedir la clave.
 
 Las instalaciones anteriores que tenían la clave en texto plano en `…/ConversorMoodleXML/.env` la **cifran solas** en `clave.dat` al abrir la versión nueva, y la línea del `.env` queda vacía.
 

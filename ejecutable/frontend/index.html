@@ -41,13 +41,13 @@
           <i data-lucide="clock" style="width:16px;height:16px;"></i>
           <span>Historial</span>
         </button>
-        <button type="button" id="btn-apikey" class="btn-icon-text" aria-label="API de Gemini" title="API de Gemini">
-          <i data-lucide="key-round" style="width:16px;height:16px;"></i>
-          <span>API de Gemini</span>
-        </button>
         <button type="button" id="btn-help" class="btn-icon-text btn-guide" aria-label="Abrir guía de uso" title="Guía">
           <i data-lucide="book-open" style="width:16px;height:16px;"></i>
           <span>Guía</span>
+        </button>
+        <button type="button" id="btn-acerca" class="btn-icon-text" aria-label="Acerca de: versión, API de Gemini, privacidad y avisos legales" title="Acerca de">
+          <i data-lucide="info" style="width:16px;height:16px;"></i>
+          <span>Acerca de</span>
         </button>
         <!-- El ícono muestra la ACCIÓN (a qué tema cambia), no el estado
              actual: luna en modo claro, sol en modo oscuro. -->
@@ -886,8 +886,124 @@ Ahora convierte el examen adjunto a este formato.</pre>
   <!-- ════════════════ API DE GEMINI (bienvenida y ajustes) ════════════════
        La primera vez que se abre la app, sin clave guardada, aparece
        como paso obligatorio (sin botón de cerrar). Después se abre desde
-       "API de Gemini" en la cabecera para cambiarla o quitarla.
+       «Acerca de → API de Gemini» para cambiarla o quitarla.
        Lógica en ui/clave.js. -->
+  <!-- ════════════════ ACERCA DE ════════════════
+       Versión y actualizaciones, API de Gemini, privacidad, información
+       legal, avisos de terceros y créditos. Se rellena en ui/acerca.js. -->
+  <div id="modal-acerca" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="acerca-title">
+    <div class="modal-box modal-md">
+      <div class="modal-header">
+        <h2 class="modal-title" id="acerca-title">
+          <i data-lucide="info" style="width:20px;height:20px;color:var(--color-accent);"></i>
+          Acerca de
+        </h2>
+        <button type="button" id="btn-close-acerca" class="btn btn-icon" aria-label="Cerrar" title="Cerrar">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+      <div class="modal-body acerca-body">
+
+        <section class="acerca-card" aria-labelledby="acerca-h-version">
+          <div class="acerca-app">
+            <img src="img/icono.png" alt="" width="44" height="44">
+            <div>
+              <h3 id="acerca-h-version" class="acerca-app-name">Conversor a Moodle XML</h3>
+              <p class="acerca-app-version">Versión <span id="acerca-version">—</span></p>
+            </div>
+          </div>
+          <p id="acerca-estado-version" class="acerca-estado" role="status" aria-live="polite"></p>
+          <div class="acerca-acciones">
+            <button type="button" id="btn-acerca-buscar" class="btn btn-ghost btn-sm">
+              <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Buscar actualizaciones
+            </button>
+            <button type="button" id="btn-acerca-descargar" class="btn btn-primary btn-sm" hidden>
+              <i data-lucide="download" style="width:14px;height:14px;"></i> <span id="acerca-descargar-texto">Descargar</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="acerca-card" aria-labelledby="acerca-h-api">
+          <h3 id="acerca-h-api" class="acerca-h"><i data-lucide="key-round"></i> API de Gemini</h3>
+          <p id="acerca-api-estado" class="acerca-texto">Comprobando…</p>
+          <div class="acerca-acciones">
+            <button type="button" id="btn-acerca-api" class="btn btn-ghost btn-sm">
+              <i data-lucide="key-round" style="width:14px;height:14px;"></i> <span id="acerca-api-boton">Cambiar o quitar la clave</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="acerca-card" aria-labelledby="acerca-h-privacidad">
+          <h3 id="acerca-h-privacidad" class="acerca-h"><i data-lucide="shield-check"></i> Privacidad y datos</h3>
+          <h4 class="acerca-sub">Lo que se guarda en tu equipo</h4>
+          <ul class="acerca-lista">
+            <li><strong>Historial de conversiones</strong> (los exámenes convertidos y sus respuestas), para descargarlos o reabrirlos: <code id="acerca-ruta-historial">—</code></li>
+            <li><strong>Tu clave de la API de Gemini</strong>, cifrada; solo se puede descifrar en este equipo y con tu usuario: <code id="acerca-ruta-clave">—</code></li>
+            <li><strong>Registro de errores</strong>, sin el contenido de tus exámenes: <code id="acerca-ruta-registro">—</code></li>
+            <li><strong>La revisión que tengas a medias</strong>, para retomarla si cierras la app, en el almacenamiento de la propia ventana.</li>
+          </ul>
+          <h4 class="acerca-sub">Lo que sale de tu equipo</h4>
+          <ul class="acerca-lista">
+            <li><strong>A Google (API de Gemini), con tu clave:</strong> el texto de tu examen y, cuando hace falta, imágenes de algunas páginas, para ordenar las preguntas; y, al guardar tu clave, una consulta para comprobar que Google la acepta. Nada más se envía a Google.</li>
+            <li><strong>A GitHub, al abrir la app:</strong> una consulta para saber si hay versión nueva. No lleva ningún dato tuyo; GitHub solo ve lo que ve de cualquier visita (tu dirección IP).</li>
+          </ul>
+          <div class="callout is-warning acerca-aviso">
+            <i data-lucide="alert-triangle"></i>
+            <p><strong>Con el plan gratuito de la API de Gemini, Google puede usar lo que envías para mejorar sus productos</strong>, y personas de Google pueden revisarlo. Con el plan de pago (facturación activada en tu cuenta de Google) no lo usa para eso. Si tus exámenes son confidenciales, considera el plan de pago. <button type="button" class="text-link" data-url="https://ai.google.dev/gemini-api/terms">Términos de la API de Gemini</button></p>
+          </div>
+          <h4 class="acerca-sub">Cookies</h4>
+          <p class="acerca-texto">La app <strong>no usa cookies</strong>, ni analítica, publicidad o seguimiento de ningún tipo, y no necesita cuenta. Todo lo que guarda la ventana (la revisión a medias y los tiempos de conversiones anteriores, para estimar la espera) se queda en tu equipo.</p>
+        </section>
+
+        <section class="acerca-card" aria-labelledby="acerca-h-legal">
+          <h3 id="acerca-h-legal" class="acerca-h"><i data-lucide="scale"></i> Información legal</h3>
+          <ul class="acerca-lista">
+            <li>© 2026 César González y Vicente Urriola. Todos los derechos reservados.</li>
+            <li><strong>Sin garantía.</strong> La aplicación se ofrece tal cual. La lectura con IA puede equivocarse: revisa cada pregunta y su respuesta antes de usar el examen en una evaluación. Los autores no se hacen responsables de errores en los exámenes generados ni de su uso.</li>
+            <li><strong>Tus exámenes son tuyos.</strong> La aplicación no reclama ningún derecho sobre el contenido que conviertes.</li>
+            <li><strong>API de Gemini.</strong> Al crear tu clave aceptas los términos de Google; el uso, sus límites y cualquier costo corresponden a tu cuenta de Google.</li>
+            <li><strong>Marcas.</strong> Moodle es una marca registrada de Moodle Pty Ltd. Google y Gemini son marcas de Google LLC. Esta aplicación es independiente: no está afiliada, patrocinada ni respaldada por ellas.</li>
+          </ul>
+        </section>
+
+        <section class="acerca-card" aria-labelledby="acerca-h-terceros">
+          <h3 id="acerca-h-terceros" class="acerca-h"><i data-lucide="package"></i> Avisos de terceros</h3>
+          <p class="acerca-texto">Esta aplicación usa software libre de terceros, cada uno con su propia licencia. Entre los principales:</p>
+          <ul class="acerca-lista acerca-lista-compacta">
+            <li>Python — PSF</li>
+            <li>FastAPI, pdfplumber, pdfminer.six, Pillow, pydantic — MIT</li>
+            <li>Uvicorn, Starlette, lxml, pywebview — BSD</li>
+            <li>requests, python-multipart — Apache 2.0</li>
+            <li>PDFium (vía pypdfium2) — BSD / Apache 2.0</li>
+            <li>cryptography — Apache 2.0 o BSD</li>
+            <li>Íconos Lucide — ISC</li>
+            <li>Fuentes Outfit, Hanken Grotesk y JetBrains Mono — SIL Open Font License 1.1</li>
+            <li>PyInstaller (cargador de arranque) — GPL 2.0 con excepción</li>
+          </ul>
+          <details class="acerca-detalles" id="acerca-licencias">
+            <summary>Ver la lista completa y los textos de las licencias</summary>
+            <pre id="acerca-licencias-texto" class="acerca-pre" tabindex="0">Cargando…</pre>
+          </details>
+        </section>
+
+        <section class="acerca-card" aria-labelledby="acerca-h-creditos">
+          <h3 id="acerca-h-creditos" class="acerca-h"><i data-lucide="users"></i> Créditos y ayuda</h3>
+          <p class="acerca-texto">Desarrollado por los ingenieros <strong>César González</strong> y <strong>Vicente Urriola</strong>.</p>
+          <p class="acerca-texto">¿Encontraste un problema o tienes una sugerencia? Cuéntanos en GitHub. Si hubo un error, adjunta el registro de errores (su ubicación aparece arriba, en Privacidad y datos).</p>
+          <div class="acerca-acciones">
+            <button type="button" class="btn btn-ghost btn-sm" data-url="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/issues">
+              <i data-lucide="message-circle" style="width:14px;height:14px;"></i> Reportar un problema
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" data-url="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases">
+              <i data-lucide="external-link" style="width:14px;height:14px;"></i> Versiones publicadas
+            </button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
   <div id="modal-apikey" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="apikey-title" aria-describedby="apikey-intro">
     <div class="modal-box modal-md">
       <div class="modal-header">

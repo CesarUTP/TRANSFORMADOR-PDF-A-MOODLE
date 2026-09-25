@@ -59,9 +59,10 @@ def _consultar() -> dict:
             "notas": str(datos.get("notas", ""))[:300]}
 
 
-def comprobar() -> dict:
-    """Una sola consulta por arranque."""
+def comprobar(forzar: bool = False) -> dict:
+    """Una consulta por arranque; `forzar` (botón «Buscar actualizaciones»
+    de Acerca de) vuelve a preguntar."""
     global _cache
-    if _cache is None:
+    if _cache is None or forzar:
         _cache = _consultar()
     return _cache

@@ -103,6 +103,11 @@ cmd = [
 print("Construyendo ConvertidorMoodle.app ...")
 print("(Esto puede tardar 3-5 minutos)\n")
 
+# Avisos de terceros («Acerca de»): con ESTE Python, que es el que se
+# empaqueta, para que la lista coincida con lo que va dentro de la app.
+subprocess.run([sys.executable, "generar_avisos_terceros.py",
+                os.path.join("frontend", "legal", "avisos-terceros.txt")], cwd=HERE, check=True)
+
 result = subprocess.run(cmd, cwd=HERE)
 
 if result.returncode == 0:

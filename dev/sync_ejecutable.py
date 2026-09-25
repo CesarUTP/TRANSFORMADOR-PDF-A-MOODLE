@@ -34,7 +34,8 @@ DESTS = [ROOT / "ejecutable", ROOT / "ejecutable_mac"]
 def _sources() -> list:
     """(origen, ruta relativa) de todo lo que la app necesita."""
     out = [(ROOT / "launcher.py", Path("launcher.py")),
-           (ROOT / "backend" / "requirements.txt", Path("backend/requirements.txt"))]
+           (ROOT / "backend" / "requirements.txt", Path("backend/requirements.txt")),
+           (ROOT / "dev" / "generar_avisos_terceros.py", Path("generar_avisos_terceros.py"))]
     out += [(src, Path("backend") / src.name) for src in sorted((ROOT / "backend").glob("*.py"))]
     out += [(src, src.relative_to(ROOT))
             for src in sorted((ROOT / "frontend").rglob("*"))

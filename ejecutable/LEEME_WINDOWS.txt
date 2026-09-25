@@ -65,8 +65,8 @@ guarda cifrada en:
 
 Ese archivo solo se puede descifrar en esta PC y con este usuario.
 
-Para cambiarla o quitarla: botón "API de Gemini", arriba a la
-derecha. Una clave nueva reemplaza a la anterior solo si Google la
+Para cambiarla o quitarla: botón "Acerca de", arriba a la derecha,
+sección "API de Gemini". Una clave nueva reemplaza a la anterior solo si Google la
 acepta.
 
 Si antes tenías la clave en %LOCALAPPDATA%\ConversorMoodleXML\.env,
