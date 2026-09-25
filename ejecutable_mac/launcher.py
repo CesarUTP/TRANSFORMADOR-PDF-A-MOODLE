@@ -50,6 +50,10 @@ else:
 
 def _log(msg: str) -> None:
     try:
+        # Tope de 1 MB: al pasarlo, el registro anterior queda como .1 y se
+        # empieza uno nuevo.
+        if os.path.exists(LOG_PATH) and os.path.getsize(LOG_PATH) > 1_000_000:
+            os.replace(LOG_PATH, LOG_PATH + ".1")
         with open(LOG_PATH, "a", encoding="utf-8") as f:
             f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
     except Exception:
@@ -67,7 +71,7 @@ BACKEND_DIR = os.path.join(BUNDLE_DIR, "backend")
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-from config import SERVER_HOST
+from config import APP_VERSION, PREFIJO_DESCARGAS, SERVER_HOST
 import seguridad
 
 HOST = SERVER_HOST
@@ -114,9 +118,10 @@ MIN_SPLASH_SECONDS = 2.5
 _VENTANA = None
 
 # Enlaces que la app puede abrir en el navegador del sistema (la
-# ventana de escritorio no abre pestañas nuevas). Lista cerrada: solo
-# las páginas de Google para obtener la clave y ver precios.
-_URLS_PERMITIDAS = ("https://aistudio.google.com/", "https://ai.google.dev/")
+# ventana de escritorio no abre pestañas nuevas). Lista cerrada: las
+# páginas de Google para obtener la clave y ver precios, y la de descargas
+# de la app (aviso de versión nueva).
+_URLS_PERMITIDAS = ("https://aistudio.google.com/", "https://ai.google.dev/", PREFIJO_DESCARGAS)
 
 
 def save_xml_file(filename: str, b64_content: str) -> dict:
@@ -192,7 +197,6 @@ webbrowser.open = _abrir_solo_permitidas
 # pie con créditos y versión. Sin tarjeta de vidrio, sin halos, sin texto en
 # degradado y sin mensajes inventados que rotan (ver DESIGN.md). Siempre en
 # modo claro, igual que la app al abrirse.
-APP_VERSION = "1.1"
 
 _SPLASH_STYLE = """
     :root {
@@ -289,16 +293,28 @@ _SPLASH_STYLE = """
     @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 """
 
+def _fuente_css(familia: str, archivo: str) -> str:
+    """@font-face con la fuente incrustada: la splash se carga sin servidor
+    (y sin internet no se veía la tipografía de la app)."""
+    try:
+        with open(os.path.join(BUNDLE_DIR, "frontend", "fonts", archivo), "rb") as f:
+            datos = base64.b64encode(f.read()).decode("ascii")
+    except OSError:
+        return ""
+    return (f"@font-face {{ font-family: '{familia}'; font-weight: 100 900; "
+            f"src: url(data:font/woff2;base64,{datos}) format('woff2'); }}\n")
+
+
+_SPLASH_FUENTES = (_fuente_css("Outfit", "outfit-latin-wght-normal.woff2")
+                   + _fuente_css("Hanken Grotesk", "hanken-grotesk-latin-wght-normal.woff2"))
+
 _SPLASH_HEAD = """<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Conversor a Moodle XML</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>""" + _SPLASH_STYLE + """</style>
+  <style>""" + _SPLASH_FUENTES + _SPLASH_STYLE + """</style>
 </head>"""
 
 _MARK_SVG = """<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff"

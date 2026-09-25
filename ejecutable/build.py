@@ -9,6 +9,25 @@ import sys
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+# backend/ y frontend/ se empaquetan enteros (--add-data): cualquier archivo
+# que haya ahí viaja dentro de la app. Si hay una clave, una base de datos o
+# un registro, se detiene la compilación en vez de repartirlos.
+_PROHIBIDOS = (".env", "clave.dat")
+_EXTENSIONES_PROHIBIDAS = (".db", ".sqlite", ".log")
+_encontrados = []
+for _carpeta in ("backend", "frontend"):
+    for _raiz, _dirs, _archivos in os.walk(os.path.join(HERE, _carpeta)):
+        _dirs[:] = [d for d in _dirs if d not in ("venv", "__pycache__")]
+        for _a in _archivos:
+            if _a.startswith(_PROHIBIDOS) or _a.endswith(_EXTENSIONES_PROHIBIDAS):
+                _encontrados.append(os.path.relpath(os.path.join(_raiz, _a), HERE))
+if _encontrados:
+    print("[ERROR] Estos archivos no deben ir dentro de la app. Bórralos o muévelos y vuelve a compilar:")
+    for _r in _encontrados:
+        print("   -", _r)
+    sys.exit(1)
 VENV_PYINSTALLER = os.path.join(HERE, "build_venv", "Scripts", "pyinstaller.exe")
 
 cmd = [

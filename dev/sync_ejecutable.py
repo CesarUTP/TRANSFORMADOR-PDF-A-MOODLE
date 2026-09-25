@@ -13,10 +13,15 @@ Copia solo lo que la app necesita para correr: los módulos .py de backend/,
 su requirements.txt, todo frontend/ (index.html, css/, js/) y launcher.py.
 Borra los archivos que ya no existen en el original. Nunca copia un .env
 (la API key se pone a mano junto al ejecutable instalado).
+
+Antes de copiar nada corre las pruebas (dev/test_casos_borde.py y
+dev/test_seguridad.py): si alguna falla, no se actualizan los instaladores.
+--sin-pruebas las salta (solo para una emergencia).
 """
 
 import filecmp
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -61,7 +66,23 @@ def sync(dest: Path) -> tuple:
     return changed, removed
 
 
+PRUEBAS = ("test_casos_borde.py", "test_seguridad.py")
+
+
+def _correr_pruebas() -> None:
+    for prueba in PRUEBAS:
+        print(f"Corriendo {prueba}…")
+        r = subprocess.run([sys.executable, str(ROOT / "dev" / prueba)], cwd=ROOT,
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if r.returncode:
+            print(r.stdout[-4000:], r.stderr[-4000:], sep="\n")
+            sys.exit(f"Fallan las pruebas de {prueba}: no se actualizan los instaladores.")
+    print("Pruebas OK.\n")
+
+
 def main() -> int:
+    if "--sin-pruebas" not in sys.argv:
+        _correr_pruebas()
     for dest in DESTS:
         if not dest.is_dir():
             sys.exit(f"No existe {dest}")

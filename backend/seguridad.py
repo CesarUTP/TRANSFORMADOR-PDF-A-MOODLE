@@ -56,8 +56,8 @@ MAX_CUERPO_BYTES = 40 * 1024 * 1024
 CSP = "; ".join([
     "default-src 'self'",
     "script-src 'self' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
     "img-src 'self' data: blob:",
     "connect-src 'self'",
     "object-src 'none'",

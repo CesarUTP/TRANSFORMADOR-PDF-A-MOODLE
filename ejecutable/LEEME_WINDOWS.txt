@@ -48,6 +48,10 @@ Escritorio, tiene su propio ícono, y se desinstala desde "Agregar o
 quitar programas" — quien lo instale NO necesita tener Python ni nada
 más instalado.
 
+Al desinstalar, pregunta si también se borran el historial y la API de
+Gemini guardada (%LOCALAPPDATA%\ConversorMoodleXML). La respuesta por
+defecto es "No": así una reinstalación conserva todo.
+
 API de Gemini (clave)
 ------------------------------------------------
 El ejecutable NO trae ninguna clave dentro: cada persona usa la suya.

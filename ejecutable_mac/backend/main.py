@@ -22,7 +22,8 @@ from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from lxml import etree
 
-from config import DEFAULT_CATEGORY, DEFAULT_TOTAL_POINTS, SERVER_PORT
+from config import APP_VERSION, DEFAULT_CATEGORY, DEFAULT_TOTAL_POINTS, SERVER_PORT
+import actualizaciones
 import credenciales
 import seguridad
 from extractor import pdf_has_embedded_images
@@ -58,7 +59,10 @@ def _configurar_log_de_errores() -> None:
         return  # --reload vuelve a importar el módulo: sin handlers duplicados
     try:
         ERROR_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-        handler = logging.FileHandler(ERROR_LOG_PATH, encoding="utf-8")
+        # Con tope (1 MB + una copia anterior): nunca crece sin límite en el
+        # disco del docente.
+        from logging.handlers import RotatingFileHandler
+        handler = RotatingFileHandler(ERROR_LOG_PATH, maxBytes=1_000_000, backupCount=1, encoding="utf-8")
     except OSError:
         return
     handler.setLevel(logging.ERROR)
@@ -96,7 +100,7 @@ def _detalle_tecnico(exc: Exception) -> str:
     texto = str(exc).strip().replace("\n", " ")
     return f"{type(exc).__name__}: {texto[:160]}" if texto else type(exc).__name__
 
-app = FastAPI(title="PDF → Moodle XML", version="1.1")
+app = FastAPI(title="PDF → Moodle XML", version=APP_VERSION)
 
 # Sin CORS: la interfaz se sirve desde este mismo servidor, así que ninguna
 # otra página necesita (ni debe poder) leer sus respuestas. Host, Origin,
@@ -118,6 +122,13 @@ def startup_event():
 @app.get(seguridad.RUTA_SALUD, include_in_schema=False)
 def api_salud(n: str = ""):
     return {"firma": seguridad.firma_salud(n)}
+
+
+# ¿Hay una versión nueva? (ver actualizaciones.py). Corre en threadpool: la
+# consulta a internet puede tardar unos segundos.
+@app.get("/api/actualizacion")
+def api_actualizacion():
+    return actualizaciones.comprobar()
 
 
 # Conversiones a la vez: cada una lee el PDF, renderiza páginas y llama a
@@ -144,7 +155,7 @@ if _fe.exists():
     app.mount("/static", StaticFiles(directory=str(_fe)), name="static")
     # index.html se sirve en "/", así que sus rutas relativas ("css/base.css",
     # "js/app.js") caen en la raíz: cada carpeta del frontend se monta ahí.
-    for _sub in ("css", "js", "img"):
+    for _sub in ("css", "js", "img", "fonts"):
         _dir = _fe / _sub
         if _dir.is_dir():
             app.mount(f"/{_sub}", StaticFiles(directory=str(_dir)), name=_sub)

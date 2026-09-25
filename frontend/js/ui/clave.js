@@ -13,6 +13,7 @@ import { apiFetch } from '../api.js';
 import { abrirModal, cerrarModal } from './modales.js';
 import { confirmar } from './confirmar.js';
 import { showToast } from './toast.js';
+import { abrirEnlaceExterno } from '../util.js';
 
 const modal = document.getElementById('modal-apikey');
 const titleText = document.getElementById('apikey-title-text');
@@ -119,16 +120,9 @@ export function claveObligatoria() {
 closeBtn.addEventListener('click', cerrarAjustesClave);
 modal.addEventListener('click', e => { if (e.target === modal) cerrarAjustesClave(); });
 
-// Los enlaces se abren en el navegador del sistema: la ventana de
-// escritorio no abre pestañas nuevas.
+// Los enlaces se abren en el navegador del sistema (ver abrirEnlaceExterno).
 modal.querySelectorAll('[data-url]').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const url = btn.dataset.url;
-    if (window.pywebview?.api?.open_url) {
-      try { if (await window.pywebview.api.open_url(url)) return; } catch (_) { /* se intenta abajo */ }
-    }
-    window.open(url, '_blank', 'noopener');
-  });
+  btn.addEventListener('click', () => abrirEnlaceExterno(btn.dataset.url));
 });
 
 revealBtn.addEventListener('click', () => {

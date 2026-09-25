@@ -176,7 +176,6 @@ Conversor a Moodle XML/
 ├── iniciar.command       ← Doble clic para abrir la app en macOS
 ├── iniciar.bat           ← Doble clic para abrir la app en Windows
 ├── launcher.py           ← Punto de entrada de escritorio (splash + pywebview)
-├── build.py              ← Empaqueta la app como ejecutable (PyInstaller)
 │
 ├── backend/
 │   ├── main.py           ← API FastAPI (endpoints)
@@ -407,6 +406,12 @@ El servidor escucha solo en `127.0.0.1`, pero cualquier página web abierta en e
 - **CSP.** No se ejecutan scripts en línea ni de otros servidores. Por eso los botones dibujados como HTML usan `data-accion="función"` en vez de `onclick`, y un solo oyente en `app.js` los despacha. Lucide va dentro de la app, en `frontend/js/vendor/`. `'unsafe-eval'` se permite solo porque pywebview arma su API con `new Function`.
 - **Datos que se dibujan.** `num` y `type` de cada pregunta se validan en el servidor (`validate_questions`) y se sanean al dibujar el editor.
 - **Límites.** El cuerpo de una petición admite 40 MB y un PDF, 150 páginas. Cada página se renderiza con 12 MP como máximo. Corren 2 conversiones a la vez. La búsqueda de marcas se omite en páginas con demasiados objetos. Sin clave de la API no se lee el documento.
+- **Nada se carga de internet.** Lucide y las fuentes (Outfit, Hanken Grotesk y JetBrains Mono, licencia OFL) van dentro de la app, en `frontend/js/vendor/` y `frontend/fonts/`. La splash lleva las fuentes incrustadas.
+- **Dependencias con versión exacta** en `backend/requirements.txt` y en los guiones de compilación, que usan PyInstaller y pywebview con versión fija.
+- **Compilación.** Los dos `build.py` se niegan a empaquetar un `.env`, `clave.dat`, una base de datos o un registro. `dev/sync_ejecutable.py` corre `dev/test_casos_borde.py` y `dev/test_seguridad.py` antes de actualizar `ejecutable/` y `ejecutable_mac/`. `test_seguridad.py` corre en una copia temporal, sin tu `.env`, tu clave ni tu historial.
+- **Registros con tope.** `errores.log` y `launcher_error.log` rotan al pasar 1 MB.
+- **Aviso de versión nueva.** Al arrancar, la app lee `version.json` en `config.URL_ACTUALIZACIONES`. Si ahí hay una versión mayor que `config.APP_VERSION`, muestra un aviso con el botón «Descargar». El enlace solo puede apuntar a `config.PREFIJO_DESCARGAS`. La dirección tiene que ser **pública**: mientras el repositorio sea privado, GitHub responde 404 y la app no avisa nada.
+- **Desinstalar en Windows** pregunta si también se borran el historial y la clave guardados en `%LOCALAPPDATA%\ConversorMoodleXML`. La respuesta por defecto es «No».
 
 **Errores inesperados** — un fallo no previsto al procesar se **reintenta una vez** solo; si se repite, el mensaje trae el detalle técnico y la ruta de `errores.log`.
 
@@ -477,7 +482,7 @@ Además: `pywebview` para la app de escritorio (fuera de `requirements.txt` porq
 
 El `.exe` de PyInstaller usa `--noconsole`: si uvicorn falla al arrancar, la app no muestra ningún error y se queda en la splash para siempre. Por eso `launcher.py` escribe cualquier fallo en un archivo **`launcher_error.log`**, junto al `.exe`, dentro de la carpeta donde quedó instalada la app. **Revísalo primero.**
 
-**Causa más común:** un módulo que usa `backend/` (fastapi, uvicorn, sqlite3…) no quedó incluido en el `.exe`. PyInstaller trata `backend/` como datos copiados tal cual (vía `--add-data`), no como código que analiza, así que **no detecta sus imports** — hay que declararlos a mano con `--hidden-import` o `--collect-all` en [`ejecutable/build.py`](ejecutable/build.py) (y en [`build.py`](build.py)) y recompilar.
+**Causa más común:** un módulo que usa `backend/` (fastapi, uvicorn, sqlite3…) no quedó incluido en el `.exe`. PyInstaller trata `backend/` como datos copiados tal cual (vía `--add-data`), no como código que analiza, así que **no detecta sus imports** — hay que declararlos a mano con `--hidden-import` o `--collect-all` en [`ejecutable/build.py`](ejecutable/build.py) (y en [`ejecutable_mac/build.py`](ejecutable_mac/build.py)) y recompilar. Esos dos `build.py` además se niegan a compilar si encuentran un `.env`, `clave.dat`, una base de datos o un registro dentro de `backend/` o `frontend/`.
 
 **Otra causa:** haber armado el instalador con una copia vieja del código. `ejecutable/` y `ejecutable_mac/` llevan su propia copia de `backend/`, `frontend/` y `launcher.py`; antes de compilar corre:
 

@@ -1,0 +1,26 @@
+/* fuentes.css — tipografías incluidas en la app (antes venían de Google
+   Fonts: sin internet la app caía a las fuentes del sistema, y Google
+   veía cada vez que se abría). Fuentes variables de Fontsource 5.3.0,
+   licencia SIL OFL 1.1 (ver fonts/LICENSE-*.txt). Solo el juego "latin",
+   que cubre el español completo (á é í ó ú ü ñ ¿ ¡). */
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/outfit-latin-wght-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/hanken-grotesk-latin-wght-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('../fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2');
+}

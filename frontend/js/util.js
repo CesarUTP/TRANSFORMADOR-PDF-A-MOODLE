@@ -200,3 +200,13 @@ export function formatMMSS(totalSeconds) {
   const s = Math.max(0, Math.round(totalSeconds));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
+
+// Abre un enlace en el navegador del sistema: la ventana de escritorio no
+// abre pestañas nuevas. El launcher solo acepta su lista de sitios
+// permitidos; en el navegador (modo desarrollo) se usa window.open.
+export async function abrirEnlaceExterno(url) {
+  if (window.pywebview?.api?.open_url) {
+    try { if (await window.pywebview.api.open_url(url)) return; } catch (_) { /* se intenta abajo */ }
+  }
+  window.open(url, '_blank', 'noopener');
+}

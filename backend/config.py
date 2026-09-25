@@ -126,6 +126,20 @@ NOT_AN_EXAM_SENTINEL: str = "NO_ES_UNA_PRUEBA"
 # un motivo de "omitida" más específico que el genérico "sin respuesta".
 TRANSCRIPTION_FAILED_MARKER: str = "[TRANSCRIPCION_FALLIDA]"
 
+# ── Versión y actualizaciones ───────────────────────────────────────────────
+# Única fuente de la versión (splash, API, aviso de actualización). Al
+# publicar una nueva: subir este número y el de ejecutable/installer.iss, y
+# actualizar version.json (en la raíz del repositorio) con la misma versión
+# y el enlace de descarga.
+APP_VERSION: str = "1.2"
+# La app lee este archivo al arrancar para avisar si hay una versión más
+# nueva. Tiene que ser una dirección PÚBLICA: mientras el repositorio sea
+# privado, GitHub responde 404 y la app simplemente no avisa nada.
+URL_ACTUALIZACIONES: str = "https://raw.githubusercontent.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/main/version.json"
+# El enlace de descarga del aviso solo puede apuntar aquí (lo abre el
+# navegador del sistema; ver launcher.open_url).
+PREFIJO_DESCARGAS: str = "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/"
+
 # ── Servidor ────────────────────────────────────────────────────────────────
 SERVER_HOST: str = "127.0.0.1"
 SERVER_PORT: int = 8000

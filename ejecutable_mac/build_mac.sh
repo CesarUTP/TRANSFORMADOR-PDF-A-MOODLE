@@ -27,7 +27,7 @@ fi
 echo "[2/4] Instalando dependencias..."
 "build_venv/bin/pip" install --quiet --upgrade pip
 "build_venv/bin/pip" install --quiet -r backend/requirements.txt
-"build_venv/bin/pip" install --quiet "pywebview==6.2.1" pyinstaller pyobjc
+"build_venv/bin/pip" install --quiet "pywebview==6.2.1" "pyinstaller==6.22.3" "pyobjc==12.2.2"
 
 echo "[3/4] Compilando la app (PyInstaller)..."
 "build_venv/bin/python3" build.py

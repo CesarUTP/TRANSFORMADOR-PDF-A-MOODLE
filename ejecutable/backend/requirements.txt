@@ -1,9 +1,17 @@
+# Versiones exactas: cada instalación y cada compilación usan lo mismo que
+# se probó (con ">=" una versión nueva podía cambiar el comportamiento o
+# traer un fallo sin que nadie lo notara). Para actualizar: subir la
+# versión aquí, correr las pruebas (dev/test_casos_borde.py y
+# dev/test_seguridad.py) y recién entonces compilar.
 fastapi==0.115.12
+starlette==0.46.2
 uvicorn[standard]==0.34.2
 python-multipart==0.0.20
 pdfplumber==0.11.6
-lxml>=5.3.2
-pydantic>=2.11.3
-requests>=2.31
-Pillow>=10.0
-cryptography>=42
+pdfminer.six==20250327
+pypdfium2==5.13.0
+lxml==6.1.3
+pydantic==2.13.5
+requests==2.34.2
+Pillow==12.3.0
+cryptography==50.0.1

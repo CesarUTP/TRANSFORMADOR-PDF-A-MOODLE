@@ -1,1 +1,2 @@
 reportlab==4.2.5
+httpx==0.28.1        # fastapi.testclient (dev/test_seguridad.py)

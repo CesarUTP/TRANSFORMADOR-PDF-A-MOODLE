@@ -21,6 +21,7 @@ import { estado, suscribir } from './estado.js';
 import { closeHistory, confirmDeleteHistory, downloadHistoryDesdeBoton, loadHistoryList, openHistory, renderHistoryList, reopenHistory, startDeleteHistory } from './historial.js';
 import { confirmDiscardReview, resetAll, showPanel } from './navegacion.js';
 import { generateXml, saveFileToUser } from './resultado.js';
+import { avisarSiHayVersionNueva } from './ui/actualizacion.js';
 import { abrirAjustesClave, claveObligatoria, comprobarClaveAlIniciar } from './ui/clave.js';
 import { cerrarConfirmacion } from './ui/confirmar.js';
 import { cerrarModal, closeDisclaimer, closeHelp, fileFingerprint, modalActivo, onTabKeydown, openDisclaimer, openHelp, switchTab } from './ui/modales.js';
@@ -79,6 +80,8 @@ mostrarAvisoBorrador();
 // Cliente nuevo (sin clave de la API de Gemini guardada): lo primero es el modal de
 // bienvenida para pegarla.
 comprobarClaveAlIniciar();
+// Unos segundos después, sin estorbar el arranque: ¿hay versión nueva?
+setTimeout(avisarSiHayVersionNueva, 4000);
 document.getElementById('btn-apikey').addEventListener('click', abrirAjustesClave);
 document.getElementById('btn-draft-resume').addEventListener('click', retomarBorrador);
 document.getElementById('btn-draft-discard').addEventListener('click', () => {
