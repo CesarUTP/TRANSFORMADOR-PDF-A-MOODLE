@@ -178,7 +178,22 @@ ok(not _con(200, json.dumps({"version": "<b>9</b>", "url": pref}).encode())["hay
 ok(not _con(200, b"x" * 20000)["hay"], "respuesta demasiado grande -> sin aviso")
 ok(not _con(404, b"")["hay"], "404 (repositorio privado) -> sin aviso")
 ok(len(_con(200, json.dumps({"version": "99.0", "url": pref, "notas": "n" * 5000}).encode())["notas"]) <= 300, "notas recortadas")
-actualizaciones._cache = {"hay": False, "actual": actualizaciones.APP_VERSION}
+ok(_con(200, json.dumps({"version": "99.0", "url": pref}).encode())["estado"] == "nueva", "estado «nueva»")
+ok(_con(200, json.dumps({"version": actualizaciones.APP_VERSION, "url": pref}).encode())["estado"] == "al_dia", "estado «al_dia» solo si de verdad se consultó")
+ok(_con(404, b"") == {"estado": "error", "hay": False, "actual": actualizaciones.APP_VERSION, "motivo": "servidor"}, "404 -> estado «error» (servidor), no «al día»")
+ok(_con(200, b"no es json")["motivo"] == "respuesta", "respuesta inválida -> estado «error» (respuesta)")
+
+
+def _sin_internet(*a, **k):
+    raise actualizaciones.requests.ConnectionError("sin red")
+
+
+actualizaciones.requests.get = _sin_internet
+ok(actualizaciones._consultar()["motivo"] == "conexion", "sin internet -> estado «error» (conexion)")
+actualizaciones._cache = None
+actualizaciones.comprobar()
+ok(actualizaciones._cache is None, "un error no se guarda: la próxima vez se vuelve a consultar")
+actualizaciones._cache = {"estado": "al_dia", "hay": False, "actual": actualizaciones.APP_VERSION}
 ok(c.get("/api/actualizacion").status_code == 401 and c.get("/api/actualizacion", headers=H).status_code == 200, "/api/actualizacion pide token")
 
 print("Acerca de")

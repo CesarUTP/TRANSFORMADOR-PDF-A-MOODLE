@@ -33,29 +33,43 @@ def _tupla(version: str) -> tuple:
 
 
 def _consultar() -> dict:
-    sin_novedad = {"hay": False, "actual": APP_VERSION}
+    """
+    Devuelve siempre "estado", para que la interfaz no confunda «estás al
+    día» con «no se pudo preguntar»:
+      "al_dia" — se consultó y no hay nada más nuevo.
+      "nueva"  — hay una versión más nueva (con version, url y notas).
+      "error"  — no se pudo saber: sin internet, el servidor no respondió
+                 o la respuesta no era válida ("motivo" dice cuál).
+    """
+    def error(motivo: str) -> dict:
+        return {"estado": "error", "hay": False, "actual": APP_VERSION, "motivo": motivo}
+
     try:
         r = requests.get(URL_ACTUALIZACIONES, timeout=4, stream=True, allow_redirects=False)
         try:
             if r.status_code != 200:
-                return sin_novedad
+                return error("servidor")
             cuerpo = r.raw.read(_MAX_BYTES + 1, decode_content=True)
         finally:
             r.close()
-        if len(cuerpo) > _MAX_BYTES:
-            return sin_novedad
-        datos = json.loads(cuerpo.decode("utf-8"))
-    except Exception as exc:  # noqa: BLE001 — sin internet, 404, JSON inválido…
+    except requests.RequestException as exc:  # sin conexión, DNS, tiempo agotado…
         logger.info("No se pudo comprobar si hay actualizaciones: %s", type(exc).__name__)
-        return sin_novedad
+        return error("conexion")
+    except Exception as exc:  # noqa: BLE001
+        logger.info("No se pudo comprobar si hay actualizaciones: %s", type(exc).__name__)
+        return error("servidor")
+    try:
+        datos = json.loads(cuerpo.decode("utf-8")) if len(cuerpo) <= _MAX_BYTES else None
+    except ValueError:
+        datos = None
     if not isinstance(datos, dict):
-        return sin_novedad
+        return error("respuesta")
     version, url = str(datos.get("version", "")), str(datos.get("url", ""))
     if not _VERSION.fullmatch(version) or not url.startswith(PREFIJO_DESCARGAS) or len(url) > 300:
-        return sin_novedad
+        return error("respuesta")
     if _tupla(version) <= _tupla(APP_VERSION):
-        return sin_novedad
-    return {"hay": True, "actual": APP_VERSION, "version": version, "url": url,
+        return {"estado": "al_dia", "hay": False, "actual": APP_VERSION}
+    return {"estado": "nueva", "hay": True, "actual": APP_VERSION, "version": version, "url": url,
             "notas": str(datos.get("notas", ""))[:300]}
 
 
@@ -64,5 +78,9 @@ def comprobar(forzar: bool = False) -> dict:
     de Acerca de) vuelve a preguntar."""
     global _cache
     if _cache is None or forzar:
-        _cache = _consultar()
+        resultado = _consultar()
+        # Un fallo no se guarda: la próxima vez se vuelve a intentar.
+        if resultado["estado"] != "error":
+            _cache = resultado
+        return resultado
     return _cache

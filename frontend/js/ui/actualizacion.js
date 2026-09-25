@@ -19,7 +19,8 @@ export async function avisarSiHayVersionNueva() {
   } catch (_) {
     return;
   }
-  if (!info || !info.hay) return;
+  // Al arrancar solo se avisa lo nuevo; un fallo al consultar se ve en «Acerca de».
+  if (!info || info.estado !== 'nueva') return;
   // showToast pone el mensaje con textContent: las notas no se leen como HTML.
   const notas = info.notas ? ` ${info.notas}` : '';
   showToast(`Hay una versión nueva del conversor (${info.version}); tienes la ${info.actual}.${notas}`, 'info', {

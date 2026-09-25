@@ -19,19 +19,34 @@ const btnBuscar = $('btn-acerca-buscar');
 const btnDescargar = $('btn-acerca-descargar');
 let _urlDescarga = null;
 
-function _mostrarActualizacion(info, { buscadaAMano = false } = {}) {
-  if (info && info.hay) {
-    estadoVersion.textContent = `Hay una versión nueva: ${info.version}.${info.notas ? ' ' + info.notas : ''}`;
+// Un mensaje distinto para cada caso: nunca «al día» cuando en realidad no
+// se pudo preguntar (ver backend/actualizaciones.py).
+const MOTIVOS_ERROR = {
+  conexion: 'no hay conexión a internet. Revísala y vuelve a pulsar «Buscar actualizaciones».',
+  servidor: 'el servidor de actualizaciones no respondió. Inténtalo más tarde.',
+  respuesta: 'la respuesta del servidor de actualizaciones no era válida. Inténtalo más tarde.',
+  local: 'la aplicación no respondió. Ciérrala y vuelve a abrirla.',
+};
+
+function _hora() {
+  return new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+}
+
+function _mostrarActualizacion(info) {
+  btnDescargar.hidden = true;
+  if (info && info.estado === 'nueva') {
+    estadoVersion.textContent = `Hay una versión nueva: la ${info.version} (tienes la ${info.actual}).${info.notas ? ' ' + info.notas : ''}`;
     estadoVersion.dataset.tono = 'nueva';
     $('acerca-descargar-texto').textContent = `Descargar la versión ${info.version}`;
     _urlDescarga = info.url;
     btnDescargar.hidden = false;
-  } else {
-    estadoVersion.textContent = buscadaAMano
-      ? 'Tienes la versión más reciente (o no se pudo consultar: revisa tu conexión a internet).'
-      : 'Tienes la versión más reciente.';
+  } else if (info && info.estado === 'al_dia') {
+    estadoVersion.textContent = `Estás al día: la ${info.actual} es la versión más reciente. Comprobado a las ${_hora()}.`;
     estadoVersion.dataset.tono = 'al-dia';
-    btnDescargar.hidden = true;
+  } else {
+    const motivo = MOTIVOS_ERROR[info && info.motivo] || MOTIVOS_ERROR.local;
+    estadoVersion.textContent = `No se pudo comprobar si hay una versión nueva: ${motivo}`;
+    estadoVersion.dataset.tono = 'error';
   }
 }
 
@@ -40,9 +55,9 @@ async function _buscarActualizacion(forzar) {
   if (forzar) { estadoVersion.textContent = 'Buscando actualizaciones…'; estadoVersion.dataset.tono = ''; }
   try {
     const res = await apiFetch(`/api/actualizacion${forzar ? '?forzar=true' : ''}`);
-    _mostrarActualizacion(res.ok ? await res.json() : null, { buscadaAMano: forzar });
+    _mostrarActualizacion(res.ok ? await res.json() : null);
   } catch (_) {
-    _mostrarActualizacion(null, { buscadaAMano: true });
+    _mostrarActualizacion(null);
   } finally {
     btnBuscar.disabled = false;
   }

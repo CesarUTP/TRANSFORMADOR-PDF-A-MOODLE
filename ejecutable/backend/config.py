@@ -131,7 +131,7 @@ TRANSCRIPTION_FAILED_MARKER: str = "[TRANSCRIPCION_FALLIDA]"
 # publicar una nueva: subir este número y el de ejecutable/installer.iss, y
 # actualizar version.json (en la raíz del repositorio) con la misma versión
 # y el enlace de descarga.
-APP_VERSION: str = "1.3"
+APP_VERSION: str = "1.3.1"
 # La app lee este archivo al arrancar para avisar si hay una versión más
 # nueva. Tiene que ser una dirección PÚBLICA: mientras el repositorio sea
 # privado, GitHub responde 404 y la app simplemente no avisa nada.

@@ -662,6 +662,7 @@
 .acerca-estado:empty { display: none; }
 .acerca-estado[data-tono="al-dia"] { color: var(--color-success-solid); }
 .acerca-estado[data-tono="nueva"] { color: var(--color-text); font-weight: 600; }
+.acerca-estado[data-tono="error"] { color: var(--color-warning); }
 .acerca-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
 .acerca-acciones [hidden] { display: none; }
 .acerca-h {
