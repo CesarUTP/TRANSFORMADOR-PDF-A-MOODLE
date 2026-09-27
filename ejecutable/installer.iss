@@ -7,7 +7,7 @@
 ; (PyInstaller) — build_windows.bat hace ambos pasos en orden automáticamente.
 
 #define MyAppName "Conversor a Moodle XML"
-#define MyAppVersion "1.4"
+#define MyAppVersion "1.5"
 #define MyAppPublisher "César González y Vicente Urriola"
 #define MyAppExeName "ConvertidorMoodle.exe"
 

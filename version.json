@@ -1,5 +1,5 @@
 {
-  "version": "1.4",
+  "version": "1.5",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Corrige errores de lectura y del XML, evita que un documento raro trabe la app o consuma memoria de más, y ahora intenta recuperar preguntas que la IA omitió por completo."
+  "notas": "Ya no repite en texto el código que una imagen adjunta ya muestra, y permite cambiar el tipo de una pregunta (ensayo, respuesta corta, numérica, V/F) cuando la IA acierta el enunciado pero confunde la intención."
 }
