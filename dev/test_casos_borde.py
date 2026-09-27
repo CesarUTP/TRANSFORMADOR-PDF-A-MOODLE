@@ -153,7 +153,11 @@ def _():
     h = {"marcador": "A", "opciones": opts(("L'Oréal", True), ("Dior", False))}
     _, sk, xml, _k = convertir({"tipo": "cloze", "enunciado": "Marca [A].", "huecos": [h]})
     (tipo, o), = cloze_de(xml)
-    assert [t for t, _ in o] == ["L'Oreal", "Dior"], o      # sin tildes por diseño (strip_accents)
+    # Antes se le quitaban las tildes a lo que ve el estudiante ("L'Oréal"
+    # salía "L'Oreal") — alteraba el examen. Ahora se conserva tal cual;
+    # esta prueba seguía cubriendo el apóstrofo, que sí necesita su propio
+    # escape para no crear un separador "#" de retroalimentación de más.
+    assert [t for t, _ in o] == ["L'Oréal", "Dior"], o
 
 
 @caso("todas las opciones marcadas → sin respuesta (queda omitida)")

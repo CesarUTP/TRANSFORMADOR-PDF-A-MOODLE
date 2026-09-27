@@ -78,6 +78,9 @@ def main(salida: Path) -> None:
     lucide = frontend / "js" / "vendor" / "LICENSE-lucide.txt"
     if lucide.is_file():
         seccion("Lucide 1.44.0 (íconos)", "ISC", [("LICENSE", lucide.read_text(encoding="utf-8").strip())])
+    katex = frontend / "js" / "vendor" / "katex" / "LICENSE-katex.txt"
+    if katex.is_file():
+        seccion("KaTeX 0.16.47 (fórmulas)", "MIT", [("LICENSE", katex.read_text(encoding="utf-8").strip())])
     for f in sorted((frontend / "fonts").glob("LICENSE-*.txt")):
         seccion(f"Fuente {f.stem.replace('LICENSE-', '')} (Fontsource 5.3.0)", "SIL OFL 1.1",
                 [("LICENSE", f.read_text(encoding="utf-8").strip())])

@@ -33,8 +33,8 @@ export function showFilePreview(file) {
   estado.disclaimerAcknowledgedFor = null;
   fileNameEl.textContent = file.name;
   fileSizeEl.textContent = formatBytes(file.size);
-  const isPdf = file.name.toLowerCase().endsWith('.pdf');
-  fileIconEl.setAttribute('data-lucide', isPdf ? 'file-text' : 'file');
+  const nombre = file.name.toLowerCase();
+  fileIconEl.setAttribute('data-lucide', nombre.endsWith('.pdf') || nombre.endsWith('.docx') ? 'file-text' : 'file');
   lucide.createIcons();
   filePreview.style.display = 'flex';
   _setConvertEnabled(true);
@@ -51,7 +51,7 @@ function _marcarZona(file) {
     : 'o haz clic para buscarlo en tu computadora';
   dropZone.setAttribute('aria-label', file
     ? `Archivo elegido: ${file.name}. Pulsa para elegir otro`
-    : 'Elegir el examen: arrastra un archivo PDF o TXT, o pulsa para buscarlo');
+    : 'Elegir el examen: arrastra un archivo PDF, Word o TXT, o pulsa para buscarlo');
 }
 
 export function clearFile() {
@@ -190,10 +190,13 @@ export function runNormalizeWithAI(ptsVal) {
 
 export function handleFileSelected(file) {
   const ext = file.name.split('.').pop().toLowerCase();
-  if (!['pdf', 'txt'].includes(ext)) {
+  if (!['pdf', 'docx', 'txt'].includes(ext)) {
     // Aviso en la misma zona de carga, sin sacar al docente del paso 1.
     fileInput.value = '';
-    _dropError(`“${file.name}” no es un PDF ni un TXT. Elige un archivo .pdf o .txt.`);
+    // Un .doc (Word antiguo) no es un .docx: se explica cómo convertirlo.
+    _dropError(ext === 'doc'
+      ? `“${file.name}” es de una versión antigua de Word. Ábrelo en Word y guárdalo como .docx.`
+      : `“${file.name}” no es un PDF, Word ni TXT. Elige un archivo .pdf, .docx o .txt.`);
     return;
   }
   showFilePreview(file);
@@ -234,7 +237,9 @@ export function showError(msg, returnTo = 'upload', title = null) {
     textContent = String(msg);
   }
 
-  const isOcr = /escaneado|texto legible|sin texto|ocr/i.test(textContent);
+  // «Leer con IA» solo existe para PDF (un Word o TXT ya es texto).
+  const esPdf = /\.pdf$/i.test(estado.selectedFile?.name || '');
+  const isOcr = esPdf && /escaneado|texto legible|sin texto|ocr/i.test(textContent);
   ocrHint.style.display = isOcr ? 'block' : 'none';
   if (isOcr) lucide.createIcons();
 }

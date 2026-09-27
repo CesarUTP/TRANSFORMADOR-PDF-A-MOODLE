@@ -7,9 +7,10 @@ Generates XML that conforms to the Moodle XML Question Format spec:
   - Correct tag structure per question type (multichoice, truefalse, matching, cloze)
 """
 
-import re
 import html
 import logging
+import math
+import re
 from typing import Dict, List, Optional
 
 from config import (
@@ -20,7 +21,7 @@ from config import (
     DEFAULT_MATCHING_STEM,
 )
 from models import QuestionStats
-from answer_matching import find_cloze_brackets, is_truncated_answer_match, split_answers, split_options
+from answer_matching import find_cloze_brackets, is_substring_match, is_truncated_answer_match, split_answers, split_options
 
 logger = logging.getLogger(__name__)
 
@@ -51,14 +52,38 @@ def compute_grades(
     return {t: round(TYPE_WEIGHTS[t] * unit, 7) for t in TYPE_WEIGHTS}
 
 
+# XML 1.0 no admite estos caracteres de control (ni siquiera escapados): un
+# \x0c (salto de página, o un \f de un \frac mal escapado que llegó del
+# editor) o un \x0b (salto de línea "manual" de Word pegado a mano) rompía
+# TODA la exportación con "CData section not finished" — un examen entero
+# se perdía por un carácter en una sola pregunta.
+_CONTROL_INVALIDO = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff]")
+
+
+def _sin_control(text: str) -> str:
+    return _CONTROL_INVALIDO.sub("", text)
+
+
 def esc(text: str) -> str:
     """HTML-escape text for safe embedding in XML."""
-    return html.escape(str(text), quote=True)
+    return html.escape(_sin_control(str(text)), quote=True)
 
 
 def cdata(text: str) -> str:
     """Wrap text in a CDATA section (required by Moodle for HTML content)."""
     return f"<![CDATA[{text}]]>"
+
+
+def texto_html(text: str) -> str:
+    """Enunciado/retroalimentación como HTML: escapa, y convierte los
+    saltos de línea del enunciado (código, listas propias) en <br> y los
+    espacios de apertura de cada línea en &nbsp; — si no, el HTML los
+    colapsa a uno solo y el código pierde la sangría, y antes el enunciado
+    entero se veía corrido en un solo renglón (la retroalimentación sí
+    convertía el salto de línea, pero el enunciado no)."""
+    escapado = esc(text)
+    lineas = [re.sub(r"^ +", lambda m: "&nbsp;" * len(m.group(0)), ln) for ln in escapado.split("\n")]
+    return "<br>".join(lineas)
 
 
 def strip_accents(s: str) -> str:
@@ -149,7 +174,12 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
             correct_indices = [0]  # default to first option, same safety net as before
 
         def render_option(i: int, opt: str) -> str:
-            text = escape_cloze_syntax(strip_accents(opt))
+            # NO se le quitan las tildes: eso cambia lo que lee el
+            # estudiante ("Perú" se mostraba como "Peru"). Es distinto del
+            # strip_accents de más abajo (shortanswer), que solo AGREGA una
+            # variante sin tilde a la respuesta — nunca reemplaza el texto
+            # que ve el estudiante.
+            text = escape_cloze_syntax(opt)
             if i in correct_indices:
                 return f"={text}"
             # Una opción INCORRECTA cuyo texto empieza por "=" o "%" (el
@@ -159,7 +189,11 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
             return f"%0%{text}" if text[:1] in ("=", "%") else text
 
         moodle_options = [render_option(i, opt) for i, opt in enumerate(options)]
-        slot_num = str(ord(letter) - ord('A') + 1) if 'A' <= letter <= 'Z' else "1"
+        # El número antes del tipo ("{N:MULTICHOICE_S:…}") es el PESO de
+        # ese hueco en Moodle, no su posición: con A=1, B=2, C=3, D=4 el
+        # cuarto hueco valía 4 veces más que el primero. Todos los huecos
+        # pesan igual (1) salvo que se calcule una ponderación a propósito.
+        slot_num = "1"
         # Un solo "=" -> selección única (MULTICHOICE_S, radio/desplegable).
         # Dos o más -> varias respuestas correctas a la vez (MULTIRESPONSE_S,
         # casillas). Moodle reparte el 100% automáticamente entre las
@@ -182,6 +216,30 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
     return "".join(out)
 
 
+
+
+def _questiontext(html_text: str, data: dict, name: str) -> List[str]:
+    """<questiontext> con sus imágenes y, si la hay, la retroalimentación
+    general. Las imágenes van como las exporta el propio Moodle: <img
+    src="@@PLUGINFILE@@/nombre"> en el texto y el archivo en base64 dentro
+    de <questiontext> (<file ... encoding="base64">). Sus nombres y
+    contenido ya vienen validados (validator.py → imagenes.errores_imagenes)."""
+    imagenes = data.get("images") or []
+    html_imgs = "".join(
+        f'<p><img src="@@PLUGINFILE@@/{im["name"]}" alt="{esc("Imagen de " + name)}"></p>' for im in imagenes
+    )
+    lines = ['    <questiontext format="html">',
+             f'      <text>{cdata(html_text + html_imgs)}</text>']
+    lines += [f'      <file name="{im["name"]}" path="/" encoding="base64">{im["b64"]}</file>' for im in imagenes]
+    lines.append('    </questiontext>')
+    # Retroalimentación OPCIONAL: solo si el docente la dejó (o venía en el
+    # documento). Moodle la muestra al estudiante después de responder.
+    feedback = str(data.get("feedback") or "").strip()
+    if feedback:
+        lines.append('    <generalfeedback format="html">')
+        lines.append(f'      <text>{cdata("<p>" + texto_html(feedback) + "</p>")}</text>')
+        lines.append('    </generalfeedback>')
+    return lines
 
 def build_xml(
     questions: List[dict],
@@ -246,7 +304,11 @@ def build_xml(
         # terminaba dándoles el puntaje por peso de tipo — lo contrario de
         # lo que el editor mostraba en pantalla.
         q_points = q.get("points")
-        has_points = isinstance(q_points, (int, float)) and not isinstance(q_points, bool) and q_points >= 0
+        # math.isfinite descarta Infinity/NaN: Infinity pasaba "q_points >= 0"
+        # (es verdadero) y quedaba como <defaultgrade>inf</defaultgrade>
+        # en el XML.
+        has_points = (isinstance(q_points, (int, float)) and not isinstance(q_points, bool)
+                      and math.isfinite(q_points) and q_points >= 0)
         grade_val = q_points if has_points else grades.get(qtype, 1.0)
 
         # ── multichoice ──
@@ -281,12 +343,18 @@ def build_xml(
                             break
                 # Priority 2: fuzzy substring match, only as a last resort —
                 # e.g. Gemini truncated/paraphrased the option text slightly.
+                # Exige coincidencia ÚNICA (como la Prioridad 3, abajo): con
+                # {"12", "2 unidades", "3"} y respuesta "2", antes se tomaba
+                # la PRIMERA opción que la contenía ("12") sin comprobar que
+                # también "2 unidades" la contiene — ambigüedad real, no se
+                # decide sola.
                 if match_letter is None:
-                    for letter, opt_text in options.items():
-                        opt_clean = opt_text.strip().lower()
-                        if ca_clean in opt_clean or opt_clean in ca_clean:
-                            match_letter = letter
-                            break
+                    substr_matches = [
+                        letter for letter, opt_text in options.items()
+                        if is_substring_match(ca_clean, opt_text.strip().lower())
+                    ]
+                    if len(substr_matches) == 1:
+                        match_letter = substr_matches[0]
                 # Priority 3: mismo salvavidas que validator.py para una
                 # respuesta cortada a mitad de palabra — solo se acepta si
                 # coincide con EXACTAMENTE una opción (evita adivinar entre
@@ -314,9 +382,7 @@ def build_xml(
 
             xml_parts.append('  <question type="multichoice">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.append('    <questiontext format="html">')
-            xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
-            xml_parts.append('    </questiontext>')
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append(f'    <penalty>{MULTICHOICE_PENALTY}</penalty>')
             xml_parts.append('    <shuffleanswers>1</shuffleanswers>')
@@ -365,9 +431,7 @@ def build_xml(
 
             xml_parts.append('  <question type="truefalse">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.append('    <questiontext format="html">')
-            xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
-            xml_parts.append('    </questiontext>')
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
 
             if is_true:
@@ -400,6 +464,7 @@ def build_xml(
             pairs_map: Dict[str, str] = key_info.get("pairs", {})
 
             pairs_ordered: list[tuple[str, str]] = []
+            letras_usadas: set = set()
             a_keys = sorted(col_a.keys(), key=lambda x: int(x) if str(x).isdigit() else str(x))
 
             # Priority 1: use the explicit número→letra answer key, so each Columna A
@@ -411,6 +476,7 @@ def build_xml(
                     b_val = col_b.get(letter, "").strip()
                     if a_val and b_val:
                         pairs_ordered.append((a_val, b_val))
+                        letras_usadas.add(letter)
                     else:
                         logger.warning(
                             "Pregunta %d (matching): sin correspondencia para el "
@@ -428,6 +494,8 @@ def build_xml(
                     b_val = col_b[b_k].strip() if b_k else ""
                     if a_val or b_val:
                         pairs_ordered.append((a_val, b_val))
+                        if b_k:
+                            letras_usadas.add(b_k)
                 if pairs_ordered:
                     logger.warning(
                         "Pregunta %d (matching): no se encontró una clave de "
@@ -435,15 +503,25 @@ def build_xml(
                         "secuencial 1-a, 2-b, 3-c... por defecto.", num,
                     )
 
+            # Distractores: elementos de la Columna B que no son la pareja de
+            # NINGÚN elemento de la A (el docente puso más opciones que
+            # preguntas a propósito, para que no se adivine por descarte).
+            # Antes desaparecían del XML sin avisar. Van como subpregunta
+            # con el <text> vacío: es la forma estándar de Moodle para un
+            # distractor en "emparejamiento" (spec: "an answer with no
+            # matching question").
+            for letra in sorted(col_b.keys()):
+                b_val = col_b[letra].strip()
+                if letra not in letras_usadas and b_val:
+                    pairs_ordered.append(("", b_val))
+
             stem = data.get("stem")
             if not stem:
                 stem = DEFAULT_MATCHING_STEM
 
             xml_parts.append('  <question type="matching">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.append('    <questiontext format="html">')
-            xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
-            xml_parts.append('    </questiontext>')
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('    <shuffleanswers>true</shuffleanswers>')
 
@@ -464,9 +542,7 @@ def build_xml(
 
             xml_parts.append('  <question type="cloze">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.append('    <questiontext format="html">')
-            xml_parts.append(f'      <text>{cdata(f"<p>{html.escape(cloze_text, quote=False)}</p>")}</text>')
-            xml_parts.append('    </questiontext>')
+            xml_parts.extend(_questiontext(f"<p>{html.escape(_sin_control(cloze_text), quote=False)}</p>", data, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('  </question>')
             stats.cloze += 1
@@ -479,9 +555,7 @@ def build_xml(
 
             xml_parts.append('  <question type="essay">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.append('    <questiontext format="html">')
-            xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
-            xml_parts.append('    </questiontext>')
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('    <answer fraction="0">')
             xml_parts.append('      <text></text>')
@@ -497,13 +571,15 @@ def build_xml(
 
             xml_parts.append('  <question type="shortanswer">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.append('    <questiontext format="html">')
-            xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
-            xml_parts.append('    </questiontext>')
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('    <usecase>0</usecase>')
+            # Un "*" es el comodín de shortanswer en Moodle (coincide con
+            # cualquier texto): una respuesta que sea literalmente "*" (o lo
+            # contenga) debe escaparse a "\*", si no acepta cualquier cosa.
+            respuesta_sa = correct_answer.replace('*', '\\*')
             xml_parts.append('    <answer fraction="100">')
-            xml_parts.append(f'      <text>{cdata(esc(correct_answer))}</text>')
+            xml_parts.append(f'      <text>{cdata(esc(respuesta_sa))}</text>')
             xml_parts.append(f'      <feedback><text>{cdata(FEEDBACK_CORRECT)}</text></feedback>')
             xml_parts.append('    </answer>')
 
@@ -514,8 +590,8 @@ def build_xml(
             # tildes como segunda respuesta válida, con el mismo puntaje —
             # la forma recomendada por la propia documentación de Moodle
             # para aceptar más de una grafía de la misma respuesta.
-            unaccented = strip_accents(correct_answer)
-            if unaccented != correct_answer:
+            unaccented = strip_accents(respuesta_sa)
+            if unaccented != respuesta_sa:
                 xml_parts.append('    <answer fraction="100">')
                 xml_parts.append(f'      <text>{cdata(esc(unaccented))}</text>')
                 xml_parts.append(f'      <feedback><text>{cdata(FEEDBACK_CORRECT)}</text></feedback>')
@@ -531,12 +607,15 @@ def build_xml(
 
             xml_parts.append('  <question type="numerical">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.append('    <questiontext format="html">')
-            xml_parts.append(f'      <text>{cdata(f"<p>{esc(stem)}</p>")}</text>')
-            xml_parts.append('    </questiontext>')
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
+            # El validador ya acepta "3,5" (coma decimal, común al copiar un
+            # documento en español) convirtiéndola a "3.5" para comprobar que
+            # es un número — pero aquí se escribía tal cual ("3,5") en el
+            # XML, y Moodle no entiende la coma como separador decimal.
+            valor_numerico = correct_answer.strip().replace(',', '.')
             xml_parts.append('    <answer fraction="100">')
-            xml_parts.append(f'      <text>{esc(correct_answer.strip())}</text>')
+            xml_parts.append(f'      <text>{esc(valor_numerico)}</text>')
             xml_parts.append('      <tolerance>0</tolerance>')
             xml_parts.append(f'      <feedback><text>{cdata(FEEDBACK_CORRECT)}</text></feedback>')
             xml_parts.append('    </answer>')

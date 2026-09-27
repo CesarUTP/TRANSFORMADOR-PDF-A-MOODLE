@@ -20,6 +20,7 @@ from fastapi import HTTPException
 from config import ENRICH_PDF_TEXT, MISSING_API_KEY_MESSAGE, NORMALIZER_MODE, NORMALIZER_MODE_AI
 from credenciales import get_api_key
 from extractor import (
+    MAX_IMAGE_PAGES,
     DocumentoDemasiadoGrande,
     comprobar_paginas,
     extract_pages_text,
@@ -31,7 +32,9 @@ from extractor import (
     extract_text_from_txt,
     render_all_pages_as_images,
 )
-from formatter import verify_and_format, extract_structured
+from extractor_docx import DocxInvalido, leer_docx
+from formatter import verify_and_format, extract_structured, extract_missing
+from imagenes import asignar_imagenes, candidatas_omitidas_numeradas, extraer_imagenes_pdf
 from schema_adapter import adapt
 from mark_resolver import resolve_answer_marks, resolve_table_marks, resolve_tf_marks
 from parser import parse_answer_key, build_questions
@@ -159,10 +162,10 @@ def _comprobar_entrada(raw_bytes: bytes, suffix: str) -> None:
 def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback = None) -> Dict[str, Any]:
     """Flujo de /api/parse: texto (+ imágenes de páginas con imagen incrustada)."""
     suffix = Path(filename).suffix.lower()
-    if suffix not in (".pdf", ".txt"):
+    if suffix not in (".pdf", ".txt", ".docx"):
         raise HTTPException(
             status_code=400,
-            detail=f"Formato no soportado '{suffix}'. Solo se aceptan archivos .pdf o .txt.",
+            detail=f"Formato no soportado '{suffix}'. Se aceptan archivos .pdf, .docx (Word) o .txt.",
         )
     _comprobar_entrada(raw_bytes, suffix)
 
@@ -172,11 +175,27 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
     # documento completo.
     _emit(progress, type="stage", key="extract", message="Leyendo el documento…")
     page_images: list = []
+    # Imágenes de las preguntas, con el texto que las precede: después de la
+    # IA se asignan a su pregunta y llegan a Moodle (ver imagenes.py).
+    imagenes_preguntas = None
+    docx = None
     try:
         if suffix == ".pdf":
             full_text, page_images = extract_text_and_images_from_pdf(raw_bytes)
+            try:
+                imagenes_preguntas = extraer_imagenes_pdf(raw_bytes)
+            except Exception as exc:  # noqa: BLE001 — sin imágenes, la conversión sigue igual
+                logger.warning("No se pudieron extraer las imágenes de '%s': %s", filename, exc)
+        elif suffix == ".docx":
+            docx = leer_docx(raw_bytes)
+            full_text = docx.texto_plano
+            imagenes_preguntas = docx.ubicaciones
+            # Las mismas imágenes van a la IA (código en captura, gráficos).
+            page_images = [im.imagen for im in docx.ubicaciones.imagenes[:MAX_IMAGE_PAGES]]
         else:
             full_text = extract_text_from_txt(raw_bytes)
+    except DocxInvalido as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:
         logger.error("Error extrayendo texto de '%s': %s", filename, exc)
         raise HTTPException(
@@ -223,7 +242,13 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
     estimated_question_count = estimate_question_count(full_text)
 
     # ── Gemini prefiltro: normalizar estructura ──────────────────────────
-    marks = _deterministic_marks(raw_bytes) if suffix == ".pdf" else None
+    if suffix == ".pdf":
+        marks = _deterministic_marks(raw_bytes)
+    elif docx is not None:
+        # Word ya trae sus marcas y tablas: mismo formato que un PDF de una página.
+        marks = ([docx.texto_enriquecido], docx.tablas)
+    else:
+        marks = None
 
     expected = estimate_expected_questions(full_text)
     _emit(progress, type="stage", key="ai", mode=NORMALIZER_MODE, expected=expected,
@@ -231,17 +256,25 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
     on_ai = _ai_progress(progress, expected)
 
     if NORMALIZER_MODE == "json":
-        model_text = _model_text_json(raw_bytes, marks) if suffix == ".pdf" else full_text
-        payload = extract_structured(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress))
+        if suffix == ".pdf":
+            model_text = _model_text_json(raw_bytes, marks)
+        elif docx is not None:
+            model_text = join_pages_with_markers([docx.texto_enriquecido])
+        else:
+            model_text = full_text
+        payload = extract_structured(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
+                                   permitir_reintento_calidad=bool(colored_pages_text))
+        payload = _completar_omitidas(payload, imagenes_preguntas, page_images, _ai_retry(progress))
         _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
         return _finalize_structured(
             filename, payload,
             estimated_question_count, colored_pages_text, color_marks_notice,
-            colored_page_numbers, marks,
+            colored_page_numbers, marks, imagenes_preguntas,
         )
 
     model_text = "\n".join(marks[0]) if marks else full_text
-    reformatted_text, was_reformatted = verify_and_format(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress))
+    reformatted_text, was_reformatted = verify_and_format(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
+                                   permitir_reintento_calidad=bool(colored_pages_text))
     _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
 
     return finalize_parse_response(
@@ -304,7 +337,8 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
 
     if NORMALIZER_MODE_AI == "json":
         model_text = _model_text_json(raw_bytes, marks)
-        payload = extract_structured(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress))
+        payload = extract_structured(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
+                                   permitir_reintento_calidad=bool(colored_pages_text))
         _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
         return _finalize_structured(
             filename, payload,
@@ -312,7 +346,8 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
             colored_page_numbers, marks,
         )
 
-    reformatted_text, was_reformatted = verify_and_format(full_text, page_images, progress=on_ai, on_retry=_ai_retry(progress))
+    reformatted_text, was_reformatted = verify_and_format(full_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
+                                   permitir_reintento_calidad=bool(colored_pages_text))
     _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
 
     return finalize_parse_response(
@@ -388,6 +423,81 @@ def finalize_parse_response(
     )
 
 
+# Cuántas preguntas omitidas hace falta detectar para intentar
+# completarlas con una llamada dirigida (ver _completar_omitidas). Con
+# más que esto, en la práctica el detector se está confundiendo con
+# opciones numeradas o con la columna de un emparejamiento (probado con
+# 3 exámenes reales sin ninguna omisión real: dio 9 "candidatas" en cada
+# uno), no con omisiones de verdad — mejor no arriesgar una llamada de
+# más y dejar la recuperación manual de siempre ("preguntas no
+# incluidas" en el editor) como única red de seguridad, igual que si
+# esta función no existiera.
+MAX_OMITIDAS_A_COMPLETAR = 3
+
+
+def _completar_omitidas(payload: Dict[str, Any], imagenes_preguntas, page_images, on_retry) -> Dict[str, Any]:
+    """
+    Antes de adaptar la respuesta de la IA: revisa en código (sin gastar
+    otra llamada) si hay preguntas NUMERADAS del documento que la IA se
+    saltó por completo (ver imagenes.candidatas_omitidas_numeradas) y, si
+    son pocas, le pide a la IA SOLO esas en una llamada pequeña y las
+    inserta en su lugar — mucho más barato que repetir la conversión
+    entera, y ataca el fallo real más común observado en la práctica (la
+    IA omite una pregunta que es solo una imagen con un enunciado corto).
+
+    Es "mejor esfuerzo" de punta a punta: cualquier problema (sin
+    candidatas, demasiadas, la detección falla, o la llamada de la IA no
+    ayuda) deja `payload` intacto y la conversión sigue exactamente como
+    si esta función no existiera — el aviso de "preguntas no incluidas"
+    del editor sigue cubriendo lo que quede sin resolver.
+    """
+    if not imagenes_preguntas or not getattr(imagenes_preguntas, "lineas", None):
+        return payload
+    preguntas_raw = payload.get("preguntas") or []
+    if not preguntas_raw:
+        return payload
+    # "data" con options/col_a/col_b (no solo el enunciado): el detector
+    # necesita comparar contra las opciones YA devueltas para no confundir
+    # una pregunta de verdad omitida con una opción numerada de la
+    # pregunta anterior (ver el comentario en candidatas_omitidas_numeradas).
+    def _liviana(p: Dict[str, Any]) -> Dict[str, Any]:
+        opciones = {str(k): o.get("texto", "") for k, o in enumerate(p.get("opciones") or [])}
+        izq = {str(k + 1): v for k, v in enumerate(p.get("items_izquierda") or [])}
+        der = {chr(97 + k): v for k, v in enumerate(p.get("items_derecha") or [])}
+        return {"stem": p.get("enunciado") or "", "options": opciones, "col_a": izq, "col_b": der}
+    livianas = [{"num": i, "data": _liviana(p)} for i, p in enumerate(preguntas_raw, 1)]
+    try:
+        candidatas = candidatas_omitidas_numeradas(livianas, imagenes_preguntas, max_candidatas=MAX_OMITIDAS_A_COMPLETAR)
+    except Exception as exc:  # noqa: BLE001 — nunca debe romper la conversión
+        logger.warning("No se pudieron revisar preguntas omitidas: %s", exc)
+        return payload
+    if not (1 <= len(candidatas) <= MAX_OMITIDAS_A_COMPLETAR):
+        return payload
+
+    logger.info("Posibles preguntas omitidas por la IA: %d. Pidiendo solo esas…", len(candidatas))
+    nuevas = extract_missing([c["texto"] for c in candidatas], page_images, on_retry=on_retry)
+    if not nuevas:
+        return payload
+
+    # Cada una se inserta justo después de la pregunta que la precede (la
+    # misma que ya estaba en el documento), con un "orden" propio a mitad
+    # de camino hacia la siguiente — no hace falta tocar el de las demás.
+    ordenes = [p.get("orden") or 0 for p in preguntas_raw]
+    for candidata, nueva in zip(candidatas, nuevas):
+        despues_de = candidata["despues_de"]
+        if despues_de and 1 <= despues_de <= len(preguntas_raw):
+            anterior_orden = preguntas_raw[despues_de - 1].get("orden") or despues_de
+        else:
+            anterior_orden = 0
+        posteriores = [o for o in ordenes if o > anterior_orden]
+        siguiente_orden = min(posteriores) if posteriores else anterior_orden + 1
+        nueva["orden"] = (anterior_orden + siguiente_orden) / 2
+        preguntas_raw.append(nueva)
+        ordenes.append(nueva["orden"])
+    payload["preguntas"] = preguntas_raw
+    return payload
+
+
 def _model_text_json(raw_bytes: bytes, marks) -> str:
     """Texto para el modo JSON: por página con "[Página N]", y enriquecido
     (color y tablas) si ENRICH_PDF_TEXT está activo."""
@@ -404,6 +514,7 @@ def _finalize_structured(
     color_marks_notice: Any,
     colored_page_numbers: List[int] = (),
     marks=None,
+    imagenes_preguntas=None,
 ) -> Dict[str, Any]:
     """Modo JSON: la salida del modelo ya viene estructurada; el adaptador
     la deja en la misma forma que produce parser.py en el modo texto."""
@@ -425,6 +536,7 @@ def _finalize_structured(
     return _finalize_common(
         filename, questions, answer_key, True,
         estimated_question_count, colored_pages_text, color_marks_notice, marks,
+        imagenes_preguntas,
     )
 
 
@@ -437,6 +549,7 @@ def _finalize_common(
     colored_pages_text: List[str],
     color_marks_notice: Any,
     marks=None,
+    imagenes_preguntas=None,
 ) -> Dict[str, Any]:
     """Cola compartida por ambos modos: marcas resueltas en código, modo
     tolerante, avisos y recorte de la clave a las preguntas válidas."""
@@ -459,7 +572,17 @@ def _finalize_common(
     # en vez de bloquear TODA la conversión por una sola pregunta
     # problemática — el usuario revisa lo válido en el editor, y ve un
     # resumen de lo que se omitió y por qué.
+    # Imágenes: se ubican con TODAS las preguntas (también las que se van a
+    # omitir), para que la de una omitida no caiga en la anterior.
+    # Siempre se llama: además quita la marca interna _comparte_imagen de la IA.
+    omitidas_por_ia: List[Dict[str, Any]] = []
+    n_img = asignar_imagenes(questions, imagenes_preguntas, omitidas_por_ia)
+    if imagenes_preguntas and imagenes_preguntas.imagenes:
+        logger.info("Imágenes asignadas a preguntas: %d de %d.", n_img, len(imagenes_preguntas.imagenes))
+
     valid_questions, skipped_questions = partition_questions(questions, effective_answer_key)
+    # Preguntas con imagen que la IA no devolvió: se ofrecen para rescatar.
+    skipped_questions.extend(omitidas_por_ia)
 
     if colored_pages_text:
         _tag_color_review_hints(valid_questions, colored_pages_text)

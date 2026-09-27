@@ -131,7 +131,7 @@ TRANSCRIPTION_FAILED_MARKER: str = "[TRANSCRIPCION_FALLIDA]"
 # publicar una nueva: subir este número y el de ejecutable/installer.iss, y
 # actualizar version.json (en la raíz del repositorio) con la misma versión
 # y el enlace de descarga.
-APP_VERSION: str = "1.3.1"
+APP_VERSION: str = "1.4"
 # La app lee este archivo al arrancar para avisar si hay una versión más
 # nueva. Tiene que ser una dirección PÚBLICA: mientras el repositorio sea
 # privado, GitHub responde 404 y la app simplemente no avisa nada.
@@ -363,6 +363,16 @@ REGLA 12 — ENSAYO, RESPUESTA CORTA Y NUMÉRICA (se ven igual que cierto/falso:
 - Ante la duda genuina entre truefalse/essay/shortanswer/numerical para una pregunta puntual, prioriza la lectura más natural de la intención del enunciado — no fuerces una pregunta a encajar en un tipo que no le queda.
 
 Responde ÚNICAMENTE con el texto convertido. Sin explicaciones ni markdown.
+
+REGLA 13 — FÓRMULAS MATEMÁTICAS:
+- Si un enunciado u opción contiene una fórmula (fracciones, potencias, raíces, sumatorias, letras griegas…), escríbela en LaTeX entre \\( y \\): ej. \\(\\frac{{x^2}}{{2}}\\), \\(\\sqrt{{3}}\\). Las operaciones simples ("3 + 4") pueden ir en texto normal.
+- Dentro de los corchetes de un espacio de completar [A: …] NO uses LaTeX.
+- Transcribe la fórmula EXACTAMENTE: no la simplifiques ni la resuelvas.
+REGLA 14 — VARIAS PREGUNTAS BAJO UN MISMO NÚMERO (preguntas encadenadas):
+- Un número puede traer MÁS DE UNA pregunta seguida sobre el mismo material (el mismo código, imagen, texto o caso). Si después de una pregunta (y de su respuesta, si la trae) aparece OTRA pregunta o instrucción que pide algo DISTINTO, es una pregunta APARTE aunque no tenga número propio: conviértelas en preguntas separadas, en el mismo orden, cada una con su propio tipo.
+- Ejemplo: "15. ¿Cuántos errores en total tiene el código? / 6 / Escribe cuáles son los errores" son DOS preguntas: una numerical ("¿Cuántos errores en total tiene el código?", respuesta 6) y una essay ("Escribe cuáles son los errores"). NO las unas en un solo enunciado.
+- Solo sepáralas cuando cada parte se responde por separado. Una pregunta con varias oraciones de contexto, o "Explica y da un ejemplo" (una sola respuesta), sigue siendo UNA pregunta.
+- Si la primera usa una imagen del documento (código, figura), las siguientes que hablan del mismo material también la necesitan (cada una debe poder entenderse con esa imagen).
 """
 
 
@@ -459,8 +469,10 @@ RESPONSE_SCHEMA: dict = {
                     },
                     "clave_texto": {"type": "string"},
                     "respuesta_texto": {"type": "string"},
+                    "retroalimentacion": {"type": "string"},
                     "respuesta_marcada": {"type": "boolean"},
                     "origen_tabla": {"type": "boolean"},
+                    "comparte_imagen_anterior": {"type": "boolean"},
                     "pagina": {"type": "integer"},
                     "confianza": {"type": "string", "enum": ["alta", "media", "baja"]},
                 },
@@ -473,7 +485,7 @@ RESPONSE_SCHEMA: dict = {
                 # ([] / "" / false / 0).
                 "required": ["orden", "tipo", "enunciado", "opciones", "items_izquierda",
                              "items_derecha", "parejas", "huecos", "clave_texto", "respuesta_texto",
-                             "respuesta_marcada", "origen_tabla", "pagina", "confianza"],
+                             "retroalimentacion", "respuesta_marcada", "origen_tabla", "comparte_imagen_anterior", "pagina", "confianza"],
             },
         },
     },
@@ -557,9 +569,21 @@ pregunta van vacíos ([] en listas, "" en textos, false, 0).
   no hay clave.
 - respuesta_texto: la respuesta de truefalse ("Verdadero"/"Falso"),
   shortanswer (el texto exacto) y numerical (solo el número).
+- retroalimentacion: si el DOCUMENTO trae una justificación o explicación
+  de la respuesta de esta pregunta (ej. en la clave: "3. c — porque el
+  agua…", o una nota "Justificación: …" bajo la pregunta), cópiala aquí
+  literalmente, sin el número ni la letra de la respuesta. Vacío si el
+  documento no la trae. NUNCA la escribas tú ni la inventes: es opcional
+  y el docente puede agregarla después.
 - respuesta_marcada: true si el documento indica explícitamente la
   respuesta; false si no (ver REGLA 5). Para essay, siempre true.
 - origen_tabla: true si la pregunta se convirtió desde una tabla (REGLA 10).
+- comparte_imagen_anterior: true SOLO si esta pregunta trata sobre la MISMA
+  imagen (el mismo código, figura o captura) que la pregunta
+  INMEDIATAMENTE anterior y no tiene imagen propia — las preguntas
+  encadenadas de la REGLA 14 (ej. "Escribe cuáles son los errores" después
+  de "¿Cuántos errores tiene el código?"). false en todos los demás casos,
+  incluida la primera pregunta que usa esa imagen.
 - pagina: la página del documento donde aparece la pregunta, si se indica
   en el contenido recibido (marcas "[Página N]"); 0 si no se puede saber.
 - confianza: "alta" normalmente; "baja" si no pudiste leer con confianza
@@ -658,4 +682,15 @@ la primera pregunta es multichoice con opciones ["Conjunto (set)", "Lista (list)
 número) también es multichoice, con opciones ["def", "func"] y correcta=true en "func"
 porque así lo indica la clave del documento — aunque tú sepas que es "def" (y su
 clave_texto es "func"). La tercera no tiene alternativas: es essay, y también va.
+
+REGLA 13 — FÓRMULAS MATEMÁTICAS:
+- Si un enunciado u opción contiene una fórmula (fracciones, potencias, raíces, sumatorias, integrales, letras griegas, matrices…), escríbela en LaTeX entre \\( y \\): ej. \\(\\frac{x^2}{2}\\), \\(\\sqrt{3}\\), \\(\\sum_{i=1}^{n} i\\). Si el texto recibido ya trae una fórmula así (entre \\( y \\)), consérvala tal cual.
+- Las operaciones simples que se leen bien como texto ("3 + 4", "x = 5", "20 %") pueden ir en texto normal.
+- En las OPCIONES de un espacio de completar (cloze) NO uses LaTeX: escribe esa opción como texto (con símbolos como x², √2 si hace falta).
+- Transcribe la fórmula EXACTAMENTE: no la simplifiques, no la resuelvas ni corrijas.
+REGLA 14 — VARIAS PREGUNTAS BAJO UN MISMO NÚMERO (preguntas encadenadas):
+- Un número puede traer MÁS DE UNA pregunta seguida sobre el mismo material (el mismo código, imagen, texto o caso). Si después de una pregunta (y de su respuesta, si la trae) aparece OTRA pregunta o instrucción que pide algo DISTINTO, es una pregunta APARTE aunque no tenga número propio: conviértelas en preguntas separadas, en el mismo orden, cada una con su propio tipo.
+- Ejemplo: "15. ¿Cuántos errores en total tiene el código? / 6 / Escribe cuáles son los errores" son DOS preguntas: una numerical ("¿Cuántos errores en total tiene el código?", respuesta 6) y una essay ("Escribe cuáles son los errores"). NO las unas en un solo enunciado.
+- Solo sepáralas cuando cada parte se responde por separado. Una pregunta con varias oraciones de contexto, o "Explica y da un ejemplo" (una sola respuesta), sigue siendo UNA pregunta.
+- Si la primera usa una imagen del documento (código, figura), las siguientes que hablan del mismo material también la necesitan: comparte_imagen_anterior=true en cada una de las siguientes.
 """

@@ -15,6 +15,23 @@ import re
 from typing import List, Tuple
 
 _PREFIX_FALLBACK_MIN_LEN = 20  # evita falsos positivos con fragmentos cortos/genéricos
+_SUBSTRING_FALLBACK_MIN_LEN = 4  # ver is_substring_match
+
+
+def is_substring_match(target: str, option: str) -> bool:
+    """
+    Salvavidas de "una cadena contiene a la otra" (paráfrasis, mayúsculas o
+    palabras de más: la clave dice "Madrid" y la opción "Madrid, España").
+    Solo se acepta si la más CORTA de las dos ya tiene sentido por sí sola
+    (≥ _SUBSTRING_FALLBACK_MIN_LEN caracteres); si no, cualquier número o
+    palabra corta calza como subcadena de casi cualquier opción y marca la
+    incorrecta — visto en la práctica: opciones {"12", "2 unidades", "3"}
+    con la respuesta "2" marcaba "12" como correcta ("2" está en "12").
+    La igualdad exacta no pasa por aquí (no tiene este mínimo).
+    """
+    if min(len(target), len(option)) < _SUBSTRING_FALLBACK_MIN_LEN:
+        return False
+    return target in option or option in target
 
 
 def is_truncated_answer_match(target: str, option: str) -> bool:

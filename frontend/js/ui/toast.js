@@ -5,6 +5,12 @@
  * (6 s) y no se va mientras el mouse o el foco del teclado estén encima,
  * para que dé tiempo a usarla. El texto se inserta como texto, nunca
  * como HTML (puede traer mensajes de error del servidor).
+ *
+ * Teclado: el aviso está al final de la página, así que llegar a su botón
+ * con Tab era impráctico. Mientras se ve, Ctrl/⌘+Z lo pulsa (salvo que se
+ * esté escribiendo en OTRO campo: ahí Ctrl+Z deshace lo escrito, como
+ * siempre). Si alPulsar devuelve un elemento, el foco vuelve a él: sin
+ * esto quedaba en <body> y el usuario de teclado perdía su lugar.
  */
 import { toastEl } from '../dom.js';
 
@@ -40,14 +46,39 @@ toastEl.addEventListener('pointerleave', _reanudar);
 toastEl.addEventListener('focusin', _pausar);
 toastEl.addEventListener('focusout', () => setTimeout(_reanudar, 0));
 
+let _accionActual = null;
+const _MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+function _ejecutar(accion) {
+  _accionActual = null;
+  hideToast();
+  const destino = accion.alPulsar();
+  if (destino && typeof destino.focus === 'function' && destino.isConnected) {
+    destino.focus({ preventScroll: true });
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (!_accionActual || !toastEl.classList.contains('show')) return;
+  if (e.key.toLowerCase() !== 'z' || e.shiftKey || e.altKey || !(e.metaKey || e.ctrlKey)) return;
+  const t = e.target;
+  const escribiendo = t.closest && t.closest('input:not([type="checkbox"]):not([type="radio"]), textarea, [contenteditable="true"]');
+  if (escribiendo && !(_accionActual.campo && t === _accionActual.campo)) return;
+  e.preventDefault();
+  _ejecutar(_accionActual);
+});
+
 export function hideToast() {
   clearTimeout(toastTimer);
+  _accionActual = null;
   toastEl.classList.remove('show');
 }
 
 /**
- * showToast(mensaje, tipo, { accion: { texto, alPulsar } })
+ * showToast(mensaje, tipo, { accion: { texto, alPulsar, campo? } })
  * tipo: 'success' | 'error' | 'info'
+ * alPulsar puede devolver el elemento que recibe el foco después.
+ * campo: el campo de texto que la acción restaura (ahí Ctrl/⌘+Z sí la usa).
  */
 export function showToast(msg, type = 'success', { accion = null } = {}) {
   const paint = () => {
@@ -64,12 +95,18 @@ export function showToast(msg, type = 'success', { accion = null } = {}) {
       btn.type = 'button';
       btn.className = 'toast-action';
       btn.textContent = accion.texto;
-      btn.addEventListener('click', () => {
-        hideToast();
-        accion.alPulsar();
-      });
+      if (accion.texto === 'Deshacer') {
+        const atajo = document.createElement('kbd');
+        atajo.className = 'toast-atajo';
+        atajo.textContent = _MAC ? '⌘Z' : 'Ctrl+Z';
+        btn.append(' ', atajo);
+        btn.setAttribute('aria-keyshortcuts', _MAC ? 'Meta+Z' : 'Control+Z');
+      }
+      btn.addEventListener('click', () => _ejecutar(accion));
       toastEl.append(btn);
     }
+    // Solo «Deshacer» responde a Ctrl/⌘+Z (no, p. ej., «Descargar»).
+    _accionActual = accion && accion.texto === 'Deshacer' ? accion : null;
     toastEl.className = 'toast' + (type === 'error' ? ' error' : type === 'info' ? ' info' : '');
     lucide.createIcons();
     void toastEl.offsetWidth;
@@ -83,6 +120,7 @@ export function showToast(msg, type = 'success', { accion = null } = {}) {
     // el nuevo, en vez de reemplazar el texto de golpe.
     toastEl.classList.remove('show');
     clearTimeout(toastTimer);
+    _accionActual = null;
     toastSwapTimer = setTimeout(paint, 150);
   } else {
     paint();

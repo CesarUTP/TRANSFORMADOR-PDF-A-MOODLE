@@ -98,6 +98,7 @@ export function applyPointsDistribution() {
       renderEditor(estado.currentParseResult);
       lucide.createIcons();
       showToast('Se restauraron los puntos anteriores', 'info');
+      return document.querySelector('[data-accion="applyPointsDistribution"]');
     } } }
   );
 }

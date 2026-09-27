@@ -4,10 +4,12 @@
 import { clozeBuildTextAndAnswer, initClozeBuilder, parseClozeSegments, renderClozeBuilder } from './cloze.js';
 import { scrollToEditorCard } from './panel.js';
 import { _editorTotalPoints } from './puntos-ui.js';
+import { apiFetch } from '../api.js';
+import { imagenesDeTarjeta, imagenesHtml, prepararImagenes } from './imagenes.js';
 import { estado, notificar } from '../estado.js';
 import { DEFAULT_TYPE_WEIGHTS, fmtPoints } from '../puntos.js';
 import { showToast } from '../ui/toast.js';
-import { esc_html, humanizeSkipReason, splitAnswers } from '../util.js';
+import { esc_html, humanizeSkipReason, scrollBehavior, splitAnswers, textoConFormulas, tieneFormulas } from '../util.js';
 
 // estado.currentParseResult es la única fuente de datos que usa renderEditor()
 // para redibujar TODAS las tarjetas de golpe (al añadir una pregunta, o
@@ -150,9 +152,12 @@ export function recoverSkippedQuestion(skippedIdx) {
   const sq = (estado.currentParseResult.skipped_questions || [])[skippedIdx];
   if (!sq || !sq.recoverable_data) return;
 
-  const existingCards = document.querySelectorAll('.editor-card');
-  const nextNum = existingCards.length + 1;
-  const newQ = { num: nextNum, type: sq.type, data: JSON.parse(JSON.stringify(sq.recoverable_data)) };
+  const qs = estado.currentParseResult.questions;
+  // Una pregunta que la IA omitió vuelve a su lugar (después de la que la
+  // precede en el documento); las demás, al final.
+  const pos = Number.isInteger(sq.despues_de) ? Math.min(Math.max(sq.despues_de, 0), qs.length) : qs.length;
+  const nextNum = pos + 1;
+  const newQ = { num: nextNum, type: sq.type, data: { ...JSON.parse(JSON.stringify(sq.recoverable_data)), rescatada: true } };
   // Mismo puntaje default que "Añadir nueva pregunta": el promedio de
   // lo que ya vale el resto. Sin esto la pregunta rescatada entraba sin
   // `points`, su casilla salía vacía y el contador "X / Y pts" la
@@ -167,16 +172,29 @@ export function recoverSkippedQuestion(skippedIdx) {
   // necesita un valor), igual que hace "Añadir nueva pregunta"; el resto
   // arranca vacío para que sea evidente que falta completarlo.
   const blankAnswer = sq.type === 'truefalse' ? 'Verdadero' : '';
-  estado.currentParseResult.answer_key[nextNum] = sq.type === 'matching'
+  const claveNueva = sq.type === 'matching'
     ? { type: sq.type, answer: '', pairs: {} }
     : { type: sq.type, answer: blankAnswer };
 
-  estado.currentParseResult.questions.push(newQ);
+  // Se inserta y se renumera todo (la clave va por número de pregunta).
+  const ak = estado.currentParseResult.answer_key;
+  qs.splice(pos, 0, newQ);
+  const nuevaClave = {};
+  qs.forEach((q, i) => {
+    const clave = q === newQ ? claveNueva : ak[q.num];
+    q.num = i + 1;
+    if (clave) nuevaClave[i + 1] = clave;
+  });
+  estado.currentParseResult.answer_key = nuevaClave;
   estado.currentParseResult.skipped_questions.splice(skippedIdx, 1);
+  // Las otras omitidas que iban más abajo se corren un lugar.
+  estado.currentParseResult.skipped_questions.forEach(o => {
+    if (Number.isInteger(o.despues_de) && o.despues_de >= pos) o.despues_de += 1;
+  });
 
   renderEditor(estado.currentParseResult);
   lucide.createIcons();
-  showToast(`Pregunta ${nextNum} añadida — marca la respuesta correcta`, 'info');
+  showToast(sq.type === 'essay' ? `Pregunta ${nextNum} añadida — revisa su enunciado` : `Pregunta ${nextNum} añadida — marca la respuesta correcta`, 'info');
   requestAnimationFrame(() => {
     const card = document.querySelector(`.editor-card[data-qnum="${nextNum}"]`);
     if (card) scrollToEditorCard(card, { enfocar: true });
@@ -334,9 +352,13 @@ export function renderEditor(data) {
       <div class="skipped-item">
         <p class="skipped-preview">${sq.preview ? esc_html(sq.preview) : `<em>(sin texto identificable — tipo ${esc_html(QUESTION_TYPE_LABEL_MAP[sq.type] || sq.type)})</em>`}</p>
         <p class="skipped-reason">${esc_html(humanizeSkipReason(sq.reasons[0]))}</p>
-        <p class="skipped-num">Ubicada como pregunta #${esc_html(sq.num)} — este número es del sistema, puede no coincidir con el del documento original.</p>
-        ${sq.recoverable_data ? `<button type="button" class="btn btn-ghost btn-sm" data-accion="recoverSkippedQuestion" data-arg-n="${sIdx}" style="margin-top:8px;">
-          <i data-lucide="wand-2" style="width:13px;height:13px;"></i> Añadir con lo ya extraído
+        <p class="skipped-num">${Number.isInteger(sq.despues_de)
+          ? `En el documento va después de la pregunta ${esc_html(sq.despues_de)}; se agrega ahí.`
+          : `Ubicada como pregunta #${esc_html(sq.num)} — este número es del sistema, puede no coincidir con el del documento original.`}</p>
+        ${_miniaturas(sq)}
+        ${sq.recoverable_data ? `<button type="button" class="btn btn-ghost btn-sm" data-accion="recoverSkippedQuestion" data-arg-n="${sIdx}" style="margin-top:8px;"
+          aria-label="Añadir con lo ya extraído: ${esc_html((sq.preview || '').slice(0, 60))}">
+          <i data-lucide="list-plus" style="width:13px;height:13px;"></i> Añadir con lo ya extraído
         </button>` : ''}
       </div>`).join('');
 
@@ -344,12 +366,12 @@ export function renderEditor(data) {
       <summary>
         <i data-lucide="alert-triangle"></i>
         ${skipped.length} pregunta${skipped.length !== 1 ? 's' : ''} no se pud${skipped.length !== 1 ? 'ieron' : 'o'} incluir
-        <span class="summary-more">Ver motivos <i data-lucide="chevron-down"></i></span>
+        <span class="summary-more"><span class="si-cerrado">Ver motivos</span><span class="si-abierto">Ocultar</span> <i data-lucide="chevron-down"></i></span>
       </summary>
       <div class="skipped-body">
         ${skippedItems}
         <p class="skipped-reason" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--color-border-subtle);">
-          Para incluirlas: corrige lo que falte en el documento original y vuelve a convertirlo, o agrégalas con "Añadir pregunta", al final de la lista.
+          Para incluirlas: usa «Añadir con lo ya extraído» cuando aparezca (se agrega en su lugar), corrige el documento original y vuelve a convertirlo, o créalas con «Añadir pregunta».
         </p>
       </div>
     </details>`;
@@ -432,6 +454,8 @@ export function renderEditor(data) {
   // Los campos de texto siempre muestran todo su contenido.
   container.querySelectorAll('.editor-card textarea').forEach(autoGrowTextarea);
   container.querySelectorAll('.cloze-builder').forEach(initClozeBuilder);
+  container.querySelectorAll('.editor-card').forEach(actualizarFormulas);
+  prepararImagenes(container);
   _observarAncho(container);
   // Un solo aviso: los chips de filtro, el mapa del examen y el contador
   // de puntos se actualizan solos (ver suscripciones en app.js).
@@ -439,17 +463,28 @@ export function renderEditor(data) {
   lucide.createIcons();
 }
 
+// Miniaturas de las imágenes de una pregunta no incluida: el motivo dice
+// «tiene una imagen», así que se muestra cuál.
+function _miniaturas(sq) {
+  const imgs = ((sq.recoverable_data && sq.recoverable_data.images) || [])
+    .filter(im => im && /^image\/(png|jpeg)$/.test(im.mime) && /^[A-Za-z0-9+/]+={0,2}$/.test(im.b64 || ''));
+  if (!imgs.length) return '';
+  return `<div class="skipped-imgs">${imgs.map((im, k) =>
+    `<img src="data:${im.mime};base64,${im.b64}" alt="Imagen ${k + 1} de esta pregunta">`).join('')}</div>`;
+}
+
 function _flagBadge(cls, icon, text, tip) {
   return `<span class="type-badge ${cls}" title="${esc_html(tip)}"><i data-lucide="${icon}"></i> ${text}</span>`;
 }
 
 function _cardHtml(q, i, keyInfo) {
-  const needsReview = q.data.from_table || q.data.color_review_hint || q.data.low_confidence;
+  const needsReview = q.data.from_table || q.data.color_review_hint || q.data.low_confidence || q.data.rescatada;
   const flags = [
     q.data.from_table && _flagBadge('flag-review', 'table-2', 'convertida de tabla', 'El sistema detectó un cuadro en el documento original y lo convirtió en esta pregunta de emparejamiento. Revísala con cuidado antes de generar el XML.'),
     q.data.color_review_hint && _flagBadge('flag-review', 'palette', 'revisar marca', 'Esta pregunta viene de una página con respuestas marcadas (color, resaltado, subrayado o negrita), pero el sistema no pudo leer la marca con certeza. Compara las opciones correctas con el documento original.'),
     q.data.low_confidence && _flagBadge('flag-review', 'eye-off', 'confianza baja', 'La IA no pudo leer con total claridad una imagen que esta pregunta necesita (código o marca borrosa o cortada). Compárala con el documento original.'),
     q.data.answer_from_marks && _flagBadge('flag-neutral', 'highlighter', 'respuesta por marca', 'La respuesta se tomó directamente de la marca del documento (color, resaltado, subrayado, negrita o X en un cuadro), leída del PDF sin que la IA la interprete.'),
+    q.data.rescatada && _flagBadge('flag-review', 'list-plus', 'rescatada', 'La IA no había incluido esta pregunta; se agregó con lo que se pudo extraer del documento. Revisa su enunciado, su tipo y su respuesta.'),
   ].filter(Boolean).join('');
 
   // num y type ya vienen saneados (_sanearDatos); se escapan igual, por si
@@ -474,7 +509,17 @@ function _cardHtml(q, i, keyInfo) {
   if (q.type !== 'cloze') {
     // El enunciado se ESCAPA: un examen con "<" o "</textarea>" rompía la
     // tarjeta (el texto se insertaba como HTML dentro del <textarea>).
-    html += `<div><label class="field-label" for="q-stem-${i}">Enunciado</label><textarea id="q-stem-${i}" class="q-stem" rows="2">${esc_html(q.data.stem || '')}</textarea></div>`;
+    html += `<div><div class="stem-cabecera"><label class="field-label" for="q-stem-${i}">Enunciado</label>
+      <button type="button" class="btn btn-ghost btn-sm" data-accion="mejorarEnunciado" data-este
+        aria-label="Mejorar redacción del enunciado de la pregunta ${N} (con IA)" title="Con IA (usa tu API de Gemini): corrige ortografía, tildes y claridad sin cambiar datos, código ni fórmulas">
+        <i data-lucide="wand-sparkles" style="width:14px;height:14px;"></i> <span>Mejorar redacción</span>
+      </button></div><textarea id="q-stem-${i}" class="q-stem" rows="2">${esc_html(q.data.stem || '')}</textarea></div>`;
+    // Las imágenes van junto al enunciado, como en Moodle: son parte de la
+    // pregunta (el código de «¿Cuántos errores tiene?»), no de la respuesta.
+    html += imagenesHtml(q, i, N);
+    // Vista previa de las fórmulas LaTeX (\( … \)) del enunciado y las
+    // opciones, como las verá el estudiante (ver actualizarFormulas).
+    html += `<div class="q-math" hidden></div>`;
   }
 
   if (q.type === 'multichoice') {
@@ -562,7 +607,238 @@ function _cardHtml(q, i, keyInfo) {
     </div>`;
   }
 
-  return html + `</article>`;
+  // En «Completar» el enunciado es el constructor de espacios: las
+  // imágenes van debajo de él.
+  return html + (q.type === 'cloze' ? imagenesHtml(q, i, N) : '') + _retroalimentacionHtml(q, i, N) + `</article>`;
+}
+
+// Retroalimentación OPCIONAL: la ve el estudiante después de responder.
+// Si el documento traía una justificación llega completada (y abierta); si
+// no, queda plegada y vacía, y así se exporta sin retroalimentación.
+function _retroalimentacionHtml(q, i, N) {
+  const fb = typeof q.data.feedback === 'string' ? q.data.feedback : '';
+  return `<details class="q-feedback-box"${fb ? ' open' : ''}>
+    <summary><i data-lucide="chevron-right" class="q-feedback-chevron" aria-hidden="true"></i> Retroalimentación <span class="opcional">(opcional)</span></summary>
+    <textarea id="q-fb-${i}" class="q-feedback" rows="2" aria-label="Retroalimentación de la pregunta ${N} (opcional)"
+      placeholder="Explicación que verá el estudiante después de responder. Puedes dejarlo vacío o pedírsela a la IA.">${esc_html(fb)}</textarea>
+    <div class="q-feedback-acciones">
+      <button type="button" class="btn btn-ghost btn-sm q-feedback-ia" data-accion="generarRetroalimentacion" data-este
+        aria-label="Escribir con IA la retroalimentación de la pregunta ${N}">
+        <i data-lucide="sparkles" style="width:14px;height:14px;"></i> <span>Escribir con IA</span>
+      </button>
+      <span class="card-note">Usa tu API de Gemini. Revísala antes de exportar.</span>
+    </div>
+  </details>`;
+}
+
+/**
+ * Botones de IA de una tarjeta («Escribir con IA», «Mejorar redacción»):
+ * mandan ESTA pregunta tal como está ahora en la tarjeta (incluida la
+ * respuesta correcta). Lo que devuelve la IA es una PROPUESTA: se muestra
+ * debajo del campo (con lo que cambia) y el campo no se toca hasta que el
+ * docente pulsa «Aceptar». Nada de la IA entra al XML sin su visto bueno.
+ */
+async function _pedirIA(btn, url, cuerpo, aplicar, ocupado) {
+  const card = btn.closest('.editor-card');
+  if (!card || btn.disabled) return;
+  const pos = Array.from(document.querySelectorAll('.editor-card')).indexOf(card);
+  const { questions, answer_key } = collectEditorData();
+  const pregunta = questions[pos];
+  if (!pregunta) return;
+
+  const etiqueta = btn.querySelector('span');
+  const textoBtn = etiqueta.textContent;
+  // El botón no cambia de ancho al pasar a «Mejorando…».
+  btn.style.minWidth = `${btn.offsetWidth}px`;
+  btn.disabled = true;
+  btn.setAttribute('aria-busy', 'true');
+  etiqueta.textContent = ocupado;
+  btn.querySelector('svg, i')?.classList.add('girando');
+  try {
+    const res = await apiFetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cuerpo(pregunta, answer_key[pos + 1] ?? null)),
+    });
+    const datos = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const d = datos.detail;
+      throw new Error(typeof d === 'string' ? d : 'La IA no pudo responder. Intenta de nuevo.');
+    }
+    aplicar(card, datos, pos + 1);
+  } catch (e) {
+    const msg = e instanceof TypeError ? 'No se pudo conectar con la aplicación.' : e.message;
+    showToast(msg, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+    btn.style.minWidth = '';
+    etiqueta.textContent = textoBtn;
+    // Se busca de nuevo: lucide.createIcons() (al dibujar la propuesta)
+    // reemplaza el <svg> del botón por uno nuevo que copia la clase, y el
+    // ícono se quedaba girando.
+    btn.querySelectorAll('.girando').forEach(el => el.classList.remove('girando'));
+  }
+}
+
+// Diferencias por palabra (LCS) entre el texto actual y la propuesta de la
+// IA, para que el docente vea QUÉ cambia en vez de comparar de memoria.
+function _palabras(t) { return t.match(/\s+|[^\s]+/g) || []; }
+
+function _diffHtml(antes, despues) {
+  const a = _palabras(antes), b = _palabras(despues);
+  if (a.length * b.length > 400000) return null; // textos enormes: sin diff
+  const n = a.length, m = b.length;
+  const L = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      L[i][j] = a[i] === b[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    }
+  }
+  // Operaciones palabra a palabra (los espacios también), luego agrupadas
+  // en tramos: «~~Del siguiente código~~» se lee de corrido, no en piezas.
+  const ops = [];
+  let i = 0, j = 0, cambios = 0;
+  while (i < n || j < m) {
+    if (i < n && j < m && a[i] === b[j]) { ops.push(['=', a[i]]); i++; j++; }
+    else if (j < m && (i === n || L[i][j + 1] > L[i + 1][j])) {  // ante empate, primero lo borrado
+      if (/\S/.test(b[j])) cambios++;
+      ops.push(['+', b[j]]); j++;
+    } else {
+      if (/\S/.test(a[i])) cambios++;
+      ops.push(['-', a[i]]); i++;
+    }
+  }
+  // Un espacio sin cambios entre dos tramos iguales se une al tramo.
+  for (let k = 1; k < ops.length - 1; k++) {
+    if (ops[k][0] === '=' && !/\S/.test(ops[k][1]) && ops[k - 1][0] !== '=' && ops[k - 1][0] === ops[k + 1][0]) ops[k][0] = ops[k - 1][0];
+  }
+  let html = '';
+  for (let k = 0; k < ops.length;) {
+    const tipo = ops[k][0];
+    let texto = '';
+    while (k < ops.length && ops[k][0] === tipo) texto += ops[k++][1];
+    if (tipo === '=') { html += esc_html(texto); continue; }
+    const t = texto.trim();
+    if (!t) { if (tipo === '+') html += esc_html(texto); continue; }
+    const lead = texto.match(/^\s*/)[0], trail = texto.match(/\s*$/)[0];
+    html += esc_html(lead) + (tipo === '-' ? `<del>${esc_html(t)}</del>` : `<ins>${esc_html(t)}</ins>`) + esc_html(trail);
+    // Entre lo borrado y lo nuevo, un espacio para que no se peguen.
+    if (tipo === '-' && ops[k]?.[0] === '+' && !trail) html += ' ';
+  }
+  return cambios ? html : null;
+}
+
+/**
+ * Muestra la propuesta de la IA bajo `campo`, con «Aceptar» y «Descartar».
+ * Si el campo tenía texto, se ven las diferencias; si estaba vacío, el
+ * texto propuesto. Solo «Aceptar» cambia el campo (con «Deshacer»).
+ */
+function _proponer(campo, propuesta, { que, pos, aviso, alAplicar = () => {} }) {
+  const contenedor = campo.parentElement;
+  contenedor.querySelector(':scope > .q-ia-propuesta')?.remove();
+  const base = campo.value;
+  const cuerpo = base.trim() ? (_diffHtml(base, propuesta) ?? esc_html(propuesta)) : esc_html(propuesta);
+
+  const box = document.createElement('div');
+  box.className = 'q-ia-propuesta';
+  box.setAttribute('role', 'group');
+  box.setAttribute('aria-label', `Propuesta de la IA para ${que} de la pregunta ${pos}`);
+  box.innerHTML = `
+    <p class="q-ia-cambios-titulo"><i data-lucide="wand-sparkles" aria-hidden="true"></i> Propuesta de la IA <span class="opcional">— no se aplica hasta que la aceptes</span></p>
+    <p class="q-ia-cambios-texto">${cuerpo}</p>
+    <p class="q-ia-desactualizada" hidden>Editaste el campo después de pedir la propuesta: si la aceptas, reemplaza lo que escribiste.</p>
+    <div class="q-ia-acciones">
+      <button type="button" class="btn btn-success btn-sm q-ia-aceptar"><i data-lucide="check" style="width:14px;height:14px;"></i> Aceptar</button>
+      <button type="button" class="btn btn-ghost btn-sm q-ia-descartar"><i data-lucide="x" style="width:14px;height:14px;"></i> Descartar</button>
+    </div>`;
+  campo.insertAdjacentElement('afterend', box);
+  lucide.createIcons();
+
+  const marcarDesactualizada = () => { box.querySelector('.q-ia-desactualizada').hidden = campo.value === base; };
+  campo.addEventListener('input', marcarDesactualizada);
+  const cerrar = () => { campo.removeEventListener('input', marcarDesactualizada); box.remove(); };
+
+  box.querySelector('.q-ia-aceptar').addEventListener('click', () => {
+    const anterior = campo.value;
+    const poner = (t) => {
+      campo.value = t;
+      autoGrowTextarea(campo);
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+      alAplicar();
+    };
+    cerrar();
+    poner(propuesta);
+    campo.classList.remove('q-ia-aplicado');
+    void campo.offsetWidth;
+    campo.classList.add('q-ia-aplicado');
+    campo.focus({ preventScroll: true });
+    notificar(aviso);
+    showToast(`${aviso} en la pregunta ${pos}`, 'success', {
+      accion: { texto: 'Deshacer', campo, alPulsar: () => { poner(anterior); return campo; } },
+    });
+  });
+  box.querySelector('.q-ia-descartar').addEventListener('click', () => {
+    cerrar();
+    campo.focus({ preventScroll: true });
+    notificar('propuesta descartada');
+  });
+  // El foco va a «Aceptar»: con teclado, decidir es un Enter (o Tab + Enter).
+  box.querySelector('.q-ia-aceptar').focus({ preventScroll: true });
+  box.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
+}
+
+/** Propuestas de la IA que el docente aún no aceptó ni descartó. */
+export function propuestasPendientes() {
+  return Array.from(document.querySelectorAll('#editor-questions-container .q-ia-propuesta'));
+}
+
+/** «Escribir con IA»: propuesta de retroalimentación para esta pregunta. */
+export function generarRetroalimentacion(btn) {
+  return _pedirIA(btn, '/api/retroalimentacion',
+    (pregunta, respuesta) => ({ pregunta, respuesta }),
+    (card, datos, pos) => {
+      const area = card.querySelector('.q-feedback');
+      if (!area) return;
+      area.closest('details').open = true;
+      _proponer(area, datos.retroalimentacion || '', {
+        que: 'la retroalimentación', pos, aviso: 'Retroalimentación aplicada',
+      });
+    }, 'Escribiendo…');
+}
+
+/** «Mejorar redacción»: propuesta de ortografía y claridad del enunciado,
+ * sin tocar datos, código ni fórmulas (el servidor lo comprueba). */
+export function mejorarEnunciado(btn) {
+  return _pedirIA(btn, '/api/mejorar_enunciado',
+    (pregunta) => ({ pregunta }),
+    (card, datos, pos) => {
+      const stem = card.querySelector('.q-stem');
+      if (!stem) return;
+      if (!datos.cambio) {
+        showToast(`La redacción de la pregunta ${pos} ya estaba bien`, 'info');
+        return;
+      }
+      _proponer(stem, datos.enunciado || stem.value, {
+        que: 'el enunciado', pos, aviso: 'Redacción aplicada', alAplicar: () => actualizarFormulas(card),
+      });
+    }, 'Mejorando…');
+}
+
+/** Vista previa de las fórmulas de una tarjeta (enunciado y opciones). */
+export function actualizarFormulas(card) {
+  const box = card.querySelector('.q-math');
+  if (!box) return;
+  const campos = [card.querySelector('.q-stem'), ...card.querySelectorAll('.q-opt'), card.querySelector('.q-feedback')]
+    .filter(el => el && tieneFormulas(el.value));
+  box.hidden = campos.length === 0;
+  box.innerHTML = campos.length
+    ? `<p class="q-math-titulo">Vista previa de las fórmulas</p>${campos.map(el => {
+        const letra = el.classList.contains('q-opt') ? `<span class="q-math-letra">${esc_html(el.dataset.letter || '')})</span> `
+          : el.classList.contains('q-feedback') ? '<span class="q-math-letra">Retroalimentación:</span> ' : '';
+        return `<p class="q-math-linea">${letra}${textoConFormulas(el.value)}</p>`;
+      }).join('')}`
+    : '';
 }
 
 // Hace crecer un <textarea> verticalmente para mostrar todo su contenido
@@ -703,6 +979,16 @@ export function collectEditorData() {
     } else if (newQ.type === 'numerical') {
       const ansEl = card.querySelector('.q-nu-answer');
       ak[qNum] = { type: newQ.type, answer: ansEl ? ansEl.value.trim() : '' };
+    }
+
+    // Imágenes que siguen en la tarjeta (el docente puede quitarlas) y
+    // retroalimentación opcional (vacía = sin retroalimentación).
+    const quedan = imagenesDeTarjeta(card, qNum);
+    if (quedan.length) newQ.data.images = quedan; else delete newQ.data.images;
+    const fbEl = card.querySelector('.q-feedback');
+    if (fbEl) {
+      const fb = fbEl.value.trim();
+      if (fb) newQ.data.feedback = fb; else delete newQ.data.feedback;
     }
 
     qs.push(newQ);

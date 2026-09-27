@@ -175,6 +175,38 @@ prueba('ensayo solo necesita enunciado', () => {
   igual(questionIssues({ num: 1, type: 'essay', data: { stem: 'Explica…' } }, { answer: '' }), []);
 });
 
+// La versión anterior (cuadrática), como referencia: la nueva debe dar
+// exactamente lo mismo en cualquier texto.
+function _clozeAnterior(text) {
+  const out = []; let i = 0; const n = text.length;
+  while (i < n) {
+    if (text[i] !== '[') { i++; continue; }
+    const m = /^([A-Za-z]):\s*/.exec(text.slice(i + 1));
+    if (!m) { i++; continue; }
+    const b = i + 1 + m[0].length; let d = 1, j = b;
+    while (j < n && d) { if (text[j] === '[') d++; else if (text[j] === ']') d--; j++; }
+    if (d) { i++; continue; }
+    out.push({ start: i, end: j, letter: m[1], optionsRaw: text.slice(b, j - 1) }); i = j;
+  }
+  return out;
+}
+
+prueba('findClozeBrackets da lo mismo que la versión anterior en 3 000 textos al azar', () => {
+  let semilla = 7;
+  const azar = () => (semilla = (semilla * 1103515245 + 12345) % 2147483648) / 2147483648;
+  for (let k = 0; k < 3000; k++) {
+    const t = Array.from({ length: Math.floor(azar() * 60) }, () => '[]A: x/b'[Math.floor(azar() * 8)]).join('');
+    igual(findClozeBrackets(t), _clozeAnterior(t), `texto «${t}»`);
+  }
+});
+
+prueba('findClozeBrackets con 100 000 «[A:» tarda menos de 200 ms', () => {
+  const t0 = performance.now();
+  findClozeBrackets('[A:'.repeat(100000));
+  const ms = performance.now() - t0;
+  if (ms > 200) throw new Error(`tardó ${Math.round(ms)} ms`);
+});
+
 const resumen = document.getElementById('resumen');
 resumen.textContent = mal === 0 ? `✅ ${ok} pruebas, todas pasan` : `❌ ${mal} fallan de ${ok + mal}`;
 resumen.className = mal === 0 ? 'ok' : 'fail';

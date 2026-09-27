@@ -6,7 +6,7 @@ import { borrarBorrador, guardarBorradorAhora } from './borrador.js';
 import { showError } from './carga.js';
 import { selectFilter } from './editor/filtros.js';
 import { buildReviewRail, refreshQuestionIssues, scrollToEditorCard } from './editor/panel.js';
-import { QUESTION_TYPE_DEFS, collectEditorData } from './editor/tarjetas.js';
+import { QUESTION_TYPE_DEFS, collectEditorData, propuestasPendientes } from './editor/tarjetas.js';
 import { estado } from './estado.js';
 import { showPanel } from './navegacion.js';
 import { stopProgress } from './progreso.js';
@@ -135,6 +135,19 @@ function renderPointsPie(items) {
 // por completo en cada renderEditor() — un listener adjunto al nodo
 // anterior se perdería con cada re-render.
 export async function generateXml() {
+  // Una propuesta de la IA sin decidir no entra al XML: se avisa y se lleva
+  // al docente a la primera, en vez de exportar sin que lo note.
+  const pendientes = propuestasPendientes();
+  if (pendientes.length) {
+    const card = pendientes[0].closest('.editor-card');
+    if (card?.style.display === 'none') selectFilter('all');
+    if (card) scrollToEditorCard(card);
+    pendientes[0].querySelector('.q-ia-aceptar')?.focus({ preventScroll: true });
+    showToast(pendientes.length === 1
+      ? 'Hay 1 propuesta de la IA sin aceptar ni descartar'
+      : `Hay ${pendientes.length} propuestas de la IA sin aceptar ni descartar`, 'error');
+    return;
+  }
   // Con preguntas incompletas el backend rechazaría el XML: se avisa
   // aquí y se lleva al docente a la primera, en vez de mostrar un error.
   const incomplete = refreshQuestionIssues();

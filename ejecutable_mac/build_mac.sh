@@ -26,8 +26,9 @@ fi
 
 echo "[2/4] Instalando dependencias..."
 "build_venv/bin/pip" install --quiet --upgrade pip
-"build_venv/bin/pip" install --quiet -r backend/requirements.txt
-"build_venv/bin/pip" install --quiet "pywebview==6.2.1" "pyinstaller==6.22.3" "pyobjc==12.2.2"
+# Todas las dependencias (también las indirectas) con versión exacta y su
+# huella SHA-256: pip rechaza cualquier paquete que no coincida.
+"build_venv/bin/pip" install --quiet --require-hashes -r requirements-build.lock
 
 echo "[3/4] Compilando la app (PyInstaller)..."
 "build_venv/bin/python3" build.py

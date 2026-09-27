@@ -92,6 +92,9 @@ cmd = [
     "--hidden-import", "hmac",
     "--hidden-import", "secrets",
     "--hidden-import", "bisect",
+    # extractor_docx.py e imagenes.py (Word, imágenes de las preguntas)
+    "--hidden-import", "zipfile",
+    "--hidden-import", "dataclasses",
     # ── extractor.py renderiza páginas de PDF como imagen (PIL/Pillow vía
     # pypdfium2, para que Gemini pueda leer código en capturas de pantalla
     # y respuestas marcadas solo por color) — mismo problema que sqlite3:

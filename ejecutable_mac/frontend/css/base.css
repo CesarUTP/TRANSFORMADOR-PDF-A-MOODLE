@@ -167,9 +167,11 @@
   --color-mt:             #a25904;
   --color-mt-bg:          rgba(217, 119, 6, 0.12);
   --color-mt-border:      rgba(217, 119, 6, 0.3);
-  --color-cl:             #7c3aed;
-  --color-cl-bg:          rgba(124, 58, 237, 0.12);
-  --color-cl-border:      rgba(124, 58, 237, 0.3);
+  /* #6d28d9 y no #7c3aed: sobre su propio fondo el violeta anterior quedaba
+     en 4,38:1 (el mínimo WCAG AA para texto es 4,5:1). */
+  --color-cl:             #6d28d9;
+  --color-cl-bg:          rgba(109, 40, 217, 0.12);
+  --color-cl-border:      rgba(109, 40, 217, 0.3);
   --color-es:             #be185d;
   --color-es-bg:          rgba(190, 24, 93, 0.12);
   --color-es-border:      rgba(190, 24, 93, 0.3);
@@ -262,7 +264,7 @@ button { font-family: inherit; }
   html { scroll-behavior: auto; }
   .animate-fadeIn, .animate-scaleUp { animation-name: fadeOnly; }
   .btn, .btn-icon-text, .filter-chip, .rail-item, .modal-tab, .cloze-insert-btn,
-  .modal-box, .toast, .collapsible-panel, #drop-zone {
+  .modal-box, .toast, .collapsible-panel, #drop-zone, .q-image {
     transform: none !important;
   }
 }

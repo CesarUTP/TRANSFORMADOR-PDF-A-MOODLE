@@ -21,26 +21,32 @@ export function splitOptions(text) {
 // Devuelve [{start, end, letter, optionsRaw}, ...] — "end" es el índice
 // justo después del "]" de cierre; "optionsRaw" aún no está partido por
 // " / " (usar splitOptions para eso).
-const _CLOZE_SLOT_OPEN = /^([A-Za-z]):\s*/;
+// Con /y (sticky) la expresión se prueba justo en lastIndex, sin copiar el
+// texto con slice() en cada "[" (eso también era cuadrático).
+const _CLOZE_SLOT_OPEN = /([A-Za-z]):\s*/y;
+
 export function findClozeBrackets(text) {
   text = String(text || '');
+  // Una sola pasada con una pila empareja cada "[" con su "]" (antes se
+  // buscaba el cierre desde cada "[", y un texto con miles de "[A:" sin
+  // cerrar congelaba el editor). Da lo mismo: "Letra:" no tiene corchetes.
+  const cierreDe = new Map();
+  const pila = [];
+  for (let k = 0; k < text.length; k++) {
+    if (text[k] === '[') pila.push(k);
+    else if (text[k] === ']' && pila.length) cierreDe.set(pila.pop(), k);
+  }
   const out = [];
   let i = 0;
   const n = text.length;
   while (i < n) {
     if (text[i] !== '[') { i++; continue; }
-    const m = _CLOZE_SLOT_OPEN.exec(text.slice(i + 1));
-    if (!m) { i++; continue; }
-    const bodyStart = i + 1 + m[0].length;
-    let depth = 1, j = bodyStart;
-    while (j < n && depth) {
-      if (text[j] === '[') depth++;
-      else if (text[j] === ']') depth--;
-      j++;
-    }
-    if (depth) { i++; continue; } // sin cierre — no es un espacio válido
-    out.push({ start: i, end: j, letter: m[1], optionsRaw: text.slice(bodyStart, j - 1) });
-    i = j;
+    _CLOZE_SLOT_OPEN.lastIndex = i + 1;
+    const m = _CLOZE_SLOT_OPEN.exec(text);
+    const j = cierreDe.get(i);
+    if (!m || j === undefined) { i++; continue; } // sin cierre — no es un espacio válido
+    out.push({ start: i, end: j + 1, letter: m[1], optionsRaw: text.slice(_CLOZE_SLOT_OPEN.lastIndex, j) });
+    i = j + 1;
   }
   return out;
 }
@@ -209,4 +215,27 @@ export async function abrirEnlaceExterno(url) {
     try { if (await window.pywebview.api.open_url(url)) return; } catch (_) { /* se intenta abajo */ }
   }
   window.open(url, '_blank', 'noopener');
+}
+
+// ── Fórmulas (LaTeX entre \( y \)) ─────────────────────────────────────
+// Moodle muestra \(…\) con MathJax; el editor muestra una vista previa con
+// KaTeX (incluido en la app). Lo que no es fórmula se escapa como texto; una
+// fórmula con errores se muestra en rojo en vez de romper la tarjeta.
+const _FORMULA = /\\\(([\s\S]+?)\\\)/g;
+
+export function tieneFormulas(texto) {
+  return /\\\([\s\S]+?\\\)/.test(String(texto || ''));
+}
+
+export function textoConFormulas(texto) {
+  const t = String(texto || '');
+  let html = '', pos = 0;
+  for (const m of t.matchAll(_FORMULA)) {
+    html += esc_html(t.slice(pos, m.index));
+    html += window.katex
+      ? window.katex.renderToString(m[1], { throwOnError: false, errorColor: '#d31b44', trust: false, strict: 'ignore' })
+      : esc_html(m[0]);
+    pos = m.index + m[0].length;
+  }
+  return html + esc_html(t.slice(pos));
 }

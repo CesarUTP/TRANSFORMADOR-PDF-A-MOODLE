@@ -1,0 +1,10 @@
+# Lo que necesita compilar la app (instaladores de macOS y Windows):
+# dependencias de la app + ventana (pywebview) + PyInstaller (+ pyobjc en Mac).
+# De aquí sale requirements-build.lock, con TODAS las dependencias
+# (también las indirectas) fijadas y con su huella SHA-256. Para regenerarlo:
+#   uv pip compile --universal --generate-hashes --python-version 3.10 \
+#     requirements-build.in -o requirements-build.lock
+-r backend/requirements.txt
+pywebview==6.2.1
+pyinstaller==6.22.3
+pyobjc==12.2.2 ; sys_platform == "darwin"

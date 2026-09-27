@@ -14,9 +14,18 @@ su requirements.txt, todo frontend/ (index.html, css/, js/) y launcher.py.
 Borra los archivos que ya no existen en el original. Nunca copia un .env
 (la API key se pone a mano junto al ejecutable instalado).
 
-Antes de copiar nada corre las pruebas (dev/test_casos_borde.py y
-dev/test_seguridad.py): si alguna falla, no se actualizan los instaladores.
---sin-pruebas las salta (solo para una emergencia).
+Antes de copiar nada corre las pruebas (dev/test_casos_borde.py,
+dev/test_seguridad.py y dev/test_mejoras.py): si alguna falla, no se
+actualizan los instaladores. --sin-pruebas las salta (solo para una
+emergencia).
+
+--check: no copia ni borra nada — solo dice si ejecutable/ o
+ejecutable_mac/ quedaron desfasados de backend/frontend/launcher.py, y
+termina con código de salida distinto de cero si es así. Antes nadie se
+enteraba de esto hasta compilar el instalador y encontrarlo roto (pasó:
+imagenes.py y ayuda_ia.py llegaron a faltar por completo en las dos
+copias). Pensado para correr en CI en cada push, no para ejecutarlo a
+mano antes de compilar — para eso está el propio sync.
 """
 
 import filecmp
@@ -35,7 +44,8 @@ def _sources() -> list:
     """(origen, ruta relativa) de todo lo que la app necesita."""
     out = [(ROOT / "launcher.py", Path("launcher.py")),
            (ROOT / "backend" / "requirements.txt", Path("backend/requirements.txt")),
-           (ROOT / "dev" / "generar_avisos_terceros.py", Path("generar_avisos_terceros.py"))]
+           (ROOT / "dev" / "generar_avisos_terceros.py", Path("generar_avisos_terceros.py")),
+           (ROOT / "requirements-build.lock", Path("requirements-build.lock"))]
     out += [(src, Path("backend") / src.name) for src in sorted((ROOT / "backend").glob("*.py"))]
     out += [(src, src.relative_to(ROOT))
             for src in sorted((ROOT / "frontend").rglob("*"))
@@ -48,6 +58,24 @@ def _files(dest: Path):
     return [(src, dest / rel) for src, rel in _sources()]
 
 
+def _desfase(dest: Path) -> tuple:
+    """Qué archivos DEBERÍAN copiarse (faltan o difieren) y cuáles DEBERÍAN
+    borrarse (ya no existen en el original) para que `dest` quede al día.
+    No toca el disco — lo usan tanto sync() (que sí aplica el cambio) como
+    check() (que solo lo reporta)."""
+    faltan_o_difieren = [dst.relative_to(ROOT) for src, dst in _files(dest)
+                         if not dst.exists() or not filecmp.cmp(src, dst, shallow=False)]
+    expected = {dest / rel for _, rel in _sources()}
+    sobran = []
+    for folder, pattern in ((dest / "backend", "*.py"), (dest / "frontend", "**/*")):
+        if not folder.is_dir():
+            continue
+        for stale in folder.rglob(pattern) if pattern.startswith("**") else folder.glob(pattern):
+            if stale.is_file() and not stale.name.startswith(".") and stale not in expected:
+                sobran.append(stale.relative_to(ROOT))
+    return faltan_o_difieren, sobran
+
+
 def sync(dest: Path) -> tuple:
     changed = []
     for src, dst in _files(dest):
@@ -57,17 +85,18 @@ def sync(dest: Path) -> tuple:
             changed.append(dst.relative_to(ROOT))
     # Lo que ya no existe en el original se borra de la copia (si no, un
     # módulo renombrado seguiría viajando dentro del instalador).
-    expected = {dest / rel for _, rel in _sources()}
-    removed = []
-    for folder, pattern in ((dest / "backend", "*.py"), (dest / "frontend", "**/*")):
-        for stale in folder.rglob(pattern) if pattern.startswith("**") else folder.glob(pattern):
-            if stale.is_file() and not stale.name.startswith(".") and stale not in expected:
-                stale.unlink()
-                removed.append(stale.relative_to(ROOT))
-    return changed, removed
+    _, sobran = _desfase(dest)
+    for rel in sobran:
+        (ROOT / rel).unlink()
+    return changed, sobran
 
 
-PRUEBAS = ("test_casos_borde.py", "test_seguridad.py")
+def check(dest: Path) -> tuple:
+    """Como sync(), pero sin escribir nada: solo dice qué DEBERÍA cambiar."""
+    return _desfase(dest)
+
+
+PRUEBAS = ("test_casos_borde.py", "test_seguridad.py", "test_mejoras.py")
 
 
 def _correr_pruebas() -> None:
@@ -81,7 +110,33 @@ def _correr_pruebas() -> None:
     print("Pruebas OK.\n")
 
 
+def _check() -> int:
+    desfasado = False
+    for dest in DESTS:
+        if not dest.is_dir():
+            print(f"  falta la carpeta   {dest.relative_to(ROOT)}")
+            desfasado = True
+            continue
+        difieren, sobran = check(dest)
+        for path in difieren:
+            print(f"  desactualizado   {path}")
+        for path in sobran:
+            print(f"  sobra            {path}")
+        if difieren or sobran:
+            desfasado = True
+        else:
+            print(f"{dest.name}/ está al día.")
+    if desfasado:
+        print("\nejecutable/ y/o ejecutable_mac/ no coinciden con el código actual.")
+        print("Corre: backend/venv/bin/python dev/sync_ejecutable.py")
+        return 1
+    print("\nTodo sincronizado.")
+    return 0
+
+
 def main() -> int:
+    if "--check" in sys.argv:
+        return _check()
     if "--sin-pruebas" not in sys.argv:
         _correr_pruebas()
     for dest in DESTS:

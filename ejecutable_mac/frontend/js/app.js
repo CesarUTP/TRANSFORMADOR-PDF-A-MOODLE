@@ -16,7 +16,8 @@ import { refreshFilterChips, selectFilter, toggleFilterMenu } from './editor/fil
 import { buildReviewRail, closeRailGrid, jumpRelative, jumpToNextFlagged, scheduleIssuesRefresh, toggleRailGrid } from './editor/panel.js';
 import { toggleAddQuestionMenu } from './editor/paneles.js';
 import { applyPointsDistribution, setPointsToolMode, togglePointsToolMenu, updatePointsAssignedLabel, updatePointsWeightPreview } from './editor/puntos-ui.js';
-import { addMatchingPairRow, addNewQuestion, deleteQuestionCard, recoverSkippedQuestion, removeMatchingPairRow } from './editor/tarjetas.js';
+import { agregarImagen, iniciarArrastreImagenes, imagenElegida, moverImagenA, moverImagenAnterior, moverImagenSiguiente, quitarImagen } from './editor/imagenes.js';
+import { actualizarFormulas, addMatchingPairRow, addNewQuestion, deleteQuestionCard, generarRetroalimentacion, mejorarEnunciado, recoverSkippedQuestion, removeMatchingPairRow } from './editor/tarjetas.js';
 import { estado, suscribir } from './estado.js';
 import { closeHistory, confirmDeleteHistory, downloadHistoryDesdeBoton, loadHistoryList, openHistory, renderHistoryList, reopenHistory, startDeleteHistory } from './historial.js';
 import { confirmDiscardReview, resetAll, showPanel } from './navegacion.js';
@@ -46,7 +47,7 @@ suscribir(() => {
 // ACCIONES[nombre] con: data-arg (texto), data-arg-n (número), data-este (el
 // propio elemento) o nada. Solo las funciones de esta lista: un atributo
 // inyectado no puede llamar a otra cosa.
-const ACCIONES = { addMatchingPairRow, addNewQuestion, applyPointsDistribution, closeHistory, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDeleteHistory, confirmDiscardReview, deleteQuestionCard, downloadHistoryDesdeBoton, generateXml, jumpToNextFlagged, loadHistoryList, openHelp, renderHistoryList, recoverSkippedQuestion, removeMatchingPairRow, reopenHistory, resetAll, selectFilter, setPointsToolMode, startDeleteHistory, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
+const ACCIONES = { addMatchingPairRow, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, closeHistory, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDeleteHistory, confirmDiscardReview, deleteQuestionCard, downloadHistoryDesdeBoton, generarRetroalimentacion, generateXml, jumpToNextFlagged, loadHistoryList, openHelp, renderHistoryList, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, reopenHistory, resetAll, selectFilter, setPointsToolMode, startDeleteHistory, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
 
 function _ejecutarAccion(el, nombre) {
   if (!Object.hasOwn(ACCIONES, nombre)) return;
@@ -190,9 +191,16 @@ window.addEventListener('pagehide', () => {
   if (document.body.classList.contains('editor-active')) guardarBorradorAhora();
 });
 
+iniciarArrastreImagenes(document.getElementById('editor-questions-container'));
+
 document.getElementById('editor-questions-container').addEventListener('input', e => {
   if (e.target.classList.contains('q-points')) updatePointsAssignedLabel();
   if (e.target.classList.contains('points-weight-input')) updatePointsWeightPreview();
+  // Vista previa de fórmulas mientras se escribe \( … \).
+  if (e.target.matches('.q-stem, .q-opt')) {
+    const card = e.target.closest('.editor-card');
+    if (card) actualizarFormulas(card);
+  }
 });
 
 document.getElementById('btn-close-disclaimer').addEventListener('click', closeDisclaimer);
@@ -231,7 +239,7 @@ btnConvert.addEventListener('click', async () => {
   // usuario decida si prefiere normalizar el documento con el Prompt IA
   // de la guía antes de continuar.
   const fp = fileFingerprint(estado.selectedFile);
-  if (estado.selectedFile.name.toLowerCase().endsWith('.pdf') && estado.disclaimerAcknowledgedFor !== fp) {
+  if (/\.(pdf|docx)$/i.test(estado.selectedFile.name) && estado.disclaimerAcknowledgedFor !== fp) {
     // Este chequeo sube el PDF entero: con archivos grandes tarda, así
     // que el botón se bloquea (sin doble clic) y bajo el nombre del
     // archivo aparece una barra con el avance real de la subida.

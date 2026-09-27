@@ -282,7 +282,8 @@ def _sin_respuesta_ratio(text: str) -> float:
 
 def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = None,
                       progress: ProgressFn = None,
-                      on_retry: Optional[Callable[[str], None]] = None) -> tuple[str, bool]:
+                      on_retry: Optional[Callable[[str], None]] = None,
+                      permitir_reintento_calidad: bool = True) -> tuple[str, bool]:
     """
     Pasa el texto (y, si el documento es un PDF con imágenes incrustadas,
     esas páginas como imagen) por Gemini para normalizar estructura.
@@ -315,7 +316,14 @@ def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = 
     # de las marcas aunque técnicamente no haya ningún error de API. Con
     # texto plano no hay nada que una segunda lectura idéntica vaya a
     # mejorar, así que no vale la pena gastar la llamada extra.
-    quality_attempts = GEMINI_MAX_QUALITY_ATTEMPTS if page_images else 1
+    # El reintento de calidad solo vale la pena cuando el llamador confirmó
+    # que hay COLOR de por medio (permitir_reintento_calidad) — es ahí,
+    # y solo ahí, donde se ha visto que una corrida "lee mal" la marca. Un
+    # examen sin ninguna respuesta marcada (el docente completa la clave
+    # después, en el editor) da SIEMPRE ratio 1.0, y antes eso bastaba para
+    # pagar hasta 3 llamadas completas por cualquier imagen del documento
+    # (una foto, un logo, un membrete), sin relación con el color.
+    quality_attempts = GEMINI_MAX_QUALITY_ATTEMPTS if (page_images and permitir_reintento_calidad) else 1
     best_text: Optional[str] = None
     best_ratio = 1.1  # peor que cualquier ratio real (0.0-1.0)
     best_was_reformatted = False
@@ -340,6 +348,10 @@ def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = 
                 ratio * 100, GEMINI_SIN_RESPUESTA_THRESHOLD * 100,
                 quality_attempt, quality_attempts,
             )
+            # Sin este aviso, la barra de progreso volvía a 0 preguntas de
+            # golpe sin explicación — parecía que la conversión se hubiera
+            # reiniciado sola.
+            _notify(on_retry, "Verificando la calidad de la lectura de las marcas de color; releyendo el documento…")
 
     return (best_text, best_was_reformatted)
 
@@ -487,14 +499,44 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
                 "Gemini prefiltro: error no recuperable (%s). No se reintenta. Detalle: %s",
                 type(exc).__name__, exc,
             )
+            # 401/403: la clave no es válida o Google se la revocó. En esta
+            # app el docente ES quien administra su propia clave — antes se
+            # le decía "contacta al administrador del sistema", un rol que
+            # aquí no existe y no le decía qué hacer.
+            if exc.code in (401, 403):
+                raise HTTPException(
+                    status_code=502,
+                    detail=(
+                        "Google rechazó tu clave de la API de Gemini (no es válida o fue "
+                        "revocada). Ábrela desde «Acerca de → API de Gemini» y pega una "
+                        "clave nueva de https://aistudio.google.com/apikey."
+                    ),
+                )
             raise HTTPException(
                 status_code=502,
                 detail=(
                     "El servicio de IA rechazó la solicitud (posible configuración "
-                    "inválida del modelo o de la API key). Contacta al administrador "
-                    f"del sistema. Detalle técnico: error HTTP {exc.code}."
+                    f"inválida del modelo o del documento). Detalle técnico: error HTTP {exc.code}."
                 ),
             )
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+            # Sin internet (o Google inalcanzable) NO es lo mismo que "el
+            # servicio está saturado" — antes se agrupaba con el genérico
+            # de abajo y el docente recibía un mensaje que apuntaba a
+            # esperar, cuando lo que hacía falta era revisar su conexión.
+            logger.warning(
+                "Gemini prefiltro: sin conexión en el intento %d/%d. Detalle: %s",
+                attempt, max_retries, exc
+            )
+            if attempt < max_retries:
+                _notify(on_retry, "No se pudo conectar con el servicio de IA; reintentando…")
+                time.sleep(wait_time)
+            else:
+                logger.error("Gemini prefiltro: sin conexión tras %d intentos.", max_retries)
+                raise HTTPException(
+                    status_code=503,
+                    detail="No se pudo conectar con el servicio de IA de Google. Revisa tu conexión a internet e inténtalo de nuevo."
+                )
         except Exception as exc:
             logger.warning(
                 "Gemini prefiltro: fallo en el intento %d/%d. Detalle: %s",
@@ -552,7 +594,8 @@ def _unanswered_ratio(data: dict) -> float:
 
 def extract_structured(raw_text: str, page_images: Optional[List[Image.Image]] = None,
                        progress: ProgressFn = None,
-                       on_retry: Optional[Callable[[str], None]] = None) -> dict:
+                       on_retry: Optional[Callable[[str], None]] = None,
+                       permitir_reintento_calidad: bool = True) -> dict:
     """
     Igual que verify_and_format, pero el modelo devuelve JSON restringido por
     RESPONSE_SCHEMA (decodificación con esquema: la forma de la salida está
@@ -569,7 +612,11 @@ def extract_structured(raw_text: str, page_images: Optional[List[Image.Image]] =
     })
     on_text = _progress_counter(r'"orden"\s*:', progress)
 
-    quality_attempts = GEMINI_MAX_QUALITY_ATTEMPTS if page_images else 1
+    # Ver el comentario equivalente en verify_and_format: sin
+    # permitir_reintento_calidad=False, cualquier imagen (sin relación con
+    # color) en un examen sin respuestas marcadas pagaba hasta 3 llamadas
+    # completas por nada.
+    quality_attempts = GEMINI_MAX_QUALITY_ATTEMPTS if (page_images and permitir_reintento_calidad) else 1
     best: Optional[dict] = None
     best_score = None
     for quality_attempt in range(1, quality_attempts + 1):
@@ -590,4 +637,57 @@ def extract_structured(raw_text: str, page_images: Optional[List[Image.Image]] =
             best, best_score = data, score
         if ratio <= GEMINI_SIN_RESPUESTA_THRESHOLD:
             break
+        if quality_attempt < quality_attempts:
+            _notify(on_retry, "Verificando la calidad de la lectura de las marcas de color; releyendo el documento…")
     return best
+
+
+# ── Preguntas omitidas: llamada dirigida de seguimiento ─────────────────────
+# Cuando el código detecta (ver imagenes.candidatas_omitidas_numeradas) que
+# la IA se saltó una o dos preguntas puntuales, se le pide SOLO esas — mucho
+# más barato y rápido que repetir la conversión entera, y ataca el fallo
+# real más común observado en la práctica (la IA omite una pregunta que es
+# solo una imagen con un enunciado corto, tipo "17. Del siguiente código…").
+
+_PREFIJO_FALTANTES = """CONTEXTO ESPECIAL: ya se transcribió casi todo un examen a la estructura de abajo. A continuación tienes SOLO los fragmentos de las preguntas que faltaron, tal como aparecen en el documento original, separados por "=== FRAGMENTO N ===".
+
+Devuelve una entrada en "preguntas" por CADA fragmento, EN EL MISMO ORDEN, con "orden" igual al número de fragmento (1, 2, 3…) — ni una más, ni una menos. Si un fragmento no alcanza para transcribirlo con confianza (quedó cortado, o no se entiende sin más contexto), igual devuélvelo como "tipo":"essay" con el texto tal cual y "confianza":"baja" — nunca lo omitas. No repitas ninguna otra pregunta del examen ni agregues ninguna que no esté en un fragmento.
+
+"es_examen" debe ser SIEMPRE true en esta respuesta: ya se confirmó que el documento completo es un examen: no vuelvas a evaluarlo con estos fragmentos sueltos, que por sí solos pueden no parecerlo.
+
+El resto de las reglas de abajo (tipos de pregunta, fórmulas, marcas de color, código en imagen, etc.) aplica exactamente igual que en la conversión completa.
+
+"""
+
+
+def extract_missing(fragmentos: List[str], page_images: Optional[List[Image.Image]] = None,
+                    on_retry: Optional[Callable[[str], None]] = None) -> List[dict]:
+    """
+    Pide SOLO las preguntas de `fragmentos` (mismo esquema que
+    extract_structured, sin reintento de calidad: no vale la pena para una
+    llamada tan chica). Devuelve la lista "preguntas" del esquema, en el
+    mismo orden que `fragmentos` y recortada a como mucho len(fragmentos).
+
+    Es "mejor esfuerzo": cualquier fallo (red, cuota, JSON inválido) se
+    registra y devuelve [] en vez de propagar la excepción — el llamador
+    (pipeline._completar_omitidas) sigue sin esta mejora, exactamente como
+    si no se hubiera intentado. Nunca debe ser la causa de que una
+    conversión que sí venía bien termine en error.
+    """
+    if not fragmentos:
+        return []
+    texto = "\n\n".join(f"=== FRAGMENTO {i} ===\n{f}" for i, f in enumerate(fragmentos, 1))
+    body = _build_request(_PREFIJO_FALTANTES + SYSTEM_PROMPT_JSON, texto, page_images, {
+        "temperature": GEMINI_TEMPERATURE,
+        "responseMimeType": "application/json",
+        "responseSchema": RESPONSE_SCHEMA,
+        "maxOutputTokens": GEMINI_MAX_OUTPUT_TOKENS,
+    })
+    try:
+        data = _generate_with_retries(body, len(texto), _parse_structured_response,
+                                      GEMINI_REQUEST_TIMEOUT_SECONDS_JSON, None, on_retry)
+    except Exception as exc:  # noqa: BLE001 — ver el docstring: nunca debe romper la conversión
+        logger.warning("No se pudieron completar las preguntas omitidas: %s", exc)
+        return []
+    preguntas = data.get("preguntas") or []
+    return preguntas[:len(fragmentos)]

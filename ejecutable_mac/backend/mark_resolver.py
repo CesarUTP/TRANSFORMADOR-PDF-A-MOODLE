@@ -34,7 +34,12 @@ _LABEL = re.compile(r"^\s*(?:[A-Za-z]|\d{1,2})\s*[.)\-]\s+")
 
 
 def _norm(s: Any) -> str:
-    s = unicodedata.normalize("NFKD", str(s or ""))
+    # Una fórmula LaTeX (\(…\)) se escribe de más de una forma equivalente
+    # (el documento trae \frac{{x}^{2}}{2} y la IA \frac{x^2}{2}): sin
+    # llaves ni espacios ambas quedan iguales, y una opción que es solo una
+    # fórmula se sigue pudiendo ubicar.
+    s = re.sub(r"\\\((.*?)\\\)", lambda m: " " + re.sub(r"[{}\s]", "", m.group(1)) + " ", str(s or ""))
+    s = unicodedata.normalize("NFKD", s)
     s = "".join(c for c in s if not unicodedata.combining(c)).lower()
     s = s.replace("‘", "'").replace("’", "'").replace("“", '"').replace("”", '"')
     # Se conservan los símbolos que pueden ser, por sí solos, una opción
@@ -57,7 +62,11 @@ class _Line:
                 colored[current] += len(raw[pos:m.start()].strip())
             current = None if m.group(0).startswith("⟦/") else m.group(1)
             pos = m.end()
-        total = len(self.plain.strip()) or 1
+        # Sobre el texto de la opción SIN su letra ("b) "): en Word la
+        # numeración automática nunca lleva el color de la respuesta, y en
+        # una opción corta ("2", "Roma") la letra sola bajaba la cobertura
+        # de la marca por debajo del umbral.
+        total = len(_LABEL.sub("", self.plain).strip()) or 1
         top = colored.most_common(1)
         self.colors = top[0][0] if top and top[0][1] >= 0.6 * total else None
 
@@ -284,13 +293,49 @@ def resolve_table_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, D
 # Brasil" devolvía "Falso", lo que él cree cierto y no lo que marcó el docente).
 
 _TF_WORD = {"verdadero": "Verdadero", "cierto": "Verdadero", "v": "Verdadero", "falso": "Falso", "f": "Falso"}
-_TF_CHECKED = re.compile(r"[\(\[]\s*[xX✓✔]\s*[\)\]]\s*(verdadero|falso|cierto|v|f)\b", re.IGNORECASE)
+_TF_BOX_X = r"[\(\[]\s*[xX✓✔]\s*[\)\]]"
+_TF_BOX_EMPTY = r"[\(\[]\s*[\)\]]"
+_TF_WORD_RX = r"\b(verdadero|falso|cierto|v|f)\b"
+# Una casilla (marcada o vacía) y la palabra "Verdadero"/"Falso" (o V/F), en
+# el orden que sea: la casilla puede ir ANTES ("(X) Verdadero", el que ya se
+# reconocía) o DESPUÉS ("Verdadero (X)", igual de común al escribir a mano).
+# Emparejar por CERCANÍA en el texto ("la casilla más próxima") no basta: en
+# "(  ) Verdadero  (X) Falso" la casilla marcada queda más cerca de
+# "Verdadero" que de su propia palabra "Falso" (que viene DESPUÉS de ella).
+# En cambio, la secuencia de casillas y palabras sí seguía un orden fijo en
+# todos los formatos vistos: SIEMPRE casilla-palabra-casilla-palabra… o
+# SIEMPRE palabra-casilla-palabra-casilla…, nunca mezclado dentro de la
+# misma pregunta. Por eso se arma la secuencia completa de tokens (caja o
+# palabra, en el orden en que aparecen) y se decide la convención por el
+# PRIMER token: si empieza con una caja, cada caja se empareja con la
+# palabra que la sigue; si empieza con una palabra, con la que la precede.
+_TF_TOKEN = re.compile(rf"(?P<box>{_TF_BOX_X}|{_TF_BOX_EMPTY})|(?P<word>{_TF_WORD_RX})", re.IGNORECASE)
 _TF_MARKED_WORD = re.compile(r"⟦([a-záéíóú]+)⟧\s*(verdadero|falso|cierto|v|f)\s*⟦/\1⟧", re.IGNORECASE)
 
 
 def _tf_mark(raw_lines: List[str]) -> Optional[str]:
     text = " ".join(raw_lines)
-    found = {_TF_WORD[w.lower()] for w in _TF_CHECKED.findall(text)}
+    tokens = [("box", bool(re.search(r"[xX✓✔]", m.group("box")))) if m.group("box") is not None
+              else ("word", _TF_WORD[m.group("word").lower()])
+              for m in _TF_TOKEN.finditer(text)]
+
+    found = set()
+    if tokens:
+        casilla_primero = tokens[0][0] == "box"
+        i = 0
+        while i < len(tokens) - 1:
+            a, b = tokens[i], tokens[i + 1]
+            if casilla_primero and a[0] == "box" and b[0] == "word":
+                if a[1]:
+                    found.add(b[1])
+                i += 2
+            elif not casilla_primero and a[0] == "word" and b[0] == "box":
+                if b[1]:
+                    found.add(a[1])
+                i += 2
+            else:
+                i += 1
+
     found |= {_TF_WORD[m.group(2).lower()] for m in _TF_MARKED_WORD.finditer(text)}
     return found.pop() if len(found) == 1 else None
 

@@ -26,7 +26,8 @@ from config import (
     TRANSCRIPTION_FAILED_MARKER,
     VALID_QUESTION_TYPES,
 )
-from answer_matching import find_cloze_brackets, is_truncated_answer_match, split_answers, split_options
+from imagenes import errores_imagenes
+from answer_matching import find_cloze_brackets, is_substring_match, is_truncated_answer_match, split_answers, split_options
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,12 @@ def validate_questions(
             result.errors.append(f"Error: la Pregunta {num} tiene un tipo desconocido.")
         elif not isinstance(q.get("data"), dict):
             result.errors.append(f"Error: la Pregunta {num} no tiene datos válidos.")
+        else:
+            # Imágenes y retroalimentación vuelven del navegador y van al XML.
+            result.errors.extend(errores_imagenes(num, q["data"].get("images")))
+            fb = q["data"].get("feedback")
+            if fb is not None and (not isinstance(fb, str) or len(fb) > 5000):
+                result.errors.append(f"Error: la retroalimentación de la Pregunta {num} no es válida.")
     if result.errors:
         return result
 
@@ -316,10 +323,15 @@ def _validate_multichoice(
     if correct_answer and options:
         targets = split_answers(correct_answer)
         for one_target in targets:
-            found = any(
-                one_target.lower() in opt.lower() or opt.lower() in one_target.lower()
-                for opt in options.values()
-            )
+            ot = one_target.lower()
+            # Igualdad exacta primero (sin mínimo de longitud), y solo
+            # después la coincidencia difusa por subcadena (con su mínimo:
+            # ver is_substring_match) — así el validador exige lo mismo que
+            # xml_builder.py necesita para decidir SIN ambigüedad qué opción
+            # marcar; antes aceptaba aquí lo que allá podía salir mal.
+            found = any(ot == opt.lower() for opt in options.values())
+            if not found:
+                found = any(is_substring_match(ot, opt.lower()) for opt in options.values())
             if not found:
                 # Antes de rechazarla, revisa si es un caso de respuesta
                 # cortada a mitad de palabra (ver is_truncated_answer_match)

@@ -811,6 +811,13 @@ code.inline {
 .toast.info  { background: var(--color-cta); }
 .toast i, .toast svg { flex-shrink: 0; }
 .toast .toast-msg { padding-right: 6px; }
+.toast-atajo {
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  opacity: 0.8;
+  margin-left: 2px;
+}
 .toast-action {
   flex-shrink: 0;
   background: rgba(255, 255, 255, 0.16);

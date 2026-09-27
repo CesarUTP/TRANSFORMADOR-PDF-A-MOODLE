@@ -7,7 +7,7 @@
   <title>Conversor a Moodle XML</title>
   <link rel="icon" type="image/png" href="img/icono.png">
   <meta name="description"
-    content="Plataforma de ingeniería de evaluación académica para convertir pruebas, quices y exámenes (PDF o TXT) al formato Moodle XML con validación estructural e IA." />
+    content="Plataforma de ingeniería de evaluación académica para convertir pruebas, quices y exámenes (PDF, Word o TXT) al formato Moodle XML con validación estructural e IA." />
 
   <!-- Tipografías incluidas en la app (css/fuentes.css) -->
   <link rel="stylesheet" href="css/fuentes.css">
@@ -15,6 +15,10 @@
   <!-- Lucide Icons 1.44.0 (ISC, ver js/vendor/LICENSE-lucide.txt), copiado dentro de la app: un script
        de otro servidor correría con acceso al puente nativo de la ventana. -->
   <script src="js/vendor/lucide.min.js"></script>
+  <!-- KaTeX 0.16.47 (MIT, ver js/vendor/katex/LICENSE-katex.txt): vista previa
+       de las fórmulas LaTeX en el editor. Moodle las muestra con MathJax. -->
+  <link rel="stylesheet" href="js/vendor/katex/katex.min.css">
+  <script src="js/vendor/katex/katex.min.js"></script>
 
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/componentes.css">
@@ -99,8 +103,8 @@
       </div>
 
       <!-- Drop Zone -->
-      <div id="drop-zone" role="button" tabindex="0" aria-label="Elegir el examen: arrastra un archivo PDF o TXT, o pulsa para buscarlo" aria-describedby="drop-error">
-        <input type="file" id="file-input" accept=".pdf,.txt" style="display:none;" />
+      <div id="drop-zone" role="button" tabindex="0" aria-label="Elegir el examen: arrastra un archivo PDF, Word o TXT, o pulsa para buscarlo" aria-describedby="drop-error">
+        <input type="file" id="file-input" accept=".pdf,.docx,.txt" style="display:none;" />
         <!-- Con un archivo elegido la zona se pinta de verde y cambia su
              texto (clase .has-file, ver carga.js). -->
         <div class="drop-icon-wrapper">
@@ -111,6 +115,7 @@
         <p class="drop-sub" id="drop-sub">o haz clic para buscarlo en tu computadora</p>
         <div style="display:flex;justify-content:center;gap:8px;">
           <span class="file-ext">.PDF</span>
+          <span class="file-ext">.DOCX</span>
           <span class="file-ext">.TXT</span>
         </div>
       </div>
@@ -175,7 +180,7 @@
         Procesar y convertir examen
       </button>
       <!-- Por qué el botón está deshabilitado (antes no se decía). -->
-      <p id="convert-hint" class="field-hint" style="text-align:center;margin-top:8px;">Primero elige un archivo PDF o TXT.</p>
+      <p id="convert-hint" class="field-hint" style="text-align:center;margin-top:8px;">Primero elige un archivo PDF, Word o TXT.</p>
 
       <!-- Privacy Banner -->
       <div style="margin-top:16px;text-align:center;font-size:var(--text-sm);color:var(--color-text-subtle);display:flex;align-items:center;justify-content:center;gap:6px;">
@@ -394,7 +399,7 @@
                 Moodle no permite pegar un examen en formato "normal" y ya está: cada pregunta debe cargarse a mano en el banco de preguntas, o construirse a mano en un XML con una sintaxis estricta y poco intuitiva. Hacerlo manualmente para un examen de 30-40 preguntas —especialmente con emparejamientos y respuestas de completar— es lento y fácil de arruinar con un error de tipeo.
               </p>
               <p style="font-size:14px;line-height:1.7;color:var(--color-text);margin-top:10px;">
-                Este sistema toma tu examen tal como ya lo tienes (PDF o TXT), lo interpreta con ayuda de IA, y genera directamente el archivo <strong>Moodle XML</strong> listo para importar en <em>Banco de preguntas → Importar</em>. Lo que antes tomaba horas de carga manual, aquí se reduce a revisar y generar.
+                Este sistema toma tu examen tal como ya lo tienes (PDF, Word o TXT), lo interpreta con ayuda de IA, y genera directamente el archivo <strong>Moodle XML</strong> listo para importar en <em>Banco de preguntas → Importar</em>. Lo que antes tomaba horas de carga manual, aquí se reduce a revisar y generar.
               </p>
             </div>
 
@@ -403,7 +408,15 @@
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="check-circle-2" style="width:16px;height:16px;color:var(--color-success);flex-shrink:0;margin-top:2px;"></i>
-                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Pruebas, parciales y quices en PDF o TXT</strong> con preguntas de <strong style="color:var(--color-text);">opción múltiple, verdadero/falso, emparejamiento, completar, ensayo, respuesta corta o numérica</strong>. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas.</span>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Pruebas, parciales y quices en PDF, Word (.docx) o TXT</strong> con preguntas de <strong style="color:var(--color-text);">opción múltiple, verdadero/falso, emparejamiento, completar, ensayo, respuesta corta o numérica</strong>. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="image" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Imágenes y fórmulas.</strong> Las imágenes de cada pregunta llegan a Moodle dentro de ella. En la revisión puedes quitarlas, moverlas a otra pregunta (con las flechas, con «Mover a…» o arrastrándolas) y agregar las tuyas con «Agregar imagen» o soltando el archivo sobre la pregunta. Las fórmulas matemáticas se escriben en LaTeX, entre <code class="inline">\(</code> y <code class="inline">\)</code>, con una vista previa en la revisión; Moodle las muestra igual.</span>
+                </div>
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i data-lucide="message-square-text" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--color-text-muted);"><strong style="color:var(--color-text);">Retroalimentación opcional.</strong> Si tu examen trae la justificación de una respuesta, se copia sola; si no, puedes escribirla en la revisión, pedírsela a la IA con «Escribir con IA» (ves su propuesta y solo se aplica si la aceptas) o dejarla vacía. El estudiante la ve en Moodle después de responder. Y si un enunciado quedó mal escrito, «Mejorar redacción» corrige ortografía, tildes y claridad sin cambiar datos, código ni fórmulas: te muestra qué cambiaría y solo lo aplica si pulsas «Aceptar».</span>
                 </div>
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <i data-lucide="scan-line" style="width:16px;height:16px;color:var(--color-accent);flex-shrink:0;margin-top:2px;"></i>
@@ -542,6 +555,7 @@
                   <div><dt><kbd>R</kbd></dt><dd>Siguiente pregunta para revisar</dd></div>
                   <div><dt><kbd>?</kbd></dt><dd>Abrir esta guía en «Revisión»</dd></div>
                   <div><dt><kbd>Esc</kbd></dt><dd>Cerrar ventanas y menús</dd></div>
+                  <div><dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd></dt><dd>Deshacer lo último (mientras se ve el aviso de abajo)</dd></div>
                 </dl>
               </div>
             </div>
@@ -977,6 +991,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <li>PDFium (vía pypdfium2) — BSD / Apache 2.0</li>
             <li>cryptography — Apache 2.0 o BSD</li>
             <li>Íconos Lucide — ISC</li>
+            <li>KaTeX (vista previa de fórmulas) — MIT</li>
             <li>Fuentes Outfit, Hanken Grotesk y JetBrains Mono — SIL Open Font License 1.1</li>
             <li>PyInstaller (cargador de arranque) — GPL 2.0 con excepción</li>
           </ul>

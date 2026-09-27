@@ -36,7 +36,8 @@ def _lanzar_aislada() -> int:
         shutil.copy2(__file__, tmp / "test_seguridad.py")
         (tmp / "home").mkdir()
         env = {"HOME": str(tmp / "home"), "LOCALAPPDATA": str(tmp / "home"),
-               "USERPROFILE": str(tmp / "home"), "PATH": os.defpath, MARCA: "1"}
+               "USERPROFILE": str(tmp / "home"), "PATH": os.defpath, MARCA: "1",
+               "PYTHONUTF8": "1"}  # la salida lleva tildes y símbolos (Windows)
         if os.name == "nt":
             env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", r"C:\Windows")
         return subprocess.run([sys.executable, str(tmp / "test_seguridad.py")], env=env, cwd=tmp).returncode
@@ -88,6 +89,10 @@ ok(c.get("/js/vendor/lucide.min.js").status_code == 200, "Lucide servido desde l
 ok(c.get("/fonts/outfit-latin-wght-normal.woff2").status_code == 200, "fuentes servidas desde la app")
 ok(c.get("/api/history").status_code == 401, "historial sin token -> 401")
 ok(c.get("/api/history", headers={"X-Conversor-Token": "x" * 43}).status_code == 401, "historial con token falso -> 401")
+ok(c.post("/api/retroalimentacion", json={"pregunta": {"type": "essay", "data": {"stem": "x"}}}).status_code == 401,
+   "«Escribir con IA» sin token -> 401 (otra página no gasta tu cuota de Gemini)")
+ok(c.post("/api/mejorar_enunciado", json={"pregunta": {"type": "essay", "data": {"stem": "x"}}}).status_code == 401,
+   "«Mejorar redacción» sin token -> 401")
 r = c.get("/api/history", headers=H)
 ok(r.status_code == 200 and "access-control-allow-origin" not in r.headers, "historial con token -> 200, sin CORS")
 ok(c.get("/api/history", headers={**H, "Origin": "https://malo.example"}).status_code == 403, "Origin ajeno -> 403")

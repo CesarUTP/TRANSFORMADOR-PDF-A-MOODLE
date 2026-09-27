@@ -27,8 +27,9 @@ if not exist "build_venv\Scripts\python.exe" (
 
 echo [2/4] Instalando dependencias...
 "build_venv\Scripts\python.exe" -m pip install --quiet --upgrade pip
-"build_venv\Scripts\pip.exe" install --quiet -r backend\requirements.txt
-"build_venv\Scripts\pip.exe" install --quiet "pywebview==6.2.1" "pyinstaller==6.22.3"
+rem Todas las dependencias (tambien las indirectas) con version exacta y su
+rem huella SHA-256: pip rechaza cualquier paquete que no coincida.
+"build_venv\Scripts\pip.exe" install --quiet --require-hashes -r requirements-build.lock
 if errorlevel 1 (
     echo.
     echo [ERROR] Fallo instalando dependencias. Revisa tu conexion a internet.

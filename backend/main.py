@@ -8,6 +8,8 @@ Endpoints:
 
 import json
 import logging
+import math
+import re
 import queue
 import sys
 import threading
@@ -17,6 +19,7 @@ import time
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -25,13 +28,15 @@ from lxml import etree
 from config import APP_VERSION, DEFAULT_CATEGORY, DEFAULT_TOTAL_POINTS, SERVER_PORT
 import actualizaciones
 import credenciales
+import ayuda_ia
 import seguridad
 from extractor import pdf_has_embedded_images
+from extractor_docx import docx_tiene_imagenes
 from pipeline import parse_document, normalize_document_with_ai
 from validator import validate_questions
 from xml_builder import build_xml, compute_grades
 from database import get_db_path, init_db, save_conversion, get_history_list, get_xml_content, delete_history_item, get_editor_data
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
@@ -92,7 +97,11 @@ def _content_disposition(nombre: str) -> str:
     """
     nfc = _nombre_nfc(nombre)
     ascii_ = unicodedata.normalize("NFKD", nfc).encode("ascii", "ignore").decode("ascii")
-    ascii_ = ascii_.replace('"', "").replace("\\", "").strip() or "examen_moodle.xml"
+    # \r o \n en el nombre (guardado tal cual en el historial desde una
+    # subida antigua, o un nombre armado a mano) rompía la cabecera HTTP
+    # ("Invalid HTTP header value") y esa descarga quedaba inservible para
+    # siempre. re.sub por si acaso quedara algún otro control además de \r\n.
+    ascii_ = re.sub(r"[\x00-\x1f\x7f]", "", ascii_).replace('"', "").replace("\\", "").strip() or "examen_moodle.xml"
     return f"attachment; filename=\"{ascii_}\"; filename*=UTF-8''{quote(nfc, safe='')}"
 
 
@@ -106,6 +115,29 @@ app = FastAPI(title="PDF → Moodle XML", version=APP_VERSION)
 # otra página necesita (ni debe poder) leer sus respuestas. Host, Origin,
 # token por arranque, tamaño máximo y CSP: ver seguridad.py.
 app.add_middleware(seguridad.SoloLaApp)
+
+
+def _sin_infinito(obj):
+    """Reemplaza Infinity/NaN por su texto antes de volver a JSON: un valor
+    inválido que el docente (o una petición manual) mandó en el cuerpo
+    vuelve TAL CUAL dentro del detalle del error 422 de FastAPI — y
+    Starlette rechaza a su vez ESE JSON de salida porque no admite
+    Infinity/NaN, así que el 422 legible se convertía en un 500 sin
+    detalle."""
+    if isinstance(obj, float) and not math.isfinite(obj):
+        return str(obj)
+    if isinstance(obj, dict):
+        return {k: _sin_infinito(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sin_infinito(v) for v in obj]
+    return obj
+
+
+@app.exception_handler(RequestValidationError)
+async def _error_de_validacion(request, exc: RequestValidationError):
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=422, content={"detail": _sin_infinito(exc.errors())})
+
 
 @app.on_event("startup")
 def startup_event():
@@ -197,6 +229,8 @@ async def api_check_special_cases(
     filename = _nombre_nfc(file.filename) or "upload"
     suffix = Path(filename).suffix.lower()
 
+    if suffix == ".docx":
+        return {"has_special_images": docx_tiene_imagenes(await file.read())}
     if suffix != ".pdf":
         return {"has_special_images": False}
 
@@ -323,7 +357,11 @@ async def api_normalize_with_ai_stream(file: UploadFile = File(...)):
 class GenerateXmlRequest(BaseModel):
     filename: str
     category: str
-    total_points: float
+    # gt=0 y un tope razonable, y allow_inf_nan=False rechaza Infinity/NaN:
+    # un total "Infinity" se guardaba en el historial (SQLite lo admite) y
+    # /api/history quedaba con ese registro dentro para siempre — el JSON
+    # de la respuesta ya no era válido y el docente perdía el historial.
+    total_points: float = Field(gt=0, le=100_000, allow_inf_nan=False)
     questions: List[Dict[str, Any]]
     answer_key: Dict[str, Any]
 
@@ -343,6 +381,22 @@ def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any
     # opción de selección múltiple vacía). Sin esto, /api/parse podía
     # validar datos correctos y /api/generate_xml igual producir un XML
     # corrupto a partir de ediciones inválidas del usuario.
+    # Una pregunta con la clave interna "error" es la que el propio backend
+    # marca como omitida en el Modo Tolerante (partition_questions) — el
+    # editor nunca la reenvía (esas quedan en skipped_questions, aparte).
+    # validate_questions la salta sin revisar su forma (type/data/imágenes),
+    # así que aceptarla aquí tal cual dejaría pasar cualquier dato sin
+    # validar, viniendo directo de la petición HTTP.
+    campos_no_permitidos = [q.get("num", "?") for q in req.questions if isinstance(q, dict) and "error" in q]
+    if campos_no_permitidos:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": "Se detectaron errores de validación en las preguntas editadas:",
+                "errors": [f"Error: la Pregunta {n} trae un campo interno no permitido." for n in campos_no_permitidos],
+            },
+        )
+
     validation = validate_questions(req.questions, parsed_answer_key, strict=True)
     if not validation.is_valid:
         raise HTTPException(
@@ -478,6 +532,28 @@ async def api_delete_history(record_id: int):
 # ── API de Gemini ───────────────────────────────────────────────────────────
 # El docente pega su clave en el modal de bienvenida; se guarda cifrada en
 # la carpeta de datos (ver credenciales.py). Nunca se devuelve completa.
+
+class RetroalimentacionBody(BaseModel):
+    pregunta: Dict[str, Any]
+    respuesta: Any = None
+
+
+# Botón «Escribir con IA» del editor: la retroalimentación de UNA pregunta.
+# Comparte el cupo de conversiones para no competir con una en curso.
+@app.post("/api/retroalimentacion")
+def api_retroalimentacion(body: RetroalimentacionBody):
+    return {"retroalimentacion": _con_cupo(ayuda_ia.generar, body.pregunta, body.respuesta)}
+
+
+class EnunciadoBody(BaseModel):
+    pregunta: Dict[str, Any]
+
+
+# Botón «Mejorar redacción» del editor: el enunciado de UNA pregunta.
+@app.post("/api/mejorar_enunciado")
+def api_mejorar_enunciado(body: EnunciadoBody):
+    return _con_cupo(ayuda_ia.mejorar_enunciado, body.pregunta)
+
 
 class ApiKeyBody(BaseModel):
     clave: str

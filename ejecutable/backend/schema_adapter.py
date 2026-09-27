@@ -25,24 +25,42 @@ from answer_matching import split_answers
 SIN_RESPUESTA = "SIN_RESPUESTA"
 _LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 _TF = {
-    "verdadero": "Verdadero", "cierto": "Verdadero", "correcto": "Verdadero",
-    "true": "Verdadero", "v": "Verdadero",
-    "falso": "Falso", "incorrecto": "Falso", "false": "Falso", "f": "Falso",
+    "verdadero": "Verdadero", "verdadera": "Verdadero", "cierto": "Verdadero", "cierta": "Verdadero",
+    "correcto": "Verdadero", "correcta": "Verdadero", "true": "Verdadero", "v": "Verdadero",
+    "falso": "Falso", "falsa": "Falso", "incorrecto": "Falso", "incorrecta": "Falso",
+    "false": "Falso", "f": "Falso",
 }
 # Marcadores de hueco en el enunciado de un cloze: [A], [ A ], [a]...
 _SLOT = re.compile(r"\[\s*([A-Za-z])\s*\]")
 
 
+# LaTeX dañado por el JSON: si la IA escribe «\frac» sin escapar la barra,
+# «\f» llega como salto de página y queda «rac{4}{4}» (visto con Gemini en
+# el botón «Escribir con IA»). \f y \b nunca son texto legítimo de un
+# examen; \t, \r y \n solo se reparan dentro de \( … \) y seguidos de letra
+# (\theta, \rightarrow, \neq…), para no tocar tabulaciones ni saltos reales.
+_CTRL_SIEMPRE = {"\x0c": "\\f", "\x08": "\\b"}
+_CTRL_FORMULA = re.compile(r"[\t\r\n](?=[A-Za-z])")
+_FORMULA = re.compile(r"\\\(.*?\\\)", re.S)
+
+
+def _latex(s: str) -> str:
+    for c, r in _CTRL_SIEMPRE.items():
+        s = s.replace(c, r)
+    return _FORMULA.sub(lambda m: _CTRL_FORMULA.sub(
+        lambda c: {"\t": "\\t", "\r": "\\r", "\n": "\\n"}[c.group(0)], m.group(0)), s)
+
+
 def _text(s: Any) -> str:
     """Enunciado: conserva los saltos de línea (código, listas A./B. propias
     del enunciado), solo limpia espacios sobrantes al final de cada línea."""
-    lines = [ln.rstrip() for ln in str(s or "").strip().splitlines()]
+    lines = [ln.rstrip() for ln in _latex(str(s or "")).strip().splitlines()]
     return "\n".join(ln for i, ln in enumerate(lines) if ln or (i and lines[i - 1]))
 
 
 def _line(s: Any) -> str:
     """Opción/elemento: una sola línea."""
-    return " ".join(str(s or "").split())
+    return " ".join(_latex(str(s or "")).split())
 
 
 # ── Resolución determinista de la clave ─────────────────────────────────────
@@ -72,8 +90,11 @@ def _clave(q: dict) -> str:
 
 def _key_letters(clave: str) -> List[str]:
     """ "c" / "b, d" / "C." / "b y d" → ["c"] / ["b", "d"]. [] si la clave
-    no es una lista de rótulos sueltos (ej. trae el texto de la opción)."""
-    tokens = re.split(r"\s*(?:,|;|/|\||\by\b|\be\b|\s)\s*", clave.strip())
+    no es una lista de rótulos sueltos (ej. trae el texto de la opción).
+    Solo "y" se trata como conjunción ("b y d" → ["b", "d"]): "e" NO,
+    porque también es una letra de opción válida y "b, e" perdía la opción
+    e ("b, e" → ["b"], en vez de ["b", "e"])."""
+    tokens = re.split(r"\s*(?:,|;|/|\||\by\b|\s)\s*", clave.strip())
     tokens = [t.strip(" .)(") for t in tokens if t.strip(" .)(")]
     if tokens and all(re.fullmatch(r"[A-Za-z]|\d{1,2}", t) for t in tokens):
         return [t.lower() for t in tokens]
@@ -268,6 +289,20 @@ def adapt(payload: dict) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]
         page = q.get("pagina")
         if isinstance(page, int) and page > 0:
             data["page"] = page
+
+        # Retroalimentación OPCIONAL: solo si el documento traía una
+        # justificación (el modelo la copia; nunca la inventa). Vacía = sin
+        # retroalimentación, y el docente puede escribirla en el editor.
+        # Preguntas encadenadas que usan la misma imagen que la anterior,
+        # según la IA (que ve las páginas). Marca interna:
+        # imagenes.asignar_imagenes la usa y la quita antes de devolver el
+        # resultado.
+        if isinstance(q.get("comparte_imagen_anterior"), bool):
+            data["_comparte_imagen"] = q["comparte_imagen_anterior"]
+
+        feedback = _text(q.get("retroalimentacion"))
+        if feedback:
+            data["feedback"] = feedback[:2000]
 
         questions.append({"num": num, "type": qtype, "data": data})
         entry: Dict[str, Any] = {"type": qtype, "answer": answer}

@@ -194,6 +194,10 @@ body.editor-active .review-rail { display: flex; }
 .skipped-details > summary .summary-more { margin-left: auto; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-muted); display: inline-flex; align-items: center; gap: 4px; }
 .skipped-details > summary .summary-more svg { transition: transform var(--dur-fast) var(--ease-out); width: 14px; height: 14px; }
 .skipped-details[open] > summary .summary-more svg { transform: rotate(180deg); }
+.skipped-details .si-abierto, .skipped-details[open] .si-cerrado { display: none; }
+.skipped-details[open] .si-abierto { display: inline; }
+.skipped-imgs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.skipped-imgs img { max-width: 180px; max-height: 90px; object-fit: contain; background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 4px; }
 .skipped-details > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .skipped-body { padding: 0 14px 12px; }
 .skipped-item { padding: 10px 0; border-top: 1px solid var(--color-border-subtle); }
@@ -262,11 +266,14 @@ body.editor-active .review-rail { display: flex; }
 
 /* ── EDITOR CARDS (Interactive Question Editor) ──────────────────────── */
 .editor-card {
+  position: relative;
   background: var(--color-surface);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 20px;
-  transition: border-color var(--dur-fast) ease;
+  outline: 2px dashed transparent;
+  outline-offset: 4px;
+  transition: border-color var(--dur-fast) ease, outline-color var(--dur-fast) ease, background-color var(--dur-fast) ease;
   scroll-margin-top: calc(var(--header-h, 80px) + 16px);
 }
 .editor-card:focus-within { border-color: var(--color-accent); }
@@ -317,6 +324,96 @@ body.editor-active .review-rail { display: flex; }
 .editor-card textarea:focus, .editor-card input:focus {
   border-color: var(--color-accent);
 }
+
+/* Vista previa de fórmulas LaTeX (KaTeX), bajo el enunciado */
+.q-math { margin-top: 8px; padding: 10px 14px; border: 1px dashed var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
+.q-math[hidden] { display: none; }
+.q-math-titulo { font-size: var(--text-xs); font-weight: 700; color: var(--color-text-muted); margin: 0 0 4px; }
+.q-math-linea { font-size: 14.5px; line-height: 1.8; color: var(--color-text); margin: 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+.q-math-letra { font-weight: 700; color: var(--color-text-muted); }
+.q-math .katex { font-size: 1.1em; }
+
+/* Imágenes de la pregunta (van a Moodle), justo debajo del enunciado */
+.q-images { margin-top: 12px; }
+.q-images .field-label { margin-bottom: 8px; }
+.q-images.vacia .field-label, .q-images.vacia .q-images-fila { display: none; }
+.q-images.vacia { margin-top: 8px; }
+.q-images-fila { display: flex; flex-wrap: wrap; gap: 10px; }
+.q-image {
+  margin: 0; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  background: var(--color-surface-card); padding: 6px; cursor: grab;
+  transition: opacity var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
+}
+.q-image:active { cursor: grabbing; }
+/* Al levantarla se atenúa y se achica apenas: confirma el «agarre». */
+.q-image.arrastrando { opacity: 0.45; transform: scale(0.98); }
+/* Recién llegada (movida, agregada o devuelta con Deshacer): un contorno
+   de acento que se desvanece. Pasa pocas veces, así que se anima. */
+.q-image.llegando { animation: imagenLlega 1200ms var(--ease-out); }
+@keyframes imagenLlega {
+  0% { opacity: 0.4; outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  15% { opacity: 1; outline: 2px solid var(--color-accent); outline-offset: 2px; }
+  100% { outline: 2px solid transparent; outline-offset: 2px; }
+}
+.q-image img { display: block; max-width: 260px; max-height: 160px; object-fit: contain; background: #fff; }
+.q-image-botones { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 6px; }
+.q-image-asa { margin-right: auto; display: inline-flex; color: var(--color-text-muted); }
+.q-image-botones .btn-icon { width: 32px; height: 32px; background: var(--color-surface-card); border: 1px solid var(--color-border); color: var(--color-text-muted); }
+.q-image-botones .q-image-quitar { color: var(--color-error); }
+.q-image-mover {
+  height: 32px; max-width: 112px; padding: 0 8px; font: inherit; font-size: var(--text-sm); font-weight: 600;
+  color: var(--color-text-muted); background: var(--color-surface-card);
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm); cursor: pointer;
+}
+.q-image-mover:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.q-images-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 8px; }
+/* Destino al arrastrar: contorno y fondo que entran suaves, y una nota
+   que nombra la pregunta («Soltar en la pregunta 4»). */
+.editor-card.soltar-aqui { outline-color: var(--color-accent); background-color: var(--color-surface-hover); }
+.q-soltar-nota { display: none; }
+.editor-card.soltar-aqui .q-soltar-nota {
+  display: inline-flex; align-items: center; gap: 6px; position: absolute; top: 14px; right: 16px; z-index: 1;
+  padding: 6px 12px; border-radius: var(--radius-full); background: var(--color-cta); color: #fff;
+  font-size: var(--text-sm); font-weight: 700; pointer-events: none; box-shadow: var(--shadow-sm);
+  animation: fadeOnly var(--dur-fast) var(--ease-out);
+}
+/* En pantallas táctiles no se arrastra: el asa no dice nada. */
+@media (pointer: coarse) { .q-image-asa { visibility: hidden; } .q-image { cursor: default; } }
+.stem-cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.stem-cabecera .field-label { margin-bottom: 0; }
+
+/* Texto aclaratorio dentro de una etiqueta en mayúsculas: en minúscula
+   (la regla de mayúsculas es solo para rótulos cortos). */
+.field-label .opcional, summary .opcional, .q-ia-cambios-titulo .opcional { text-transform: none; letter-spacing: 0; font-weight: 600; color: var(--color-text-muted); }
+
+/* Botones de IA: ícono girando mientras la IA responde. */
+.btn .girando { animation: spinSlow 0.9s linear infinite; }
+/* El campo que la IA acaba de reescribir se funde un instante. */
+.editor-card textarea.q-ia-aplicado { animation: fadeOnly 180ms var(--ease-out); }
+/* Propuesta de la IA bajo el campo: no se aplica hasta «Aceptar». */
+.q-ia-propuesta {
+  margin-top: 8px; padding: 10px 14px; border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm); background: var(--color-surface-card);
+  animation: fadeOnly var(--dur-enter) var(--ease-out);
+}
+.q-ia-cambios-titulo { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; font-size: var(--text-xs); font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; color: var(--color-text-muted); }
+.q-ia-cambios-titulo svg { width: 13px; height: 13px; }
+.q-ia-desactualizada { margin: 6px 0 0; font-size: var(--text-sm); font-weight: 600; color: var(--color-warning); }
+.q-ia-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.q-ia-cambios-texto { margin: 0; font-size: var(--text-md); line-height: 1.6; white-space: pre-wrap; color: var(--color-text); }
+.q-ia-propuesta ins { text-decoration: none; background: var(--color-success-bg); color: var(--color-text); border-bottom: 2px solid var(--color-success); border-radius: 3px; padding: 0 2px; }
+.q-ia-propuesta del { color: var(--color-text-muted); text-decoration: line-through; text-decoration-color: var(--color-error); padding: 0 2px; }
+
+/* Retroalimentación opcional */
+.q-feedback-box { margin-top: 14px; }
+.q-feedback-box summary { list-style: none; display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--color-text-muted); padding: 4px 0; width: fit-content; }
+.q-feedback-box summary::-webkit-details-marker { display: none; }
+.q-feedback-chevron { width: 14px; height: 14px; transition: transform var(--dur-fast) var(--ease-out); }
+.q-feedback-box[open] .q-feedback-chevron { transform: rotate(90deg); }
+.q-feedback-box summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 4px; }
+.q-feedback-box .q-feedback { margin-top: 6px; }
+.q-feedback-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px; }
+.q-feedback-acciones .card-note { margin: 0; }
 .type-badge {
   display: inline-flex;
   align-items: center;

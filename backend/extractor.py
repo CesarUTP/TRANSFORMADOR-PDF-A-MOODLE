@@ -90,6 +90,22 @@ def join_pages_with_markers(pages: List[str]) -> str:
     return "\n\n".join(f"[Página {i}]\n{t}" for i, t in enumerate(pages, start=1) if t.strip())
 
 
+# Fuentes de ecuaciones: Cambria Math (Word), Computer Modern/AMS (LaTeX),
+# STIX y Euclid. "Symbol" no: Word la usa para las viñetas.
+_FUENTE_FORMULA = re.compile(r"Math|CMMI|CMSY|CMEX|MSAM|MSBM|STIX|Euclid", re.IGNORECASE)
+
+
+def pagina_con_formulas(page, minimo: int = 3) -> bool:
+    """¿La página tiene al menos `minimo` caracteres en una fuente de fórmulas?"""
+    n = 0
+    for ch in page.chars:
+        if _FUENTE_FORMULA.search(str(ch.get("fontname", ""))):
+            n += 1
+            if n >= minimo:
+                return True
+    return False
+
+
 def extract_text_and_images_from_pdf(file_bytes: bytes) -> tuple[str, List[Image.Image]]:
     """
     Extrae el texto completo del PDF, y además renderiza como imagen
@@ -106,7 +122,10 @@ def extract_text_and_images_from_pdf(file_bytes: bytes) -> tuple[str, List[Image
             text = page.extract_text()
             if text:
                 full_text += text + "\n"
-            if page.images and len(images) < MAX_IMAGE_PAGES:
+            # Páginas con fórmulas: su texto extraído pierde la estructura
+            # (fracciones, exponentes), así que también van como imagen para
+            # que la IA las transcriba en LaTeX (REGLA 13).
+            if (page.images or pagina_con_formulas(page)) and len(images) < MAX_IMAGE_PAGES:
                 # 200 DPI en vez de 150: el color de las marcas de respuesta
                 # se distingue mejor a esta resolución, sin disparar
                 # demasiado el tamaño de la imagen.
