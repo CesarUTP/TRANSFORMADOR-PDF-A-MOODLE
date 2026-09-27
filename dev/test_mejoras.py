@@ -307,6 +307,41 @@ escaneado = ROOT / "samples" / "synthetic" / "s06_escaneado_sin_texto.pdf"
 if escaneado.exists():
     ok(imagenes.extraer_imagenes_pdf(escaneado.read_bytes()).imagenes == [], "PDF escaneado: la hoja entera no se toma como imagen de una pregunta")
 
+print("Código transcrito de una imagen ya adjunta: no se repite en el enunciado")
+_CODIGO_STEM = 'a = 1 while a<=5: print(a) a+=1 print("Fin") ¿Cuántos errores tiene el código?'
+ok(imagenes._sin_prefijo_transcrito(_CODIGO_STEM, "15. ¿Cuántos errores tiene el código?") == "¿Cuántos errores tiene el código?",
+   "quita el código transcrito delante de la pregunta real del documento")
+ok(imagenes._sin_prefijo_transcrito("¿Cuántos errores tiene el código?", "15. ¿Cuántos errores tiene el código?") is None,
+   "…pero no toca un enunciado que ya viene limpio (nada que quitar)")
+ok(imagenes._sin_prefijo_transcrito("a = 1 ¿Qué imprime este programa?", "9. ¿Cuántos errores tiene el código?") is None,
+   "…ni si la línea del documento no calza con el final del enunciado (mejor no arriesgarse)")
+
+# _quitar_transcripciones_redundantes: solo actúa en la pregunta que de
+# verdad terminó con una imagen adjunta; la que se quedó sin ninguna
+# conserva el código transcrito completo (es su única red de seguridad).
+qs_transcrito = [{"num": 1, "type": "essay", "data": {"stem": _CODIGO_STEM, "images": [
+                     {"name": "pregunta1-1.png", "mime": "image/png", "b64": "iVBORw0KGgo="}]}},
+                  {"num": 2, "type": "essay", "data": {"stem": _CODIGO_STEM}}]
+lineas_transcrito = [imagenes.Linea((1, 10.0), "15. ¿Cuántos errores tiene el código?"),
+                     imagenes.Linea((1, 5.0), "16. ¿Cuántos errores tiene el código?")]
+imagenes._quitar_transcripciones_redundantes(qs_transcrito, lineas_transcrito, [0, 1])
+ok(qs_transcrito[0]["data"]["stem"] == "¿Cuántos errores tiene el código?",
+   "con la imagen ya adjunta, el enunciado se queda solo con la pregunta real")
+ok(qs_transcrito[1]["data"]["stem"] == _CODIGO_STEM,
+   "sin imagen asignada, el código transcrito se conserva tal cual (red de seguridad)")
+
+# De punta a punta con asignar_imagenes(): la imagen llega por la vía
+# normal (mismo renglón que su pregunta) y el mismo paso limpia el
+# enunciado, sin que el llamador tenga que hacer nada aparte.
+_img_1x1 = Image.new("RGB", (10, 10), "white")
+q_e2e = [{"num": 1, "type": "essay", "data": {"stem": _CODIGO_STEM}}]
+ub_e2e = imagenes.Ubicaciones(
+    lineas=[imagenes.Linea((1, 100.0), "15. ¿Cuántos errores tiene el código?")],
+    imagenes=[imagenes.ImagenUbicada(imagen=_img_1x1, inicio=(1, 100.0), fin=(1, 100.0))])
+imagenes.asignar_imagenes(q_e2e, ub_e2e)
+ok(bool(q_e2e[0]["data"].get("images")) and q_e2e[0]["data"]["stem"] == "¿Cuántos errores tiene el código?",
+   "de punta a punta (asignar_imagenes): imagen asignada y código transcrito quitado del enunciado")
+
 print("Preguntas omitidas por número: detectarlas y pedirle a la IA solo esas")
 if real:
     g = json.loads((ROOT / "samples" / "golden" / "real_parcial_1_computacion.expected.json").read_text(encoding="utf-8"))

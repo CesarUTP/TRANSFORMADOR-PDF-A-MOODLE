@@ -477,6 +477,69 @@ function _flagBadge(cls, icon, text, tip) {
   return `<span class="type-badge ${cls}" title="${esc_html(tip)}"><i data-lucide="${icon}"></i> ${text}</span>`;
 }
 
+// Ensayo, respuesta corta, numérica y verdadero/falso comparten la misma
+// forma en el cuerpo (un enunciado sin opciones ni columnas — ver REGLA 12
+// del prompt): la IA a veces confunde la intención entre ellas, así que se
+// pueden cambiar entre sí sin perder nada. Selección múltiple, emparejamiento
+// y completar ya traen datos propios (opciones, columnas, espacios) que no
+// tienen a dónde ir en otro tipo, así que esos no se pueden cambiar.
+const SWITCHABLE_TYPES = ['truefalse', 'essay', 'shortanswer', 'numerical'];
+
+function _tipoBadgeHtml(q, N, T) {
+  if (!SWITCHABLE_TYPES.includes(q.type)) {
+    return `<span class="type-badge ${T}" title="Este tipo no se puede cambiar: ya tiene datos propios (opciones, columnas o espacios) que no tienen a dónde ir en otro tipo.">${esc_html(QUESTION_TYPE_LABEL_MAP[q.type] || q.type)}</span>`;
+  }
+  const opciones = SWITCHABLE_TYPES.map(t => `<option value="${t}" ${t === q.type ? 'selected' : ''}>${esc_html(QUESTION_TYPE_LABEL_MAP[t])}</option>`).join('');
+  return `<select class="type-badge type-badge-select ${T}" data-accion-cambio="changeQuestionType" data-este
+      aria-label="Cambiar el tipo de la pregunta ${N}" title="Cambiar tipo: la IA a veces confunde estos tipos entre sí">${opciones}</select>`;
+}
+
+// Cambia el tipo de una pregunta "simple" (ensayo/respuesta corta/numérica/
+// verdadero-falso) por otro de esos mismos 4 — para cuando la IA acertó el
+// enunciado pero interpretó mal la intención de la pregunta. El enunciado,
+// las imágenes y la retroalimentación no se tocan; solo cambia cómo se
+// captura la respuesta correcta.
+export function changeQuestionType(select) {
+  const card = select.closest('.editor-card');
+  if (!card) return;
+  const oldType = card.dataset.qtype;
+  const newType = select.value;
+  if (newType === oldType || !SWITCHABLE_TYPES.includes(oldType)) return;
+
+  syncParseResultFromDOM();
+  const idx = Array.from(document.querySelectorAll('.editor-card')).indexOf(card);
+  const q = estado.currentParseResult.questions[idx];
+  const qNum = q.num;
+  const oldAnswer = (estado.currentParseResult.answer_key[qNum] || {}).answer || '';
+  q.type = newType;
+  estado.currentParseResult.answer_key[qNum] = { type: newType, answer: _respuestaAlCambiarTipo(oldType, newType, oldAnswer) };
+
+  renderEditor(estado.currentParseResult);
+  lucide.createIcons();
+  showToast(`Pregunta ${qNum} cambiada a ${QUESTION_TYPE_LABEL_MAP[newType]}`, 'info');
+  requestAnimationFrame(() => {
+    const back = document.querySelectorAll('.editor-card')[idx];
+    if (back) scrollToEditorCard(back, { enfocar: true });
+  });
+}
+
+// Conserva la respuesta anterior cuando todavía tiene sentido en el tipo
+// nuevo (ej. "42" sigue sirviendo si pasa de numérica a respuesta corta);
+// si no, la deja en blanco para que sea evidente que falta completarla.
+function _respuestaAlCambiarTipo(oldType, newType, oldAnswer) {
+  const a = oldAnswer.trim();
+  if (newType === 'essay') return '';
+  if (newType === 'truefalse') {
+    return /^(verdadero|falso)$/i.test(a) ? a : 'Verdadero';
+  }
+  if (newType === 'numerical') {
+    return /^-?\d+([.,]\d+)?$/.test(a) ? a : '';
+  }
+  // shortanswer acepta cualquier texto corto tal cual (incluida una
+  // respuesta numérica); de essay no queda nada que conservar.
+  return oldType === 'essay' ? '' : a;
+}
+
 function _cardHtml(q, i, keyInfo) {
   const needsReview = q.data.from_table || q.data.color_review_hint || q.data.low_confidence || q.data.rescatada;
   const flags = [
@@ -494,7 +557,7 @@ function _cardHtml(q, i, keyInfo) {
     <div class="card-head">
       <div class="card-title">
         <h3 id="q-title-${i}">Pregunta ${N}</h3>
-        <span class="type-badge ${T}">${esc_html(QUESTION_TYPE_LABEL_MAP[q.type] || q.type)}</span>
+        ${_tipoBadgeHtml(q, N, T)}
       </div>
       <div class="card-meta">
         <input type="number" class="q-points form-input" step="0.01" min="0" value="${q.points != null ? esc_html(q.points) : ''}" aria-label="Puntos de la pregunta ${N}" title="Puntos que vale esta pregunta" />

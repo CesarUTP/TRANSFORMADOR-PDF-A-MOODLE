@@ -17,7 +17,7 @@ import { buildReviewRail, closeRailGrid, jumpRelative, jumpToNextFlagged, schedu
 import { toggleAddQuestionMenu } from './editor/paneles.js';
 import { applyPointsDistribution, setPointsToolMode, togglePointsToolMenu, updatePointsAssignedLabel, updatePointsWeightPreview } from './editor/puntos-ui.js';
 import { agregarImagen, iniciarArrastreImagenes, imagenElegida, moverImagenA, moverImagenAnterior, moverImagenSiguiente, quitarImagen } from './editor/imagenes.js';
-import { actualizarFormulas, addMatchingPairRow, addNewQuestion, deleteQuestionCard, generarRetroalimentacion, mejorarEnunciado, recoverSkippedQuestion, removeMatchingPairRow } from './editor/tarjetas.js';
+import { actualizarFormulas, addMatchingPairRow, addNewQuestion, changeQuestionType, deleteQuestionCard, generarRetroalimentacion, mejorarEnunciado, recoverSkippedQuestion, removeMatchingPairRow } from './editor/tarjetas.js';
 import { estado, suscribir } from './estado.js';
 import { closeHistory, confirmDeleteHistory, downloadHistoryDesdeBoton, loadHistoryList, openHistory, renderHistoryList, reopenHistory, startDeleteHistory } from './historial.js';
 import { confirmDiscardReview, resetAll, showPanel } from './navegacion.js';
@@ -47,7 +47,7 @@ suscribir(() => {
 // ACCIONES[nombre] con: data-arg (texto), data-arg-n (número), data-este (el
 // propio elemento) o nada. Solo las funciones de esta lista: un atributo
 // inyectado no puede llamar a otra cosa.
-const ACCIONES = { addMatchingPairRow, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, closeHistory, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDeleteHistory, confirmDiscardReview, deleteQuestionCard, downloadHistoryDesdeBoton, generarRetroalimentacion, generateXml, jumpToNextFlagged, loadHistoryList, openHelp, renderHistoryList, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, reopenHistory, resetAll, selectFilter, setPointsToolMode, startDeleteHistory, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
+const ACCIONES = { addMatchingPairRow, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, changeQuestionType, closeHistory, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDeleteHistory, confirmDiscardReview, deleteQuestionCard, downloadHistoryDesdeBoton, generarRetroalimentacion, generateXml, jumpToNextFlagged, loadHistoryList, openHelp, renderHistoryList, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, reopenHistory, resetAll, selectFilter, setPointsToolMode, startDeleteHistory, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
 
 function _ejecutarAccion(el, nombre) {
   if (!Object.hasOwn(ACCIONES, nombre)) return;

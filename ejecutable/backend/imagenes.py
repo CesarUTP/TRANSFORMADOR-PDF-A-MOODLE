@@ -201,6 +201,52 @@ def _aparece(linea: str, enunciado: str) -> bool:
     return enunciado.endswith(" " + linea) or (len(linea) >= 25 and f" {linea} " in f" {enunciado} ")
 
 
+def _sin_prefijo_transcrito(enunciado: str, linea_doc: str) -> Optional[str]:
+    """Si el enunciado trae, delante de la pregunta real del documento, el
+    código que la IA transcribió de una imagen (REGLA 9: "Ejemplo:
+    print(…) ¿qué tipo de error es?" cuando el documento solo trae "15.
+    ¿Qué tipo de error es?"), devuelve el enunciado SIN ese prefijo — la
+    imagen que se le acaba de adjuntar ya muestra ese código, no hace
+    falta repetirlo en texto. Verifica la coincidencia palabra por palabra
+    (no solo por longitud) para no cortar mal un enunciado que en verdad
+    solo se PARECE al final; si algo no cuadra, devuelve None y se deja el
+    enunciado tal como vino (mejor una duplicación que un enunciado roto)."""
+    enunciado_norm = _normalizar(enunciado)
+    linea_norm = _normalizar(linea_doc)
+    palabras_linea = linea_norm.split()
+    if len(linea_norm) < 12 or not palabras_linea or enunciado_norm == linea_norm:
+        return None
+    if not enunciado_norm.endswith(" " + linea_norm):
+        return None
+    palabras_enun = list(re.finditer(r"\S+", enunciado))
+    if len(palabras_enun) < len(palabras_linea):
+        return None
+    cola = palabras_enun[-len(palabras_linea):]
+    for span, esperada in zip(cola, palabras_linea):
+        if _normalizar(span.group()) != esperada:
+            return None
+    return enunciado[cola[0].start():].strip()
+
+
+def _quitar_transcripciones_redundantes(questions: List[Dict[str, Any]], lineas: List[Linea],
+                                        inicios: List[Optional[int]]) -> None:
+    """Recorre las preguntas que acaban de recibir una imagen y, si su
+    enunciado trae delante el código transcrito de esa misma imagen (ver
+    _sin_prefijo_transcrito), lo quita: la imagen ya lo muestra."""
+    for q, k in zip(questions, inicios):
+        if k is None:
+            continue
+        d = q.get("data") or {}
+        if not d.get("images"):
+            continue
+        for campo in ("stem", "text"):
+            if d.get(campo):
+                limpio = _sin_prefijo_transcrito(d[campo], lineas[k].texto)
+                if limpio:
+                    d[campo] = limpio
+                break
+
+
 # Cuántas líneas hacia adelante se busca el inicio de la siguiente pregunta:
 # evita que un enunciado se "encuentre" en una opción de otra página.
 _VENTANA = 60
@@ -533,6 +579,7 @@ def _asignar(questions: List[Dict[str, Any]], ub: Ubicaciones, omitidas: Optiona
         n = _compartir(questions, inicios)
         if n:
             logger.info("Imagen compartida con %d pregunta(s) encadenada(s).", n)
+        _quitar_transcripciones_redundantes(questions, ub.lineas, inicios)
     return asignadas
 
 
