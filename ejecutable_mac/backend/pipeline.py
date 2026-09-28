@@ -41,7 +41,7 @@ from parser import parse_answer_key, build_questions
 from validator import (
     partition_questions,
     pre_validate_raw_text,
-    estimate_question_count,
+    estimate_notice_count,
     estimate_expected_questions,
 )
 
@@ -236,10 +236,10 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
             detail={"message": "Validación previa fallida:", "errors": [str(exc)]},
         )
 
-    # Techo aproximado de cuántas preguntas parece tener el documento
-    # ORIGINAL (antes de la IA) — solo para poder avisar si el prefiltro
-    # terminó devolviendo bastantes menos de las esperadas.
-    estimated_question_count = estimate_question_count(full_text)
+    # Cuántas preguntas parece tener el documento ORIGINAL (antes de la IA)
+    # — solo para poder avisar si el prefiltro terminó devolviendo bastantes
+    # menos de las esperadas.
+    estimated_question_count = estimate_notice_count(full_text)
 
     # ── Gemini prefiltro: normalizar estructura ──────────────────────────
     if suffix == ".pdf":
@@ -325,7 +325,7 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
     # indicios de "pregunta"/"respuesta" en el TEXTO extraído, pero en el
     # caso escaneado (la razón de ser de este flujo) ese texto está vacío
     # por definición — toda la lectura depende de las imágenes.
-    estimated_question_count = estimate_question_count(full_text)
+    estimated_question_count = estimate_notice_count(full_text)
 
     marks = _deterministic_marks(raw_bytes)
     # En un escaneado no hay texto del que estimar cuántas preguntas vienen:

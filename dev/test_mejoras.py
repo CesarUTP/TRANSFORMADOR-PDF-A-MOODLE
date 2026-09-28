@@ -31,7 +31,7 @@ import formatter  # noqa: E402
 import pipeline  # noqa: E402
 import ayuda_ia  # noqa: E402
 import schema_adapter  # noqa: E402
-from validator import validate_questions  # noqa: E402
+from validator import estimate_notice_count, validate_questions  # noqa: E402
 from xml_builder import build_xml  # noqa: E402
 
 fallas = 0
@@ -418,6 +418,26 @@ if real:
     sin_cambios = pipeline._completar_omitidas(json.loads(json.dumps(payload_num)), ub_real, [], None)
     ok(len(sin_cambios["preguntas"]) == len(qs_num), "si la IA no puede completarla, la conversión sigue igual que antes")
 
+
+print("Aviso «parecía tener N preguntas»: no cuenta elementos numerados que no son preguntas")
+# Un examen de 4 preguntas de emparejamiento, cada una con 3 elementos
+# numerados (12 líneas numeradas), más una lista numerada en las
+# instrucciones y una clave al final que repite los números: eran 4
+# preguntas, y el aviso decía «alrededor de 20».
+_lineas_q = ["Instrucciones:", "1. Lee con calma.", "2. No uses apuntes."]
+for _n in range(1, 5):
+    _lineas_q += [f"{_n}. Relaciona cada concepto con su definición:"] + [f"{_k}. Elemento {_k}" for _k in range(1, 4)]
+_lineas_q += ["RESPUESTAS"] + [f"{_n}. 1-a; 2-b; 3-c" for _n in range(1, 5)]
+_texto_q = "\n".join(_lineas_q)
+ok(estimate_notice_count(_texto_q) <= 6, f"el aviso no cuenta los elementos numerados de cada pregunta ({estimate_notice_count(_texto_q)}, no 20)")
+# Numeración desordenada (sin secuencia 1, 2, 3…): se conserva el techo, que
+# es el caso para el que existe el aviso.
+_texto_caos = "\n".join(f"{n}. Pregunta número {n} del examen" for n in (7, 3, 12, 9, 15, 21))
+ok(estimate_notice_count(_texto_caos) == 6, "sin secuencia reconocible, se conserva el conteo de líneas numeradas")
+_docx_gerencia = next(ROOT.glob("samples/QUIZ GERENCIA.docx"), None)
+if _docx_gerencia:
+    ok(estimate_notice_count(extractor_docx.leer_docx(_docx_gerencia.read_bytes()).texto_plano) == 20,
+       "Word real (20 preguntas, emparejamientos numerados, competencias): antes decía 77")
 
 print("Fórmulas en PDF")
 class _Pagina:

@@ -637,6 +637,24 @@ def estimate_question_count(raw_text: str) -> int:
     return len(matches)
 
 
+def estimate_notice_count(raw_text: str) -> int:
+    """
+    Cuántas preguntas parece tener el documento, para el aviso «parecía
+    tener alrededor de N preguntas, pero solo se identificaron M».
+
+    El techo (estimate_question_count) cuenta CUALQUIER línea numerada: los
+    5 elementos numerados de cada pregunta de emparejamiento, una lista de
+    competencias o los puntos de las instrucciones. En un Word con 20
+    preguntas dio 77 y el aviso alarmaba en falso. Cuando hay una secuencia
+    1, 2, 3… reconocible (estimate_expected_questions), el techo no puede
+    pasar de ella; sin secuencia (numeración desordenada) se conserva el
+    techo, que es el caso para el que se creó el aviso.
+    """
+    techo = estimate_question_count(raw_text)
+    esperadas = estimate_expected_questions(raw_text)
+    return min(techo, esperadas) if esperadas else techo
+
+
 def estimate_expected_questions(raw_text: str) -> int:
     """
     Estimación del número de preguntas ANTES de llamar a la IA, para que la
