@@ -1,5 +1,5 @@
 {
-  "version": "1.5",
+  "version": "1.6",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Ya no repite en texto el código que una imagen adjunta ya muestra, y permite cambiar el tipo de una pregunta (ensayo, respuesta corta, numérica, V/F) cuando la IA acierta el enunciado pero confunde la intención."
+  "notas": "Corrige un aviso falso de «faltan preguntas» que contaba elementos numerados (emparejamientos, listas, clave) como si fueran preguntas."
 }
