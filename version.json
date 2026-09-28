@@ -1,5 +1,5 @@
 {
-  "version": "1.6",
+  "version": "1.7",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Corrige un aviso falso de «faltan preguntas» que contaba elementos numerados (emparejamientos, listas, clave) como si fueran preguntas."
+  "notas": "Los puntos de las preguntas «Completar» ahora coinciden con los del editor al importar en Moodle (antes valían menos y el total no cuadraba)."
 }
