@@ -94,7 +94,73 @@ def strip_accents(s: str) -> str:
              .replace('ñ', 'n').replace('Ñ', 'N'))
 
 
-def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, dict]) -> str:
+def _pesos_cloze(n_huecos: int, peso_total: Optional[int]) -> List[int]:
+    """Pesos enteros (Moodle no admite decimales) de los `n_huecos` huecos de
+    una pregunta de completar para que sumen `peso_total` (mínimo 1 por
+    hueco). Sin peso_total, todos pesan 1."""
+    if not peso_total:
+        return [1] * n_huecos
+    total = max(n_huecos, int(peso_total))
+    base, resto = divmod(total, n_huecos)
+    return [base + (1 if i < resto else 0) for i in range(n_huecos)]
+
+
+_ESCALAS = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30, 40, 50, 70, 100, 200, 500, 1000)
+
+
+def _nota_de(q: dict, grades: Dict[str, float]) -> float:
+    """<defaultgrade> de una pregunta: su puntaje propio del editor o, si no
+    llegó, el reparto por peso de tipo."""
+    q_points = q.get("points")
+    has_points = (isinstance(q_points, (int, float)) and not isinstance(q_points, bool)
+                  and math.isfinite(q_points) and q_points >= 0)
+    return q_points if has_points else grades.get(q["type"], 1.0)
+
+
+def _plan_puntos(questions: List[dict], grades: Dict[str, float]) -> tuple:
+    """(escala, {id(pregunta): <defaultgrade> final}) para que el total y el
+    valor de cada pregunta en Moodle coincidan con el editor.
+
+    Moodle IGNORA el <defaultgrade> de «Completar»: vale la suma de los
+    pesos (enteros) de sus huecos. Para que valga lo mismo que en el editor:
+      1. Se busca el factor más chico (1, 2, 3…) que multiplicado por TODOS
+         los puntos deja cada «Completar» casi entero (≤ 0,5 % de error) y
+         con al menos 1 por hueco. Multiplicar todo por igual no cambia la
+         nota final: Moodle la calcula sobre el total.
+      2. El pequeño resto de redondear esos pesos se reparte entre las
+         demás preguntas, así el total en Moodle es exactamente el del
+         editor × factor (ej. 100 → 100, no 102,9).
+    """
+    notas = {id(q): _nota_de(q, grades) for q in questions}
+    casos = []
+    for q in questions:
+        if q.get("type") == "cloze" and "error" not in q and notas[id(q)] > 0:
+            huecos = max(1, len(find_cloze_brackets((q.get("data") or {}).get("text", ""))))
+            casos.append((notas[id(q)], huecos))
+
+    def cabe(k: int, tolerancia: float) -> bool:
+        return all(n * k >= h and abs(round(n * k) - n * k) <= tolerancia * n * k for n, h in casos)
+
+    escala = next((k for k in _ESCALAS if cabe(k, 0.005)), None)
+    if escala is None:
+        escala = next((k for k in _ESCALAS if cabe(k, 0.06)), 1)
+    finales = {i: round(n * escala, 7) for i, n in notas.items()}
+
+    huecos_de = {id(q): max(1, len(find_cloze_brackets((q.get("data") or {}).get("text", ""))))
+                 for q in questions if q.get("type") == "cloze" and "error" not in q and finales[id(q)] > 0}
+    suma_resto = sum(v for i, v in finales.items() if i not in huecos_de)
+    if huecos_de and suma_resto > 0:
+        suma_cloze = sum(max(huecos_de[i], round(finales[i])) for i in huecos_de)
+        factor = (sum(finales.values()) - suma_cloze) / suma_resto
+        if 0.95 <= factor <= 1.05:
+            for i in finales:
+                if i not in huecos_de:
+                    finales[i] = round(finales[i] * factor, 7)
+    return escala, finales
+
+
+def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, dict],
+                            peso_total: Optional[int] = None) -> str:
     """
     Convert [A: correct_option / option2 / option3] brackets to
     Moodle {1:MULTICHOICE_S:=correct~opt2~opt3} syntax.
@@ -135,6 +201,13 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
         parts = split_answers(m.group(2))
         if parts:
             slot_answers[m.group(1).upper()] = parts
+
+    # Moodle IGNORA el <defaultgrade> de una pregunta de completar: su nota
+    # máxima es la suma de los pesos de sus huecos. Por eso los pesos se
+    # reparten para que sumen los puntos de la pregunta (peso_total).
+    n_huecos = max(1, len(find_cloze_brackets(cloze_text)))
+    pesos = _pesos_cloze(n_huecos, peso_total)
+    usados: List[str] = []
 
     def render_slot(letter: str, options_raw: str) -> Optional[str]:
         """Texto Moodle para UN espacio, o None si no hay opciones (el
@@ -191,9 +264,10 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
         moodle_options = [render_option(i, opt) for i, opt in enumerate(options)]
         # El número antes del tipo ("{N:MULTICHOICE_S:…}") es el PESO de
         # ese hueco en Moodle, no su posición: con A=1, B=2, C=3, D=4 el
-        # cuarto hueco valía 4 veces más que el primero. Todos los huecos
-        # pesan igual (1) salvo que se calcule una ponderación a propósito.
-        slot_num = "1"
+        # cuarto hueco valía 4 veces más que el primero. Los huecos pesan
+        # igual (o lo más parecido posible: ver _pesos_cloze).
+        slot_num = str(pesos[min(len(usados), len(pesos) - 1)])
+        usados.append(letter)
         # Un solo "=" -> selección única (MULTICHOICE_S, radio/desplegable).
         # Dos o más -> varias respuestas correctas a la vez (MULTIRESPONSE_S,
         # casillas). Moodle reparte el 100% automáticamente entre las
@@ -266,6 +340,8 @@ def build_xml(
     if grades is None:
         grades = {t: 1.0 for t in TYPE_WEIGHTS}
     stats = QuestionStats()
+    escala, notas_finales = _plan_puntos(questions, grades)
+    stats.escala = escala
     xml_parts: List[str] = []
     xml_parts.append('<?xml version="1.0" encoding="UTF-8"?>')
     xml_parts.append('<quiz>')
@@ -303,13 +379,9 @@ def build_xml(
         # Con `> 0` ese 0 se descartaba como "no vino puntaje" y el XML
         # terminaba dándoles el puntaje por peso de tipo — lo contrario de
         # lo que el editor mostraba en pantalla.
-        q_points = q.get("points")
-        # math.isfinite descarta Infinity/NaN: Infinity pasaba "q_points >= 0"
-        # (es verdadero) y quedaba como <defaultgrade>inf</defaultgrade>
-        # en el XML.
-        has_points = (isinstance(q_points, (int, float)) and not isinstance(q_points, bool)
-                      and math.isfinite(q_points) and q_points >= 0)
-        grade_val = q_points if has_points else grades.get(qtype, 1.0)
+        # _nota_de descarta Infinity/NaN (Infinity pasaba "q_points >= 0" y
+        # quedaba como <defaultgrade>inf</defaultgrade> en el XML).
+        grade_val = notas_finales[id(q)]
 
         # ── multichoice ──
         # Spec: <answer fraction="100"/"0"> for each choice, <single>, <shuffleanswers>
@@ -538,7 +610,7 @@ def build_xml(
         # Spec: questiontext contains {N:TYPE:...} syntax, no separate <answer> tags
         elif qtype == "cloze":
             raw_text = data["text"]
-            cloze_text = convert_cloze_to_moodle(raw_text, num, answer_key)
+            cloze_text = convert_cloze_to_moodle(raw_text, num, answer_key, peso_total=round(grade_val) if grade_val > 0 else None)
 
             xml_parts.append('  <question type="cloze">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')

@@ -223,6 +223,14 @@ export async function generateXml() {
     // Después de guardar el nombre del archivo: el resumen lo muestra, y
     // si se calculaba antes salía un "•" suelto al final de la frase.
     updateSuccessStats(questions);
+    // Moodle solo admite pesos enteros en «Completar»: si hizo falta, todos
+    // los puntos se multiplicaron por el mismo factor (la nota final no
+    // cambia). Se avisa para que el total distinto en Moodle no sorprenda.
+    let escala = 1;
+    try { escala = Number(JSON.parse(res.headers.get('X-Question-Stats') || '{}').escala) || 1; } catch (_) {}
+    if (escala > 1) {
+      showToast(`En Moodle cada pregunta valdrá ${escala} veces sus puntos (no admite decimales en «Completar»). La nota final no cambia.`, 'info');
+    }
     const dlLabel = document.getElementById('btn-download-label');
     if (dlLabel) dlLabel.textContent = 'Descargar Moodle XML';
     showPanel('success');

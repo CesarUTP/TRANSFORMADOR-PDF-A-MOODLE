@@ -456,6 +456,7 @@ async def api_generate_xml(req: GenerateXmlRequest):
             "shortanswer": stats.shortanswer,
             "numerical":   stats.numerical,
             "total_points": req.total_points,
+            "escala": stats.escala,
             "grades": {
                 "multichoice": grades.get("multichoice", 1.0),
                 "truefalse":   grades.get("truefalse", 1.0),

@@ -10,6 +10,9 @@ class QuestionStats(BaseModel):
     essay: int = 0
     shortanswer: int = 0
     numerical: int = 0
+    # Factor por el que se multiplicaron todos los puntos para que los huecos
+    # de «Completar» (pesos enteros en Moodle) quedaran exactos; 1 = sin cambio.
+    escala: int = 1
 
     @property
     def total(self) -> int:

@@ -439,6 +439,29 @@ if _docx_gerencia:
     ok(estimate_notice_count(extractor_docx.leer_docx(_docx_gerencia.read_bytes()).texto_plano) == 20,
        "Word real (20 preguntas, emparejamientos numerados, competencias): antes decía 77")
 
+print("Puntos de «Completar»: Moodle ignora <defaultgrade> y suma los pesos de los huecos")
+from xml_builder import compute_grades  # noqa: E402
+def _xml_puntos(pts_cloze, pts_match, huecos=3):
+    txt = " ".join(f"T{j} [{chr(65 + j)}: x / y]" for j in range(huecos))
+    ans = "; ".join(f"{chr(65 + j)}. x" for j in range(huecos))
+    qs_p = [{"num": 1, "type": "cloze", "points": pts_cloze, "data": {"text": txt}},
+            {"num": 2, "type": "matching", "points": pts_match, "data": {
+                "stem": "R", "col_a": {"1": "a", "2": "b"}, "col_b": {"a": "A", "b": "B"}}}]
+    ak_p = {1: {"type": "cloze", "answer": ans},
+            2: {"type": "matching", "answer": "1-a; 2-b", "pairs": {"1": "a", "2": "b"}}}
+    xml_p, st_p = build_xml(qs_p, ak_p, category="t", grades=compute_grades(qs_p, 100))
+    pesos_p = [int(w) for w in re.findall(r"\{(\d+):MULTI", xml_p)]
+    grado_m = float(re.search(r'type="matching">.*?<defaultgrade>([^<]+)<', xml_p, re.S).group(1))
+    return sum(pesos_p), grado_m, st_p.escala
+_c, _m, _k = _xml_puntos(5.71, 4.29)
+ok(_k == 7 and _c == 40 and _m == 30.0,
+   f"5,71 y 4,29 pts: todo x7 para que «Completar» sea entero (40 y 30, proporción casi exacta): x{_k}, {_c}, {_m}")
+ok(abs((_c + _m) - (5.71 + 4.29) * _k) < 1e-6, "el total en Moodle es exactamente el del editor × factor (antes 102,9 en vez de 100)")
+_c, _m, _k = _xml_puntos(0.5, 0.5)
+ok(_c == _m == 3 and _k == 6, f"0,5 pts con 3 huecos: x{_k} y completar = emparejamiento ({_c} vs {_m})")
+_c, _m, _k = _xml_puntos(6, 4)
+ok(_k == 1 and _c == 6 and _m == 4.0, "puntos enteros (6 y 4): sin factor, Moodle muestra exactamente lo mismo que el editor")
+
 print("Fórmulas en PDF")
 class _Pagina:
     def __init__(self, fuentes):
