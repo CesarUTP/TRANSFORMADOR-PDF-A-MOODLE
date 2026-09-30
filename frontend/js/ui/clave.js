@@ -13,7 +13,7 @@ import { apiFetch } from '../api.js';
 import { abrirModal, cerrarModal } from './modales.js';
 import { confirmar } from './confirmar.js';
 import { showToast } from './toast.js';
-import { abrirEnlaceExterno } from '../util.js';
+import { abrirEnlaceExterno, crearIconos } from '../util.js';
 
 const modal = document.getElementById('modal-apikey');
 const titleText = document.getElementById('apikey-title-text');
@@ -50,7 +50,7 @@ function _ocupado(si) {
   if (si) {
     saveBtn.setAttribute('aria-busy', 'true');
     saveLabel.innerHTML = '<i data-lucide="loader-2" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px;animation:spinSlow 0.8s linear infinite;"></i>Comprobando con Google…';
-    if (window.lucide) lucide.createIcons();
+    crearIconos(saveLabel);
   } else {
     saveBtn.removeAttribute('aria-busy');
     saveLabel.textContent = _estado.configurada ? 'Guardar la nueva clave' : 'Guardar y comenzar';

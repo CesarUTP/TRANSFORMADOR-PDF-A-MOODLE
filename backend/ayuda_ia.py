@@ -15,7 +15,10 @@ salida de texto plano: con JSON, la IA escribía «\\frac» sin escapar y
 
 import base64
 import binascii
+import difflib
+import itertools
 import re
+import unicodedata
 from collections import Counter
 from typing import Any, Dict, List
 
@@ -25,6 +28,11 @@ import formatter
 
 MAX_CARACTERES = 600
 _TIMEOUT = 60
+# Tokens de salida: en los modelos que "piensan", los tokens de razonamiento
+# cuentan dentro de maxOutputTokens, y con un tope justo la respuesta salía
+# cortada (o vacía). Holgura amplia: lo que se escribe de verdad es corto.
+_TOKENS_RETRO = 4096
+_TOKENS_REDACCION = 8192
 _TIPOS = {"multichoice", "truefalse", "matching", "cloze", "essay", "shortanswer", "numerical"}
 _MIME = {"image/png", "image/jpeg"}
 
@@ -115,7 +123,21 @@ def _limpiar(texto: str) -> str:
     return texto.strip().strip('"“”').strip()[:MAX_CARACTERES]
 
 
+def _comprobar_fin(resultado) -> None:
+    """Una respuesta cortada (MAX_TOKENS) o interrumpida (SAFETY…) no se
+    aplica: se vería como un texto completo y no lo es."""
+    finish = str(getattr(resultado, "finish_reason", "") or "").upper()
+    if finish in ("", "STOP"):
+        return
+    if finish == "MAX_TOKENS":
+        detalle = "La IA no alcanzó a terminar de escribir. Inténtalo de nuevo."
+    else:
+        detalle = f"La IA interrumpió su respuesta (motivo: {finish}). Inténtalo de nuevo o escríbelo a mano."
+    raise HTTPException(status_code=502, detail=detalle)
+
+
 def _leer(resultado) -> str:
+    _comprobar_fin(resultado)
     texto = _limpiar(resultado.text)
     if not texto:
         raise ValueError("retroalimentación vacía")
@@ -128,7 +150,10 @@ def _llamar(prompt: str, texto: str, imagenes: List[dict], leer, temperatura: fl
         "contents": [{"role": "user", "parts": [{"text": texto}] + imagenes}],
         "generationConfig": {"temperature": temperatura, "maxOutputTokens": max_tokens},
     }
-    return formatter._generate_with_retries(body, len(texto), leer, _TIMEOUT)
+    # Una sola pregunta: pocas esperas de cuota o saturación (el docente
+    # está mirando el botón), en vez de los minutos de una conversión larga.
+    return formatter._generate_with_retries(body, len(texto), leer, _TIMEOUT,
+                                            quota_waits=1, overload_waits=(4, 8), quota_max_seconds=20)
 
 
 def _comprobar(q: Dict[str, Any]) -> None:
@@ -142,7 +167,7 @@ def _comprobar(q: Dict[str, Any]) -> None:
 def generar(q: Dict[str, Any], respuesta: Any) -> str:
     """«Escribir con IA»: la retroalimentación de la pregunta."""
     _comprobar(q)
-    return _llamar(PROMPT_RETRO, texto_pregunta(q, respuesta), _imagenes(q), _leer, 0.3, 1024)
+    return _llamar(PROMPT_RETRO, texto_pregunta(q, respuesta), _imagenes(q), _leer, 0.3, _TOKENS_RETRO)
 
 
 # ── «Mejorar redacción» ─────────────────────────────────────────────────
@@ -187,6 +212,129 @@ def _conteo(rx: "re.Pattern", texto: str) -> "Counter":
     return Counter(m.lower() if isinstance(m, str) else m for m in rx.findall(texto))
 
 
+# ── Comparación de sentido ──────────────────────────────────────────────
+# Una redacción "mejorada" puede cambiar lo que se pregunta sin tocar números
+# ni operadores: «incorrectas» → «correctas», «siempre» → «a veces», «mayor» →
+# «menor», «sin» → «con», o un nombre propio por otro. Se comparan, palabra
+# por palabra (sin tildes ni mayúsculas), las que cambian el sentido.
+
+def _sin_tildes(p: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFKD", p.lower()) if not unicodedata.combining(c))
+
+
+_TOKEN = re.compile(r"[^\W_]+")
+
+# (clave, regex sobre la palabra ya sin tildes). Palabras de la misma clave
+# son intercambiables (plural, género); claves distintas NO lo son.
+_SENTIDO = [(clave, re.compile(rx)) for clave, rx in [
+    ("no", r"^(?:no|not)$"), ("nunca", r"^(?:nunca|jamas|never)$"),
+    ("ningun", r"^(?:ningun\w*|none|nobody)$"), ("nada", r"^(?:nada|nadie|tampoco|nothing)$"),
+    ("sin", r"^(?:sin|without)$"), ("con", r"^(?:con|with)$"),
+    ("excepto", r"^(?:excepto|salvo|except|unless)$"),
+    ("todo", r"^(?:tod[oa]s?|all|every|each)$"), ("algun", r"^(?:algun\w*|some)$"),
+    ("siempre", r"^(?:siempre|always)$"), ("veces", r"^(?:veces|sometimes)$"),
+    ("casi", r"^(?:casi|almost)$"), ("solo", r"^(?:solo|solos|solamente|unicamente|unic[oa]s?|only)$"),
+    ("cada", r"^cada$"), ("vari", r"^(?:vari[oa]s|several)$"), ("ambos", r"^(?:ambos|ambas|both)$"),
+    ("mayoria", r"^(?:mayoria|majority)$"), ("minoria", r"^minoria$"), ("mitad", r"^(?:mitad|half)$"),
+    ("mucho", r"^(?:much[oa]s?|many|much)$"), ("poco", r"^(?:poc[oa]s?|few|little)$"),
+    ("cualquier", r"^(?:cualquier\w*|any)$"),
+    ("mas", r"^(?:mas|more)$"), ("menos", r"^(?:menos|less|fewer)$"),
+    ("mayor", r"^(?:mayor(?:es)?|greater|larger|bigger|higher)$"),
+    ("menor", r"^(?:menor(?:es)?|smaller|lower)$"),
+    ("maximo", r"^(?:maxim[oa]s?|maximum|largest|highest)$"),
+    ("minimo", r"^(?:minim[oa]s?|minimum|smallest|lowest)$"),
+    ("mejor", r"^(?:mejor(?:es)?|best|better)$"), ("peor", r"^(?:peor(?:es)?|worst|worse)$"),
+    ("superior", r"^superior(?:es)?$"), ("inferior", r"^inferior(?:es)?$"),
+    ("primero", r"^(?:primer[oa]?s?|first)$"), ("ultimo", r"^(?:ultim[oa]s?|last)$"),
+    ("antes", r"^(?:antes|before)$"), ("despues", r"^(?:despues|after)$"),
+    ("durante", r"^(?:durante|during)$"),
+    ("igual", r"^(?:igual(?:es)?|same|equal)$"),
+    ("distinto", r"^(?:distint[oa]s?|diferent(?:e|es)|different)$"),
+    ("correcto", r"^(?:correct[oa]s?|correct)$"), ("incorrecto", r"^(?:incorrect[oa]s?|incorrect|wrong)$"),
+    ("verdadero", r"^(?:verdader[oa]s?|true)$"), ("falso", r"^(?:fals[oa]s?|false)$"),
+    ("cierto", r"^ciert[oa]s?$"),
+    ("valido", r"^valid[oa]s?$"), ("invalido", r"^invalid[oa]s?$"),
+    ("posible", r"^posibles?$"), ("imposible", r"^imposibles?$"),
+    ("necesario", r"^necesari[oa]s?$"), ("innecesario", r"^innecesari[oa]s?$"),
+    ("puede", r"^(?:puede\w*|pueden|podria\w*|can|may|could)$"), ("debe", r"^(?:debe\w*|deben|must|should)$"),
+    ("aumenta", r"^(?:aument\w+|increas\w*|incrementa\w*)$"), ("disminuye", r"^(?:disminu\w+|reduc\w+|decreas\w*)$"),
+    ("suma", r"^(?:suma\w*|sum|add)$"), ("resta", r"^(?:resta\w*|subtract\w*)$"),
+    ("multiplica", r"^(?:multiplic\w+|multiply)$"), ("divide", r"^(?:divid\w+|division|divide)$"),
+]]
+
+# Palabras funcionales o típicas del inicio de un enunciado: escritas con
+# mayúscula al comienzo de la oración no son nombres propios.
+_FUNCION = frozenset(_sin_tildes(w) for w in """
+el la los las un una unos unas lo al del de en con sin por para que cual cuales cuando como donde quien quienes cuanto
+cuantos cuanta cuantas qué cuál cuáles cuándo cómo dónde quién cuánto según segun si no ni y o u e pero sino aunque
+porque pues entre sobre bajo hasta desde hacia ante tras durante mediante este esta estos estas ese esa esos esas aquel
+aquella su sus mi mis tu tus nuestro nuestra es son fue fueron era eran será serán ser esta están estar hay había
+seleccione indique identifique marque señale escriba complete relacione elija escoja determine explique describa defina
+mencione enumere cite calcule resuelva analice compare argumente justifique responda lea observe considere suponga dado
+dada dados dadas todo toda todos todas algún alguno alguna algunos algunas ningún ninguno ninguna cada varios varias
+uno dos tres cuatro cinco seis siete ocho nueve diez primero segundo tercero pregunta opción opciones enunciado
+the a an of in on to is are which what who how when where why select choose identify state explain describe define
+""".split())
+
+_MAYUSCULA = re.compile(r"[A-ZÁÉÍÓÚÑÜ][\wáéíóúñüÁÉÍÓÚÑÜ]*")
+_INICIO_ORACION = ".?!¿¡:;\n\"“«"
+
+
+def _palabras(texto: str) -> List[str]:
+    return [_sin_tildes(m.group()) for m in _TOKEN.finditer(texto)]
+
+
+def _claves_sentido(texto: str) -> "Counter":
+    """Cuántas veces aparece cada palabra que cambia el sentido, con un
+    ejemplo de cómo estaba escrita (para el mensaje)."""
+    cuenta: Counter = Counter()
+    for m in _TOKEN.finditer(texto):
+        p = _sin_tildes(m.group())
+        for clave, rx in _SENTIDO:
+            if rx.match(p):
+                cuenta[(clave, m.group())] += 1
+                break
+    return cuenta
+
+
+def _por_clave(cuenta: "Counter") -> "tuple[Counter, dict]":
+    total: Counter = Counter()
+    ejemplo: dict = {}
+    for (clave, palabra), n in cuenta.items():
+        total[clave] += n
+        ejemplo.setdefault(clave, palabra)
+    return total, ejemplo
+
+
+def _nombres_propios(texto: str) -> Dict[str, str]:
+    """Palabras que parecen nombres propios o siglas: con mayúscula inicial
+    (salvo la primera palabra de una oración, si es una palabra funcional) o
+    en mayúsculas. {forma_normalizada: como_se_escribió}."""
+    out: Dict[str, str] = {}
+    for m in _MAYUSCULA.finditer(texto):
+        palabra = m.group()
+        norm = _sin_tildes(palabra)
+        previo = texto[:m.start()].rstrip(" \t")
+        inicio = (not previo) or previo[-1] in _INICIO_ORACION
+        siglas = len(palabra) >= 2 and palabra.isupper()
+        if siglas or not (inicio and norm in _FUNCION):
+            out.setdefault(norm, palabra)
+    return out
+
+
+def _se_parece(norm: str, otros) -> bool:
+    """¿`norm` está entre `otros`, o solo difiere por una errata (Celcius →
+    Celsius)? Un nombre distinto (Einstein → Newton) no se le parece."""
+    if norm in otros:
+        return True
+    return any(abs(len(o) - len(norm)) <= 1 and difflib.SequenceMatcher(None, norm, o).ratio() >= 0.85
+               for o in otros)
+
+
+def _raices_contenido(texto: str) -> set:
+    return {p[:5] for p in _palabras(texto) if len(p) >= 5 and p not in _FUNCION and not p.isdigit()}
+
+
 def cambios_indebidos(original: str, nuevo: str) -> List[str]:
     """Qué cambió la IA que no debía cambiar (vacío = se puede aplicar)."""
     motivos = []
@@ -199,6 +347,33 @@ def cambios_indebidos(original: str, nuevo: str) -> List[str]:
         motivos.append("operadores")
     if _conteo(_NEGACION, original) != _conteo(_NEGACION, nuevo):
         motivos.append("negaciones")
+    # Palabras que cambian el sentido (negaciones, cuantificadores,
+    # comparativos, «sin»/«con», antónimos): deben quedar EXACTAMENTE igual
+    # en cantidad — o cambia lo que se pregunta.
+    sin_o, sin_n = sin_formulas(original), sin_formulas(nuevo)
+    tot_o, ej_o = _por_clave(_claves_sentido(sin_o))
+    tot_n, ej_n = _por_clave(_claves_sentido(sin_n))
+    difieren = [c for c in set(tot_o) | set(tot_n) if tot_o[c] != tot_n[c]]
+    if difieren:
+        quitadas_p = [ej_o[c] for c in sorted(difieren) if tot_o[c] > tot_n[c]]
+        puestas_p = [ej_n[c] for c in sorted(difieren) if tot_n[c] > tot_o[c]]
+        pares = [f"«{a}» → «{b}»" for a, b in itertools.zip_longest(quitadas_p, puestas_p, fillvalue="(nada)")]
+        motivos.append("palabras que cambian el sentido (" + ", ".join(pares[:3]) + ")")
+    # Nombres propios y siglas: cada uno del original debe seguir (con tildes o
+    # mayúsculas corregidas, o a lo sumo una errata), y no debe aparecer
+    # ninguno nuevo.
+    prop_o, prop_n = _nombres_propios(sin_o), _nombres_propios(sin_n)
+    todas_o, todas_n = set(_palabras(sin_o)), set(_palabras(sin_n))
+    perdidos = [w for k, w in prop_o.items() if not _se_parece(k, todas_n)]
+    nuevos = [w for k, w in prop_n.items() if not _se_parece(k, todas_o)]
+    if perdidos or nuevos:
+        motivos.append("nombres propios (" + ", ".join(f"«{w}»" for w in (perdidos + nuevos)[:3]) + ")")
+    # Contenido: no se pueden borrar ni inventar demasiadas ideas (palabras de
+    # contenido, comparadas por su raíz).
+    raices_o, raices_n = _raices_contenido(sin_o), _raices_contenido(sin_n)
+    quitadas, agregadas = raices_o - raices_n, raices_n - raices_o
+    if len(quitadas) > max(1, 0.35 * len(raices_o)) or len(agregadas) > max(1, 0.35 * len(raices_n)):
+        motivos.append("demasiadas palabras del contenido")
     # Código en sus propias líneas (enunciado de varias líneas): cada una
     # debe seguir idéntica, SANGRÍA incluida (en Python cambia el
     # significado del programa). En una sola línea ("¿Qué imprime
@@ -208,12 +383,17 @@ def cambios_indebidos(original: str, nuevo: str) -> List[str]:
         lineas_nuevas = {ln.rstrip() for ln in nuevo.splitlines()}
         if any(ln.rstrip() not in lineas_nuevas for ln in _lineas_codigo(original)):
             motivos.append("código")
-    if not (0.5 <= len(nuevo) / max(1, len(original)) <= 1.8):
+    # Un enunciado muy corto puede crecer más (agregar «¿Cuál es…?»); uno
+    # normal, no debe perder ni ganar mucho.
+    largo = len(nuevo) / max(1, len(original))
+    minimo, maximo = (0.5, 1.8) if len(original.strip()) < 30 else (0.7, 1.4)
+    if not (minimo <= largo <= maximo):
         motivos.append("longitud")
     return motivos
 
 
 def _leer_enunciado(resultado) -> str:
+    _comprobar_fin(resultado)
     texto = (resultado.text or "").strip()
     texto = re.sub(r"^(?:enunciado|pregunta)\s*:\s*", "", texto, flags=re.I)
     if len(texto) >= 2 and texto[0] in "\"“«" and texto[-1] in "\"”»":
@@ -238,7 +418,7 @@ def mejorar_enunciado(q: Dict[str, Any]) -> Dict[str, Any]:
     if isinstance(opciones, dict) and opciones:
         contexto = "\n\nOPCIONES (solo contexto, no las devuelvas):\n" + "\n".join(
             f"{_s(k, 3)}) {_s(v, 300)}" for k, v in list(opciones.items())[:12])
-    nuevo = _llamar(PROMPT_REDACCION, "ENUNCIADO:\n" + original + contexto, [], _leer_enunciado, 0.2, 4096)
+    nuevo = _llamar(PROMPT_REDACCION, "ENUNCIADO:\n" + original + contexto, [], _leer_enunciado, 0.2, _TOKENS_REDACCION)
     motivos = cambios_indebidos(original, nuevo)
     if motivos:
         raise HTTPException(status_code=422, detail=(

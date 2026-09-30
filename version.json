@@ -1,5 +1,5 @@
 {
-  "version": "1.7",
+  "version": "1.8",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Los puntos de las preguntas «Completar» ahora coinciden con los del editor al importar en Moodle (antes valían menos y el total no cuadraba)."
+  "notas": "Más fiable: ya no se marca una respuesta que el examen no indica, Cancelar detiene la conversión, avisos claros con archivos grandes o dañados, el Historial se recupera solo y el editor es más ágil con imágenes."
 }

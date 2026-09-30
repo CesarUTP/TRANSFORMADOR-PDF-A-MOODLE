@@ -62,7 +62,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import pdfplumber
 from PIL import Image
 
-from extractor import MAX_PAGINAS, MAX_PIXELES_RENDER
+from extractor import MAX_PAGINAS, MAX_PIXELES_RENDER, clave_imagen, imagen_diminuta
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +71,10 @@ MAX_POR_PREGUNTA = 5
 LADO_MAX = 1000               # px del lado mayor al guardarla
 MAX_BYTES_PNG = 350 * 1024    # por encima, se guarda como JPEG
 MAX_BYTES_IMAGEN = 2 * 1024 * 1024
+# Cada imagen del documento se guarda en memoria hasta la asignación (hasta
+# MAX_IMAGENES a la vez): se reduce a ~2 MP al cargarla. Más que de sobra:
+# al guardarla se reduce a LADO_MAX (1000 px) y a la IA le basta esto.
+MAX_PIXELES_GUARDADA = 2_000_000
 NOMBRE_VALIDO = re.compile(r"^[A-Za-z0-9_-]{1,60}\.(png|jpg)$")
 MIMES = {"png": "image/png", "jpg": "image/jpeg"}
 _B64 = re.compile(r"^[A-Za-z0-9+/]+={0,2}$")
@@ -106,6 +110,34 @@ class Ubicaciones:
     imagenes: List[ImagenUbicada] = field(default_factory=list)
 
 
+def reducir_imagen(im: Image.Image, max_pixeles: int = MAX_PIXELES_GUARDADA) -> Image.Image:
+    """La imagen tal cual si tiene ≤ max_pixeles; si no, reducida
+    (proporcionalmente) a ese tamaño. No cambia lo que se manda a Moodle en
+    imágenes normales: por debajo de ~2 MP no se toca."""
+    ancho, alto = im.size
+    if ancho * alto <= max_pixeles:
+        return im
+    f = (max_pixeles / (ancho * alto)) ** 0.5
+    if im.mode in ("P", "PA", "1"):  # el remuestreo de paletas es a saltos
+        im = im.convert("RGBA" if "transparency" in im.info or im.mode == "PA" else "RGB")
+    return im.resize((max(1, int(ancho * f)), max(1, int(alto * f))), Image.LANCZOS)
+
+
+def cargar_reducida(im: Image.Image, max_pixeles: int = MAX_PIXELES_GUARDADA) -> Image.Image:
+    """Decodifica una imagen recién abierta y la devuelve reducida. En JPEG
+    se pide al decodificador que la entregue ya a escala menor (`draft`),
+    sin llegar a tener en memoria los píxeles completos."""
+    ancho, alto = im.size
+    if ancho * alto > max_pixeles:
+        f = (max_pixeles / (ancho * alto)) ** 0.5
+        try:
+            im.draft(None, (int(ancho * f) + 1, int(alto * f) + 1))
+        except Exception:  # noqa: BLE001 — solo es una optimización
+            pass
+    im.load()
+    return reducir_imagen(im, max_pixeles)
+
+
 # ── Extracción desde PDF ───────────────────────────────────────────────────
 
 def extraer_imagenes_pdf(raw: bytes) -> Ubicaciones:
@@ -115,46 +147,64 @@ def extraer_imagenes_pdf(raw: bytes) -> Ubicaciones:
     (logos, encabezados)."""
     from pdfplumber.utils import cluster_objects
 
+    from pdfplumber.display import PageImage
+
     ub = Ubicaciones()
     with pdfplumber.open(io.BytesIO(raw)) as pdf:
         paginas = pdf.pages[:MAX_PAGINAS]
-        repetidas = Counter(
-            (round(im["x0"]), round(im["top"]), round(im["width"]), round(im["height"]))
-            for p in paginas for im in p.images
-        )
+        # Posición, tamaño Y CONTENIDO: dos capturas distintas en el mismo
+        # lugar y con el mismo tamaño (un examen que repite la plantilla)
+        # no son un logo repetido; solo lo es la que sale idéntica.
+        repetidas = Counter(clave_imagen(im) for p in paginas for im in p.images)
         for n, page in enumerate(paginas, 1):
             for l in cluster_objects(page.extract_words(), "top", tolerance=3):
                 palabras = sorted(l, key=lambda w: w["x0"])
                 ub.lineas.append(Linea((n, min(w["top"] for w in l)), " ".join(w["text"] for w in palabras)))
+            # La página se renderiza UNA vez (perezosamente, solo si alguna
+            # imagen se va a recortar) y cada imagen se recorta de ese
+            # render. Antes, page.crop().to_image() volvía a renderizar la
+            # página completa por cada imagen (hasta 30 veces).
+            render_pagina = None
             for im in sorted(page.images, key=lambda i: i["top"]):
                 if len(ub.imagenes) >= MAX_IMAGENES:
                     break
                 ancho, alto = im["width"], im["height"]
                 if ancho > page.width * 0.85 and alto > page.height * 0.85:
                     continue  # página escaneada
-                if ancho < 40 or alto < 20:
+                if imagen_diminuta(im):
                     continue  # viñeta, ícono
-                if repetidas[(round(im["x0"]), round(im["top"]), round(ancho), round(alto))] > 1 and len(paginas) > 1:
+                if repetidas[clave_imagen(im)] > 1 and len(paginas) > 1:
                     continue  # logo o encabezado repetido
                 caja = (max(0, im["x0"]), max(0, im["top"]), min(page.width, im["x1"]), min(page.height, im["bottom"]))
                 ancho_pt, alto_pt = caja[2] - caja[0], caja[3] - caja[1]
                 if ancho_pt <= 0 or alto_pt <= 0:
                     continue
-                # DPI fija (150) sin límite: una página con un MediaBox
-                # gigante (visto: 5000 pt) e imágenes estiradas produce un
-                # recorte de más de 100 millones de píxeles y ~500 MB por
-                # imagen. Se limita como en extractor._render (misma
-                # fórmula) para acotar el tamaño real, no el DPI nominal.
-                dpi_recorte = 150
-                if ancho_pt * alto_pt * (dpi_recorte / 72) ** 2 > MAX_PIXELES_RENDER:
-                    dpi_recorte = max(1, int(72 * (MAX_PIXELES_RENDER / (ancho_pt * alto_pt)) ** 0.5))
                 try:
-                    recorte = page.crop(caja).to_image(resolution=dpi_recorte).original
+                    if render_pagina is None:
+                        # DPI fija (150), pero con tope según el tamaño de
+                        # la PÁGINA (misma fórmula que extractor._render):
+                        # una página con un MediaBox gigante (visto: 5000
+                        # pt) rendería más de 100 millones de píxeles.
+                        dpi = 150
+                        pagina_pt = float(page.width) * float(page.height)
+                        if pagina_pt * (dpi / 72) ** 2 > MAX_PIXELES_RENDER:
+                            dpi = max(1, int(72 * (MAX_PIXELES_RENDER / pagina_pt) ** 0.5))
+                        render_pagina = (page.to_image(resolution=dpi).original, dpi)
+                    # PageImage recorta el render exactamente como lo hacía
+                    # page.crop(caja).to_image(): mismo resultado.
+                    recorte = PageImage(page.crop(caja), original=render_pagina[0],
+                                        resolution=render_pagina[1]).original
+                    recorte = reducir_imagen(recorte)
                 except Exception:  # noqa: BLE001 — una imagen que no se puede recortar se omite
                     continue
                 # Margen de 4 pt: el número de la pregunta se alinea con el
                 # borde inferior de una imagen en el mismo renglón.
                 ub.imagenes.append(ImagenUbicada(recorte, (n, im["top"] - 4), (n, im["bottom"] + 4)))
+            render_pagina = None
+            try:
+                page.close()
+            except Exception:  # noqa: BLE001
+                pass
     ub.lineas.sort(key=lambda l: l.pos)
     return ub
 
@@ -295,6 +345,18 @@ def _ubicar_preguntas(questions: List[Dict[str, Any]], lineas: List[Linea],
     return inicio
 
 
+def _sobre_blanco(img: Image.Image) -> Image.Image:
+    """RGB con la transparencia compuesta sobre blanco: convert("RGB")
+    directo deja negro lo transparente (un PNG RGBA de captura o diagrama
+    salía con el fondo negro al guardarse como JPEG)."""
+    if img.mode in ("RGBA", "LA", "PA") or "transparency" in img.info:
+        rgba = img.convert("RGBA")
+        fondo = Image.new("RGB", rgba.size, (255, 255, 255))
+        fondo.paste(rgba, mask=rgba.getchannel("A"))
+        return fondo
+    return img.convert("RGB")
+
+
 def codificar(img: Image.Image) -> Dict[str, str]:
     """Reduce la imagen (lado mayor ≤ LADO_MAX) y la devuelve en base64:
     PNG si es liviana (capturas de código, diagramas), si no JPEG."""
@@ -307,7 +369,7 @@ def codificar(img: Image.Image) -> Dict[str, str]:
     ext = "png"
     if buf.tell() > MAX_BYTES_PNG:
         buf = io.BytesIO()
-        img.convert("RGB").save(buf, "JPEG", quality=85, optimize=True)
+        _sobre_blanco(img).save(buf, "JPEG", quality=85, optimize=True)
         ext = "jpg"
     return {"ext": ext, "b64": base64.b64encode(buf.getvalue()).decode("ascii")}
 

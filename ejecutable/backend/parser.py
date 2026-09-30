@@ -58,24 +58,31 @@ def parse_answer_key(full_text: str) -> Dict[int, dict]:
         r'emparejamiento|completar|ensayo|respuestacorta|numerico|numérico)\s+).*)*)'
     )
 
+    # Lo que sigue al nombre del tipo: espacios (NO saltos de línea) y el
+    # resto de la línea. Con «\s+», una fila sin respuesta ("1 truefalse")
+    # se tragaba la línea siguiente entera como su respuesta. Ahora queda
+    # con respuesta vacía, y el validador la señala.
+    _TAIL = r'(?:[ \t]+' + _REST + r'|(?=[ \t]*(?:\n|$)))'
+
     # ── multichoice ──
-    mc_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:multichoice|múltiple|multiple)\s+{_REST}', clean_key, re.IGNORECASE)
+    mc_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:multichoice|múltiple|multiple){_TAIL}', clean_key, re.IGNORECASE)
     for num_str, answer_rest in mc_entries:
         num = int(num_str)
         answer = re.sub(r'\n\s*', ' ', answer_rest).strip()
         answer_key[num] = {"type": "multichoice", "answer": answer}
 
     # ── truefalse ──
-    tf_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:truefalse|ciertofalso|verdaderofalso)\s+{_REST}', clean_key, re.IGNORECASE)
+    tf_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:truefalse|ciertofalso|verdaderofalso){_TAIL}', clean_key, re.IGNORECASE)
     for num_str, answer_rest in tf_entries:
         num = int(num_str)
-        answer = answer_rest.split()[0].strip()
+        partes = answer_rest.split()
+        answer = partes[0].strip() if partes else ""
         answer_key[num] = {"type": "truefalse", "answer": answer}
 
     # ── matching ──
     # Each matching line: "N  emparejamiento  1-a; 2-b; 3-c" (puede traer texto extra, p.ej. justificación)
     mt_pattern = re.compile(
-        rf'(?:^|\n)(\d+)\s+(?:matching|emparejamiento)\s+{_REST}',
+        rf'(?:^|\n)(\d+)\s+(?:matching|emparejamiento){_TAIL}',
         re.MULTILINE | re.IGNORECASE
     )
     for m in mt_pattern.finditer(clean_key):
@@ -87,7 +94,7 @@ def parse_answer_key(full_text: str) -> Dict[int, dict]:
         answer_key[num] = {"type": "matching", "answer": raw, "pairs": parse_matching_pairs(raw)}
 
     # ── cloze ──
-    cl_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:cloze|completar)\s+{_REST}', clean_key, re.IGNORECASE)
+    cl_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:cloze|completar){_TAIL}', clean_key, re.IGNORECASE)
     for num_str, answer_rest in cl_entries:
         num = int(num_str)
         answer = re.sub(r'\n\s*', ' ', answer_rest).strip()
@@ -97,21 +104,21 @@ def parse_answer_key(full_text: str) -> Dict[int, dict]:
     # Sin respuesta que validar (se califica manualmente en Moodle) — se
     # transcribe lo que sea que haya ahí, pero no se le exige ningún
     # formato particular (a diferencia de los demás tipos).
-    es_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:essay|ensayo)\s+{_REST}', clean_key, re.IGNORECASE)
+    es_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:essay|ensayo){_TAIL}', clean_key, re.IGNORECASE)
     for num_str, answer_rest in es_entries:
         num = int(num_str)
         answer = re.sub(r'\n\s*', ' ', answer_rest).strip()
         answer_key[num] = {"type": "essay", "answer": answer}
 
     # ── shortanswer ──
-    sa_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:shortanswer|respuestacorta)\s+{_REST}', clean_key, re.IGNORECASE)
+    sa_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:shortanswer|respuestacorta){_TAIL}', clean_key, re.IGNORECASE)
     for num_str, answer_rest in sa_entries:
         num = int(num_str)
         answer = re.sub(r'\n\s*', ' ', answer_rest).strip()
         answer_key[num] = {"type": "shortanswer", "answer": answer}
 
     # ── numerical ──
-    nu_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:numerical|numerico|numérico)\s+{_REST}', clean_key, re.IGNORECASE)
+    nu_entries = re.findall(rf'(?:^|\n)(\d+)\s+(?:numerical|numerico|numérico){_TAIL}', clean_key, re.IGNORECASE)
     for num_str, answer_rest in nu_entries:
         num = int(num_str)
         answer = re.sub(r'\n\s*', ' ', answer_rest).strip()

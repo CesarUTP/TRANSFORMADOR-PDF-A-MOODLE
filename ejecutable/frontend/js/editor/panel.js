@@ -3,7 +3,7 @@
  * y navegación entre ellas.
  */
 import { collectEditorData } from './tarjetas.js';
-import { esc_html, scrollBehavior } from '../util.js';
+import { crearIconos, esc_html, scrollBehavior } from '../util.js';
 import { questionIssues } from '../validacion.js';
 
 // ── Panel de revisión (mapa del examen) ────────────────────────────────
@@ -36,13 +36,16 @@ export function scrollToEditorCard(card, { enfocar = false } = {}) {
 export function refreshQuestionIssues() {
   const cards = Array.from(document.querySelectorAll('#editor-questions-container .editor-card'));
   if (!cards.length) return 0;
-  const { questions, answer_key } = collectEditorData();
+  // Sin imágenes: la validación no las usa y copiarlas (base64, varios MB)
+  // en cada pausa al escribir hacía lenta la revisión con muchas imágenes.
+  const { questions, answer_key } = collectEditorData({ conImagenes: false });
   let incomplete = 0;
   cards.forEach((card, i) => {
     const q = questions[i];
     const issues = q ? questionIssues(q, answer_key[q.num]) : [];
+    const texto = issues.join(' · ');
     card.classList.toggle('is-incomplete', issues.length > 0);
-    card.dataset.issues = issues.join(' · ');
+    if (card.dataset.issues !== texto) card.dataset.issues = texto;
     let box = card.querySelector(':scope > .card-issues');
     if (issues.length) {
       incomplete++;
@@ -52,8 +55,13 @@ export function refreshQuestionIssues() {
         box.setAttribute('role', 'status');
         card.firstElementChild.insertAdjacentElement('afterend', box);
       }
-      box.innerHTML = `<i data-lucide="circle-alert"></i><span>${esc_html(issues.join(' · '))}</span>`;
-      if (window.lucide) lucide.createIcons({ root: box });
+      // Solo se reescribe si el texto cambió: un aviso role="status" que se
+      // rehace en cada pausa se vuelve a leer en voz alta sin motivo.
+      if (box.dataset.texto !== texto) {
+        box.dataset.texto = texto;
+        box.innerHTML = `<i data-lucide="circle-alert"></i><span>${esc_html(texto)}</span>`;
+        crearIconos(box);
+      }
     } else if (box) {
       box.remove();
     }
@@ -72,48 +80,70 @@ export function scheduleIssuesRefresh() {
   }, 250);
 }
 
+// Escribe `html` en `el` solo si cambió (y dibuja sus íconos solo entonces).
+// buildReviewRail corre tras cada pausa al escribir: rehacer todo el panel
+// cada vez era trabajo perdido, y los textos con aria-live se releían.
+const _htmlPuesto = new WeakMap();
+function _ponerHtml(el, html) {
+  if (_htmlPuesto.get(el) === html) return false;
+  _htmlPuesto.set(el, html);
+  el.innerHTML = html;
+  crearIconos(el);
+  return true;
+}
+
+// Un solo oyente para todos los cuadritos (antes se ataba uno por cuadrito en
+// cada reconstrucción): se registra la primera vez.
+function _registrarGrilla(grid) {
+  if (grid.dataset.registrada) return;
+  grid.dataset.registrada = '1';
+  grid.addEventListener('click', e => {
+    const btn = e.target.closest('.rail-item');
+    if (!btn || !grid.contains(btn)) return;
+    const card = _visibleEditorCards()[Number(btn.dataset.pos)];
+    if (card) scrollToEditorCard(card, { enfocar: true });
+    closeRailGrid();
+  });
+}
+
 export function buildReviewRail() {
   const rail = document.getElementById('review-rail');
   const grid = document.getElementById('review-rail-grid');
   if (!rail || !grid) return;
-  rail.style.setProperty('--header-h', `${document.querySelector('.app-header')?.offsetHeight || 0}px`);
+  _registrarGrilla(grid);
+  const headerH = `${document.querySelector('.app-header')?.offsetHeight || 0}px`;
+  if (rail.style.getPropertyValue('--header-h') !== headerH) rail.style.setProperty('--header-h', headerH);
   refreshQuestionIssues();
   const cards = _visibleEditorCards();
-  grid.innerHTML = cards.map((c, i) => {
+  // Si la grilla quedó igual, ni se toca (se conserva también el cuadrito
+  // «actual», que updateReviewProgress vuelve a marcar).
+  _ponerHtml(grid, cards.map((c, i) => {
     const missing = c.dataset.issues || '';
     const review = !missing && c.dataset.review === '1';
     const cls = missing ? ' incomplete' : review ? ' needs-review' : '';
     const tip = missing ? ` — ${missing}` : review ? ' — tiene un aviso para revisar' : '';
     return `<div role="listitem"><button type="button" class="rail-item${cls}" data-pos="${i}"
       title="Pregunta ${esc_html(c.dataset.qnum)}${esc_html(tip)}" aria-label="Pregunta ${esc_html(c.dataset.qnum)}${esc_html(tip)}">${esc_html(c.dataset.qnum)}</button></div>`;
-  }).join('');
-  grid.querySelectorAll('.rail-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const card = _visibleEditorCards()[Number(btn.dataset.pos)];
-      if (card) scrollToEditorCard(card, { enfocar: true });
-      closeRailGrid();
-    });
-  });
+  }).join(''));
   const missing = cards.filter(c => c.dataset.issues).length;
   const pending = cards.filter(c => !c.dataset.issues && c.dataset.review === '1').length;
   // Íconos dibujados (Lucide), no glifos ✕/⚠ de texto.
   const nextMissing = document.getElementById('rail-incomplete-next');
   nextMissing.classList.toggle('visible', missing > 0);
-  nextMissing.innerHTML = `<i data-lucide="circle-alert"></i>${missing === 1 ? '1 pregunta incompleta' : `${missing} preguntas incompletas`}`;
+  _ponerHtml(nextMissing, `<i data-lucide="circle-alert"></i>${missing === 1 ? '1 pregunta incompleta' : `${missing} preguntas incompletas`}`);
   nextMissing.title = 'Ir a la siguiente pregunta incompleta';
   const next = document.getElementById('rail-review-next');
   next.classList.toggle('visible', pending > 0);
-  next.innerHTML = `<i data-lucide="eye"></i>${pending === 1 ? '1 pregunta para revisar' : `${pending} preguntas para revisar`}`;
+  _ponerHtml(next, `<i data-lucide="eye"></i>${pending === 1 ? '1 pregunta para revisar' : `${pending} preguntas para revisar`}`);
   next.title = 'Ir a la siguiente pregunta con aviso';
   const errShort = document.getElementById('rail-error-short');
   errShort.classList.toggle('visible', missing > 0);
-  errShort.innerHTML = `<i data-lucide="circle-alert"></i>${missing}`;
+  _ponerHtml(errShort, `<i data-lucide="circle-alert"></i>${missing}`);
   errShort.setAttribute('aria-label', `${missing} incompleta${missing !== 1 ? 's' : ''}`);
   const warnShort = document.getElementById('rail-warn-short');
   warnShort.classList.toggle('visible', pending > 0);
-  warnShort.innerHTML = `<i data-lucide="eye"></i>${pending}`;
+  _ponerHtml(warnShort, `<i data-lucide="eye"></i>${pending}`);
   warnShort.setAttribute('aria-label', `${pending} para revisar`);
-  if (window.lucide) lucide.createIcons({ root: rail });
   _railCurrent = -1;
   updateReviewProgress();
 }

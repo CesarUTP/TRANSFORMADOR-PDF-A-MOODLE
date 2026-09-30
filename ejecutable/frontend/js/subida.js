@@ -28,7 +28,7 @@ export function subir(url, formData, { onSubida, onSubido, onTexto, signal } = {
     if (onSubido) xhr.upload.onload = () => onSubido();
     if (onTexto) xhr.onprogress = () => onTexto(xhr.responseText);
     xhr.onload = () => resolve({ status: xhr.status, text: xhr.responseText });
-    xhr.onerror = () => reject(new Error('sin conexión con el conversor'));
+    xhr.onerror = () => { const e = new Error('sin conexión'); e.sinConexion = true; reject(e); };
     xhr.onabort = () => { const e = new Error('cancelado'); e.name = 'AbortError'; reject(e); };
     if (signal) {
       if (signal.aborted) { xhr.abort(); return; }
@@ -41,7 +41,7 @@ export function subir(url, formData, { onSubida, onSubido, onTexto, signal } = {
 // ── Barra de subida bajo el nombre del archivo (paso 1) ─────────────────
 // Solo aparece si la operación dura más de 300 ms (con archivos chicos
 // todo termina antes y no hay parpadeo). Primero muestra el avance real
-// de la subida; después, mientras el conversor revisa el archivo ya
+// de la subida; después, mientras la aplicación revisa el archivo ya
 // recibido, la barra queda llena y el texto cuenta los segundos.
 export function barraDeSubida(archivo) {
   const bar = document.getElementById('upload-bar');

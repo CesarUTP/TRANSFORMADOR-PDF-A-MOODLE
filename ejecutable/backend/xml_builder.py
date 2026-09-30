@@ -21,7 +21,10 @@ from config import (
     DEFAULT_MATCHING_STEM,
 )
 from models import QuestionStats
-from answer_matching import find_cloze_brackets, is_substring_match, is_truncated_answer_match, split_answers, split_options
+from answer_matching import (
+    TRUEFALSE_ALIAS, RespuestaNoResuelta, clave_de_columna, clave_de_huecos, find_cloze_brackets,
+    normalizar_numero, resolver_hueco_cloze, resolver_opcion, split_answers, split_options,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -159,8 +162,23 @@ def _plan_puntos(questions: List[dict], grades: Dict[str, float]) -> tuple:
     return escala, finales
 
 
+def _html_fuera_de_huecos(texto: str, inicio_de_linea: bool) -> str:
+    """Trozo de enunciado de un Cloze (fuera de los huecos) como HTML: escapa
+    (sin tocar las comillas, como antes), convierte los saltos de línea en <br>
+    y los espacios de apertura de cada línea en &nbsp; (misma idea que
+    texto_html: si no, el HTML colapsa la sangría del código y el enunciado se
+    ve en un solo renglón). `inicio_de_linea`: el trozo empieza al comienzo de
+    una línea (no justo después de un hueco)."""
+    lineas = html.escape(_sin_control(texto).replace("\r\n", "\n"), quote=False).split("\n")
+    lineas = [
+        re.sub(r"^ +", lambda m: "&nbsp;" * len(m.group(0)), ln) if (i > 0 or inicio_de_linea) else ln
+        for i, ln in enumerate(lineas)
+    ]
+    return "<br>".join(lineas)
+
+
 def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, dict],
-                            peso_total: Optional[int] = None) -> str:
+                            peso_total: Optional[int] = None, como_html: bool = False) -> str:
     """
     Convert [A: correct_option / option2 / option3] brackets to
     Moodle {1:MULTICHOICE_S:=correct~opt2~opt3} syntax.
@@ -173,6 +191,13 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
     responds to that setting, while still defaulting to unshuffled when the
     teacher leaves shuffling off, so this is a strict improvement with no
     downside for anyone who doesn't want shuffling.
+
+    Si la respuesta de la clave de un hueco no identifica UNA de sus opciones
+    (no está, o coincide por igual con varias) lanza RespuestaNoResuelta: no
+    se marca la primera opción en su lugar (el validador ya lo rechaza antes;
+    esto es la segunda barrera). Con `como_html`, el texto de fuera de los
+    huecos sale escapado y con <br>/&nbsp; (lo que va dentro de <questiontext
+    format="html">) y los huecos escapados sin tocar sus barras y comillas de escape.
     """
 
     def escape_cloze_syntax(s: str) -> str:
@@ -191,16 +216,12 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
     key_info = answer_key.get(q_num, {})
     raw_key_ans = str(key_info.get("answer", ""))
 
-    # Parse slot answers if present (e.g., "A. respuesta A; B. respuesta B").
-    # A slot can have MORE THAN ONE correct answer, joined with " | "
-    # (e.g. "A. opt1 | opt3") — that's how the app's own Cloze editor marks
-    # a "select several correct options" blank; a normal single-answer slot
-    # is just a one-item list, so this stays fully backward compatible.
-    slot_answers: Dict[str, List[str]] = {}
-    for m in re.finditer(r'([A-Za-z])[\.:]\s*([^;\n]+)', raw_key_ans):
-        parts = split_answers(m.group(2))
-        if parts:
-            slot_answers[m.group(1).upper()] = parts
+    # Respuestas por hueco ("A. respuesta A; B. respuesta B"). Un hueco puede
+    # tener MÁS DE UNA respuesta correcta, unidas con " | " (así marca el
+    # editor de la app un hueco de "seleccionar varias"); un hueco normal es
+    # una lista de un elemento. Misma función que usa el validador.
+    brackets_all = find_cloze_brackets(cloze_text)
+    slot_answers = clave_de_huecos(raw_key_ans, len(brackets_all), brackets_all[0][2] if brackets_all else "")
 
     # Moodle IGNORA el <defaultgrade> de una pregunta de completar: su nota
     # máxima es la suma de los pesos de sus huecos. Por eso los pesos se
@@ -216,35 +237,30 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
         if not options:
             return None
 
-        # Determine which option(s) are correct for this slot — usually one,
-        # but a "select several" slot can mark more than one.
+        # Cuáles opciones son las correctas de este hueco — normalmente una,
+        # pero uno de "seleccionar varias" puede marcar más. Cada respuesta de
+        # la clave debe identificar UNA opción (resolver_hueco_cloze, la misma
+        # función del validador); si no, no se adivina: antes se marcaba la
+        # primera opción («Caracas» con Lima/Quito/Bogotá salía «=Lima»).
         correct_indices: List[int] = []
         for target_ans in slot_answers.get(letter, []):
             target_ans = target_ans.strip()
             if not target_ans:
                 continue
-            match_idx = None
-            for idx, opt in enumerate(options):
-                if target_ans.lower() == opt.lower():
-                    match_idx = idx
-                    break
+            match_idx, motivo = resolver_hueco_cloze(target_ans, options)
             if match_idx is None:
-                for idx, opt in enumerate(options):
-                    if target_ans.lower() in opt.lower() or opt.lower() in target_ans.lower():
-                        match_idx = idx
-                        break
-            if match_idx is not None and match_idx not in correct_indices:
+                raise RespuestaNoResuelta(
+                    f"Pregunta {q_num} (cloze): la respuesta '{target_ans[:60]}' del espacio [{letter}] "
+                    + ("es ambigua: coincide con varias opciones." if motivo == "ambigua"
+                       else "no coincide con ninguna de las opciones.")
+                )
+            if match_idx not in correct_indices:
                 correct_indices.append(match_idx)
 
-        if not correct_indices and raw_key_ans:
-            # Legacy fallback: check if raw_key_ans matches any option in this bracket
-            for idx, opt in enumerate(options):
-                if opt.lower() in raw_key_ans.lower() or raw_key_ans.lower() in opt.lower():
-                    correct_indices.append(idx)
-                    break
-
         if not correct_indices:
-            correct_indices = [0]  # default to first option, same safety net as before
+            raise RespuestaNoResuelta(
+                f"Pregunta {q_num} (cloze): el espacio [{letter}] no tiene una respuesta correcta en la clave."
+            )
 
         def render_option(i: int, opt: str) -> str:
             # NO se le quitan las tildes: eso cambia lo que lee el
@@ -281,12 +297,20 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
     # puede hacer.
     out: List[str] = []
     last = 0
-    for start, end, letter, options_raw in find_cloze_brackets(cloze_text):
+    for start, end, letter, options_raw in brackets_all:
         replacement = render_slot(letter.upper(), options_raw.strip())
-        out.append(cloze_text[last:start])
-        out.append(replacement if replacement is not None else cloze_text[start:end])
+        hueco = replacement if replacement is not None else cloze_text[start:end]
+        if como_html:
+            out.append(_html_fuera_de_huecos(cloze_text[last:start], last == 0))
+            out.append(html.escape(_sin_control(hueco), quote=False))
+        else:
+            out.append(cloze_text[last:start])
+            out.append(hueco)
         last = end
-    out.append(cloze_text[last:])
+    if como_html:
+        out.append(_html_fuera_de_huecos(cloze_text[last:], last == 0))
+    else:
+        out.append(cloze_text[last:])
     return "".join(out)
 
 
@@ -315,6 +339,41 @@ def _questiontext(html_text: str, data: dict, name: str) -> List[str]:
         lines.append('    </generalfeedback>')
     return lines
 
+def _avisar_puntos_cloze(stats: QuestionStats, num: int, raw_text: str, grade_val: float) -> None:
+    """Avisa (sin bloquear) cuando una pregunta de «Completar» valdrá en
+    Moodle distinto que en el editor. Moodle ignora <defaultgrade> y suma los
+    pesos ENTEROS de los huecos, con mínimo 1 por hueco (_pesos_cloze): con 0
+    puntos vale igual «n huecos», y con menos puntos que huecos también sube.
+    No hay forma de expresar un peso 0 (Moodle lo toma como «sin peso» = 1),
+    así que se deja el comportamiento y se informa."""
+    huecos = max(1, len(find_cloze_brackets(raw_text)))
+    en_moodle = sum(_pesos_cloze(huecos, round(grade_val) if grade_val > 0 else None))
+    if abs(en_moodle - grade_val) <= 0.06 * grade_val and grade_val > 0:
+        return
+    aviso = (
+        f"La pregunta {num} (Completar) tiene {grade_val:g} punto(s) en el editor, pero Moodle le dará "
+        f"{en_moodle} ({huecos} hueco(s), mínimo 1 punto por hueco): el total del examen en Moodle "
+        f"será distinto al del editor. Ajusta los puntos al importar."
+    )
+    stats.avisos.append(aviso)
+    logger.warning(aviso)
+
+
+# Moodle usa "/" para separar categoría y subcategoría: un "/" en el nombre
+# ("Parcial 1/2 2026") creaba subcategorías sin que el docente lo pidiera. El
+# campo de la interfaz es un NOMBRE (sin jerarquía documentada), así que cada
+# "/" pasa a "-". Se recortan espacios, se descartan caracteres de control y se
+# acota la longitud (Moodle guarda hasta 255).
+CATEGORIA_MAX = 200
+CATEGORIA_POR_DEFECTO = "mis-preguntas"
+
+
+def sanear_categoria(categoria: str) -> str:
+    nombre = _sin_control(str(categoria or "")).replace("/", "-")
+    nombre = " ".join(nombre.split())[:CATEGORIA_MAX].strip()
+    return nombre or CATEGORIA_POR_DEFECTO
+
+
 def build_xml(
     questions: List[dict],
     answer_key: Dict[int, dict],
@@ -340,6 +399,7 @@ def build_xml(
     if grades is None:
         grades = {t: 1.0 for t in TYPE_WEIGHTS}
     stats = QuestionStats()
+    category = sanear_categoria(category)
     escala, notas_finales = _plan_puntos(questions, grades)
     stats.escala = escala
     xml_parts: List[str] = []
@@ -394,61 +454,25 @@ def build_xml(
             # correspondan"). El caso normal de una sola respuesta es
             # simplemente una lista de un elemento, así que el comportamiento
             # de siempre queda intacto.
+            # Cada respuesta debe identificar UNA opción (resolver_opcion, la
+            # misma función del validador: texto igual > letra > texto sin
+            # tildes > subcadena única > respuesta cortada única). Si no, no
+            # se adivina: antes se marcaba la «A» en silencio, y con la clave
+            # «Python» y las opciones «Java / Python 2 / Python 3» salía Java.
             correct_letters: List[str] = []
             for target in split_answers(correct_answer):
-                ca_clean = target.lower()
-                match_letter = None
-                # Priority 1: exact match, checked across ALL options before
-                # any fuzzy fallback. The full option TEXT wins over the
-                # letter: with options {A: Python, B: Java, C: JavaScript,
-                # D: C}, the answer "C" is the option whose text is "C" (D),
-                # not option C. Comparing letter-or-text option by option
-                # used to hit C first and mark JavaScript as correct.
-                for letter, opt_text in options.items():
-                    if ca_clean == opt_text.strip().lower():
-                        match_letter = letter
-                        break
+                match_letter, motivo = resolver_opcion(target, options)
                 if match_letter is None:
-                    for letter in options:
-                        if ca_clean == letter.lower():
-                            match_letter = letter
-                            break
-                # Priority 2: fuzzy substring match, only as a last resort —
-                # e.g. Gemini truncated/paraphrased the option text slightly.
-                # Exige coincidencia ÚNICA (como la Prioridad 3, abajo): con
-                # {"12", "2 unidades", "3"} y respuesta "2", antes se tomaba
-                # la PRIMERA opción que la contenía ("12") sin comprobar que
-                # también "2 unidades" la contiene — ambigüedad real, no se
-                # decide sola.
-                if match_letter is None:
-                    substr_matches = [
-                        letter for letter, opt_text in options.items()
-                        if is_substring_match(ca_clean, opt_text.strip().lower())
-                    ]
-                    if len(substr_matches) == 1:
-                        match_letter = substr_matches[0]
-                # Priority 3: mismo salvavidas que validator.py para una
-                # respuesta cortada a mitad de palabra — solo se acepta si
-                # coincide con EXACTAMENTE una opción (evita adivinar entre
-                # varias). Sin esto, una pregunta que pasó validación
-                # gracias a este mismo salvavidas podía llegar aquí y caer
-                # en el default de abajo, marcando la opción equivocada.
-                if match_letter is None:
-                    prefix_matches = [
-                        letter for letter, opt_text in options.items()
-                        if is_truncated_answer_match(ca_clean, opt_text.strip().lower())
-                    ]
-                    if len(prefix_matches) == 1:
-                        match_letter = prefix_matches[0]
-                if match_letter is not None and match_letter not in correct_letters:
+                    raise RespuestaNoResuelta(
+                        f"Pregunta {num} (multichoice): la respuesta '{target[:60]}' "
+                        + ("es ambigua: coincide con varias opciones." if motivo == "ambigua"
+                           else "no coincide con ninguna de las opciones.")
+                    )
+                if match_letter not in correct_letters:
                     correct_letters.append(match_letter)
 
             if not correct_letters:
-                correct_letters = ["A"]
-                logger.warning(
-                    "Pregunta %d: respuesta '%s' no coincide con opciones, "
-                    "defaulting a 'A'.", num, correct_answer[:50],
-                )
+                raise RespuestaNoResuelta(f"Pregunta {num} (multichoice): no hay respuesta correcta en la clave.")
 
             is_single = len(correct_letters) == 1
 
@@ -499,7 +523,11 @@ def build_xml(
         # Spec: exactly 2 <answer> tags (true + false), fraction 100/0
         elif qtype == "truefalse":
             stem = data["stem"]
-            is_true = correct_answer.strip().lower() in ("verdadero", "true", "v")
+            if correct_answer.strip().lower() not in TRUEFALSE_ALIAS:
+                raise RespuestaNoResuelta(
+                    f"Pregunta {num} (truefalse): la respuesta '{correct_answer[:40]}' no es Verdadero ni Falso."
+                )
+            is_true = TRUEFALSE_ALIAS[correct_answer.strip().lower()]
 
             xml_parts.append('  <question type="truefalse">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
@@ -539,41 +567,26 @@ def build_xml(
             letras_usadas: set = set()
             a_keys = sorted(col_a.keys(), key=lambda x: int(x) if str(x).isdigit() else str(x))
 
-            # Priority 1: use the explicit número→letra answer key, so each Columna A
-            # item is matched to its ACTUAL correct Columna B item (not just by position).
-            if pairs_map:
-                for a_k in a_keys:
-                    letter = pairs_map.get(str(a_k), "").strip().lower()
-                    a_val = col_a[a_k].strip()
-                    b_val = col_b.get(letter, "").strip()
-                    if a_val and b_val:
-                        pairs_ordered.append((a_val, b_val))
-                        letras_usadas.add(letter)
-                    else:
-                        logger.warning(
-                            "Pregunta %d (matching): sin correspondencia para el "
-                            "elemento %s de la Columna A (letra '%s' no encontrada "
-                            "en la Columna B).", num, a_k, letter,
-                        )
-
-            # Fallback: no reliable número→letra key was found — assume the
-            # documented order 1-a, 2-b, 3-c... (better than dropping the question).
-            if not pairs_ordered:
-                b_keys = sorted(col_b.keys())
-                for idx, a_k in enumerate(a_keys):
-                    a_val = col_a[a_k].strip()
-                    b_k = b_keys[idx] if idx < len(b_keys) else None
-                    b_val = col_b[b_k].strip() if b_k else ""
-                    if a_val or b_val:
-                        pairs_ordered.append((a_val, b_val))
-                        if b_k:
-                            letras_usadas.add(b_k)
-                if pairs_ordered:
-                    logger.warning(
-                        "Pregunta %d (matching): no se encontró una clave de "
-                        "respuestas 'número-letra' válida; se usó el orden "
-                        "secuencial 1-a, 2-b, 3-c... por defecto.", num,
+            # Cada elemento de la Columna A se une a SU pareja de la Columna B
+            # según la clave número→letra (no por posición). La letra se busca
+            # sin distinguir mayúsculas (clave_de_columna, la misma función del
+            # validador). Si la clave falta o no resuelve, NO se inventa el
+            # orden secuencial 1-a, 2-b, 3-c…: antes, ante una clave que no
+            # resolvía, el XML salía con parejas equivocadas sin avisar.
+            if not pairs_map:
+                raise RespuestaNoResuelta(f"Pregunta {num} (matching): no hay una clave de respuestas 'número-letra'.")
+            for a_k in a_keys:
+                letter = clave_de_columna(col_b, pairs_map.get(str(a_k), ""))
+                a_val = col_a[a_k].strip()
+                if letter is None:
+                    raise RespuestaNoResuelta(
+                        f"Pregunta {num} (matching): el elemento {a_k} de la Columna A no tiene una "
+                        f"pareja válida en la clave (letra '{pairs_map.get(str(a_k), '')}')."
                     )
+                b_val = col_b[letter].strip()
+                if a_val and b_val:
+                    pairs_ordered.append((a_val, b_val))
+                    letras_usadas.add(letter)
 
             # Distractores: elementos de la Columna B que no son la pareja de
             # NINGÚN elemento de la A (el docente puso más opciones que
@@ -610,11 +623,14 @@ def build_xml(
         # Spec: questiontext contains {N:TYPE:...} syntax, no separate <answer> tags
         elif qtype == "cloze":
             raw_text = data["text"]
-            cloze_text = convert_cloze_to_moodle(raw_text, num, answer_key, peso_total=round(grade_val) if grade_val > 0 else None)
+            cloze_text = convert_cloze_to_moodle(raw_text, num, answer_key,
+                                                 peso_total=round(grade_val) if grade_val > 0 else None,
+                                                 como_html=True)
+            _avisar_puntos_cloze(stats, num, raw_text, grade_val)
 
             xml_parts.append('  <question type="cloze">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.extend(_questiontext(f"<p>{html.escape(_sin_control(cloze_text), quote=False)}</p>", data, name))
+            xml_parts.extend(_questiontext(f"<p>{cloze_text}</p>", data, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('  </question>')
             stats.cloze += 1
@@ -685,7 +701,11 @@ def build_xml(
             # documento en español) convirtiéndola a "3.5" para comprobar que
             # es un número — pero aquí se escribía tal cual ("3,5") en el
             # XML, y Moodle no entiende la coma como separador decimal.
-            valor_numerico = correct_answer.strip().replace(',', '.')
+            valor_numerico = normalizar_numero(correct_answer)
+            if valor_numerico is None:
+                raise RespuestaNoResuelta(
+                    f"Pregunta {num} (numerical): la respuesta '{correct_answer[:40]}' no es un número válido."
+                )
             xml_parts.append('    <answer fraction="100">')
             xml_parts.append(f'      <text>{esc(valor_numerico)}</text>')
             xml_parts.append('      <tolerance>0</tolerance>')

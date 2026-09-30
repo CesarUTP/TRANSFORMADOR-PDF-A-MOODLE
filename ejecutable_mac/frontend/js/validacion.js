@@ -8,7 +8,7 @@
  * Lógica pura: no toca el DOM ni el estado global, así se puede probar
  * sola (ver frontend/pruebas.html).
  */
-import { findClozeBrackets, splitOptions } from './util.js';
+import { findClozeBrackets, splitAnswers, splitOptions } from './util.js';
 
 // ── Preguntas incompletas (revisión en vivo) ───────────────────────────
 // Mismas reglas que el validador del backend (validator.py): lo que
@@ -46,6 +46,30 @@ export function questionIssues(q, key) {
     blanks.forEach(({ start, end }) => { rest += text.slice(cursor, start); cursor = end; });
     rest += text.slice(cursor);
     if (!rest.trim()) issues.push('Falta el texto de la pregunta');
+    // Un espacio sin respuesta en la clave: el documento no la traía y el
+    // docente aún no la eligió (no se marca ninguna por su cuenta). Mismas
+    // reglas que validator.py: la clave lleva "A. respuesta; B. respuesta".
+    if (blanks.length) {
+      const clave = {};
+      for (const m of ans.matchAll(/([A-Za-z])[.:]\s*([^;\n]+)/g)) {
+        const partes = splitAnswers(m[2]).filter(p => p.toUpperCase() !== 'SIN_RESPUESTA');
+        if (partes.length) clave[m[1].toUpperCase()] = partes;
+      }
+      if (!Object.keys(clave).length && blanks.length === 1 && ans) {
+        const solo = splitAnswers(ans);
+        if (solo.length) clave[blanks[0].letter.toUpperCase()] = solo;
+      }
+      const sinMarca = [];
+      blanks.forEach(({ letter, optionsRaw }, i) => {
+        if (splitOptions(optionsRaw).length === 0) return; // ya se avisó: sin opciones
+        if (!clave[letter.toUpperCase()]) sinMarca.push(i + 1);
+      });
+      if (sinMarca.length) {
+        issues.push(sinMarca.length === 1
+          ? `Falta marcar la respuesta correcta del espacio ${sinMarca[0]}`
+          : `Falta marcar la respuesta correcta de los espacios ${sinMarca.join(', ')}`);
+      }
+    }
   } else if (q.type === 'shortanswer') {
     if (!ans) issues.push('Falta la respuesta');
   } else if (q.type === 'numerical') {

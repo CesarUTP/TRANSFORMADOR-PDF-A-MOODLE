@@ -51,6 +51,15 @@ export function findClozeBrackets(text) {
   return out;
 }
 
+// Dibuja los íconos (Lucide) SOLO dentro de `root`. lucide.createIcons() sin
+// argumentos recorre todo el documento, y con 150 tarjetas cada aviso o cada
+// re-dibujo parcial lo repetía por gusto. Sin `root`, hace lo de siempre.
+export function crearIconos(root) {
+  if (!window.lucide) return;
+  if (root) window.lucide.createIcons({ root });
+  else window.lucide.createIcons();
+}
+
 // File Helpers
 export function formatBytes(bytes) {
   if (bytes < 1024) return bytes + ' B';
@@ -111,7 +120,12 @@ export function humanizeSkipReason(reason) {
   if (/no se encontró su enunciado en el documento/.test(reason)) {
     return 'Esta pregunta aparece en la clave de respuestas, pero no se encontró su enunciado en el documento.';
   }
-  return reason.replace(/^Error:\s*/i, '');
+  // Motivo que no se reconoce: el texto técnico del validador va solo como
+  // detalle (entre paréntesis) tras una frase clara, no como único mensaje.
+  const detalle = reason.replace(/^Error:\s*/i, '').trim();
+  return detalle
+    ? `Esta pregunta no pasó la verificación de la aplicación (detalle: ${detalle})`
+    : 'Esta pregunta no pasó la verificación de la aplicación.';
 }
 
 // ── Gráfica de pastel: puntos totales por tipo ─────────────────────────
@@ -191,15 +205,58 @@ export function describeArcSlice(cx, cy, r, startAngle, endAngle) {
 // flujo (archivo muy pesado, límite de la API de IA, backend caído).
 export function friendlyHttpError(status) {
   const known = {
-    401: 'La app perdió la conexión segura con su servidor interno. Cierra la aplicación y vuelve a abrirla.',
+    401: 'La aplicación perdió su conexión interna segura. Cierra la aplicación y vuelve a abrirla.',
     413: 'El archivo es demasiado pesado para procesarlo. Intenta con un PDF más liviano o divide el examen en partes.',
     429: 'El servicio de IA está recibiendo demasiadas solicitudes en este momento. Espera un minuto y vuelve a intentarlo.',
-    500: 'Ocurrió un error inesperado en el servidor al procesar tu examen.',
-    502: 'El servidor no pudo completar la solicitud. Vuelve a intentarlo en unos segundos.',
+    500: 'Ocurrió un error inesperado en la aplicación al procesar tu examen.',
+    502: 'La aplicación no pudo completar la solicitud. Vuelve a intentarlo en unos segundos.',
     503: 'El servicio no está disponible en este momento. Vuelve a intentarlo en unos segundos.',
     504: 'La solicitud tardó demasiado en responder. Vuelve a intentarlo — si tu examen es muy largo, puede tomar más tiempo del esperado.',
   };
-  return known[status] || `El servidor respondió con un error (código ${status}). Vuelve a intentarlo; si el problema persiste, revisa que el archivo no esté dañado.`;
+  return known[status] || `La aplicación respondió con un error (código ${status}). Vuelve a intentarlo; si el problema persiste, revisa que el archivo no esté dañado.`;
+}
+
+// El campo `detail` de un error del backend puede ser un texto, un objeto
+// ({message, errors}: lo dibuja showError) o —en un 422 de FastAPI, cuando la
+// petición llega mal formada— una LISTA de {loc, msg, type}. Sin normalizarlo,
+// una lista terminaba mostrándose como «[object Object]». Devuelve un texto
+// legible en español, o el objeto tal cual si trae `errors` (showError sabe
+// dibujarlo), o `respaldo` si no hay nada útil.
+export function detalleDeError(detail, respaldo = '') {
+  if (typeof detail === 'string') return detail.trim() || respaldo;
+  if (Array.isArray(detail)) {
+    const partes = detail.map(d => {
+      if (typeof d === 'string') return d.trim();
+      if (!d || typeof d !== 'object') return '';
+      const campo = Array.isArray(d.loc) ? d.loc.filter(x => typeof x === 'string' && !['body', 'query', 'path'].includes(x)).pop() : '';
+      const texto = d.type === 'missing' ? 'falta un dato obligatorio' : (typeof d.msg === 'string' ? d.msg.trim() : '');
+      return campo && texto ? `«${campo}»: ${texto}` : (texto || (campo ? `«${campo}» no es válido` : ''));
+    }).filter(Boolean);
+    return partes.length ? `La solicitud no es válida (${partes.join('; ')}).` : respaldo;
+  }
+  if (detail && typeof detail === 'object') {
+    if (Array.isArray(detail.errors)) return detail;
+    for (const k of ['message', 'msg', 'detail']) {
+      if (typeof detail[k] === 'string' && detail[k].trim()) return detail[k].trim();
+    }
+  }
+  return respaldo;
+}
+
+// Textos de aviso que trae X-Question-Stats al generar el XML: los del
+// constructor (`avisos`) y, si no se pudo guardar en el Historial, su motivo
+// (primero). Si además se escalaron los puntos de «Completar» y el aviso de
+// la escala no puede ir en su toast (lo taparía el del Historial), va aquí.
+export function avisosDelXml(stats) {
+  const s = stats && typeof stats === 'object' ? stats : {};
+  const textos = (Array.isArray(s.avisos) ? s.avisos : []).filter(t => typeof t === 'string' && t.trim());
+  if (s.historial_guardado === false) {
+    const motivo = typeof s.aviso_historial === 'string' && s.aviso_historial.trim()
+      ? s.aviso_historial.trim()
+      : 'El XML se generó, pero no se pudo guardar en el Historial. Descárgalo ahora.';
+    textos.unshift(motivo);
+  }
+  return textos;
 }
 
 export function formatMMSS(totalSeconds) {

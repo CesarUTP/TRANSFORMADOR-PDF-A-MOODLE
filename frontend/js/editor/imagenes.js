@@ -17,7 +17,7 @@
 
 import { notificar } from '../estado.js';
 import { showToast } from '../ui/toast.js';
-import { esc_html, scrollBehavior } from '../util.js';
+import { crearIconos, esc_html, scrollBehavior } from '../util.js';
 
 export const MAX_POR_PREGUNTA = 5;
 const LADO_MAX = 1000;                    // mismo tope que backend/imagenes.py
@@ -25,7 +25,6 @@ const MAX_BYTES_PNG = 350 * 1024;         // por encima, JPEG
 const MAX_BYTES_IMAGEN = 2 * 1024 * 1024; // lo que acepta el validador
 const MAX_BYTES_ARCHIVO = 20 * 1024 * 1024;
 const TIPOS_ARCHIVO = /^image\/(png|jpeg|gif|webp|bmp)$/;
-const SRC_VALIDO = /^data:(image\/(?:png|jpeg));base64,([A-Za-z0-9+/]+={0,2})$/;
 
 const _valida = im => im && /^image\/(png|jpeg)$/.test(im.mime) && /^[A-Za-z0-9+/]+={0,2}$/.test(im.b64 || '');
 
@@ -68,14 +67,35 @@ export function imagenesHtml(q, i, N) {
   </div>`;
 }
 
+// El src de cada imagen lo escribe SOLO este archivo (imagen ya validada al
+// dibujar, o recién reducida en el navegador) y nunca cambia: se separa en
+// tipo + base64 una vez por <img> y se recuerda. Antes cada lectura pasaba
+// una expresión regular por los varios MB de base64 de cada imagen, tras
+// cada pausa al escribir. Se comprueba solo el largo para detectar un cambio.
+const _PREFIJO = /^data:(image\/(?:png|jpeg));base64,/;
+const _leidas = new WeakMap(); // <img> → { largo, mime, b64 } | { largo, nada: true }
+
+function _imagenDe(img) {
+  const src = img.getAttribute('src') || '';
+  const previa = _leidas.get(img);
+  if (previa && previa.largo === src.length) return previa.nada ? null : previa;
+  const m = _PREFIJO.exec(src.slice(0, 40)); // solo el comienzo, nunca el base64 entero
+  const dato = m && src.length > m[0].length
+    ? { largo: src.length, mime: m[1], b64: src.slice(m[0].length) }
+    : { largo: src.length, nada: true };
+  _leidas.set(img, dato);
+  return dato.nada ? null : dato;
+}
+
 /** Las imágenes que tiene ahora una tarjeta, listas para el XML. */
 export function imagenesDeTarjeta(card, qNum) {
   const out = [];
   card.querySelectorAll('.q-image img').forEach(img => {
-    const m = SRC_VALIDO.exec(img.getAttribute('src') || '');
-    if (!m || out.length >= MAX_POR_PREGUNTA) return;
-    const ext = m[1] === 'image/png' ? 'png' : 'jpg';
-    out.push({ name: `pregunta${qNum}-${out.length + 1}.${ext}`, mime: m[1], b64: m[2] });
+    if (out.length >= MAX_POR_PREGUNTA) return;
+    const im = _imagenDe(img);
+    if (!im) return;
+    const ext = im.mime === 'image/png' ? 'png' : 'jpg';
+    out.push({ name: `pregunta${qNum}-${out.length + 1}.${ext}`, mime: im.mime, b64: im.b64 });
   });
   return out;
 }
@@ -117,6 +137,25 @@ function _senalar(fig) {
   fig.scrollIntoView({ block: 'center', behavior: scrollBehavior() });
 }
 
+// «Deshacer» de mover/quitar una imagen: si entretanto se borró una pregunta
+// o el editor se volvió a dibujar, esas tarjetas ya no están en la página y
+// deshacer actuaría sobre nodos sueltos (parecía funcionar y no hacía nada).
+// Se avisa en vez de fingir. Y si el hermano que había detrás de la imagen ya
+// no está en su fila (se quitó), se la deja al final en lugar de fallar.
+function _avisoNoSePuedeDeshacer() {
+  showToast('No se pudo deshacer: la pregunta cambió desde entonces. Mueve la imagen a mano.', 'info');
+}
+
+function _puedeDeshacer(fig, fila, ...tarjetas) {
+  if (fila.isConnected && tarjetas.every(t => t.isConnected)) return true;
+  _avisoNoSePuedeDeshacer();
+  return false;
+}
+
+function _hermanoVigente(siguiente, fila) {
+  return siguiente && siguiente.parentNode === fila ? siguiente : null;
+}
+
 function _mover(fig, destino, botonFoco = null) {
   const origen = fig.closest('.editor-card');
   if (!destino || destino === origen) return false;
@@ -132,7 +171,8 @@ function _mover(fig, destino, botonFoco = null) {
   notificar('imagen movida');
   showToast(`Imagen movida de la pregunta ${origen.dataset.qnum} a la ${destino.dataset.qnum}`, 'info', {
     accion: { texto: 'Deshacer', alPulsar: () => {
-      filaOrigen.insertBefore(fig, siguiente);
+      if (!_puedeDeshacer(fig, filaOrigen, origen, destino)) return null;
+      filaOrigen.insertBefore(fig, _hermanoVigente(siguiente, filaOrigen));
       _actualizar(origen);
       _actualizar(destino);
       _senalar(fig);
@@ -187,7 +227,8 @@ export function quitarImagen(btn) {
   notificar('imagen quitada');
   showToast(`Imagen quitada de la pregunta ${card.dataset.qnum}`, 'info', {
     accion: { texto: 'Deshacer', alPulsar: () => {
-      fila.insertBefore(fig, siguiente);
+      if (!_puedeDeshacer(fig, fila, card)) return null;
+      fila.insertBefore(fig, _hermanoVigente(siguiente, fila));
       _actualizar(card);
       _senalar(fig);
       return fig.querySelector('.q-image-quitar');
@@ -271,7 +312,7 @@ async function _agregarArchivos(card, archivos) {
     if (error) showToast(error, 'error');
     return;
   }
-  lucide.createIcons();
+  crearIconos(fila);
   _actualizar(card);
   _senalar(nuevas[nuevas.length - 1]);
   notificar('imagen agregada');
@@ -280,6 +321,7 @@ async function _agregarArchivos(card, archivos) {
   const hecho = nuevas.length === 1 ? `Imagen agregada a la pregunta ${card.dataset.qnum}` : `${nuevas.length} imágenes agregadas a la pregunta ${card.dataset.qnum}`;
   showToast(error ? `${hecho}. ${error}` : hecho, error ? 'info' : 'success', {
     accion: { texto: 'Deshacer', alPulsar: () => {
+      if (!card.isConnected) { _avisoNoSePuedeDeshacer(); return null; }
       nuevas.forEach(f => f.remove());
       _actualizar(card);
       return btn;

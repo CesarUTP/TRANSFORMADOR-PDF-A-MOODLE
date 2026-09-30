@@ -3,11 +3,14 @@
  */
 import { apiFetch } from './api.js';
 import { abrirEnEditor } from './borrador.js';
+import { cancelConversion } from './carga.js';
 import { modalHistory } from './dom.js';
+import { estado } from './estado.js';
 import { saveFileToUser } from './resultado.js';
+import { confirmar } from './ui/confirmar.js';
 import { abrirModal, cerrarModal } from './ui/modales.js';
 import { showToast } from './ui/toast.js';
-import { esc_html } from './util.js';
+import { crearIconos, esc_html } from './util.js';
 
 export async function openHistory() {
   searchInput.value = '';
@@ -77,7 +80,6 @@ export async function loadHistoryList(enfocarId = null) {
     _datos = (await res.json()).map(item => ({ ...item, fecha: _fecha(item.created_at) }));
     searchWrap.hidden = _datos.length === 0;
     renderHistoryList(enfocarId);
-    lucide.createIcons();
   } catch (err) {
     searchWrap.hidden = true;
     list.innerHTML = `<div style="padding:24px;text-align:center;">
@@ -86,7 +88,7 @@ export async function loadHistoryList(enfocarId = null) {
         <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Reintentar
       </button>
     </div>`;
-    lucide.createIcons();
+    crearIconos(list);
   } finally {
     list.removeAttribute('aria-busy');
   }
@@ -102,7 +104,7 @@ export function renderHistoryList(enfocarId = null) {
       <p style="color:var(--color-text-muted);font-size:var(--text-sm);margin:0 auto 16px;">Cada examen que conviertas queda aquí para volver a descargarlo o reabrir su revisión.</p>
       <button type="button" class="btn btn-primary btn-sm" data-accion="closeHistory">Convertir tu primer examen</button>
     </div>`;
-    lucide.createIcons();
+    crearIconos(list);
     return;
   }
 
@@ -144,7 +146,7 @@ export function renderHistoryList(enfocarId = null) {
         </button>
       </div>
     </li>`).join('')}</ul>`;
-  lucide.createIcons();
+  crearIconos(list);
   if (enfocarId != null) list.querySelector(`.history-row[data-id="${enfocarId}"] .history-delete`)?.focus();
 }
 
@@ -169,11 +171,28 @@ export async function downloadHistory(id, originalFilename) {
 // Reabre en el editor un examen ya convertido (con sus ediciones y
 // puntos), para corregirlo y generar el XML otra vez.
 export async function reopenHistory(id) {
+  // Reabrir REEMPLAZA la revisión que hay en pantalla (o corta una conversión
+  // en curso): antes ocurría sin preguntar y el trabajo se perdía.
+  const enRevision = document.body.classList.contains('editor-active');
+  const convirtiendo = !!estado.conversionAbort;
+  if (enRevision || convirtiendo) {
+    const n = document.querySelectorAll('#editor-questions-container .editor-card').length;
+    const ok = await confirmar({
+      titulo: '¿Reabrir este examen?',
+      mensaje: enRevision
+        ? `Tienes una revisión abierta${n ? ` (${n === 1 ? '1 pregunta' : `${n} preguntas`})` : ''}. Si reabres este examen se perderá la revisión actual, con todo lo que no hayas convertido a XML. Esta acción no se puede deshacer.`
+        : 'Hay una conversión en curso. Si reabres este examen se cancelará y perderás lo que lleva de avance.',
+      confirmar: enRevision ? 'Reabrir y perder la revisión actual' : 'Reabrir y cancelar la conversión',
+      cancelar: enRevision ? 'Seguir con mi revisión' : 'Esperar la conversión',
+    });
+    if (!ok) return;
+  }
   try {
     const res = await apiFetch(`/api/history/${id}/editor`);
     if (!res.ok) throw new Error('sin datos');
     const d = await res.json();
     closeHistory();
+    if (estado.conversionAbort) cancelConversion(); // corta la conversión antes de cambiar de pantalla
     abrirEnEditor(
       { filename: d.filename, category: d.category, total_points: d.total_points },
       { questions: d.questions, answer_key: d.answer_key, skipped_questions: d.skipped_questions || [] },

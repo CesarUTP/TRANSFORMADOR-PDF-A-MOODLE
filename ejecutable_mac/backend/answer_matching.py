@@ -12,7 +12,8 @@ Centralizarlo aquí evita que los dos vuelvan a divergir.
 
 import difflib
 import re
-from typing import List, Tuple
+import unicodedata
+from typing import Dict, List, Optional, Sequence, Tuple
 
 _PREFIX_FALLBACK_MIN_LEN = 20  # evita falsos positivos con fragmentos cortos/genéricos
 _SUBSTRING_FALLBACK_MIN_LEN = 4  # ver is_substring_match
@@ -125,3 +126,144 @@ def find_cloze_brackets(text: str) -> List[Tuple[int, int, str, str]]:
         out.append((i, j + 1, m.group(1), text[m.end():j]))
         i = j + 1
     return out
+
+
+# ── Resolución de «¿cuál opción es la respuesta correcta?» ───────────────────
+# UNA sola función que usan validator.py (¿se puede resolver?) y
+# xml_builder.py (¿cuál marcar?). Antes cada uno tenía su propia lógica: el
+# validador aceptaba cualquier coincidencia difusa y el constructor exigía
+# coincidencia única y, si no la hallaba, marcaba la «A» (o la primera opción
+# de un hueco Cloze) en silencio: una respuesta inventada. Ahora, si no se
+# puede decidir sin adivinar, devuelve None y quien llama lo trata como error.
+
+class RespuestaNoResuelta(ValueError):
+    """La respuesta de la clave no identifica UNA opción. Nunca se adivina."""
+
+
+def plegar(texto: str) -> str:
+    """Forma comparable: sin tildes, sin mayúsculas, espacios colapsados."""
+    d = unicodedata.normalize("NFKD", str(texto or ""))
+    d = "".join(c for c in d if not unicodedata.combining(c))
+    return " ".join(d.casefold().split())
+
+
+_LETRA_CON_SIGNO = re.compile(r"^\(?([A-Za-z])[.):]?\)?$")
+
+
+def resolver_opcion(
+    respuesta: str,
+    opciones: Dict[str, str],
+    permitir_letra: bool = True,
+) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Decide cuál de `opciones` ({clave: texto}) es la que nombra `respuesta`.
+
+    Devuelve (clave, None) si hay UNA opción clara, o (None, motivo) con
+    motivo "ninguna" (no coincide con nada) o "ambigua" (varias por igual).
+    Orden de prioridad (la primera etapa que decide, gana):
+      1. texto completo igual (sin importar mayúsculas ni espacios de los
+         bordes): con {A: Python, B: Java, C: JavaScript, D: C}, «C» es la
+         opción cuyo TEXTO es «C» (D), no la letra C;
+      2. la letra de la opción («b», «B», «B)», «(b)») — solo si
+         `permitir_letra` (los huecos de Completar no tienen letras);
+      3. texto igual sin tildes/mayúsculas/espacios repetidos (único);
+      4. una contiene a la otra (is_substring_match, con su mínimo) (único);
+      5. respuesta cortada a mitad de palabra (is_truncated_answer_match) (único).
+    Una etapa con 2+ coincidencias no decide: pasa a la siguiente y, si
+    ninguna decide, el resultado es "ambigua".
+    """
+    obj = str(respuesta or "").strip()
+    if not obj or not opciones:
+        return None, "ninguna"
+    low = obj.lower()
+    textos = {k: str(v).strip().lower() for k, v in opciones.items()}
+
+    for k, t in textos.items():
+        if low == t:
+            return k, None
+
+    if permitir_letra:
+        for k in opciones:
+            if low == str(k).lower():
+                return k, None
+        m = _LETRA_CON_SIGNO.match(obj)
+        if m:
+            for k in opciones:
+                if m.group(1).lower() == str(k).lower():
+                    return k, None
+
+    hubo_varias = False
+    plegado = plegar(obj)
+    plegados = {k: plegar(v) for k, v in opciones.items()}
+    etapas = (
+        lambda k: bool(plegado) and plegado == plegados[k],
+        lambda k: is_substring_match(plegado, plegados[k]),
+        lambda k: is_truncated_answer_match(low, textos[k]),
+    )
+    for cumple in etapas:
+        halladas = [k for k in opciones if cumple(k)]
+        if len(halladas) == 1:
+            return halladas[0], None
+        if len(halladas) > 1:
+            hubo_varias = True
+    return None, ("ambigua" if hubo_varias else "ninguna")
+
+
+def resolver_hueco_cloze(respuesta: str, opciones: Sequence[str]) -> Tuple[Optional[int], Optional[str]]:
+    """Igual que resolver_opcion para las opciones de un hueco Cloze; devuelve
+    el ÍNDICE de la opción. Sin letras: aquí «B» solo cuenta si es el texto."""
+    clave, motivo = resolver_opcion(respuesta, {str(i): o for i, o in enumerate(opciones)}, permitir_letra=False)
+    return (int(clave) if clave is not None else None), motivo
+
+
+def clave_de_huecos(respuesta_clave: str, n_huecos: int, letra_unica: str = "") -> Dict[str, List[str]]:
+    """
+    {"A": ["resp", ...], ...} a partir de la clave de un Cloze
+    («A. respuesta; B. resp1 | resp2»). Compartida por validator.py y
+    xml_builder.py. Formato legado: sin ningún «Letra. respuesta» y con un
+    único hueco, toda la clave es la respuesta de ese hueco (`letra_unica`).
+    """
+    por_hueco: Dict[str, List[str]] = {}
+    for m in re.finditer(r"([A-Za-z])[\.:]\s*([^;\n]+)", respuesta_clave or ""):
+        partes = split_answers(m.group(2))
+        if partes:
+            por_hueco[m.group(1).upper()] = partes
+    if not por_hueco and n_huecos == 1 and (respuesta_clave or "").strip():
+        por_hueco[letra_unica.upper()] = [respuesta_clave.strip()]
+    return por_hueco
+
+
+# Verdadero/Falso: lo que acepta el validador es lo que entiende el constructor
+# (antes el validador rechazaba «V» que el constructor sí aceptaba). Se consulta
+# con la respuesta ya sin espacios de los bordes y en minúscula.
+TRUEFALSE_ALIAS = {"verdadero": True, "true": True, "v": True, "falso": False, "false": False, "f": False}
+
+
+def clave_de_columna(columna: Dict[str, str], letra: str) -> Optional[str]:
+    """La clave real de `columna` para la letra de la clave de respuestas, sin
+    distinguir mayúsculas («B» de la clave y «b» de la columna, o al revés);
+    None si no existe. Compartida por validator.py y xml_builder.py: antes el
+    validador comparaba la letra tal cual y el constructor la pasaba a
+    minúscula, así que con la Columna B rotulada «A/B» el examen validaba y el
+    XML salía con parejas equivocadas."""
+    l = str(letra or "").strip()
+    if l in columna:
+        return l
+    for k in columna:
+        if str(k).lower() == l.lower():
+            return k
+    return None
+
+
+# Número aceptado en una pregunta numérica: signo opcional, dígitos ASCII, punto
+# o coma decimal, exponente opcional. float() de Python daba por buenos «nan»,
+# «inf», «1_000» y dígitos de otros alfabetos (٣), que Moodle no reconoce como
+# número. Los separadores de miles («1,000») nunca se admitieron.
+_NUMERO = re.compile(r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?")
+
+
+def normalizar_numero(texto: str) -> Optional[str]:
+    """«3,5» → «3.5» (la coma decimal es común al copiar un documento en
+    español, pero Moodle solo entiende el punto); None si no es un número."""
+    t = str(texto or "").strip().replace(",", ".")
+    return t if _NUMERO.fullmatch(t) else None

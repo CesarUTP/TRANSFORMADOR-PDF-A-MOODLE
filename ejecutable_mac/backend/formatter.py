@@ -20,6 +20,7 @@ import re
 import threading
 import time
 import logging
+import weakref
 from dataclasses import dataclass
 from typing import Callable, List, Optional
 
@@ -93,7 +94,96 @@ def _throttle() -> None:
                 _rpm_calls.append(now)
                 return
             wait = 60 - (now - _rpm_calls[0]) + 0.5
-        time.sleep(max(wait, 0.5))
+        _esperar(max(wait, 0.5))
+
+
+# ── Cancelación de una conversión ───────────────────────────────────────────
+# «Cancelar» en la pantalla de carga cierra la conexión del navegador, pero el
+# hilo que llama a Gemini seguía trabajando (y ocupando uno de los 2 cupos de
+# conversión) hasta terminar la llamada y sus reintentos. Cada conversión
+# tiene ahora una Cancelacion: main.py la activa al desconectarse el cliente
+# y este módulo la revisa en cada línea del stream, en cada espera de
+# reintento y antes de cada llamada. Va por hilo (threading.local) para no
+# cambiar la firma de todas las funciones intermedias.
+
+class ConversionCancelada(Exception):
+    """El docente canceló (o cerró) la conversión: se abandona sin reintentos."""
+
+
+class Cancelacion:
+    def __init__(self) -> None:
+        self._evento = threading.Event()
+        self._lock = threading.Lock()
+        self._cierres: list = []
+
+    @property
+    def cancelada(self) -> bool:
+        return self._evento.is_set()
+
+    def cancelar(self) -> None:
+        """Activa la cancelación y corta cualquier conexión en curso."""
+        self._evento.set()
+        with self._lock:
+            cierres, self._cierres = self._cierres, []
+        for cierre in cierres:
+            try:
+                cierre()
+            except Exception:  # noqa: BLE001
+                pass
+
+    def comprobar(self) -> None:
+        if self._evento.is_set():
+            raise ConversionCancelada()
+
+    def esperar(self, segundos: float) -> None:
+        """Como time.sleep, pero se interrumpe al cancelar."""
+        if self._evento.wait(max(0.0, segundos)):
+            raise ConversionCancelada()
+
+    def registrar(self, cierre) -> None:
+        """Función que corta una conexión abierta; si ya se canceló, se
+        ejecuta de inmediato y se lanza ConversionCancelada."""
+        with self._lock:
+            if not self._evento.is_set():
+                self._cierres.append(cierre)
+                return
+        try:
+            cierre()
+        except Exception:  # noqa: BLE001
+            pass
+        raise ConversionCancelada()
+
+    def quitar(self, cierre) -> None:
+        with self._lock:
+            if cierre in self._cierres:
+                self._cierres.remove(cierre)
+
+
+_cancel_local = threading.local()
+
+
+def usar_cancelacion(cancelacion: Optional[Cancelacion]) -> None:
+    """Asocia una Cancelacion al hilo actual (None la quita)."""
+    _cancel_local.actual = cancelacion
+
+
+def _cancelacion_actual() -> Optional[Cancelacion]:
+    return getattr(_cancel_local, "actual", None)
+
+
+def comprobar_cancelacion() -> None:
+    """Lanza ConversionCancelada si la conversión de este hilo se canceló."""
+    c = _cancelacion_actual()
+    if c is not None:
+        c.comprobar()
+
+
+def _esperar(segundos: float) -> None:
+    c = _cancelacion_actual()
+    if c is not None:
+        c.esperar(segundos)
+    else:
+        time.sleep(max(0.0, segundos))
 
 
 def _quota_retry_seconds(exc: Exception) -> float:
@@ -157,13 +247,33 @@ class _GenResult:
     output_tokens: int
 
 
+# Partes de imagen ya codificadas, por imagen (mientras la imagen exista):
+# codificar una página en WebP sin pérdida es lento, y la misma lista de
+# páginas se enviaba de nuevo en cada reintento de calidad y en la llamada de
+# preguntas omitidas. La entrada se borra sola cuando la imagen se libera.
+_partes_imagen: dict = {}
+
+
 def _image_part(img: Image.Image) -> dict:
+    clave = id(img)
+    hit = _partes_imagen.get(clave)
+    if hit is not None and hit[0]() is img:
+        return hit[1]
     # WebP sin pérdida: el mismo formato que usa el SDK de Gemini, para que
     # las páginas con imágenes (código en captura, marcas de color) lleguen
     # con la misma calidad que antes de dejar el SDK.
     buf = io.BytesIO()
     img.save(buf, format="webp", lossless=True)
-    return {"inline_data": {"mime_type": "image/webp", "data": base64.b64encode(buf.getvalue()).decode()}}
+    parte = {"inline_data": {"mime_type": "image/webp", "data": base64.b64encode(buf.getvalue()).decode()}}
+    try:
+        def _olvidar(ref, clave=clave):
+            actual = _partes_imagen.get(clave)
+            if actual is not None and actual[0] is ref:
+                _partes_imagen.pop(clave, None)
+        _partes_imagen[clave] = (weakref.ref(img, _olvidar), parte)
+    except TypeError:  # objeto sin soporte de weakref: simplemente no se guarda
+        pass
+    return parte
 
 
 def _build_request(system_prompt: str, raw_text: str, page_images, generation_config: dict) -> dict:
@@ -175,6 +285,76 @@ def _build_request(system_prompt: str, raw_text: str, page_images, generation_co
     }
 
 
+class RespuestaVacia(RuntimeError):
+    """Sin texto: bloqueo de seguridad u otra respuesta vacía."""
+
+    def __init__(self, finish: str, block: str):
+        self.motivo = block or finish or "desconocido"
+        super().__init__(f"Respuesta vacía de la IA (finish={finish or '-'}, block={block or '-'})")
+
+
+class RespuestaCortada(RuntimeError):
+    """El stream terminó sin finishReason: la conexión se cortó a mitad."""
+
+
+class RespuestaInterrumpida(RuntimeError):
+    """La IA terminó por un motivo distinto de STOP (SAFETY, RECITATION…)."""
+
+    def __init__(self, motivo: str):
+        self.motivo = motivo
+        super().__init__(f"La IA interrumpió la respuesta (finish={motivo})")
+
+
+def _post(url: str, headers: dict, body: dict, timeout: int):
+    """requests.post que se puede abandonar al cancelar: la petición corre en
+    un hilo aparte cuando hay una Cancelacion activa, porque esperar las
+    cabeceras de la respuesta puede tardar bastante y no hay otra forma de
+    interrumpirlo. Si se abandona, ese hilo cierra la respuesta al recibirla."""
+    kwargs = dict(
+        headers=headers, json=body, stream=True,
+        # (conexión, lectura entre fragmentos): una respuesta que deja de
+        # llegar se corta sin esperar el tope total.
+        timeout=(20, min(timeout, 120)),
+    )
+    canc = _cancelacion_actual()
+    if canc is None:
+        return requests.post(url, **kwargs)
+    canc.comprobar()
+    estado: dict = {"resp": None, "exc": None, "abandonado": False}
+    lock = threading.Lock()
+
+    def run() -> None:
+        try:
+            r = requests.post(url, **kwargs)
+        except BaseException as exc:  # noqa: BLE001 — se re-lanza en el hilo que espera
+            with lock:
+                estado["exc"] = exc
+            return
+        with lock:
+            abandonada = estado["abandonado"]
+            if not abandonada:
+                estado["resp"] = r
+        if abandonada:
+            try:
+                r.close()
+            except Exception:  # noqa: BLE001
+                pass
+
+    hilo = threading.Thread(target=run, daemon=True)
+    hilo.start()
+    while True:
+        hilo.join(0.25)
+        if not hilo.is_alive():
+            break
+        if canc.cancelada:
+            with lock:
+                estado["abandonado"] = True
+            raise ConversionCancelada()
+    if estado["exc"] is not None:
+        raise estado["exc"]
+    return estado["resp"]
+
+
 def _stream_generate(body: dict, timeout: int, on_text: Optional[Callable[[str], None]]) -> _GenResult:
     """
     Una llamada a streamGenerateContent (SSE). Va acumulando el texto y
@@ -184,15 +364,8 @@ def _stream_generate(body: dict, timeout: int, on_text: Optional[Callable[[str],
     """
     url = f"{_API_BASE}/models/{GEMINI_MODEL_NAME}:streamGenerateContent?alt=sse"
     deadline = time.monotonic() + timeout
-    resp = requests.post(
-        url,
-        headers={"x-goog-api-key": get_api_key(), "Content-Type": "application/json"},
-        json=body,
-        stream=True,
-        # (conexión, lectura entre fragmentos): una respuesta que deja de
-        # llegar se corta sin esperar el tope total.
-        timeout=(20, min(timeout, 120)),
-    )
+    canc = _cancelacion_actual()
+    resp = _post(url, {"x-goog-api-key": get_api_key(), "Content-Type": "application/json"}, body, timeout)
     if resp.status_code != 200:
         try:
             body = resp.text
@@ -204,12 +377,22 @@ def _stream_generate(body: dict, timeout: int, on_text: Optional[Callable[[str],
     # vez de "¿Cuánto" (lo detectó dev/eval.py). La API siempre responde
     # en UTF-8.
     resp.encoding = "utf-8"
+    if canc is not None:
+        canc.registrar(resp.close)  # cancelar cierra la conexión y desbloquea la lectura
 
     text, finish, prompt_tokens, output_tokens, block = "", "", 0, 0, ""
     try:
-        for line in resp.iter_lines(decode_unicode=True):
+        # Se parte solo por "\n" (bytes) y se decodifica a mano: con
+        # decode_unicode=True, requests usa str.splitlines(), que también
+        # corta en U+2028, U+2029 y U+0085 — caracteres que pueden ir dentro
+        # del texto de una pregunta — y el evento JSON llegaba partido.
+        for raw in resp.iter_lines(delimiter=b"\n"):
+            if canc is not None:
+                canc.comprobar()
             if time.monotonic() > deadline:
                 raise TimeoutError(f"La respuesta de la IA superó {timeout} s")
+            line = raw.decode("utf-8", "replace") if isinstance(raw, bytes) else raw
+            line = line.rstrip("\r")
             if not line or not line.startswith("data:"):
                 continue
             event = json.loads(line[5:])
@@ -228,31 +411,53 @@ def _stream_generate(body: dict, timeout: int, on_text: Optional[Callable[[str],
             output_tokens = usage.get("candidatesTokenCount", output_tokens) or output_tokens
             if on_text:
                 on_text(text)
+    except ConversionCancelada:
+        raise
+    except Exception:
+        # Cancelar cierra la conexión y la lectura falla con un error
+        # cualquiera: eso no es un fallo que reintentar.
+        if canc is not None and canc.cancelada:
+            raise ConversionCancelada() from None
+        raise
     finally:
+        if canc is not None:
+            canc.quitar(resp.close)
         resp.close()
 
     if not text:
         # Bloqueo de seguridad, respuesta vacía, etc.: cuenta como un intento
         # fallido más y se reintenta.
-        raise RuntimeError(f"Respuesta vacía de la IA (finish={finish or '-'}, block={block or '-'})")
+        raise RespuestaVacia(finish, block)
     if not finish:
         # El stream terminó sin finishReason: la conexión se cortó a mitad
         # de la respuesta. Sin esto, el texto truncado llegaba al parser
         # como un JSON mal formado ("Expecting value: line 50…").
-        raise RuntimeError(f"La respuesta de la IA llegó cortada ({len(text)} caracteres)")
+        raise RespuestaCortada(f"La respuesta de la IA llegó cortada ({len(text)} caracteres)")
     return _GenResult(text=text, finish_reason=finish, prompt_tokens=prompt_tokens, output_tokens=output_tokens)
 
 
 def _progress_counter(pattern: str, progress: ProgressFn) -> Optional[Callable[[str], None]]:
     """Convierte el texto acumulado en "preguntas terminadas" y avisa solo
-    cuando el número cambia."""
+    cuando el número cambia. Cuenta de forma incremental: cada fragmento
+    solo busca desde donde terminó la última coincidencia (antes repetía
+    findall sobre todo el texto acumulado en cada fragmento: O(n²) con una
+    respuesta larga)."""
     if progress is None:
         return None
     rx = re.compile(pattern)
+    contadas = [0]
+    desde = [0]
+    largo = [0]
     last = [-1]
 
     def on_text(acc: str) -> None:
-        n = len(rx.findall(acc))
+        if len(acc) < largo[0]:  # texto nuevo (reintento): se empieza de cero
+            contadas[0], desde[0] = 0, 0
+        largo[0] = len(acc)
+        for m in rx.finditer(acc, desde[0]):
+            contadas[0] += 1
+            desde[0] = m.end()
+        n = contadas[0]
         if n != last[0]:
             last[0] = n
             try:
@@ -278,6 +483,10 @@ def _sin_respuesta_ratio(text: str) -> float:
         return 1.0
     return section.upper().count("SIN_RESPUESTA") / len(lines)
 
+
+
+def _contar_preguntas_texto(texto: str) -> int:
+    return len(re.findall(r"(?m)^Pregunta\s+\d+:", texto))
 
 
 def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = None,
@@ -311,33 +520,45 @@ def verify_and_format(raw_text: str, page_images: Optional[List[Image.Image]] = 
     # Con imágenes, la petición a Gemini puede tardar bastante más que una
     # de solo texto (se ha visto hasta ~2 minutos en pruebas reales) — es
     # normal, no es que esté colgado.
-    # Reintento de CALIDAD: solo tiene sentido cuando hay imágenes de por
-    # medio — es ahí donde se ha visto que una corrida "lee mal" el color
-    # de las marcas aunque técnicamente no haya ningún error de API. Con
-    # texto plano no hay nada que una segunda lectura idéntica vaya a
-    # mejorar, así que no vale la pena gastar la llamada extra.
     # El reintento de calidad solo vale la pena cuando el llamador confirmó
-    # que hay COLOR de por medio (permitir_reintento_calidad) — es ahí,
-    # y solo ahí, donde se ha visto que una corrida "lee mal" la marca. Un
-    # examen sin ninguna respuesta marcada (el docente completa la clave
-    # después, en el editor) da SIEMPRE ratio 1.0, y antes eso bastaba para
-    # pagar hasta 3 llamadas completas por cualquier imagen del documento
-    # (una foto, un logo, un membrete), sin relación con el color.
+    # que hay una marca de respuesta de por medio (permitir_reintento_calidad,
+    # ver pipeline._hay_marca_de_respuestas) — es ahí, y solo ahí, donde se ha
+    # visto que una corrida "lee mal" la marca. Un examen sin ninguna
+    # respuesta marcada (el docente completa la clave después, en el editor)
+    # da SIEMPRE ratio 1.0, y antes eso bastaba para pagar hasta 3 llamadas
+    # completas por cualquier imagen del documento (una foto, un logo, un
+    # membrete), sin relación con el color.
     quality_attempts = GEMINI_MAX_QUALITY_ATTEMPTS if (page_images and permitir_reintento_calidad) else 1
     best_text: Optional[str] = None
-    best_ratio = 1.1  # peor que cualquier ratio real (0.0-1.0)
+    best_score = None
     best_was_reformatted = False
 
     for quality_attempt in range(1, quality_attempts + 1):
-        result_text, was_reformatted = _call_gemini_with_retries(body, raw_text, on_text, on_retry)
+        try:
+            result_text, was_reformatted = _call_gemini_with_retries(body, raw_text, on_text, on_retry)
+        except ConversionCancelada:
+            raise
+        except Exception as exc:  # noqa: BLE001 — con un resultado ya bueno, un fallo de la relectura no lo pierde
+            if best_text is None:
+                raise
+            logger.warning(
+                "Gemini prefiltro: falló el intento de calidad %d/%d (%s); se usa el mejor resultado ya obtenido.",
+                quality_attempt, quality_attempts, exc,
+            )
+            break
 
         ratio = _sin_respuesta_ratio(result_text) if page_images else 0.0
+        n = _contar_preguntas_texto(result_text)
         logger.info(
-            "Gemini prefiltro: intento de calidad %d/%d - SIN_RESPUESTA ratio %.2f",
-            quality_attempt, quality_attempts, ratio,
+            "Gemini prefiltro: intento de calidad %d/%d - %d preguntas, SIN_RESPUESTA ratio %.2f",
+            quality_attempt, quality_attempts, n, ratio,
         )
-        if ratio < best_ratio:
-            best_text, best_ratio, best_was_reformatted = result_text, ratio, was_reformatted
+        # Igual que en extract_structured: primero por CANTIDAD de preguntas
+        # y solo después por menos SIN_RESPUESTA (el ratio baja también
+        # cuando el intento omite las preguntas sin marca).
+        score = (n, -ratio)
+        if best_score is None or score > best_score:
+            best_text, best_score, best_was_reformatted = result_text, score, was_reformatted
 
         if ratio <= GEMINI_SIN_RESPUESTA_THRESHOLD:
             break
@@ -369,10 +590,38 @@ def _not_an_exam_error() -> HTTPException:
     )
 
 
+def _demasiado_largo_error() -> HTTPException:
+    return HTTPException(
+        status_code=422,
+        detail={
+            "message": "El documento es demasiado largo para procesarlo de una sola vez:",
+            "errors": [
+                "La respuesta de la IA superó el tamaño máximo permitido.",
+                "Divide el examen en partes más pequeñas y súbelas por separado.",
+            ],
+        },
+    )
+
+
+def _comprobar_finalizacion(result: "_GenResult") -> None:
+    """La respuesta solo es completa si la IA terminó por STOP. MAX_TOKENS
+    (texto o JSON cortado a la mitad) no se arregla reintentando: se falla con
+    un mensaje claro. Cualquier otro motivo (SAFETY, RECITATION, OTHER…) se
+    trata como un intento fallido, no como una respuesta parcial que
+    parecería completa: se perdería contenido del examen sin avisar."""
+    finish = (result.finish_reason or "").upper()
+    if finish in ("", "STOP"):
+        return
+    if finish == "MAX_TOKENS":
+        raise _demasiado_largo_error()
+    raise RespuestaInterrumpida(finish)
+
+
 def _call_gemini_with_retries(body: dict, raw_text: str, on_text=None, on_retry=None) -> tuple[str, bool]:
     """Modo texto: una llamada lógica que devuelve (texto_reformateado, fue_reformateado)."""
 
     def parse(result: _GenResult) -> tuple[str, bool]:
+        _comprobar_finalizacion(result)
         result_text = result.text.strip()
         logger.info(
             "Gemini prefiltro: respuesta recibida (%d chars). Primeros 400 chars:\n%s",
@@ -407,8 +656,45 @@ def _notify(on_retry: Optional[Callable[[str], None]], message: str) -> None:
         pass
 
 
+def _fallo_final(clase: str, timeout: int, detalle: str = "") -> HTTPException:
+    """Mensaje veraz según la CAUSA del último fallo (antes casi todo terminaba
+    en «el servidor está muy concurrido», también un bloqueo de seguridad o un
+    JSON inválido)."""
+    if clase == "timeout":
+        return HTTPException(status_code=503, detail=(
+            f"La IA tardó demasiado en responder (más de {timeout} segundos). Puede que el "
+            "documento sea muy largo o que el servicio esté lento: inténtalo de nuevo, o divide el examen en partes."))
+    if clase == "bloqueo" and detalle.upper() == "MAX_TOKENS":
+        return HTTPException(status_code=502, detail=(
+            "La IA agotó su capacidad de respuesta sin llegar a escribir nada. "
+            "Inténtalo de nuevo; si se repite con este archivo, prueba dividiéndolo."))
+    if clase == "bloqueo":
+        return HTTPException(status_code=502, detail=(
+            "La IA no devolvió una respuesta para este documento"
+            + (f" (motivo: {detalle})" if detalle else "")
+            + ". Puede que su filtro de seguridad rechazara algún contenido; prueba con otro archivo o divídelo."))
+    if clase == "interrumpida":
+        return HTTPException(status_code=502, detail=(
+            "La IA interrumpió su respuesta antes de terminarla"
+            + (f" (motivo: {detalle})" if detalle else "")
+            + ". Inténtalo de nuevo; si se repite con este archivo, prueba dividiéndolo."))
+    if clase == "json":
+        return HTTPException(status_code=502, detail=(
+            "La IA devolvió una respuesta que no se pudo interpretar, incluso después de reintentar. "
+            "Inténtalo de nuevo; si se repite con este archivo, envía el registro de errores al desarrollador."))
+    if clase == "cortada":
+        return HTTPException(status_code=503, detail=(
+            "La respuesta de la IA se cortó varias veces a mitad de camino (conexión inestable). "
+            "Revisa tu conexión a internet e inténtalo de nuevo."))
+    return HTTPException(status_code=503, detail=(
+        "No se pudo completar la lectura con la IA por un error inesperado. "
+        "Inténtalo de nuevo en unos minutos."))
+
+
 def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on_text=None,
-                           on_retry: Optional[Callable[[str], None]] = None):
+                           on_retry: Optional[Callable[[str], None]] = None, *,
+                           quota_waits: int = 5, overload_waits=None,
+                           quota_max_seconds: Optional[float] = None):
     """
     Una llamada "lógica" a Gemini, con el reintento por FALLO DE RED/API de
     siempre (no confundir con el reintento de calidad, que es sobre
@@ -416,14 +702,27 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
     la respuesta en el resultado; si lanza HTTPException se propaga tal
     cual, y cualquier otra excepción cuenta como un intento fallido más
     (ej. un JSON mal formado se reintenta igual que un error de red).
+
+    quota_waits / overload_waits / quota_max_seconds acotan las esperas: las
+    llamadas de UNA pregunta (botones de IA del editor) usan valores chicos
+    para no dejar al docente esperando minutos sin feedback.
+
+    Si hay una Cancelacion activa en este hilo (ver usar_cancelacion), todas
+    las esperas y la lectura del stream se interrumpen con
+    ConversionCancelada.
     """
     max_retries = GEMINI_MAX_RETRIES
     wait_time = GEMINI_RETRY_WAIT_SECONDS
     # Un 429 (cuota por minuto agotada) no es un fallo del servicio: basta
     # con esperar lo que Google indica. Tiene su propio contador para no
     # gastar los reintentos normales esperando la cuota.
-    quota_waits_left = 5
-    overload_waits = list(_OVERLOAD_WAITS)
+    quota_waits_left = quota_waits
+    overload_waits = list(_OVERLOAD_WAITS if overload_waits is None else overload_waits)
+    # Fallos deterministas (un timeout o un bloqueo de seguridad se repiten
+    # igual con el mismo documento): se reintentan UNA vez, no todas las veces.
+    timeouts = 0
+    bloqueos = 0
+    ultimo_fallo, ultimo_detalle = "otro", ""
 
     if not get_api_key():
         raise HTTPException(status_code=503, detail=MISSING_API_KEY_MESSAGE)
@@ -432,6 +731,7 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
     while attempt < max_retries:
         attempt += 1
         try:
+            comprobar_cancelacion()
             logger.info(
                 "Gemini prefiltro: enviando contenido (%d chars de texto)... Intento %d/%d",
                 input_chars, attempt, max_retries,
@@ -441,6 +741,9 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
             result = _stream_generate(body, timeout, on_text)
             _record_call(result, time.monotonic() - t0)
             return parse(result)
+
+        except ConversionCancelada:
+            raise
 
         except GeminiQuotaError as exc:
             if "PerDay" in str(exc):
@@ -457,7 +760,8 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
                         "Si esto ocurre seguido, conviene usar una API key con facturación activada."
                     ),
                 )
-            if quota_waits_left <= 0:
+            delay = _quota_retry_seconds(exc)
+            if quota_waits_left <= 0 or (quota_max_seconds is not None and delay > quota_max_seconds):
                 logger.error("Gemini prefiltro: cuota agotada de forma persistente.")
                 raise HTTPException(
                     status_code=503,
@@ -465,10 +769,9 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
                 )
             quota_waits_left -= 1
             attempt -= 1
-            delay = _quota_retry_seconds(exc)
             logger.warning("Gemini prefiltro: cuota por minuto agotada (429); esperando %.0fs.", delay)
             _notify(on_retry, f"Límite por minuto del servicio de IA alcanzado: se continúa en {delay:.0f} s…")
-            time.sleep(delay)
+            _esperar(delay)
 
         except GeminiOverloadedError as exc:
             # Google saturado o con un error interno: no es un problema del
@@ -486,7 +789,7 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
             delay = overload_waits.pop(0)
             logger.warning("Gemini prefiltro: servicio saturado (%s); reintento en %ds.", exc.code, delay)
             _notify(on_retry, f"El servicio de IA está saturado; reintentando en {delay} s…")
-            time.sleep(delay)
+            _esperar(delay)
 
         except HTTPException:
             # Ya es un error nuestro con status/detail bien formados (ej. el
@@ -519,6 +822,17 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
                     f"inválida del modelo o del documento). Detalle técnico: error HTTP {exc.code}."
                 ),
             )
+        except (TimeoutError, requests.exceptions.ReadTimeout) as exc:
+            # La IA (o la conexión) dejó de responder a tiempo. NO es "sin
+            # internet" ni "muy concurrido", y con el mismo documento vuelve a
+            # pasar: se reintenta una sola vez.
+            timeouts += 1
+            logger.warning("Gemini prefiltro: tiempo agotado en el intento %d/%d. Detalle: %s", attempt, max_retries, exc)
+            if timeouts >= 2 or attempt >= max_retries:
+                logger.error("Gemini prefiltro: tiempo agotado de forma repetida.")
+                raise _fallo_final("timeout", timeout)
+            _notify(on_retry, "La IA tardó demasiado en responder; reintentando una vez…")
+            _esperar(wait_time)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
             # Sin internet (o Google inalcanzable) NO es lo mismo que "el
             # servicio está saturado" — antes se agrupaba con el genérico
@@ -530,7 +844,7 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
             )
             if attempt < max_retries:
                 _notify(on_retry, "No se pudo conectar con el servicio de IA; reintentando…")
-                time.sleep(wait_time)
+                _esperar(wait_time)
             else:
                 logger.error("Gemini prefiltro: sin conexión tras %d intentos.", max_retries)
                 raise HTTPException(
@@ -542,16 +856,27 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
                 "Gemini prefiltro: fallo en el intento %d/%d. Detalle: %s",
                 attempt, max_retries, exc
             )
-            if attempt < max_retries:
+            # Qué pasó de verdad, para el mensaje final y para no repetir
+            # inútilmente lo que es determinista.
+            if isinstance(exc, RespuestaVacia):
+                ultimo_fallo, ultimo_detalle = "bloqueo", exc.motivo
+                bloqueos += 1
+            elif isinstance(exc, RespuestaInterrumpida):
+                ultimo_fallo, ultimo_detalle = "interrumpida", exc.motivo
+                bloqueos += 1
+            elif isinstance(exc, RespuestaCortada):
+                ultimo_fallo, ultimo_detalle = "cortada", ""
+            elif isinstance(exc, ValueError):  # json.JSONDecodeError y afines
+                ultimo_fallo, ultimo_detalle = "json", ""
+            else:
+                ultimo_fallo, ultimo_detalle = "otro", ""
+            if attempt < max_retries and bloqueos < 2:
                 logger.info("Esperando %d segundos antes de reintentar...", wait_time)
                 _notify(on_retry, "La respuesta de la IA llegó incompleta; reintentando…")
-                time.sleep(wait_time)
+                _esperar(wait_time)
             else:
-                logger.error("Gemini prefiltro no disponible tras %d intentos.", max_retries)
-                raise HTTPException(
-                    status_code=503,
-                    detail="El servidor de procesamiento está muy concurrido en este momento. Por favor, intenta de nuevo más tarde."
-                )
+                logger.error("Gemini prefiltro no disponible tras %d intento(s).", attempt)
+                raise _fallo_final(ultimo_fallo, timeout, ultimo_detalle)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -559,19 +884,10 @@ def _generate_with_retries(body: dict, input_chars: int, parse, timeout: int, on
 # ══════════════════════════════════════════════════════════════════════════
 
 def _parse_structured_response(result: _GenResult) -> dict:
-    if result.finish_reason == "MAX_TOKENS":
-        # JSON cortado a la mitad: no se puede leer, y reintentar da lo
-        # mismo. Se falla con un mensaje claro en vez de uno genérico.
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "message": "El documento es demasiado largo para procesarlo de una sola vez:",
-                "errors": [
-                    "La respuesta de la IA superó el tamaño máximo permitido.",
-                    "Divide el examen en partes más pequeñas y súbelas por separado.",
-                ],
-            },
-        )
+    # MAX_TOKENS: JSON cortado a la mitad, no se puede leer y reintentar da
+    # lo mismo. Cualquier otro motivo distinto de STOP (SAFETY…) es un
+    # intento fallido con su propio mensaje (ver _comprobar_finalizacion).
+    _comprobar_finalizacion(result)
     data = json.loads(result.text)
     logger.info(
         "Gemini prefiltro (JSON): es_examen=%s, %d pregunta(s).",
@@ -620,8 +936,19 @@ def extract_structured(raw_text: str, page_images: Optional[List[Image.Image]] =
     best: Optional[dict] = None
     best_score = None
     for quality_attempt in range(1, quality_attempts + 1):
-        data = _generate_with_retries(body, len(raw_text), _parse_structured_response,
-                                      GEMINI_REQUEST_TIMEOUT_SECONDS_JSON, on_text, on_retry)
+        try:
+            data = _generate_with_retries(body, len(raw_text), _parse_structured_response,
+                                          GEMINI_REQUEST_TIMEOUT_SECONDS_JSON, on_text, on_retry)
+        except ConversionCancelada:
+            raise
+        except Exception as exc:  # noqa: BLE001 — con un resultado ya bueno, un fallo de la relectura no lo pierde
+            if best is None:
+                raise
+            logger.warning(
+                "Gemini prefiltro (JSON): falló el intento de calidad %d/%d (%s); se usa el mejor resultado ya obtenido.",
+                quality_attempt, quality_attempts, exc,
+            )
+            break
         ratio = _unanswered_ratio(data) if page_images else 0.0
         n = len(data.get("preguntas") or [])
         logger.info(
@@ -665,14 +992,18 @@ def extract_missing(fragmentos: List[str], page_images: Optional[List[Image.Imag
     """
     Pide SOLO las preguntas de `fragmentos` (mismo esquema que
     extract_structured, sin reintento de calidad: no vale la pena para una
-    llamada tan chica). Devuelve la lista "preguntas" del esquema, en el
-    mismo orden que `fragmentos` y recortada a como mucho len(fragmentos).
+    llamada tan chica). Devuelve la lista "preguntas" del esquema TAL COMO
+    la devolvió la IA: cada una lleva en "orden" el número (1, 2, 3…) del
+    fragmento que transcribe, y es el llamador quien las empareja con sus
+    fragmentos por ese campo (ver pipeline._completar_omitidas) — emparejar
+    por posición ponía el texto de un fragmento en el hueco de otro si la
+    IA devolvía menos preguntas o las reordenaba.
 
     Es "mejor esfuerzo": cualquier fallo (red, cuota, JSON inválido) se
     registra y devuelve [] en vez de propagar la excepción — el llamador
     (pipeline._completar_omitidas) sigue sin esta mejora, exactamente como
     si no se hubiera intentado. Nunca debe ser la causa de que una
-    conversión que sí venía bien termine en error.
+    conversión que sí venía bien termine en error. (Cancelar sí se propaga.)
     """
     if not fragmentos:
         return []
@@ -686,8 +1017,9 @@ def extract_missing(fragmentos: List[str], page_images: Optional[List[Image.Imag
     try:
         data = _generate_with_retries(body, len(texto), _parse_structured_response,
                                       GEMINI_REQUEST_TIMEOUT_SECONDS_JSON, None, on_retry)
+    except ConversionCancelada:
+        raise
     except Exception as exc:  # noqa: BLE001 — ver el docstring: nunca debe romper la conversión
         logger.warning("No se pudieron completar las preguntas omitidas: %s", exc)
         return []
-    preguntas = data.get("preguntas") or []
-    return preguntas[:len(fragmentos)]
+    return list(data.get("preguntas") or [])

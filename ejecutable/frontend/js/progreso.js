@@ -20,26 +20,42 @@ const TIMING_DEFAULTS = { text: 12, images: 40, normalize: 90 };
 
 const TIMING_HISTORY_MAX = 5;
 
+// Una conversión real dura entre unos segundos y (un PDF enorme leído como
+// imagen) unos cuantos minutos. Lo que caiga fuera de ese rango no es una
+// duración medida: es un dato dañado, y promediarlo daba estimaciones
+// absurdas (p. ej. «29 millones de minutos»). Se descarta al leer y al guardar.
+export const DURACION_MIN_S = 1;
+export const DURACION_MAX_S = 3600;
+
+export function duracionValida(s) {
+  return typeof s === 'number' && Number.isFinite(s) && s >= DURACION_MIN_S && s <= DURACION_MAX_S;
+}
+
+/** Promedio de las duraciones válidas de `lista`; si no hay ninguna, el valor por defecto de `kind`. */
+export function estimarDuracion(lista, kind) {
+  const buenas = (Array.isArray(lista) ? lista : []).filter(duracionValida);
+  if (buenas.length > 0) return buenas.reduce((a, b) => a + b, 0) / buenas.length;
+  return TIMING_DEFAULTS[kind] || TIMING_DEFAULTS.text;
+}
+
 function _loadTimingHistory() {
   try {
-    return JSON.parse(localStorage.getItem(TIMING_HISTORY_KEY)) || {};
+    const d = JSON.parse(localStorage.getItem(TIMING_HISTORY_KEY));
+    return d && typeof d === 'object' && !Array.isArray(d) ? d : {};
   } catch (_) {
     return {};
   }
 }
 
 function _getEstimatedDuration(kind) {
-  const history = _loadTimingHistory()[kind];
-  if (history && history.length > 0) {
-    return history.reduce((a, b) => a + b, 0) / history.length;
-  }
-  return TIMING_DEFAULTS[kind] || TIMING_DEFAULTS.text;
+  return estimarDuracion(_loadTimingHistory()[kind], kind);
 }
 
 function _recordDuration(kind, seconds) {
+  if (!duracionValida(seconds)) return;
   try {
     const all = _loadTimingHistory();
-    const list = all[kind] || [];
+    const list = (Array.isArray(all[kind]) ? all[kind] : []).filter(duracionValida);
     list.push(seconds);
     while (list.length > TIMING_HISTORY_MAX) list.shift();
     all[kind] = list;
@@ -54,6 +70,14 @@ let progressInterval;
 
 let progressStartTime = 0;
 
+// true entre startProgress() y stopProgress(): generateXml también llama a
+// stopProgress() (su pantalla de «Generando el XML…» no lleva cronómetro) y
+// entonces NO hay una conversión que medir. Sin esta marca se guardaba
+// «ahora − progressStartTime» como duración (toda la revisión, o —si se
+// reabrió desde el Historial, con el inicio en 0— unos 1,7 mil millones de
+// segundos) y la estimación de las siguientes conversiones quedaba absurda.
+let progressActivo = false;
+
 let progressKind = 'text';
 
 let progressEstimatedTotal = TIMING_DEFAULTS.text;
@@ -62,6 +86,9 @@ let progressEstimatedTotal = TIMING_DEFAULTS.text;
 // no llegue ningún evento se usa la secuencia estimada de siempre; en
 // cuanto llega uno, la pantalla pasa a reflejar lo que de verdad ocurre.
 let progressReal = false;
+
+// true mientras se muestra el aviso «En cola» (ver onProgressQueue).
+let progressAvisoCola = false;
 
 let aiStartTime = 0;
 
@@ -81,15 +108,18 @@ function _spqKey() {
   return progressKind === 'normalize' ? 'normalize' : (window._aiMode || 'json');
 }
 
+const _spqValido = v => typeof v === 'number' && Number.isFinite(v) && v >= 0.02 && v <= 120;
+
 function _getSecondsPerQuestion() {
   try {
-    const list = (JSON.parse(localStorage.getItem(SPQ_KEY)) || {})[_spqKey()];
-    if (list && list.length) return list.reduce((a, b) => a + b, 0) / list.length;
+    const list = ((JSON.parse(localStorage.getItem(SPQ_KEY)) || {})[_spqKey()] || []).filter(_spqValido);
+    if (list.length) return list.reduce((a, b) => a + b, 0) / list.length;
   } catch (_) {}
   return SECONDS_PER_QUESTION_DEFAULTS[_spqKey()] || 0.75;
 }
 
 function _recordSecondsPerQuestion(value) {
+  if (!_spqValido(value)) return;
   try {
     const all = JSON.parse(localStorage.getItem(SPQ_KEY)) || {};
     const list = all[_spqKey()] || [];
@@ -108,7 +138,25 @@ function _setProgressDetail(text) {
   document.getElementById('progress-detail').textContent = text;
 }
 
+// «En cola»: el backend avisa (etapa key "queue") de que otra conversión
+// ocupa el turno. Solo se muestra el mensaje en la línea de detalle: NO se
+// marca progressReal ni se frena nada, así la animación y la estimación
+// siguen como siempre y, al llegar la primera etapa normal, el aviso se quita.
+export function onProgressQueue(ev = {}) {
+  progressAvisoCola = true;
+  _setProgressDetail((ev && typeof ev.message === 'string' && ev.message.trim()) || 'En cola: esperando otra conversión…');
+}
+
+function _quitarAvisoCola() {
+  if (!progressAvisoCola) return;
+  progressAvisoCola = false;
+  _setProgressDetail('');
+}
+
 export function onProgressStage(ev) {
+  // La etapa «queue» no es una etapa de trabajo: solo un aviso.
+  if (ev && (ev.key === 'queue' || ev.key === 'queued')) { onProgressQueue(ev); return; }
+  _quitarAvisoCola();
   progressReal = true;
   const elapsedSec = (Date.now() - progressStartTime) / 1000;
   if (ev.message) document.getElementById('progress-subtitle').textContent = ev.message;
@@ -145,6 +193,7 @@ export function onProgressStage(ev) {
 }
 
 export function onProgressCount(ev) {
+  _quitarAvisoCola();
   progressReal = true;
   aiDone = ev.done || 0;
   if (ev.expected) aiExpected = ev.expected;
@@ -222,9 +271,11 @@ export function startProgress(kind = 'text') {
   ];
 
   progressKind = kind;
+  progressActivo = true;
   progressStartTime = Date.now();
   progressEstimatedTotal = _getEstimatedDuration(kind);
   progressReal = false;
+  progressAvisoCola = false;
   subiendo = false;
   procesoDesde = 0;
   aiStartTime = 0;
@@ -270,8 +321,12 @@ export function startProgress(kind = 'text') {
 
 export function stopProgress(success) {
   clearInterval(progressInterval);
+  const midiendo = progressActivo;
+  progressActivo = false;
   if (success) {
     document.getElementById('progress-bar-fill').style.transform = 'scaleX(1)';
+    // Sin startProgress() no hubo conversión que medir (ver progressActivo).
+    if (!midiendo) return;
     const finalElapsed = (Date.now() - progressStartTime) / 1000;
     document.getElementById('progress-elapsed').textContent = formatMMSS(finalElapsed);
     document.getElementById('progress-eta').textContent = '0:00';

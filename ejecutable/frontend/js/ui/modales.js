@@ -8,6 +8,7 @@
  * al botón que lo abrió.
  */
 import { modalDisclaimer, modalHelp, modalPanels, modalTabs } from '../dom.js';
+import { crearIconos } from '../util.js';
 
 // Lo que queda "detrás" de un modal abierto: inerte (ni foco ni clics ni
 // lector de pantalla) mientras haya al menos un modal encima.
@@ -41,7 +42,7 @@ export function abrirModal(el, { foco = null, onClose = null } = {}) {
   pila.push({ el, opener, onClose });
   _fijarFondoInerte(true);
   el.classList.add('open');
-  if (window.lucide) lucide.createIcons();
+  crearIconos(el);
   requestAnimationFrame(() => (foco || _primerEnfocable(el))?.focus({ preventScroll: true }));
 }
 

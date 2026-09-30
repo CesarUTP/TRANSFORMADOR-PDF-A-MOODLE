@@ -16,13 +16,21 @@ clave "A. x; B. y"; SIN_RESPUESTA cuando el documento no marca nada) son
 las mismas que ya validan validator.py y xml_builder.py.
 """
 
+import logging
 import re
 from typing import Any, Dict, List, Tuple
 
 from config import TRANSCRIPTION_FAILED_MARKER
 from answer_matching import split_answers
 
+logger = logging.getLogger(__name__)
+
 SIN_RESPUESTA = "SIN_RESPUESTA"
+# Tope de la retroalimentación: el mismo que valida validator.py (5000) al
+# generar el XML. El límite anterior (2000) cortaba en silencio una
+# justificación larga del documento; ahora solo se corta lo que el validador
+# rechazaría de todos modos, y se deja registro.
+MAX_FEEDBACK = 5000
 _LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 _TF = {
     "verdadero": "Verdadero", "verdadera": "Verdadero", "cierto": "Verdadero", "cierta": "Verdadero",
@@ -204,7 +212,7 @@ def _matching(q: dict) -> Tuple[dict, str, Dict[str, str]]:
 
 
 def _cloze(q: dict) -> Tuple[dict, str]:
-    text = str(q.get("enunciado") or "").strip()
+    text = _latex(str(q.get("enunciado") or "")).strip()
     huecos = q.get("huecos") or []
     by_letter = {}
     for i, h in enumerate(huecos):
@@ -250,6 +258,23 @@ def _plain(q: dict, qtype: str) -> Tuple[dict, str]:
     return {"stem": stem}, raw
 
 
+def _desde_clave(q: dict, qtype: str) -> bool:
+    """¿La respuesta de esta pregunta se resolvió en código desde una clave
+    explícita del documento (clave_texto)?"""
+    if qtype == "multichoice":
+        opts = [o for o in (q.get("opciones") or []) if str(o.get("texto", "")).strip()][:len(_LETTERS)]
+        return bool(_resolve_mc_from_key(_clave(q), opts))
+    if qtype == "truefalse":
+        raw = _clave(q)
+        return bool(raw) and raw.split()[0].strip(".,;:()").lower() in _TF
+    if qtype == "matching":
+        key_pairs = re.findall(r"(\d+)\s*[-.→:]\s*([A-Za-z])\b", str(q.get("clave_texto") or ""))
+        left = [x for x in (q.get("items_izquierda") or []) if str(x).strip()]
+        right = [x for x in (q.get("items_derecha") or []) if str(x).strip()][:len(_LETTERS)]
+        return bool(key_pairs) and all(1 <= int(n) <= len(left) and ord(L.lower()) - 96 <= len(right) for n, L in key_pairs)
+    return False
+
+
 def adapt(payload: dict) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]]]:
     """
     Convierte la respuesta del modelo en (questions, answer_key).
@@ -274,6 +299,16 @@ def adapt(payload: dict) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]
         elif qtype in ("essay", "shortanswer", "numerical"):
             data, answer = _plain(q, qtype)
         else:
+            # Tipo que el modelo devolvió y el sistema no conoce: la pregunta
+            # NO se descarta en silencio. Se conserva con un error, y el modo
+            # tolerante (validator.partition_questions) la muestra entre las
+            # omitidas con su enunciado para que el docente la revise.
+            logger.warning("Pregunta %d con tipo desconocido %r: se conserva como omitida.", num, qtype)
+            questions.append({
+                "num": num, "type": str(qtype or "?"),
+                "data": {"stem": _text(q.get("enunciado"))},
+                "error": f"El tipo de pregunta «{qtype}» no se reconoce. Revísala y agrégala a mano.",
+            })
             continue
 
         # REGLA 11: imagen ilegible y sin respuesta → el validador reconoce
@@ -302,12 +337,19 @@ def adapt(payload: dict) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]
 
         feedback = _text(q.get("retroalimentacion"))
         if feedback:
-            data["feedback"] = feedback[:2000]
+            if len(feedback) > MAX_FEEDBACK:
+                logger.warning("Retroalimentación de la pregunta %d recortada de %d a %d caracteres.",
+                               num, len(feedback), MAX_FEEDBACK)
+            data["feedback"] = feedback[:MAX_FEEDBACK]
 
         questions.append({"num": num, "type": qtype, "data": data})
         entry: Dict[str, Any] = {"type": qtype, "answer": answer}
         if pairs is not None:
             entry["pairs"] = pairs
+        # La respuesta salió de una clave explícita del documento (no de una
+        # marca ni del modelo): mark_resolver no la sobrescribe con marcas.
+        if _desde_clave(q, qtype):
+            entry["from_key"] = True
         answer_key[num] = entry
 
     return questions, answer_key

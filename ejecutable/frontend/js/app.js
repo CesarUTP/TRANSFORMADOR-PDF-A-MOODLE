@@ -30,6 +30,7 @@ import { cerrarModal, closeDisclaimer, closeHelp, fileFingerprint, modalActivo, 
 import { applyTheme } from './ui/tema.js';
 import { barraDeSubida, subir } from './subida.js';
 import { showToast } from './ui/toast.js';
+import { crearIconos } from './util.js';
 
 // ── Vistas que se actualizan solas cuando cambia el examen ──────────────
 // Añadir, borrar o repartir puntos solo tiene que llamar a notificar():
@@ -125,11 +126,11 @@ btnCopyPrompt.addEventListener('click', async () => {
     await navigator.clipboard.writeText(aiPromptText.textContent);
     copyLabel.textContent = 'Copiado';
     copyIcon.setAttribute('data-lucide', 'check');
-    lucide.createIcons();
+    crearIconos(btnCopyPrompt);
     setTimeout(() => {
       copyLabel.textContent = 'Copiar instrucciones';
       copyIcon.setAttribute('data-lucide', 'copy');
-      lucide.createIcons();
+      crearIconos(btnCopyPrompt);
     }, 2500);
   } catch (_) {
     showToast('No se pudo copiar: selecciona el texto y cópialo a mano', 'error');
@@ -137,13 +138,17 @@ btnCopyPrompt.addEventListener('click', async () => {
 });
 
 // Cada edición en el editor revisa las preguntas incompletas y guarda
-// el borrador (ambos con un pequeño retraso).
+// el borrador (ambos con un pequeño retraso). Un clic solo cuenta si cae en
+// un botón o control (agregar/quitar una opción, una pareja…: cambian las
+// tarjetas sin disparar «input»); hacer clic en un texto para ponerle el
+// cursor no cambia nada y no debe recalcular.
 ['input', 'change', 'click'].forEach(evt => {
   document.addEventListener(evt, e => {
-    if (e.target.closest && e.target.closest('#editor-questions-container')) {
-      scheduleIssuesRefresh();
-      if (evt !== 'click') guardarBorrador();
-    }
+    const t = e.target;
+    if (!t || !t.closest || !t.closest('#editor-questions-container')) return;
+    if (evt === 'click' && !t.closest('button, [data-accion], label, summary')) return;
+    scheduleIssuesRefresh();
+    if (evt !== 'click') guardarBorrador();
   }, true);
 });
 
@@ -197,7 +202,7 @@ document.getElementById('editor-questions-container').addEventListener('input', 
   if (e.target.classList.contains('q-points')) updatePointsAssignedLabel();
   if (e.target.classList.contains('points-weight-input')) updatePointsWeightPreview();
   // Vista previa de fórmulas mientras se escribe \( … \).
-  if (e.target.matches('.q-stem, .q-opt')) {
+  if (e.target.matches('.q-stem, .q-opt, .q-feedback')) {
     const card = e.target.closest('.editor-card');
     if (card) actualizarFormulas(card);
   }
@@ -248,7 +253,7 @@ btnConvert.addEventListener('click', async () => {
     btnConvert.disabled = true;
     btnConvert.setAttribute('aria-busy', 'true');
     btnConvert.innerHTML = '<i data-lucide="loader-2" style="width:20px;height:20px;animation:spinSlow 0.8s linear infinite;"></i> Revisando el archivo…';
-    lucide.createIcons();
+    crearIconos(btnConvert);
     try {
       const checkForm = new FormData();
       checkForm.append('file', estado.selectedFile);
@@ -273,7 +278,7 @@ btnConvert.addEventListener('click', async () => {
       btnConvert.innerHTML = labelOriginal;
       btnConvert.removeAttribute('aria-busy');
       btnConvert.disabled = !estado.selectedFile;
-      lucide.createIcons();
+      crearIconos(btnConvert);
     }
   }
 

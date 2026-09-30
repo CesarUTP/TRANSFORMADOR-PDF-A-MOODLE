@@ -11,6 +11,7 @@ Todas las funciones son síncronas (pdfplumber y la llamada a Gemini
 bloquean); main.py las corre en threadpool.
 """
 
+import copy
 import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -33,9 +34,10 @@ from extractor import (
     render_all_pages_as_images,
 )
 from extractor_docx import DocxInvalido, leer_docx
-from formatter import verify_and_format, extract_structured, extract_missing
+from formatter import verify_and_format, extract_structured, extract_missing, comprobar_cancelacion
 from imagenes import asignar_imagenes, candidatas_omitidas_numeradas, extraer_imagenes_pdf
 from schema_adapter import adapt
+import mark_resolver
 from mark_resolver import resolve_answer_marks, resolve_table_marks, resolve_tf_marks
 from parser import parse_answer_key, build_questions
 from validator import (
@@ -144,6 +146,29 @@ def _tag_color_review_hints(valid_questions: List[Dict[str, Any]], colored_pages
             q["data"]["color_review_hint"] = True
 
 
+def _mensaje_error_pdf(exc: Exception) -> Optional[str]:
+    """Mensaje claro y en español para un fallo conocido al abrir/leer un PDF
+    (None si no se reconoce). Antes se mostraba «Error al extraer el texto del
+    archivo: » con el detalle vacío (pdfminer lanza PDFPasswordIncorrect sin
+    mensaje)."""
+    nombre = type(exc).__name__
+    texto = str(exc).strip()
+    if nombre in ("PDFPasswordIncorrect", "PDFEncryptionError") or "password" in texto.lower():
+        return ("El PDF está protegido con contraseña y no se puede leer. Ábrelo con la contraseña, "
+                "quítale la protección (por ejemplo, «Imprimir» → «Guardar como PDF») y súbelo de nuevo.")
+    if nombre in ("PDFSyntaxError", "PSEOF", "PSSyntaxError", "PDFException", "PDFNoValidXRef", "PDFTextExtractionNotAllowed",
+                  "PdfminerException", "PDFObjectNotFound", "PDFXRefFallback"):
+        return ("El PDF parece dañado o no se puede leer. Ábrelo en un lector de PDF y vuelve a guardarlo "
+                "(«Imprimir» → «Guardar como PDF»), o prueba con otra copia del archivo.")
+    return None
+
+
+def _detalle_lectura(exc: Exception, prefijo: str) -> str:
+    """Detalle para el docente: el mensaje conocido, o el prefijo con lo que
+    diga la excepción (o su nombre si viene vacía)."""
+    return _mensaje_error_pdf(exc) or f"{prefijo}: {str(exc).strip() or type(exc).__name__}"
+
+
 def _comprobar_entrada(raw_bytes: bytes, suffix: str) -> None:
     """Antes de leer el documento (lo más caro después de Gemini): sin
     clave de la API no hay conversión posible, y un PDF con demasiadas
@@ -155,12 +180,55 @@ def _comprobar_entrada(raw_bytes: bytes, suffix: str) -> None:
             comprobar_paginas(raw_bytes)
         except DocumentoDemasiadoGrande as exc:
             raise HTTPException(status_code=413, detail=str(exc))
-        except Exception:  # noqa: BLE001 — un PDF dañado lo informa la extracción, como siempre
-            pass
+        except Exception as exc:  # noqa: BLE001
+            # Con contraseña se avisa de inmediato y con claridad; cualquier
+            # otro PDF dañado lo informa la extracción, como siempre.
+            mensaje = _mensaje_error_pdf(exc)
+            if mensaje and "contraseña" in mensaje:
+                raise HTTPException(status_code=422, detail=mensaje)
 
 
-def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback = None) -> Dict[str, Any]:
-    """Flujo de /api/parse: texto (+ imágenes de páginas con imagen incrustada)."""
+def _hay_marca_de_respuestas(marks, respaldo: bool) -> bool:
+    """¿El documento marca de verdad las respuestas (color, resaltado,
+    subrayado, negrita)? Es lo que decide si vale la pena el reintento de
+    calidad de la IA (hasta 3 llamadas completas): antes bastaba CUALQUIER
+    texto no gris (un encabezado azul) o cualquier página con una imagen o
+    fórmulas. Usa el mismo criterio que mark_resolver aplicará después: una
+    marca que se repite en al menos 2 líneas cortas con aspecto de opción.
+    Sin texto enriquecido no se puede saber: se usa `respaldo`."""
+    if not marks:
+        return respaldo
+    try:
+        return mark_resolver.detectar_marca(marks[0]) is not None
+    except Exception:  # noqa: BLE001 — sin poder decidir, el comportamiento de siempre
+        logger.debug("No se pudo detectar la marca de respuestas", exc_info=True)
+        return respaldo
+
+
+def _aviso_paginas(total: int, enviadas: int, hay_texto: bool) -> Optional[str]:
+    """Aviso cuando solo las primeras `enviadas` de `total` páginas llegaron a
+    la IA como imagen. En un escaneado (sin texto) el resto se pierde por
+    completo, y como no hay texto no había forma de estimar cuántas preguntas
+    faltaban (completeness_notice nunca saltaba)."""
+    if total <= enviadas:
+        return None
+    if hay_texto:
+        return (f"El PDF tiene {total} páginas y solo las primeras {enviadas} se enviaron a la IA como imagen "
+                "(el texto de todas sí se leyó). Revisa que no falte nada en las últimas páginas: "
+                "código en captura, imágenes o marcas de color.")
+    return (f"El PDF tiene {total} páginas, pero solo las primeras {enviadas} se pudieron leer como imagen: "
+            f"las preguntas de las páginas {enviadas + 1} a {total} NO están en el resultado. "
+            f"Divide el examen en partes de hasta {enviadas} páginas y conviértelas por separado.")
+
+
+def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback = None,
+                   ia_cache: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Flujo de /api/parse: texto (+ imágenes de páginas con imagen incrustada).
+
+    ia_cache: diccionario opcional donde se guarda lo que respondió la IA. Si
+    el llamador reintenta tras un fallo del postproceso (main.py), pasa el
+    MISMO diccionario y la IA no se vuelve a llamar (un error determinista en
+    el postproceso costaba el doble de llamadas)."""
     suffix = Path(filename).suffix.lower()
     if suffix not in (".pdf", ".txt", ".docx"):
         raise HTTPException(
@@ -198,10 +266,7 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:
         logger.error("Error extrayendo texto de '%s': %s", filename, exc)
-        raise HTTPException(
-            status_code=422,
-            detail=f"Error al extraer el texto del archivo: {exc}",
-        )
+        raise HTTPException(status_code=422, detail=_detalle_lectura(exc, "Error al extraer el texto del archivo"))
 
     if not full_text.strip():
         raise HTTPException(
@@ -250,31 +315,55 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
     else:
         marks = None
 
+    comprobar_cancelacion()
     expected = estimate_expected_questions(full_text)
-    _emit(progress, type="stage", key="ai", mode=NORMALIZER_MODE, expected=expected,
-          images=len(page_images), message="La IA está ordenando las preguntas…")
+    # El reintento de calidad de la IA solo si el documento marca de verdad
+    # las respuestas (ver _hay_marca_de_respuestas).
+    reintento_calidad = _hay_marca_de_respuestas(marks, bool(colored_pages_text))
+    en_cache = ia_cache is not None and ("payload" in ia_cache or "texto" in ia_cache)
+    if not en_cache:
+        _emit(progress, type="stage", key="ai", mode=NORMALIZER_MODE, expected=expected,
+              images=len(page_images), message="La IA está ordenando las preguntas…")
     on_ai = _ai_progress(progress, expected)
 
     if NORMALIZER_MODE == "json":
-        if suffix == ".pdf":
-            model_text = _model_text_json(raw_bytes, marks)
-        elif docx is not None:
-            model_text = join_pages_with_markers([docx.texto_enriquecido])
+        if ia_cache is not None and "payload" in ia_cache:
+            logger.info("Reintento del postproceso: se reutiliza la respuesta de la IA ya obtenida.")
         else:
-            model_text = full_text
-        payload = extract_structured(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
-                                   permitir_reintento_calidad=bool(colored_pages_text))
-        payload = _completar_omitidas(payload, imagenes_preguntas, page_images, _ai_retry(progress))
+            if suffix == ".pdf":
+                model_text = _model_text_json(raw_bytes, marks)
+            elif docx is not None:
+                model_text = join_pages_with_markers([docx.texto_enriquecido])
+            else:
+                model_text = full_text
+            payload = extract_structured(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
+                                       permitir_reintento_calidad=reintento_calidad)
+            payload = _completar_omitidas(payload, imagenes_preguntas, page_images, _ai_retry(progress))
+            if ia_cache is not None:
+                ia_cache["payload"] = payload
+        comprobar_cancelacion()
         _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
+        # Copia: el postproceso (adapt…) puede modificar el payload, y si hay
+        # que reintentarlo tiene que partir de la respuesta original de la IA.
+        payload = copy.deepcopy(ia_cache["payload"]) if ia_cache is not None else payload
         return _finalize_structured(
             filename, payload,
             estimated_question_count, colored_pages_text, color_marks_notice,
             colored_page_numbers, marks, imagenes_preguntas,
         )
 
-    model_text = "\n".join(marks[0]) if marks else full_text
-    reformatted_text, was_reformatted = verify_and_format(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
-                                   permitir_reintento_calidad=bool(colored_pages_text))
+    if ia_cache is not None and "texto" in ia_cache:
+        logger.info("Reintento del postproceso: se reutiliza la respuesta de la IA ya obtenida.")
+    else:
+        model_text = "\n".join(marks[0]) if marks else full_text
+        resultado_ia = verify_and_format(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
+                                         permitir_reintento_calidad=reintento_calidad)
+        if ia_cache is not None:
+            ia_cache["texto"] = resultado_ia
+        else:
+            ia_cache = {"texto": resultado_ia}
+    reformatted_text, was_reformatted = ia_cache["texto"]
+    comprobar_cancelacion()
     _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
 
     return finalize_parse_response(
@@ -283,12 +372,15 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
     )
 
 
-def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: ProgressCallback = None) -> Dict[str, Any]:
+def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: ProgressCallback = None,
+                               ia_cache: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Flujo de /api/normalize_with_ai: renderiza el documento COMPLETO como
     imágenes y deja que Gemini lo lea visualmente, sin depender de que el
     PDF tenga una capa de texto extraíble (PDF escaneado, o con contenido
     visual que el modo normal no capturó).
+
+    ia_cache: ver parse_document.
     """
     suffix = Path(filename).suffix.lower()
     if suffix != ".pdf":
@@ -301,14 +393,11 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
     _emit(progress, type="stage", key="extract", message="Preparando las páginas del documento…")
     try:
         full_text = extract_text_from_pdf(raw_bytes)
-        page_images = render_all_pages_as_images(raw_bytes)
+        page_images, total_paginas = render_all_pages_as_images(raw_bytes, con_total=True)
         colored_page_numbers, colored_pages_text = get_colored_pages(raw_bytes)
     except Exception as exc:
         logger.error("Error extrayendo contenido de '%s' para normalizar: %s", filename, exc)
-        raise HTTPException(
-            status_code=422,
-            detail=f"Error al leer el archivo: {exc}",
-        )
+        raise HTTPException(status_code=422, detail=_detalle_lectura(exc, "Error al leer el archivo"))
 
     if not full_text.strip() and not page_images:
         raise HTTPException(
@@ -320,6 +409,10 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
         color_marks_notice = SCANNED_MARKS_NOTICE
     else:
         color_marks_notice = COLOR_MARKS_NOTICE if colored_pages_text else None
+    # Páginas que no llegaron a la IA (el PDF pasa del tope de páginas como imagen).
+    aviso_paginas = _aviso_paginas(total_paginas, len(page_images), bool(full_text.strip()))
+    if aviso_paginas:
+        logger.warning("'%s': %d páginas, solo %d enviadas como imagen.", filename, total_paginas, len(page_images))
 
     # Sin pre_validate_raw_text aquí a propósito: esa validación exige
     # indicios de "pregunta"/"respuesta" en el TEXTO extraído, pero en el
@@ -327,32 +420,53 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
     # por definición — toda la lectura depende de las imágenes.
     estimated_question_count = estimate_notice_count(full_text)
 
+    comprobar_cancelacion()
     marks = _deterministic_marks(raw_bytes)
     # En un escaneado no hay texto del que estimar cuántas preguntas vienen:
     # expected=0 y la pantalla muestra solo el avance, sin "de ~N".
     expected = estimate_expected_questions(full_text) if full_text.strip() else 0
-    _emit(progress, type="stage", key="ai", mode=NORMALIZER_MODE_AI, expected=expected,
-          images=len(page_images), message="La IA está leyendo las páginas del documento…")
+    reintento_calidad = _hay_marca_de_respuestas(marks, bool(colored_pages_text))
+    en_cache = ia_cache is not None and ("payload" in ia_cache or "texto" in ia_cache)
+    if not en_cache:
+        _emit(progress, type="stage", key="ai", mode=NORMALIZER_MODE_AI, expected=expected,
+              images=len(page_images), message="La IA está leyendo las páginas del documento…")
     on_ai = _ai_progress(progress, expected)
 
     if NORMALIZER_MODE_AI == "json":
-        model_text = _model_text_json(raw_bytes, marks)
-        payload = extract_structured(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
-                                   permitir_reintento_calidad=bool(colored_pages_text))
+        if ia_cache is not None and "payload" in ia_cache:
+            logger.info("Reintento del postproceso: se reutiliza la respuesta de la IA ya obtenida.")
+        else:
+            model_text = _model_text_json(raw_bytes, marks)
+            payload = extract_structured(model_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
+                                       permitir_reintento_calidad=reintento_calidad)
+            if ia_cache is not None:
+                ia_cache["payload"] = payload
+        comprobar_cancelacion()
         _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
+        payload = copy.deepcopy(ia_cache["payload"]) if ia_cache is not None else payload
         return _finalize_structured(
             filename, payload,
             estimated_question_count, colored_pages_text, color_marks_notice,
-            colored_page_numbers, marks,
+            colored_page_numbers, marks, aviso_paginas=aviso_paginas,
         )
 
-    reformatted_text, was_reformatted = verify_and_format(full_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
-                                   permitir_reintento_calidad=bool(colored_pages_text))
+    if ia_cache is not None and "texto" in ia_cache:
+        logger.info("Reintento del postproceso: se reutiliza la respuesta de la IA ya obtenida.")
+    else:
+        resultado_ia = verify_and_format(full_text, page_images, progress=on_ai, on_retry=_ai_retry(progress),
+                                         permitir_reintento_calidad=reintento_calidad)
+        if ia_cache is not None:
+            ia_cache["texto"] = resultado_ia
+        else:
+            ia_cache = {"texto": resultado_ia}
+    reformatted_text, was_reformatted = ia_cache["texto"]
+    comprobar_cancelacion()
     _emit(progress, type="stage", key="review", message="Revisando respuestas y marcas del documento…")
 
     return finalize_parse_response(
         filename, full_text, reformatted_text, was_reformatted,
         estimated_question_count, colored_pages_text, color_marks_notice, marks,
+        aviso_paginas=aviso_paginas,
     )
 
 
@@ -378,6 +492,7 @@ def finalize_parse_response(
     colored_pages_text: List[str],
     color_marks_notice: Any,
     marks=None,
+    aviso_paginas: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Cola común de ambos flujos: ya con el texto reformateado por Gemini, de
@@ -420,6 +535,7 @@ def finalize_parse_response(
     return _finalize_common(
         filename, questions, effective_answer_key, was_reformatted,
         estimated_question_count, colored_pages_text, color_marks_notice, marks,
+        aviso_paginas=aviso_paginas,
     )
 
 
@@ -479,11 +595,35 @@ def _completar_omitidas(payload: Dict[str, Any], imagenes_preguntas, page_images
     if not nuevas:
         return payload
 
+    # Cada respuesta se empareja con su candidata por el campo "orden" (el
+    # número de fragmento que se le pidió a la IA), NO por posición: si la IA
+    # devolvía menos preguntas, o las reordenaba, el texto de una candidata
+    # quedaba en el hueco de otra (contenido alterado). Lo que no cuadra
+    # (sin orden válido, repetido, de un fragmento que no existe) se descarta.
+    por_fragmento: Dict[int, Dict[str, Any]] = {}
+    for nueva in nuevas:
+        if not isinstance(nueva, dict):
+            continue
+        orden = nueva.get("orden")
+        if isinstance(orden, bool) or not isinstance(orden, (int, float)) or orden != int(orden):
+            continue
+        orden = int(orden)
+        if not (1 <= orden <= len(candidatas)) or orden in por_fragmento:
+            if orden in por_fragmento:  # dos respuestas para el mismo fragmento: ninguna es fiable
+                por_fragmento[orden] = None  # type: ignore[assignment]
+            continue
+        por_fragmento[orden] = nueva
+    emparejadas = [(c, por_fragmento.get(i)) for i, c in enumerate(candidatas, 1)]
+    if not any(n for _, n in emparejadas):
+        return payload
+
     # Cada una se inserta justo después de la pregunta que la precede (la
     # misma que ya estaba en el documento), con un "orden" propio a mitad
     # de camino hacia la siguiente — no hace falta tocar el de las demás.
     ordenes = [p.get("orden") or 0 for p in preguntas_raw]
-    for candidata, nueva in zip(candidatas, nuevas):
+    for candidata, nueva in emparejadas:
+        if not nueva:
+            continue
         despues_de = candidata["despues_de"]
         if despues_de and 1 <= despues_de <= len(preguntas_raw):
             anterior_orden = preguntas_raw[despues_de - 1].get("orden") or despues_de
@@ -515,6 +655,7 @@ def _finalize_structured(
     colored_page_numbers: List[int] = (),
     marks=None,
     imagenes_preguntas=None,
+    aviso_paginas: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Modo JSON: la salida del modelo ya viene estructurada; el adaptador
     la deja en la misma forma que produce parser.py en el modo texto."""
@@ -536,7 +677,7 @@ def _finalize_structured(
     return _finalize_common(
         filename, questions, answer_key, True,
         estimated_question_count, colored_pages_text, color_marks_notice, marks,
-        imagenes_preguntas,
+        imagenes_preguntas, aviso_paginas=aviso_paginas,
     )
 
 
@@ -550,6 +691,7 @@ def _finalize_common(
     color_marks_notice: Any,
     marks=None,
     imagenes_preguntas=None,
+    aviso_paginas: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Cola compartida por ambos modos: marcas resueltas en código, modo
     tolerante, avisos y recorte de la clave a las preguntas válidas."""
@@ -586,10 +728,11 @@ def _finalize_common(
 
     if colored_pages_text:
         _tag_color_review_hints(valid_questions, colored_pages_text)
-    # Una respuesta leída de la marca en código no necesita "revisar marca":
-    # el aviso queda solo para las que la IA tuvo que interpretar.
+    # Una respuesta leída de la marca en código, o de la clave del documento,
+    # no necesita "revisar marca": el aviso queda solo para las que la IA
+    # tuvo que interpretar.
     for q in valid_questions:
-        if q["data"].get("answer_from_marks"):
+        if q["data"].get("answer_from_marks") or effective_answer_key.get(q["num"], {}).get("from_key"):
             q["data"].pop("color_review_hint", None)
     n_uncertain = sum(1 for q in valid_questions if q["data"].get("color_review_hint"))
     from_marks = [q for q in valid_questions if q["data"].get("answer_from_marks")]
@@ -622,6 +765,8 @@ def _finalize_common(
             f"preguntas, pero solo se identificaron {processed_total}. Puede que algunas se "
             f"hayan pasado por alto — revisa el documento original para confirmar que no falte nada."
         )
+    if aviso_paginas:
+        completeness_notice = f"{aviso_paginas} {completeness_notice}" if completeness_notice else aviso_paginas
 
     # La clave que se manda de vuelta se recorta a solo las preguntas
     # válidas: /api/generate_xml vuelve a validar cruzando questions contra

@@ -4,13 +4,14 @@
  */
 import { guardarBorradorAhora } from './borrador.js';
 import { btnConvert, categoryInput, dropZone, fileIconEl, fileInput, fileNameEl, filePreview, fileSizeEl } from './dom.js';
+import { reiniciarPanelPuntos } from './editor/puntos-ui.js';
 import { renderEditor } from './editor/tarjetas.js';
 import { estado } from './estado.js';
 import { showPanel } from './navegacion.js';
-import { onProgressCount, onProgressStage, onUploadDone, onUploadProgress, startProgress, stopProgress } from './progreso.js';
+import { onProgressCount, onProgressQueue, onProgressStage, onUploadDone, onUploadProgress, startProgress, stopProgress } from './progreso.js';
 import { autoDistributePoints } from './puntos.js';
 import { subir } from './subida.js';
-import { formatBytes, friendlyHttpError } from './util.js';
+import { crearIconos, detalleDeError, formatBytes, friendlyHttpError } from './util.js';
 
 // El aviso bajo el botón explica por qué está deshabilitado.
 function _setConvertEnabled(enabled) {
@@ -35,7 +36,7 @@ export function showFilePreview(file) {
   fileSizeEl.textContent = formatBytes(file.size);
   const nombre = file.name.toLowerCase();
   fileIconEl.setAttribute('data-lucide', nombre.endsWith('.pdf') || nombre.endsWith('.docx') ? 'file-text' : 'file');
-  lucide.createIcons();
+  crearIconos(filePreview);
   filePreview.style.display = 'flex';
   _setConvertEnabled(true);
   _marcarZona(file);
@@ -78,9 +79,9 @@ function goToEditorWithParsedData(parsedData, ptsVal) {
   // editor — el docente que no toque nada obtiene el mismo resultado
   // de siempre, sin pasos extra.
   autoDistributePoints(parsedData.questions, ptsVal, 'byType');
+  reiniciarPanelPuntos();
   showPanel('editor', { enfocar: false });
   renderEditor(parsedData);
-  lucide.createIcons();
   document.getElementById('editor-title')?.focus({ preventScroll: true });
   // Desde este momento la revisión ya se puede retomar si algo se cierra.
   guardarBorradorAhora();
@@ -101,6 +102,9 @@ function lectorDeAvance() {
     try { ev = JSON.parse(line); } catch (_) { return; }
     if (ev.type === 'stage') onProgressStage(ev);
     else if (ev.type === 'progress') onProgressCount(ev);
+    // «En cola» (otra conversión ocupa el turno): el formato exacto lo decide
+    // el backend, así que se acepta más de un nombre y, si no llega, no pasa nada.
+    else if (['queued', 'queue', 'en_cola', 'waiting'].includes(ev.type)) onProgressQueue(ev);
     else if (ev.type === 'result' || ev.type === 'error') final = ev;
   };
   return {
@@ -116,7 +120,7 @@ function lectorDeAvance() {
     terminar() {
       procesar(buffer);
       buffer = '';
-      return final || { type: 'error', status: 0, detail: 'La conexión con el servidor se cortó antes de terminar. Intenta de nuevo.' };
+      return final || { type: 'error', status: 0, detail: 'La conexión con la aplicación se cortó antes de terminar. Intenta de nuevo.' };
     },
   };
 }
@@ -130,6 +134,7 @@ async function runStreamingConversion(endpoint, kind, ptsVal) {
   const abort = new AbortController();
   estado.conversionAbort = abort;
   const lector = lectorDeAvance();
+  let datos = null;
 
   try {
     // Con XMLHttpRequest (no fetch) para mostrar el avance real de la
@@ -143,7 +148,7 @@ async function runStreamingConversion(endpoint, kind, ptsVal) {
     if (res.status < 200 || res.status >= 300) {
       stopProgress(false);
       let errMsg = friendlyHttpError(res.status);
-      try { const json = JSON.parse(res.text); errMsg = json.detail || errMsg; } catch (_) {}
+      try { const json = JSON.parse(res.text); errMsg = detalleDeError(json.detail, errMsg); } catch (_) {}
       showError(errMsg);
       return;
     }
@@ -151,17 +156,28 @@ async function runStreamingConversion(endpoint, kind, ptsVal) {
     const final = lector.terminar();
     if (final.type === 'error') {
       stopProgress(false);
-      showError(final.detail || friendlyHttpError(final.status));
+      showError(detalleDeError(final.detail, friendlyHttpError(final.status)));
       return;
     }
     stopProgress(true);
-    goToEditorWithParsedData(final.data, ptsVal);
+    datos = final.data;
   } catch (err) {
     stopProgress(false);
     if (err.name === 'AbortError') return; // cancelado a propósito
-    showError('No se pudo conectar con el conversor. Cierra y vuelve a abrir la aplicación; si sigue igual, reinicia el equipo. (Detalle: ' + err.message + ')', 'upload', 'Sin conexión con el conversor');
+    const detalle = err.sinConexion ? '' : ` (Detalle: ${err.message})`;
+    showError(`No se pudo conectar con la aplicación. Ciérrala y vuelve a abrirla; si sigue igual, reinicia el equipo.${detalle}`, 'upload', 'Sin conexión con la aplicación');
+    return;
   } finally {
     if (estado.conversionAbort === abort) estado.conversionAbort = null;
+  }
+
+  // La lectura ya salió bien. Dibujar la revisión es un paso APARTE: si esto
+  // falla no es un problema de conexión (antes compartía el try de la red y
+  // se mostraba como «No se pudo conectar…»).
+  try {
+    goToEditorWithParsedData(datos, ptsVal);
+  } catch (err) {
+    showError(`Se leyó el examen pero no se pudo mostrar la revisión (${err && err.message ? err.message : 'error desconocido'}). Vuelve a intentarlo; si sigue igual, cierra y abre la aplicación.`, 'upload', 'No se pudo mostrar la revisión');
   }
 }
 
@@ -241,5 +257,5 @@ export function showError(msg, returnTo = 'upload', title = null) {
   const esPdf = /\.pdf$/i.test(estado.selectedFile?.name || '');
   const isOcr = esPdf && /escaneado|texto legible|sin texto|ocr/i.test(textContent);
   ocrHint.style.display = isOcr ? 'block' : 'none';
-  if (isOcr) lucide.createIcons();
+  if (isOcr) crearIconos(ocrHint);
 }

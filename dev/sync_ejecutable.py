@@ -15,7 +15,7 @@ Borra los archivos que ya no existen en el original. Nunca copia un .env
 (la API key se pone a mano junto al ejecutable instalado).
 
 Antes de copiar nada corre las pruebas (dev/test_casos_borde.py,
-dev/test_seguridad.py y dev/test_mejoras.py): si alguna falla, no se
+dev/test_seguridad.py, dev/test_mejoras.py y dev/test_v18_*.py): si alguna falla, no se
 actualizan los instaladores. --sin-pruebas las salta (solo para una
 emergencia).
 
@@ -96,7 +96,15 @@ def check(dest: Path) -> tuple:
     return _desfase(dest)
 
 
-PRUEBAS = ("test_casos_borde.py", "test_seguridad.py", "test_mejoras.py")
+PRUEBAS = (
+    "test_casos_borde.py",
+    "test_seguridad.py",
+    "test_mejoras.py",
+    "test_v18_extraccion.py",
+    "test_v18_xml_validador.py",
+    "test_v18_ia_servidor.py",
+    "test_v18_datos_arranque.py",
+)
 
 
 def _correr_pruebas() -> None:

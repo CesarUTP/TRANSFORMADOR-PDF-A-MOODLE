@@ -4,47 +4,11 @@
  */
 import { autoGrowTextarea } from './tarjetas.js';
 import { showToast } from '../ui/toast.js';
-import { esc_html, findClozeBrackets, splitAnswers, splitOptions } from '../util.js';
+import { parseClozeSegments } from './cloze-segmentos.js';
+import { crearIconos, esc_html } from '../util.js';
 
-// Convierte el texto crudo "[A: opt1 / opt2]" (+ la respuesta guardada
-// en la clave) en una lista ordenada de segmentos {type:'text', value}
-// y {type:'blank', options, correctIndices, multi}. Un espacio "multi"
-// permite marcar más de una opción como correcta (Moodle MULTIRESPONSE_S,
-// casillas) en vez de una sola (MULTICHOICE_S, opción única).
-export function parseClozeSegments(text, keyAnswer) {
-  const keyMap = {}; // letra -> [respuestas correctas...]
-  if (keyAnswer) {
-    const keySlotRegex = /([A-Za-z])[\.:]\s*([^;\n]+)/g;
-    let km;
-    while ((km = keySlotRegex.exec(keyAnswer)) !== null) {
-      const parts = splitAnswers(km[2]);
-      if (parts.length) keyMap[km[1].toUpperCase()] = parts;
-    }
-  }
-
-  const segments = [];
-  let last = 0;
-  findClozeBrackets(text).forEach(({ start, end, letter: rawLetter, optionsRaw }) => {
-    if (start > last) segments.push({ type: 'text', value: text.slice(last, start) });
-    const letter = rawLetter.toUpperCase();
-    const options = splitOptions(optionsRaw);
-    if (options.length === 0) options.push('', '');
-
-    const wantedList = keyMap[letter] || [];
-    let correctIndices = [];
-    wantedList.forEach(wanted => {
-      const idx = options.findIndex(o => o.toLowerCase() === wanted.toLowerCase());
-      if (idx >= 0 && !correctIndices.includes(idx)) correctIndices.push(idx);
-    });
-    if (correctIndices.length === 0) correctIndices = [0];
-    segments.push({ type: 'blank', options, correctIndices, multi: correctIndices.length > 1 });
-    last = end;
-  });
-  if (last < (text || '').length || segments.length === 0) {
-    segments.push({ type: 'text', value: (text || '').slice(last) });
-  }
-  return segments;
-}
+// (parseClozeSegments vive en cloze-segmentos.js: es lógica pura con pruebas.)
+export { parseClozeSegments };
 
 export function renderClozeBuilder(qIdx, segments) {
   let html = `<div class="cloze-builder" id="cloze-builder-${qIdx}">`;
@@ -64,13 +28,15 @@ export function renderClozeBuilder(qIdx, segments) {
       const n = ++blankNum;
       const groupName = `cloze-correct-${qIdx}-${n}`;
       const inputType = seg.multi ? 'checkbox' : 'radio';
-      html += `<div class="cloze-blank-card" role="group" aria-label="Espacio en blanco ${n}">
+      const sinMarca = seg.correctIndices.length === 0;
+      html += `<div class="cloze-blank-card${sinMarca ? ' is-unmarked' : ''}" role="group" aria-label="Espacio en blanco ${n}">
         <div class="cloze-blank-header">
           <strong><i data-lucide="circle-dot"></i> Espacio ${n} — marca la opción correcta</strong>
           <button type="button" class="btn btn-icon btn-danger-text" data-accion="clozeRemoveBlank" data-este aria-label="Quitar el espacio ${n}" title="Quitar este espacio">
             <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
           </button>
         </div>
+        <p class="cloze-unmarked-note"${sinMarca ? '' : ' hidden'}><i data-lucide="circle-alert" aria-hidden="true"></i> Falta marcar la opción correcta: el documento no la indicaba.</p>
         <label class="cloze-multi-toggle">
           <input type="checkbox" class="cloze-multi-checkbox" ${seg.multi ? 'checked' : ''} data-accion-cambio="clozeToggleMulti" data-este />
           Permitir varias respuestas correctas en este espacio
@@ -123,9 +89,21 @@ function readClozeSegmentsFromDOM(builderEl) {
   return segments;
 }
 
+// Marca (o desmarca) cada espacio sin opción correcta elegida, mientras el
+// docente edita: sin esto el aviso solo aparecía al volver a dibujar.
+function clozeUpdateMarks(builderEl) {
+  builderEl.querySelectorAll(':scope > .cloze-blank-card').forEach(card => {
+    const sinMarca = !card.querySelector('.cloze-option-row input[type="radio"]:checked, .cloze-option-row input[type="checkbox"]:checked');
+    card.classList.toggle('is-unmarked', sinMarca);
+    const nota = card.querySelector('.cloze-unmarked-note');
+    if (nota) nota.hidden = !sinMarca;
+  });
+}
+
 function clozeUpdatePreview(builderEl) {
   const preview = builderEl.querySelector('.cloze-preview');
   if (!preview) return;
+  clozeUpdateMarks(builderEl);
   const segments = readClozeSegmentsFromDOM(builderEl);
   let html = '';
   segments.forEach(seg => {
@@ -138,7 +116,7 @@ function clozeUpdatePreview(builderEl) {
     }
   });
   preview.innerHTML = html.trim() ? html : '<em>Escribe el enunciado de la pregunta…</em>';
-  if (window.lucide && preview.querySelector('[data-lucide]')) lucide.createIcons({ root: preview });
+  if (preview.querySelector('[data-lucide]')) crearIconos(preview);
 }
 
 // Cambia un espacio de "una sola respuesta correcta" (radio) a "varias"
@@ -154,7 +132,7 @@ export function clozeToggleMulti(checkbox) {
   if (!seg.multi && seg.correctIndices.length > 1) {
     seg.correctIndices = [seg.correctIndices[0]];
   }
-  clozeRerender(builderEl, segments);
+  clozeRerender(builderEl, segments, { i: idx, sel: '.cloze-multi-checkbox' });
 }
 
 export function initClozeBuilder(builderEl) {
@@ -166,14 +144,29 @@ export function initClozeBuilder(builderEl) {
   clozeUpdatePreview(builderEl);
 }
 
-function clozeRerender(builderEl, segments) {
+// Vuelve a dibujar el constructor y devuelve el foco al control equivalente:
+// `foco = { i, sel, n }` es el segmento `i`, el control `sel` dentro de él y
+// cuál de ellos (`n`; -1 = el último). Sin esto, cada botón (Agregar opción,
+// Quitar, Espacio en blanco) dejaba el foco en <body> y el teclado o el
+// lector de pantalla perdían su lugar.
+function clozeRerender(builderEl, segments, foco = null) {
   const qIdx = builderEl.id.replace('cloze-builder-', '');
   const temp = document.createElement('div');
   temp.innerHTML = renderClozeBuilder(qIdx, segments);
   const newBuilderEl = temp.firstElementChild;
   builderEl.replaceWith(newBuilderEl);
-  lucide.createIcons();
+  crearIconos(newBuilderEl);
   initClozeBuilder(newBuilderEl);
+  if (foco) clozeRestoreFocus(newBuilderEl, foco);
+}
+
+function clozeRestoreFocus(builderEl, { i, sel, n = 0 }) {
+  const lista = Array.from(builderEl.querySelectorAll(':scope > .cloze-text-row, :scope > .cloze-blank-card'));
+  const seg = lista[Math.min(Math.max(i, 0), lista.length - 1)];
+  if (!seg) return;
+  const controles = seg.querySelectorAll(sel);
+  const destino = controles[n < 0 ? controles.length - 1 : Math.min(n, controles.length - 1)];
+  if (destino) destino.focus({ preventScroll: true });
 }
 
 export function clozeInsertBlank(btn) {
@@ -190,7 +183,8 @@ export function clozeInsertBlank(btn) {
     { type: 'blank', options: ['Opción correcta', 'Opción incorrecta'], correctIndices: [0], multi: false },
     { type: 'text', value: after }
   );
-  clozeRerender(builderEl, segments);
+  // El foco va a la primera opción del espacio nuevo, listo para escribirla.
+  clozeRerender(builderEl, segments, { i: idx + 1, sel: '.cloze-option-input' });
 }
 
 export function clozeRemoveBlank(btn) {
@@ -206,7 +200,8 @@ export function clozeRemoveBlank(btn) {
     segments.splice(idx, 1);
   }
   if (segments.length === 0) segments.push({ type: 'text', value: '' });
-  clozeRerender(builderEl, segments);
+  // El foco pasa al fragmento de texto que quedó en su lugar (el que se unió).
+  clozeRerender(builderEl, segments, { i: Math.max(idx - 1, 0), sel: 'textarea, [data-accion="clozeRemoveBlank"]' });
 }
 
 export function clozeAddOption(btn) {
@@ -215,7 +210,7 @@ export function clozeAddOption(btn) {
   const segments = readClozeSegmentsFromDOM(builderEl);
   const idx = clozeSegmentIndexOf(builderEl, card);
   segments[idx].options.push('');
-  clozeRerender(builderEl, segments);
+  clozeRerender(builderEl, segments, { i: idx, sel: '.cloze-option-input', n: -1 });
 }
 
 export function clozeRemoveOption(btn) {
@@ -234,8 +229,9 @@ export function clozeRemoveOption(btn) {
   seg.correctIndices = seg.correctIndices
     .filter(i => i !== optIdx)
     .map(i => (i > optIdx ? i - 1 : i));
-  if (seg.correctIndices.length === 0) seg.correctIndices = [0];
-  clozeRerender(builderEl, segments);
+  // Si se quitó la opción que estaba marcada, el espacio queda sin marcar
+  // (no se elige otra por el docente): tendrá que elegir la correcta.
+  clozeRerender(builderEl, segments, { i: idx, sel: '[data-accion="clozeRemoveOption"]', n: optIdx });
 }
 
 // Reconstruye el texto "[A: opt1 / opt2]" y la clave de respuesta que
@@ -259,10 +255,11 @@ export function clozeBuildTextAndAnswer(builderEl) {
       // omiten para no dejar una alternativa en blanco en el desplegable
       // final que vería el estudiante en Moodle.
       const opts = rawOpts.filter(o => o.length > 0);
-      let correctTexts = rawCorrectTexts.filter(t => opts.includes(t));
-      if (correctTexts.length === 0 && opts.length > 0) correctTexts = [opts[0]];
+      const correctTexts = rawCorrectTexts.filter(t => opts.includes(t));
       text += `[${letter}: ${opts.join(' / ')}]`;
-      answerParts.push(`${letter}. ${correctTexts.join(' | ')}`);
+      // Un espacio sin opción marcada NO lleva respuesta en la clave: no se
+      // elige una por el docente (questionIssues lo señala como incompleto).
+      if (correctTexts.length) answerParts.push(`${letter}. ${correctTexts.join(' | ')}`);
     }
   });
   return { text, answer: answerParts.join('; ') };

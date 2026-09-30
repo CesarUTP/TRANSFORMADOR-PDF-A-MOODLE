@@ -12,6 +12,7 @@ import sys
 import os
 import base64
 import json
+import logging
 import secrets
 import socket
 import threading
@@ -21,6 +22,10 @@ import urllib.request
 import webbrowser
 
 # ── Log de arranque (para depurar fallos silenciosos del backend) ──────────
+# Se llena si no se pudo crear la carpeta de datos (ver _app_data_dir).
+_FALLO_CARPETA_DATOS: list = []
+
+
 def _app_data_dir() -> str:
     """
     Carpeta de datos de la app para el ejecutable empaquetado — SIEMPRE
@@ -38,7 +43,16 @@ def _app_data_dir() -> str:
     else:
         base = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
     path = os.path.join(base, app_name)
-    os.makedirs(path, exist_ok=True)
+    try:
+        os.makedirs(path, exist_ok=True)
+    except OSError:
+        # Sin esto la app se cerraba al importar, sin ventana ni registro. Se
+        # sigue: _log ya tolera no poder escribir, y el aviso llega por la
+        # ventana de error (ver main). Último recurso para el registro: la
+        # carpeta temporal del sistema.
+        import tempfile
+        path = tempfile.gettempdir()
+        _FALLO_CARPETA_DATOS.append(base)
     return path
 
 
@@ -58,6 +72,10 @@ def _log(msg: str) -> None:
             f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
     except Exception:
         pass
+
+if _FALLO_CARPETA_DATOS:
+    _log(f"No se pudo crear la carpeta de datos en {_FALLO_CARPETA_DATOS[0]!r}; "
+         f"el registro se escribe en {LOG_PATH!r}.")
 
 # ── Rutas del bundle ────────────────────────────────────────────────────────
 if getattr(sys, "frozen", False):
@@ -371,10 +389,12 @@ SPLASH_HTML = _SPLASH_HEAD + f"""
 </html>"""
 
 
-def _error_html(log_path: str) -> str:
+def _error_html(log_path: str, causa: str = "") -> str:
     """Pantalla cuando el servidor local no arranca: mismo lenguaje visual
     que la splash, con qué pasó, qué hacer y dónde está el registro."""
     import html as _html
+    detalle = (f'<p class="lead" style="margin-top:12px;font-size:13px;">Detalle t&eacute;cnico: '
+               f'{_html.escape(causa)}</p>') if causa else ""
     return _SPLASH_HEAD + f"""
 <body style="user-select:text;">
   <main>
@@ -387,6 +407,7 @@ def _error_html(log_path: str) -> str:
     </div>
     <h1>No se pudo iniciar el conversor</h1>
     <p class="lead">El servidor interno de la aplicaci&oacute;n no respondi&oacute; a tiempo. Cierra esta ventana y vuelve a abrir la aplicaci&oacute;n; si sigue igual, reinicia el equipo.</p>
+    {detalle}
     <p class="lead" style="margin-top:24px;font-size:13px;">Si el problema contin&uacute;a, env&iacute;a este registro al desarrollador:<br>
       <span style="color:var(--text);font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all;">{_html.escape(log_path)}</span></p>
   </main>
@@ -396,21 +417,59 @@ def _error_html(log_path: str) -> str:
 
 
 # ── Server helpers ──────────────────────────────────────────────────────────
+_SERVIDOR_HILO = None      # hilo de uvicorn (para saber si murió antes de tiempo)
+_SERVIDOR_CAUSA = ""       # resumen de por qué terminó, para mostrarlo en la ventana de error
+
+
+class _RegistroLauncher(logging.Handler):
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            msg = record.getMessage()
+            if record.exc_info:
+                msg += "\n" + "".join(traceback.format_exception(*record.exc_info))
+            _log(f"uvicorn: {msg}")
+        except Exception:
+            pass
+
+
+def _enganchar_errores_uvicorn() -> None:
+    lg = logging.getLogger("uvicorn.error")
+    lg.handlers = [_RegistroLauncher()]
+    lg.propagate = False
+    lg.setLevel(logging.ERROR)
+
+
 def _run_server():
+    global _SERVIDOR_CAUSA
     try:
         _log(f"Iniciando uvicorn en {HOST}:{PORT} (BACKEND_DIR={BACKEND_DIR})")
         import uvicorn
         servidor = uvicorn.Server(uvicorn.Config("main:app", log_level="critical"))
+        # log_level="critical" silencia también los errores de arranque de la
+        # app (p. ej. un fallo en el lifespan). Se redirigen SOLO los errores
+        # al registro del launcher, sin pasar por la salida estándar.
+        _enganchar_errores_uvicorn()
         servidor.run(sockets=[_SOCK])
-    except BaseException:
+        # uvicorn.run() también termina "en limpio" si el arranque falla (p. ej.
+        # el lifespan lanzó una excepción): sin este aviso parecería un cierre normal.
+        if not servidor.started:
+            _SERVIDOR_CAUSA = "el servidor terminó durante el arranque"
+            _log("El servidor uvicorn terminó sin llegar a arrancar (mira las líneas anteriores).")
+    except BaseException as exc:
+        _SERVIDOR_CAUSA = f"{type(exc).__name__}: {str(exc)[:200]}"
         _log("EXCEPCION en _run_server:\n" + traceback.format_exc())
+
+
+_SIN_PROXY = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 def _es_nuestro_servidor() -> bool:
     """Quien responde tiene que firmar un número al azar con el token de
     este arranque: otro programa no lo conoce (y el token nunca se envía)."""
     nonce = secrets.token_urlsafe(16)
-    with urllib.request.urlopen(f"{URL}{seguridad.RUTA_SALUD}?n={nonce}", timeout=1) as r:
+    # Sin proxy: en redes de colegios/empresas urlopen mandaría 127.0.0.1 al
+    # proxy del sistema y la comprobación fallaría aunque el servidor esté bien.
+    with _SIN_PROXY.open(f"{URL}{seguridad.RUTA_SALUD}?n={nonce}", timeout=1) as r:
         firma = json.loads(r.read().decode("utf-8")).get("firma", "")
     return secrets.compare_digest(str(firma), seguridad.firma_salud(nonce))
 
@@ -424,6 +483,12 @@ def _wait_for_server(timeout: int = 30) -> bool:
             _log("Quien responde en el puerto no es el servidor de la app.")
             return False
         except Exception:
+            # Si el hilo del servidor ya murió no tiene sentido esperar el
+            # resto del plazo: la causa quedó en el registro.
+            if _SERVIDOR_HILO is not None and not _SERVIDOR_HILO.is_alive():
+                _log("El hilo del servidor terminó antes de responder"
+                     + (f" ({_SERVIDOR_CAUSA})" if _SERVIDOR_CAUSA else "") + ".")
+                return False
             time.sleep(0.4)
     return False
 
@@ -464,7 +529,9 @@ def main():
         try:
             start_time = time.time()
             _stage(0.35, "Iniciando el servidor local…")
-            threading.Thread(target=_run_server, daemon=True).start()
+            global _SERVIDOR_HILO
+            _SERVIDOR_HILO = threading.Thread(target=_run_server, daemon=True)
+            _SERVIDOR_HILO.start()
             time.sleep(0.4)
             _stage(0.7, "Cargando el conversor…")
             server_ready = _wait_for_server()
@@ -476,7 +543,8 @@ def main():
             # el servidor respondió en 200ms o en 4 segundos.
             elapsed = time.time() - start_time
             remaining = MIN_SPLASH_SECONDS - elapsed
-            if remaining > 0:
+            # Si el servidor ya falló no hay nada que "completar": el error se muestra ya.
+            if remaining > 0 and server_ready:
                 time.sleep(remaining)
 
             if server_ready:
@@ -486,7 +554,7 @@ def main():
                 window.load_url(f"{URL}/#t={seguridad.TOKEN}")
             else:
                 _log("El backend no respondio dentro del timeout.")
-                window.load_html(_error_html(LOG_PATH))
+                window.load_html(_error_html(LOG_PATH, _SERVIDOR_CAUSA))
         except Exception:
             _log("EXCEPCION en _start_backend:\n" + traceback.format_exc())
 

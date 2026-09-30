@@ -3,13 +3,13 @@
  */
 import { clozeBuildTextAndAnswer, initClozeBuilder, parseClozeSegments, renderClozeBuilder } from './cloze.js';
 import { scrollToEditorCard } from './panel.js';
-import { _editorTotalPoints } from './puntos-ui.js';
+import { _editorTotalPoints, reiniciarPanelPuntos, sincronizarPanelPuntos } from './puntos-ui.js';
 import { apiFetch } from '../api.js';
 import { imagenesDeTarjeta, imagenesHtml, prepararImagenes } from './imagenes.js';
 import { estado, notificar } from '../estado.js';
 import { DEFAULT_TYPE_WEIGHTS, fmtPoints } from '../puntos.js';
 import { showToast } from '../ui/toast.js';
-import { esc_html, humanizeSkipReason, scrollBehavior, splitAnswers, textoConFormulas, tieneFormulas } from '../util.js';
+import { crearIconos, esc_html, humanizeSkipReason, scrollBehavior, splitAnswers, textoConFormulas, tieneFormulas } from '../util.js';
 
 // estado.currentParseResult es la única fuente de datos que usa renderEditor()
 // para redibujar TODAS las tarjetas de golpe (al añadir una pregunta, o
@@ -38,13 +38,19 @@ export function syncParseResultFromDOM() {
 }
 
 // Borrar una pregunta ya no es definitivo: el aviso ofrece "Deshacer"
-// durante 6 s y la devuelve a su lugar con todo lo editado.
+// durante 6 s y la devuelve a su lugar. Solo se guarda LA pregunta borrada
+// (con su clave): al deshacer se vuelve a leer el editor tal como está
+// AHORA y se reinserta esa pregunta, así que lo que se editó en las demás
+// durante esos segundos no se pierde (antes se restauraba una foto de todo
+// el examen y esas ediciones desaparecían).
 export function deleteQuestionCard(btn) {
   const card = btn.closest('.editor-card');
   if (card) {
     syncParseResultFromDOM();
     const pos = Array.from(document.querySelectorAll('.editor-card')).indexOf(card);
-    const snapshot = JSON.parse(JSON.stringify(estado.currentParseResult));
+    // Estos objetos no se vuelven a tocar: cada sync arma objetos nuevos.
+    const borrada = estado.currentParseResult.questions[pos];
+    const claveBorrada = borrada ? estado.currentParseResult.answer_key[borrada.num] : null;
     card.remove();
     syncParseResultFromDOM();
     // Vuelve a dibujar TODAS las tarjetas restantes (mismo patrón que
@@ -55,16 +61,27 @@ export function deleteQuestionCard(btn) {
     // metadatos (color_review_hint, low_confidence, answer_from_marks) de
     // OTRA pregunta distinta a la que en verdad muestra en pantalla.
     renderEditor(estado.currentParseResult);
-    lucide.createIcons();
     notificar('pregunta borrada');
     // El foco pasa a la tarjeta que ocupó su lugar (o a la anterior).
     const cards = document.querySelectorAll('.editor-card');
     cards[Math.min(pos, cards.length - 1)]?.focus({ preventScroll: true });
     showToast(`Pregunta ${pos + 1} eliminada`, 'info', {
       accion: { texto: 'Deshacer', alPulsar: () => {
-        renderEditor(snapshot);
-        lucide.createIcons();
-        const back = document.querySelectorAll('.editor-card')[pos];
+        if (!borrada) return null;
+        syncParseResultFromDOM();
+        const res = estado.currentParseResult;
+        const donde = Math.min(pos, res.questions.length);
+        res.questions.splice(donde, 0, borrada);
+        // Se renumera todo: la clave va por número de pregunta.
+        const nuevaClave = {};
+        res.questions.forEach((q, i) => {
+          const clave = q === borrada ? claveBorrada : res.answer_key[q.num];
+          q.num = i + 1;
+          if (clave) nuevaClave[i + 1] = clave;
+        });
+        res.answer_key = nuevaClave;
+        renderEditor(res);
+        const back = document.querySelectorAll('.editor-card')[donde];
         if (back) scrollToEditorCard(back, { enfocar: true });
         showToast(`Pregunta ${pos + 1} restaurada`, 'info');
       } },
@@ -123,7 +140,6 @@ export function addNewQuestion(type) {
   estado.currentParseResult.answer_key[nextNum] = { type: type, answer: defaultAns };
 
   renderEditor(estado.currentParseResult);
-  lucide.createIcons();
   showToast(`Pregunta ${nextNum} (${QUESTION_TYPE_LABEL_MAP[type] || type}) añadida`);
   _irAPreguntaNueva(nextNum);
 }
@@ -193,7 +209,6 @@ export function recoverSkippedQuestion(skippedIdx) {
   });
 
   renderEditor(estado.currentParseResult);
-  lucide.createIcons();
   showToast(sq.type === 'essay' ? `Pregunta ${nextNum} añadida — revisa su enunciado` : `Pregunta ${nextNum} añadida — marca la respuesta correcta`, 'info');
   requestAnimationFrame(() => {
     const card = document.querySelector(`.editor-card[data-qnum="${nextNum}"]`);
@@ -265,7 +280,7 @@ export function addMatchingPairRow(qIdx) {
   tmp.innerHTML = _matchingPairRowHtml({ left: '', right: '' }, pairIdx);
   const row = tmp.firstElementChild;
   container.appendChild(row);
-  lucide.createIcons();
+  crearIconos(row);
   row.querySelectorAll('textarea').forEach(autoGrowTextarea);
   row.querySelector('.pair-left').focus();
 }
@@ -285,7 +300,20 @@ export function removeMatchingPairRow(btn) {
   const row = btn.closest('.matching-pair-row');
   const list = row?.parentElement;
   row?.remove();
+  if (list) _renumerarParejas(list);
   list?.querySelector('.matching-pair-row:last-child .pair-left')?.focus();
+}
+
+// Tras quitar una pareja, las etiquetas para el lector de pantalla (que
+// llevan el número) se corrigen: quedaba «Concepto 3» en la segunda fila.
+function _renumerarParejas(list) {
+  list.querySelectorAll('.matching-pair-row').forEach((row, k) => {
+    const n = k + 1;
+    row.querySelector('.pair-left')?.setAttribute('aria-label', `Concepto ${n}, columna A`);
+    row.querySelector('.pair-right')?.setAttribute('aria-label', `Pareja correcta del concepto ${n}, columna B`);
+    const quitar = row.querySelector('[data-accion="removeMatchingPairRow"]');
+    if (quitar) quitar.setAttribute('aria-label', `Quitar la pareja ${n}`);
+  });
 }
 
 // Interactive Question Editor Renderer
@@ -334,6 +362,11 @@ export function renderEditor(data) {
   _sanearDatos(data);
   estado.currentParseResult = data;
   const container = document.getElementById('editor-questions-container');
+  // Los pesos que el docente escribió en «Distribuir puntos» viven en inputs
+  // que se reconstruyen con el resto de la barra: se leen antes y se vuelven
+  // a poner después (para los tipos que siguen presentes).
+  const pesosEscritos = {};
+  container.querySelectorAll('.points-weight-input').forEach(inp => { pesosEscritos[inp.dataset.type] = inp.value; });
   const total = data.questions.length;
 
   // Subtítulo con el conteo real del examen.
@@ -450,6 +483,10 @@ export function renderEditor(data) {
   const cardsHtml = data.questions.map((q, i) => _cardHtml(q, i, data.answer_key[q.num] || { answer: '' })).join('');
 
   container.innerHTML = noticesHtml + toolbarHtml + cardsHtml + addQuestionHtml;
+  // El HTML de la barra siempre trae «Según el tipo» y los pesos por
+  // defecto: se ponen el modo y los pesos reales, si no el botón decía una
+  // cosa y «Aplicar» hacía otra.
+  sincronizarPanelPuntos(pesosEscritos);
 
   // Los campos de texto siempre muestran todo su contenido.
   container.querySelectorAll('.editor-card textarea').forEach(autoGrowTextarea);
@@ -460,7 +497,7 @@ export function renderEditor(data) {
   // Un solo aviso: los chips de filtro, el mapa del examen y el contador
   // de puntos se actualizan solos (ver suscripciones en app.js).
   notificar('editor redibujado');
-  lucide.createIcons();
+  crearIconos(container);
 }
 
 // Miniaturas de las imágenes de una pregunta no incluida: el motivo dice
@@ -515,7 +552,6 @@ export function changeQuestionType(select) {
   estado.currentParseResult.answer_key[qNum] = { type: newType, answer: _respuestaAlCambiarTipo(oldType, newType, oldAnswer) };
 
   renderEditor(estado.currentParseResult);
-  lucide.createIcons();
   showToast(`Pregunta ${qNum} cambiada a ${QUESTION_TYPE_LABEL_MAP[newType]}`, 'info');
   requestAnimationFrame(() => {
     const back = document.querySelectorAll('.editor-card')[idx];
@@ -701,9 +737,19 @@ function _retroalimentacionHtml(q, i, N) {
  * debajo del campo (con lo que cambia) y el campo no se toca hasta que el
  * docente pulsa «Aceptar». Nada de la IA entra al XML sin su visto bueno.
  */
+// Cuántas llamadas de IA de tarjetas hay a la vez: cada una gasta cuota de la
+// API del docente, y lanzar veinte de golpe (una por tarjeta) satura el
+// límite por minuto de Google. Con el tope, las demás piden esperar.
+const MAX_IA_SIMULTANEAS = 2;
+let _iaEnCurso = 0;
+
 async function _pedirIA(btn, url, cuerpo, aplicar, ocupado) {
   const card = btn.closest('.editor-card');
   if (!card || btn.disabled) return;
+  if (_iaEnCurso >= MAX_IA_SIMULTANEAS) {
+    showToast(`Ya hay ${MAX_IA_SIMULTANEAS} peticiones a la IA en curso. Espera a que termine una y vuelve a pulsar.`, 'info');
+    return;
+  }
   const pos = Array.from(document.querySelectorAll('.editor-card')).indexOf(card);
   const { questions, answer_key } = collectEditorData();
   const pregunta = questions[pos];
@@ -717,6 +763,7 @@ async function _pedirIA(btn, url, cuerpo, aplicar, ocupado) {
   btn.setAttribute('aria-busy', 'true');
   etiqueta.textContent = ocupado;
   btn.querySelector('svg, i')?.classList.add('girando');
+  _iaEnCurso++;
   try {
     const res = await apiFetch(url, {
       method: 'POST',
@@ -728,11 +775,19 @@ async function _pedirIA(btn, url, cuerpo, aplicar, ocupado) {
       const d = datos.detail;
       throw new Error(typeof d === 'string' ? d : 'La IA no pudo responder. Intenta de nuevo.');
     }
+    // Si mientras la IA respondía la tarjeta se borró o el editor se volvió a
+    // dibujar, la propuesta no tiene dónde mostrarse: se avisa en vez de
+    // perderla sin decir nada (la llamada ya se gastó).
+    if (!card.isConnected) {
+      showToast('La pregunta cambió mientras la IA respondía y su propuesta se descartó. Vuelve a pedirla.', 'info');
+      return;
+    }
     aplicar(card, datos, pos + 1);
   } catch (e) {
     const msg = e instanceof TypeError ? 'No se pudo conectar con la aplicación.' : e.message;
     showToast(msg, 'error');
   } finally {
+    _iaEnCurso--;
     btn.disabled = false;
     btn.removeAttribute('aria-busy');
     btn.style.minWidth = '';
@@ -816,7 +871,7 @@ function _proponer(campo, propuesta, { que, pos, aviso, alAplicar = () => {} }) 
       <button type="button" class="btn btn-ghost btn-sm q-ia-descartar"><i data-lucide="x" style="width:14px;height:14px;"></i> Descartar</button>
     </div>`;
   campo.insertAdjacentElement('afterend', box);
-  lucide.createIcons();
+  crearIconos(box);
 
   const marcarDesactualizada = () => { box.querySelector('.q-ia-desactualizada').hidden = campo.value === base; };
   campo.addEventListener('input', marcarDesactualizada);
@@ -942,7 +997,11 @@ function _observarAncho(container) {
   _ro.observe(container);
 }
 
-export function collectEditorData() {
+// Lee el examen tal como está AHORA en las tarjetas. Con `conImagenes: false`
+// las imágenes (base64, varios MB) ni se leen ni se copian: la revisión en
+// vivo de preguntas incompletas corre tras cada pausa al escribir y no las
+// necesita.
+export function collectEditorData({ conImagenes = true } = {}) {
   const qs = [];
   const ak = {};
   const cards = document.querySelectorAll('.editor-card');
@@ -954,7 +1013,10 @@ export function collectEditorData() {
                       ? estado.currentParseResult.questions[parseInt(idxAttr)] 
                       : { num: qNum, type: 'multichoice', data: {} };
 
-    const newQ = JSON.parse(JSON.stringify(originalQ));
+    // Copia profunda SIN las imágenes: se vuelven a leer de la tarjeta más
+    // abajo (o se omiten), así que copiarlas con JSON era trabajo perdido.
+    const { images: _imagenesPrevias, ...datosSinImagenes } = originalQ.data || {};
+    const newQ = JSON.parse(JSON.stringify({ ...originalQ, data: datosSinImagenes }));
     newQ.num = qNum; // Update question number if additions/deletions happened
 
     // Puntaje propio de esta pregunta (editable a mano o por el panel
@@ -1046,8 +1108,10 @@ export function collectEditorData() {
 
     // Imágenes que siguen en la tarjeta (el docente puede quitarlas) y
     // retroalimentación opcional (vacía = sin retroalimentación).
-    const quedan = imagenesDeTarjeta(card, qNum);
-    if (quedan.length) newQ.data.images = quedan; else delete newQ.data.images;
+    if (conImagenes) {
+      const quedan = imagenesDeTarjeta(card, qNum);
+      if (quedan.length) newQ.data.images = quedan;
+    }
     const fbEl = card.querySelector('.q-feedback');
     if (fbEl) {
       const fb = fbEl.value.trim();

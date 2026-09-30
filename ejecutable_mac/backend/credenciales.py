@@ -28,6 +28,7 @@ Orden de lectura (get_api_key):
      ver config._load_dotenv).
 """
 import base64
+import functools
 import getpass
 import json
 import logging
@@ -52,6 +53,9 @@ _VAR = "GEMINI_API_KEY"
 
 _lock = threading.Lock()
 _cache: str | None = None  # None = aún no leída; "" = no hay clave
+_origen: str | None = None  # "archivo" | "entorno" | None: de dónde salió _cache
+_firma_cache = None  # (mtime_ns, tamaño) de clave.dat cuando se leyó _cache
+_aviso: str | None = None  # motivo legible si clave.dat existe pero no se pudo usar
 
 
 class ClaveInvalida(Exception):
@@ -63,8 +67,12 @@ class SinConexion(Exception):
 
 
 # ── Llave del equipo ────────────────────────────────────────────────────────
+@functools.lru_cache(maxsize=1)
 def _id_del_equipo() -> str:
-    """Identificador estable de la máquina (no cambia al reinstalar la app)."""
+    """Identificador estable de la máquina (no cambia al reinstalar la app).
+
+    Se calcula una sola vez por proceso: en macOS lanza el subproceso `ioreg`
+    y el valor no cambia mientras la app está abierta."""
     try:
         if sys.platform == "win32":
             import winreg
@@ -105,15 +113,33 @@ def _fernet(sal: bytes) -> Fernet:
 
 
 # ── Archivo cifrado ─────────────────────────────────────────────────────────
-def _leer_archivo() -> str:
-    if not ARCHIVO.is_file():
-        return ""
+def _firma_archivo():
+    """(mtime_ns, tamaño) de clave.dat, o None si no existe o no se puede consultar."""
     try:
+        st = ARCHIVO.stat()
+        return (st.st_mtime_ns, st.st_size)
+    except OSError:
+        return None
+
+
+def _leer_archivo() -> str:
+    """La clave descifrada de clave.dat; "" si no hay, no se puede leer (antivirus,
+    permisos), tiene otra forma o es de otro equipo/usuario. Nunca lanza y nunca
+    registra el contenido del archivo."""
+    global _aviso
+    try:
+        if not ARCHIVO.is_file():
+            return ""
         datos = json.loads(ARCHIVO.read_text(encoding="utf-8"))
         sal = base64.b64decode(datos["sal"])
         return _fernet(sal).decrypt(datos["clave"].encode("ascii")).decode("utf-8").strip()
-    except (InvalidToken, KeyError, ValueError) as exc:
-        # Otro equipo/usuario, o archivo dañado: se vuelve a pedir.
+    except OSError as exc:
+        _aviso = "No se pudo leer el archivo de la clave guardada (¿lo bloquea un antivirus o faltan permisos?). Ingresa la clave de nuevo."
+        logger.warning("No se pudo leer clave.dat (%s); se pedirá la clave otra vez.", type(exc).__name__)
+        return ""
+    except (InvalidToken, KeyError, ValueError, TypeError, AttributeError) as exc:
+        # Otro equipo/usuario, o archivo dañado o con otra forma: se vuelve a pedir.
+        _aviso = "La clave guardada no se pudo descifrar (otro equipo o archivo dañado). Ingresa la clave de nuevo."
         logger.warning("No se pudo descifrar clave.dat (%s); se pedirá la clave otra vez.", type(exc).__name__)
         return ""
 
@@ -141,9 +167,13 @@ def _escribir_archivo(clave: str) -> None:
 # ── .env de instalaciones anteriores ───────────────────────────────────────
 def _clave_en_env_de_datos() -> str:
     """El valor de GEMINI_API_KEY en el .env de la carpeta de datos, si lo hay."""
-    if not ENV_PATH.is_file():
+    try:
+        if not ENV_PATH.is_file():
+            return ""
+        lineas = ENV_PATH.read_text(encoding="utf-8").splitlines()
+    except (OSError, ValueError):
         return ""
-    for linea in ENV_PATH.read_text(encoding="utf-8").splitlines():
+    for linea in lineas:
         k, sep, v = linea.strip().partition("=")
         if sep and k.strip() == _VAR:
             return v.strip().strip('"').strip("'")
@@ -166,7 +196,7 @@ def _migrar_env() -> None:
     borra del .env.
     """
     clave = _clave_en_env_de_datos()
-    if not clave or ARCHIVO.is_file():
+    if not clave or _firma_archivo() is not None:
         return
     try:
         _escribir_archivo(clave)
@@ -179,13 +209,30 @@ def _migrar_env() -> None:
 
 
 # ── API del módulo ──────────────────────────────────────────────────────────
+def _cargar() -> None:
+    """Lee la clave (clave.dat, o si no el entorno) y recuerda su origen.
+    Se llama con _lock tomado."""
+    global _cache, _origen, _firma_cache, _aviso
+    _aviso = None
+    _migrar_env()
+    _firma_cache = _firma_archivo()
+    desde_archivo = _leer_archivo()
+    if desde_archivo:
+        _cache, _origen = desde_archivo, "archivo"
+    else:
+        _cache = os.environ.get(_VAR, "").strip()
+        _origen = "entorno" if _cache else None
+
+
 def get_api_key() -> str:
-    """La clave vigente ("" si no hay). Se lee una vez y queda en memoria."""
-    global _cache
+    """
+    La clave vigente ("" si no hay). Queda en memoria y solo se vuelve a leer
+    (y a descifrar, que es lo caro) si clave.dat cambió, apareció o desapareció.
+    Nunca lanza: un archivo ilegible cuenta como «sin clave».
+    """
     with _lock:
-        if _cache is None:
-            _migrar_env()
-            _cache = _leer_archivo() or os.environ.get(_VAR, "").strip()
+        if _cache is None or _firma_archivo() != _firma_cache:
+            _cargar()
         return _cache
 
 
@@ -193,9 +240,11 @@ def estado() -> dict:
     """Si hay clave y de dónde sale — nunca la clave en sí, solo sus 4 últimos caracteres."""
     clave = get_api_key()
     if not clave:
-        return {"configurada": False, "origen": None, "final": None}
-    origen = "archivo" if ARCHIVO.is_file() and clave == _leer_archivo() else "entorno"
-    return {"configurada": True, "origen": origen, "final": clave[-4:]}
+        resp = {"configurada": False, "origen": None, "final": None}
+        if _aviso:
+            resp["aviso"] = _aviso  # clave.dat existe pero no sirvió; texto fijo, sin datos del archivo
+        return resp
+    return {"configurada": True, "origen": _origen or "entorno", "final": clave[-4:]}
 
 
 def validar(clave: str) -> None:
@@ -222,22 +271,23 @@ def validar(clave: str) -> None:
 
 def guardar(clave: str) -> None:
     """Guarda la clave (ya validada), reemplazando la anterior si la había."""
-    global _cache
+    global _cache, _origen, _firma_cache, _aviso
     with _lock:
         _escribir_archivo(clave)
         # Que no quede una copia vieja en texto plano.
         if _clave_en_env_de_datos():
             _vaciar_env_de_datos()
         os.environ.pop(_VAR, None)
-        _cache = clave
+        _cache, _origen, _aviso = clave, "archivo", None
+        _firma_cache = _firma_archivo()
 
 
 def borrar() -> None:
     """Borra clave.dat y la del .env de datos. La app vuelve a pedirla."""
-    global _cache
+    global _cache, _origen, _firma_cache, _aviso
     with _lock:
         ARCHIVO.unlink(missing_ok=True)
         if _clave_en_env_de_datos():
             _vaciar_env_de_datos()
         os.environ.pop(_VAR, None)
-        _cache = None
+        _cache, _origen, _firma_cache, _aviso = None, None, None, None

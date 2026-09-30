@@ -25,14 +25,15 @@ import io
 import logging
 import re
 import zipfile
+import zlib
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 from lxml import etree
 from PIL import Image
 
-from extractor import _color_name, _render_table
-from imagenes import ImagenUbicada, Linea, Ubicaciones
+from extractor import _color_name, _is_marker_fill, _render_table
+from imagenes import ImagenUbicada, Linea, Ubicaciones, cargar_reducida
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ NS = {
     "m": "http://schemas.openxmlformats.org/officeDocument/2006/math",
     "v": "urn:schemas-microsoft-com:vml",
     "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
+    "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
 }
 W = "{%s}" % NS["w"]
 M = "{%s}" % NS["m"]
@@ -95,8 +97,11 @@ def _props(rpr) -> Dict[str, object]:
         out["resaltado"] = (_val(h) or "none").lower() != "none"
     shd = rpr.find("w:shd", NS)
     if shd is not None:
-        fill = (_val(shd, "fill") or "auto").lower()
-        out["sombreado"] = fill not in ("auto", "ffffff", "000000")
+        # Mismo criterio que el resaltado en PDF (extractor._is_marker_fill):
+        # solo un relleno con TONO (amarillo, verde, celeste…) es una marca.
+        # El gris de un estilo de código o de un encabezado no lo es.
+        rgb = _hex_a_rgb(_val(shd, "fill") or "auto")
+        out["sombreado"] = bool(rgb and _is_marker_fill(rgb))
     u = rpr.find("w:u", NS)
     if u is not None:
         out["subrayado"] = (_val(u) or "single").lower() != "none"
@@ -191,6 +196,26 @@ _FUNCIONES = {"sin", "cos", "tan", "cot", "sec", "csc", "log", "ln", "exp", "lim
 
 def _texto_latex(t: str) -> str:
     return "".join(_SIMBOLOS.get(ch, "\\" + ch if ch in "{}%#&$_" else ch) for ch in t)
+
+
+# w:sym: un carácter de una fuente de símbolos. En Word las casillas y
+# palomitas de una respuesta marcada suelen ser Wingdings (F0FC = ✓); el
+# código llega como 0xF0xx (área privada) y no dice nada sin esta tabla.
+_WINGDINGS = {
+    0xFC: "✓", 0xFB: "✗", 0xFE: "☑", 0xFD: "☒", 0xA8: "☐", 0x6F: "☐", 0x78: "☒",
+}
+
+
+def _simbolo(fuente: str, codigo: str) -> str:
+    try:
+        n = int(codigo, 16)
+    except (TypeError, ValueError):
+        return ""
+    if "wingdings" in (fuente or "").lower():
+        return _WINGDINGS.get(n & 0xFF, "")
+    # Otra fuente: un carácter Unicode normal se conserva; un código del área
+    # privada de una fuente de símbolos (viñetas, flechas) no se puede leer.
+    return chr(n) if 0x20 <= n < 0xF000 else ""
 
 
 def _hijo(el, nombre):
@@ -315,7 +340,33 @@ def _formatear(fmt: str, n: int) -> str:
     }.get(fmt, "" if fmt in ("bullet", "none") else str(n))
 
 
+_OLE = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"  # Word cifrado o .doc antiguo (no es un ZIP)
+_DANADO = "El archivo Word está dañado o protegido con contraseña. Ábrelo en Word, quita la protección y guárdalo de nuevo como .docx."
+
+
 def leer_docx(raw: bytes) -> DocxLeido:
+    """Lee el .docx. Cualquier fallo de lectura por un archivo roto, cifrado
+    o mal formado sale como DocxInvalido con un mensaje claro en español (el
+    flujo lo muestra tal cual), no como el texto técnico de zipfile o lxml."""
+    if raw[:8] == _OLE:
+        # Un .docx con contraseña se guarda cifrado dentro de un contenedor
+        # OLE, no como ZIP; un .doc antiguo tiene la misma firma.
+        raise DocxInvalido("El archivo Word está protegido con contraseña o es un .doc antiguo. "
+                           "Quita la protección, o ábrelo en Word y guárdalo como .docx.")
+    try:
+        return _leer_docx(raw)
+    except DocxInvalido:
+        raise
+    except (zipfile.BadZipFile, etree.XMLSyntaxError, EOFError, zlib.error, NotImplementedError) as exc:
+        logger.warning("Word ilegible: %s: %s", type(exc).__name__, exc)
+        raise DocxInvalido(_DANADO) from exc
+    except RuntimeError as exc:  # zipfile: «File … is encrypted, password required»
+        if "encrypted" in str(exc).lower() or "password" in str(exc).lower():
+            raise DocxInvalido(_DANADO) from exc
+        raise
+
+
+def _leer_docx(raw: bytes) -> DocxLeido:
     try:
         z = zipfile.ZipFile(io.BytesIO(raw))
     except zipfile.BadZipFile:
@@ -358,7 +409,9 @@ def leer_docx(raw: bytes) -> DocxLeido:
             # 2 GB de memoria por un archivo diminuto.
             if im.width * im.height > MAX_PIXELES_IMAGEN:
                 return
-            im.load()
+            # Se guarda reducida (~2 MP): hasta 30 imágenes de 12 MP ocupaban
+            # más de 1 GB, y a Moodle llegan a 1000 px de lado de todos modos.
+            im = cargar_reducida(im)
         except Exception:  # noqa: BLE001 — EMF/WMF u otro formato que PIL no abre: se omite
             return
         # El párrafo en curso (aún no agregado a la lista): la imagen está en
@@ -388,11 +441,31 @@ def leer_docx(raw: bytes) -> DocxLeido:
                 texto = texto.replace(f"%{int(k) + 1}", _formatear(f, contadores.get((nid, k), ini)))
         return (texto + " ") if texto.strip() else ""
 
-    def parrafo(p) -> Tuple[str, str]:
+    def parrafo(p, profundidad: int = 0) -> Tuple[str, str]:
         """(texto con marcas, texto plano) de un párrafo."""
         estilo_p = _val(p.find("w:pPr/w:pStyle", NS))
         base = estilos.get(estilo_p, {}) if estilo_p else {}
         tramos: List[Tuple[Optional[str], str]] = []
+        # Párrafos de cuadros de texto: (rico, plano) ya armados, que se
+        # agregan a continuación del párrafo que los contiene.
+        cajas: List[Tuple[str, str]] = []
+
+        def hijos_de_run(h):
+            """Los hijos de un <w:r>, y el contenido de mc:AlternateContent:
+            Word guarda ahí, dos veces, un dibujo o cuadro de texto (Choice
+            para Word moderno, Fallback para el antiguo). Solo se lee UNA
+            versión: la Choice, o la Fallback si no hay Choice."""
+            for x in h:
+                if not isinstance(x.tag, str):
+                    continue
+                if etree.QName(x).namespace == NS["mc"] and etree.QName(x).localname == "AlternateContent":
+                    elegido = x.find("mc:Choice", NS)
+                    if elegido is None:
+                        elegido = x.find("mc:Fallback", NS)
+                    if elegido is not None:
+                        yield from hijos_de_run(elegido)
+                else:
+                    yield x
 
         def recorrer(el):
             for h in el:
@@ -405,7 +478,7 @@ def leer_docx(raw: bytes) -> DocxLeido:
                     estilo_r = _val(rpr.find("w:rStyle", NS)) if rpr is not None else None
                     props = {**base, **(estilos.get(estilo_r, {}) if estilo_r else {}), **_props(rpr)}
                     texto = []
-                    for x in h:
+                    for x in hijos_de_run(h):
                         t = etree.QName(x).localname if isinstance(x.tag, str) else ""
                         if t == "t":
                             texto.append(x.text or "")
@@ -413,17 +486,34 @@ def leer_docx(raw: bytes) -> DocxLeido:
                             texto.append(" ")
                         elif t in ("br", "cr"):
                             texto.append("\n")
+                        elif t == "noBreakHyphen":
+                            texto.append("-")  # "-5" no puede pasar a "5"
+                        elif t == "sym":
+                            texto.append(_simbolo(_val(x, "font") or "", _val(x, "char") or ""))
                         elif t in ("drawing", "pict", "object"):
-                            for b in x.iter("{%s}blip" % NS["a"]):
+                            # Las imágenes de dentro de un cuadro de texto se
+                            # leen con el cuadro (más abajo), no aquí.
+                            for b in x.xpath(".//a:blip[not(ancestor::w:txbxContent)]", namespaces=NS):
                                 imagen(b.get(R_EMBED))
-                            for d in x.iter("{%s}imagedata" % NS["v"]):
+                            for d in x.xpath(".//v:imagedata[not(ancestor::w:txbxContent)]", namespaces=NS):
                                 imagen(d.get(R_ID))
+                            if profundidad < 3:
+                                for caja in x.xpath(".//w:txbxContent[not(ancestor::w:txbxContent)]", namespaces=NS):
+                                    for pp in caja.findall(".//w:p", NS):
+                                        cajas.append(parrafo(pp, profundidad + 1))
                     if texto:
                         tramos.append((_marca(props), "".join(texto)))
+                elif ns == NS["mc"] and tag == "AlternateContent":
+                    elegido = h.find("mc:Choice", NS)
+                    if elegido is None:
+                        elegido = h.find("mc:Fallback", NS)
+                    if elegido is not None:
+                        recorrer(elegido)
                 elif ns == NS["w"] and tag in ("hyperlink", "ins", "smartTag", "sdt", "sdtContent",
                                                "fldSimple", "customXml", "moveTo"):
                     recorrer(h)
 
+        pre = prefijo(p)  # antes de los cuadros de texto: la numeración va en orden
         recorrer(p)
         rico, plano, actual = [], [], None
         for marca, texto in tramos:
@@ -434,11 +524,22 @@ def leer_docx(raw: bytes) -> DocxLeido:
                 if marca:
                     rico.append(f"⟦{marca}⟧")
                 actual = marca
+            if marca and "\n" in texto:
+                # Cada línea lleva su propia etiqueta cerrada: si el salto
+                # suave (Shift+Enter) de una opción coloreada dejara la
+                # etiqueta abierta, la marca quedaba repartida entre dos
+                # líneas y ninguna la llevaba completa.
+                texto = texto.replace("\n", f"⟦/{marca}⟧\n⟦{marca}⟧")
             rico.append(texto)
         if actual:
             rico.append(f"⟦/{actual}⟧")
-        pre = prefijo(p)
-        return pre + "".join(rico), pre + "".join(plano)
+        rico_s = re.sub(r"⟦([a-záéíóú]+)⟧⟦/\1⟧", "", pre + "".join(rico))
+        plano_s = pre + "".join(plano)
+        for r_caja, p_caja in cajas:
+            if p_caja.strip():
+                rico_s += "\n" + r_caja
+                plano_s += "\n" + p_caja
+        return rico_s, plano_s
 
     def bloque(contenedor):
         for el in contenedor:

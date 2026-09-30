@@ -11,7 +11,7 @@ import { estado } from './estado.js';
 import { showPanel } from './navegacion.js';
 import { stopProgress } from './progreso.js';
 import { showToast } from './ui/toast.js';
-import { describeArcSlice, esc_html, friendlyHttpError, getCssVar, humanizeSkipReason, polarToCartesian, textColorOnFill } from './util.js';
+import { avisosDelXml, crearIconos, describeArcSlice, detalleDeError, esc_html, friendlyHttpError, getCssVar, humanizeSkipReason, polarToCartesian, textColorOnFill } from './util.js';
 
 // Recibe las preguntas TAL COMO se acaban de enviar a generar el XML
 // (con su `type` y `points` reales) y arma el resumen final: una sola
@@ -55,7 +55,7 @@ function updateSuccessStats(questions) {
         <p style="margin:0;font-size:12px;">Para incluirlas, vuelve a la revisión y usa "Añadir pregunta", o corrige el documento original y conviértelo de nuevo.</p>
       </div>`;
     skippedNoticeEl.style.display = 'flex';
-    if (window.lucide) lucide.createIcons();
+    crearIconos(skippedNoticeEl);
   } else {
     skippedNoticeEl.style.display = 'none';
   }
@@ -185,6 +185,11 @@ export async function generateXml() {
   document.getElementById('progress-timer-row').style.display = 'none';
   document.getElementById('btn-cancel-progress').style.display = 'none';
 
+  // Dos pasos con errores distintos: pedir el XML (red) y mostrar el resultado
+  // (dibujo). Si fallara lo segundo no es un problema de conexión, y el XML
+  // ya se generó (y se guardó en el Historial).
+  let filename = 'examen_moodle.xml';
+  let stats = {};
   try {
     const res = await apiFetch('/api/generate_xml', {
       method: 'POST',
@@ -195,19 +200,18 @@ export async function generateXml() {
     stopProgress(res.ok);
     if (!res.ok) {
       let errMsg = friendlyHttpError(res.status);
-      try { const json = await res.json(); errMsg = json.detail || errMsg; } catch (_) {}
+      try { const json = await res.json(); errMsg = detalleDeError(json.detail, errMsg); } catch (_) {}
       showError(errMsg, 'editor');
       return;
     }
 
     // Se usa directamente lo que se acaba de enviar (con el `points`
-    // real de cada pregunta) en vez del header X-Question-Stats del
-    // backend — una sola fuente de verdad, y el resumen final siempre
-    // coincide exactamente con el XML que se generó.
+    // real de cada pregunta) para el resumen — una sola fuente de verdad, y
+    // el resumen final siempre coincide exactamente con el XML generado. De
+    // la cabecera X-Question-Stats solo se leen la escala y los avisos.
     const disposition = res.headers.get('Content-Disposition');
     // El nombre real (con tildes) viene en filename*=UTF-8''…; filename="…"
     // es solo una versión ASCII de respaldo.
-    let filename = 'examen_moodle.xml';
     const utf8 = disposition && disposition.match(/filename\*=UTF-8''([^;]+)/i);
     const ascii = disposition && disposition.match(/filename="([^"]+)"/);
     if (utf8) {
@@ -215,35 +219,71 @@ export async function generateXml() {
     } else if (ascii) {
       filename = ascii[1];
     }
+    try { stats = JSON.parse(res.headers.get('X-Question-Stats') || '{}') || {}; } catch (_) { stats = {}; }
 
     const blob = await res.blob();
     estado.downloadBlob = blob;
     estado.downloadFilename = filename;
+  } catch (err) {
+    stopProgress(false);
+    showError('No se pudo conectar con la aplicación para generar el archivo. Tu revisión está intacta: vuelve e inténtalo de nuevo. (Detalle: ' + err.message + ')', 'editor');
+    return;
+  }
 
+  try {
     // Después de guardar el nombre del archivo: el resumen lo muestra, y
     // si se calculaba antes salía un "•" suelto al final de la frase.
     updateSuccessStats(questions);
     // Moodle solo admite pesos enteros en «Completar»: si hizo falta, todos
     // los puntos se multiplicaron por el mismo factor (la nota final no
     // cambia). Se avisa para que el total distinto en Moodle no sorprenda.
-    let escala = 1;
-    try { escala = Number(JSON.parse(res.headers.get('X-Question-Stats') || '{}').escala) || 1; } catch (_) {}
-    if (escala > 1) {
+    const escala = Number(stats.escala) || 1;
+    const historialGuardado = stats.historial_guardado !== false;
+    // Sin Historial, el toast de más abajo taparía este: entonces va en el recuadro.
+    if (escala > 1 && historialGuardado) {
       showToast(`En Moodle cada pregunta valdrá ${escala} veces sus puntos (no admite decimales en «Completar»). La nota final no cambia.`, 'info');
     }
+    mostrarAvisosDelXml(stats, escala);
     const dlLabel = document.getElementById('btn-download-label');
     if (dlLabel) dlLabel.textContent = 'Descargar Moodle XML';
     showPanel('success');
-    // Ya quedó en el Historial (desde donde se puede reabrir): el
-    // borrador local deja de hacer falta.
-    borrarBorrador();
+    if (historialGuardado) {
+      // Ya quedó en el Historial (desde donde se puede reabrir): el
+      // borrador local deja de hacer falta.
+      borrarBorrador();
+    } else {
+      // No se pudo guardar en el Historial: el borrador es la ÚNICA copia de
+      // la revisión, así que se conserva. El XML sí se descarga igual.
+      showToast(typeof stats.aviso_historial === 'string' && stats.aviso_historial.trim()
+        ? stats.aviso_historial
+        : 'El XML se generó, pero no se pudo guardar en el Historial. Descárgalo ahora.', 'error');
+    }
     // El guardado nativo se dispara solo una vez, cuando el usuario
     // presiona "Descargar Moodle XML" — no automáticamente aquí, para
     // no pedirle guardar el mismo archivo dos veces seguidas.
   } catch (err) {
-    stopProgress(false);
-    showError('No se pudo conectar con el conversor para generar el archivo. Tu revisión está intacta: vuelve e inténtalo de nuevo. (Detalle: ' + err.message + ')', 'editor');
+    showError('Se generó el XML pero no se pudo mostrar el resultado (' + (err && err.message ? err.message : 'error desconocido') + '). Tu revisión está intacta: vuelve a la revisión y genera el XML otra vez.', 'editor', 'No se pudo mostrar el resultado');
   }
+}
+
+// Avisos no bloqueantes que trae la respuesta: los del constructor de XML
+// (`avisos`, lista de textos) y, si no se guardó en el Historial, su motivo.
+// Van en un recuadro junto al resumen; se vacía y oculta si no hay ninguno.
+function mostrarAvisosDelXml(stats, escala) {
+  const box = document.getElementById('success-avisos');
+  if (!box) return;
+  const textos = avisosDelXml(stats);
+  if (escala > 1 && stats.historial_guardado === false) {
+    textos.push(`En Moodle cada pregunta valdrá ${escala} veces sus puntos (no admite decimales en «Completar»). La nota final no cambia.`);
+  }
+  if (!textos.length) { box.style.display = 'none'; box.textContent = ''; return; }
+  box.innerHTML = `<i data-lucide="alert-triangle"></i>
+    <div style="min-width:0;">
+      <p style="font-weight:700;font-size:13.5px;margin:0 0 6px;">${textos.length === 1 ? 'Un aviso sobre este XML' : `${textos.length} avisos sobre este XML`}</p>
+      <ul style="margin:0 0 0 18px;padding:0;font-size:13px;line-height:1.5;">${textos.map(t => `<li>${esc_html(t)}</li>`).join('')}</ul>
+    </div>`;
+  box.style.display = 'flex';
+  crearIconos(box);
 }
 
 // Download XML Event
@@ -265,19 +305,29 @@ function _readBlobAsBase64(blob) {
 }
 
 export async function saveFileToUser(blob, filename, successMsg) {
-  if (window.pywebview && window.pywebview.api) {
-    const b64 = await _readBlobAsBase64(blob);
-    const res = await window.pywebview.api.save_xml_file(filename, b64);
-    if (res && res.saved) showToast(successMsg);
-    return !!(res && res.saved);
-  }
+  // Un fallo al guardar (puente nativo caído, disco lleno, sin permiso) antes
+  // se perdía sin decir nada y el docente creía que el archivo se guardó.
+  const fallo = () => showToast('No se pudo guardar el archivo en tu equipo. Vuelve a intentarlo, o elige otra carpeta.', 'error');
+  try {
+    if (window.pywebview && window.pywebview.api) {
+      const b64 = await _readBlobAsBase64(blob);
+      const res = await window.pywebview.api.save_xml_file(filename, b64);
+      if (res && res.saved) showToast(successMsg);
+      // {saved: false} a secas = el docente canceló el diálogo; con `error`, falló.
+      else if (res && res.error) fallo();
+      return !!(res && res.saved);
+    }
 
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast(successMsg);
-  return true;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(successMsg);
+    return true;
+  } catch (_) {
+    fallo();
+    return false;
+  }
 }

@@ -53,6 +53,22 @@ export function setPointsToolMode(mode) {
   if (weightsEditor) weightsEditor.style.display = (mode === 'byType') ? 'flex' : 'none';
 }
 
+// renderEditor() reconstruye la barra con «Según el tipo» y los pesos por
+// defecto. Esto deja el panel como el docente lo tenía: el modo elegido y los
+// pesos que escribió (`pesos`: tipo → texto del campo) en los tipos que siguen
+// presentes. Sin esto, el botón resaltado decía una cosa y «Aplicar» hacía otra.
+export function sincronizarPanelPuntos(pesos = {}) {
+  setPointsToolMode(_pointsToolMode);
+  document.querySelectorAll('.points-weight-input').forEach(inp => {
+    if (Object.hasOwn(pesos, inp.dataset.type)) inp.value = pesos[inp.dataset.type];
+  });
+}
+
+// Al abrir OTRO examen el panel vuelve a su estado de fábrica.
+export function reiniciarPanelPuntos() {
+  _pointsToolMode = 'byType';
+}
+
 // Botón "Aplicar": recalcula el puntaje de TODAS las preguntas según el
 // modo elegido. Reemplaza los valores puestos a mano, así que el aviso
 // ofrece "Deshacer" (antes solo había una advertencia en letra de 11,5px).
@@ -74,7 +90,6 @@ export function applyPointsDistribution() {
   const anteriores = estado.currentParseResult.questions.map(q => q.points);
   autoDistributePoints(estado.currentParseResult.questions, totalPoints, mode, weights);
   renderEditor(estado.currentParseResult);
-  lucide.createIcons();
 
   // Reabre el panel con el mismo modo y los mismos pesos que el
   // docente acababa de configurar, para que vea de inmediato el
@@ -96,7 +111,6 @@ export function applyPointsDistribution() {
       syncParseResultFromDOM();
       estado.currentParseResult.questions.forEach((q, i) => { if (i < anteriores.length) q.points = anteriores[i]; });
       renderEditor(estado.currentParseResult);
-      lucide.createIcons();
       showToast('Se restauraron los puntos anteriores', 'info');
       return document.querySelector('[data-accion="applyPointsDistribution"]');
     } } }

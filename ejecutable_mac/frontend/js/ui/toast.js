@@ -13,6 +13,7 @@
  * esto quedaba en <body> y el usuario de teclado perdía su lugar.
  */
 import { toastEl } from '../dom.js';
+import { crearIconos } from '../util.js';
 
 const TOAST_ICONS = { success: 'check-circle', error: 'alert-circle', info: 'info' };
 
@@ -108,7 +109,7 @@ export function showToast(msg, type = 'success', { accion = null } = {}) {
     // Solo «Deshacer» responde a Ctrl/⌘+Z (no, p. ej., «Descargar»).
     _accionActual = accion && accion.texto === 'Deshacer' ? accion : null;
     toastEl.className = 'toast' + (type === 'error' ? ' error' : type === 'info' ? ' info' : '');
-    lucide.createIcons();
+    crearIconos(toastEl);
     void toastEl.offsetWidth;
     toastEl.classList.add('show');
     _programarCierre(accion ? 6000 : type === 'error' ? 5000 : 3500);

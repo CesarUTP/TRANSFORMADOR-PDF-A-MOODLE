@@ -62,6 +62,11 @@ class _Line:
                 colored[current] += len(raw[pos:m.start()].strip())
             current = None if m.group(0).startswith("⟦/") else m.group(1)
             pos = m.end()
+        # Etiqueta que se abrió y no se cerró en esta línea (un salto suave de
+        # Word dentro de una opción coloreada): el resto de la línea también
+        # es del color, no texto normal.
+        if current:
+            colored[current] += len(raw[pos:].strip())
         # Sobre el texto de la opción SIN su letra ("b) "): en Word la
         # numeración automática nunca lleva el color de la respuesta, y en
         # una opción corta ("2", "Roma") la letra sola bajaba la cobertura
@@ -93,6 +98,23 @@ def _mark_color(lines: List[_Line]) -> Optional[str]:
     counts = Counter(
         ln.colors for ln in lines
         if ln.colors and len(ln.plain) <= 140 and not ln.plain.rstrip().endswith(("?", ":"))
+    )
+    if not counts:
+        return None
+    color, n = counts.most_common(1)[0]
+    return color if n >= 2 else None
+
+
+def detectar_marca(pages: List[str]) -> Optional[str]:
+    """¿Marca este documento las respuestas de verdad? Como _mark_color, pero
+    la NEGRITA solo cuenta en líneas con forma de opción ("b) …"): los
+    títulos y encabezados en negrita ("CLAVE DE RESPUESTAS") son comunes y no
+    señalan ninguna respuesta. Lo usa el pipeline para decidir si vale la
+    pena el reintento de calidad de la IA (hasta 3 llamadas completas)."""
+    counts = Counter(
+        ln.colors for ln in _lines(pages)
+        if ln.colors and len(ln.plain) <= 140 and not ln.plain.rstrip().endswith(("?", ":"))
+        and (ln.colors != "negrita" or _LABEL.match(ln.plain))
     )
     if not counts:
         return None
@@ -205,6 +227,11 @@ def resolve_answer_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, 
     negrita en la siguiente), se prueban TODAS las marcas juntas, con los
     mismos umbrales aplicados al conjunto ("mixta").
 
+    Las preguntas cuya respuesta viene de una clave explícita del documento
+    (answer_key[n]["from_key"], ver schema_adapter) no se tocan: la clave
+    del documento manda sobre una marca. Cuentan para decidir si la marca
+    es un sistema de respuestas, pero no se sobrescriben.
+
     Devuelve {"mark": nombre de la marca o None, "applied": preguntas cuya
     respuesta salió de la marca, "changed": cuántas cambiaron respecto a
     lo que dijo el modelo}.
@@ -228,11 +255,17 @@ def resolve_answer_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, 
     for q, marked in chosen:
         new_answer = " | ".join(marked)
         entry = answer_key.setdefault(q["num"], {"type": "multichoice"})
+        # La clave que el documento trae de forma explícita manda: una marca
+        # (negrita, color) que cae por casualidad en otra opción no la pisa.
+        if entry.get("from_key"):
+            continue
         if entry.get("answer") != new_answer:
             entry["answer"] = new_answer
             result["changed"] += 1
         q["data"]["answer_from_marks"] = True
         result["applied"] += 1
+    if not result["applied"]:
+        result["mark"] = None
     return result
 
 
@@ -277,6 +310,8 @@ def resolve_table_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, D
             ordered = sorted(pairs.items(), key=lambda kv: int(kv[0]))
             new_answer = "; ".join(f"{k}-{v}" for k, v in ordered)
             entry = answer_key.setdefault(q["num"], {"type": "matching"})
+            if entry.get("from_key"):
+                break  # la clave explícita del documento manda sobre la tabla
             if entry.get("answer") != new_answer:
                 entry["answer"] = new_answer
                 entry["pairs"] = dict(ordered)
@@ -295,7 +330,10 @@ def resolve_table_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, D
 _TF_WORD = {"verdadero": "Verdadero", "cierto": "Verdadero", "v": "Verdadero", "falso": "Falso", "f": "Falso"}
 _TF_BOX_X = r"[\(\[]\s*[xX✓✔]\s*[\)\]]"
 _TF_BOX_EMPTY = r"[\(\[]\s*[\)\]]"
-_TF_WORD_RX = r"\b(verdadero|falso|cierto|v|f)\b"
+# "v" y "f" sueltas solo valen como palabra si NO van pegadas a un paréntesis o
+# corchete: "f(x)" y "v[x]" son una función o un arreglo, no "Falso" con una
+# casilla marcada (una respuesta inventada).
+_TF_WORD_RX = r"\b(verdadero|falso|cierto|v(?![\(\[])|f(?![\(\[]))\b"
 # Una casilla (marcada o vacía) y la palabra "Verdadero"/"Falso" (o V/F), en
 # el orden que sea: la casilla puede ir ANTES ("(X) Verdadero", el que ya se
 # reconocía) o DESPUÉS ("Verdadero (X)", igual de común al escribir a mano).
@@ -315,9 +353,15 @@ _TF_MARKED_WORD = re.compile(r"⟦([a-záéíóú]+)⟧\s*(verdadero|falso|ciert
 
 def _tf_mark(raw_lines: List[str]) -> Optional[str]:
     text = " ".join(raw_lines)
-    tokens = [("box", bool(re.search(r"[xX✓✔]", m.group("box")))) if m.group("box") is not None
-              else ("word", _TF_WORD[m.group("word").lower()])
+    # (tipo, valor, inicio, fin) de cada token: el emparejamiento exige que
+    # casilla y palabra estén pegadas (solo espacios o ":" entre ambas). Sin
+    # esto, en "Si f (x) = 2x…" la casilla "(x)" se emparejaba con la "f".
+    tokens = [("box", bool(re.search(r"[xX✓✔]", m.group("box"))), m.start(), m.end()) if m.group("box") is not None
+              else ("word", _TF_WORD[m.group("word").lower()], m.start(), m.end())
               for m in _TF_TOKEN.finditer(text)]
+
+    def pegados(a, b) -> bool:
+        return not text[a[3]:b[2]].strip(" \t:")
 
     found = set()
     if tokens:
@@ -325,11 +369,11 @@ def _tf_mark(raw_lines: List[str]) -> Optional[str]:
         i = 0
         while i < len(tokens) - 1:
             a, b = tokens[i], tokens[i + 1]
-            if casilla_primero and a[0] == "box" and b[0] == "word":
+            if casilla_primero and a[0] == "box" and b[0] == "word" and pegados(a, b):
                 if a[1]:
                     found.add(b[1])
                 i += 2
-            elif not casilla_primero and a[0] == "word" and b[0] == "box":
+            elif not casilla_primero and a[0] == "word" and b[0] == "box" and pegados(a, b):
                 if b[1]:
                     found.add(a[1])
                 i += 2
@@ -363,8 +407,12 @@ def resolve_tf_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict
             found.append((q, answer))
     if not found or (len(found) >= 3 and len({a for _, a in found}) == 1):
         return 0
+    aplicadas = 0
     for q, answer in found:
         entry = answer_key.setdefault(q["num"], {"type": "truefalse"})
+        if entry.get("from_key"):
+            continue  # la clave explícita del documento manda sobre la marca
         entry["answer"] = answer
         q["data"]["answer_from_marks"] = True
-    return len(found)
+        aplicadas += 1
+    return aplicadas

@@ -4,9 +4,12 @@ Supports .pdf (via pdfplumber) and .txt (direct UTF-8 read).
 """
 import pdfplumber
 import bisect
+import codecs
+import hashlib
 import io
 import logging
 import re
+from collections import Counter
 from typing import List
 from PIL import Image
 
@@ -71,13 +74,18 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
             text = page.extract_text()
             if text:
                 full_text += text + "\n"
+            _liberar(page)
     return full_text
 
 
 def extract_pages_text(file_bytes: bytes) -> List[str]:
     """Texto de cada página por separado (mismo extract_text que el resto)."""
+    textos: List[str] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-        return [page.extract_text() or "" for page in pdf.pages]
+        for page in pdf.pages:
+            textos.append(page.extract_text() or "")
+            _liberar(page)
+    return textos
 
 
 def join_pages_with_markers(pages: List[str]) -> str:
@@ -106,6 +114,42 @@ def pagina_con_formulas(page, minimo: int = 3) -> bool:
     return False
 
 
+def _liberar(page) -> None:
+    """Suelta los objetos que pdfplumber guardó de una página ya leída
+    (caracteres, rectángulos, imágenes…): sin esto, un PDF de 150 páginas
+    los tenía todos en memoria hasta cerrarse. Si se vuelve a pedir algo de
+    la página, se recalcula."""
+    try:
+        page.close()
+    except Exception:  # noqa: BLE001 — versiones de pdfplumber sin close()
+        pass
+
+
+def huella_imagen(im: dict) -> str:
+    """Identifica el CONTENIDO de una imagen incrustada (hash de sus datos
+    sin decodificar), para distinguir dos capturas distintas colocadas en
+    el mismo lugar y con el mismo tamaño de páginas diferentes."""
+    datos = getattr(im.get("stream"), "rawdata", None)
+    if isinstance(datos, (bytes, bytearray)) and datos:
+        return hashlib.blake2b(bytes(datos), digest_size=12).hexdigest()
+    return f"{im.get('name')}|{im.get('srcsize')}"
+
+
+def clave_imagen(im: dict) -> tuple:
+    """Posición, tamaño y contenido: dos imágenes con la misma clave en
+    varias páginas son un logo o encabezado repetido."""
+    return (round(im["x0"]), round(im["top"]), round(im["width"]), round(im["height"]), huella_imagen(im))
+
+
+def imagen_diminuta(im: dict) -> bool:
+    """Viñeta o ícono: no es contenido del examen."""
+    return im["width"] < 40 or im["height"] < 20
+
+
+def _es_pagina_completa(page, im: dict) -> bool:
+    return im["width"] > page.width * 0.85 and im["height"] > page.height * 0.85
+
+
 def extract_text_and_images_from_pdf(file_bytes: bytes) -> tuple[str, List[Image.Image]]:
     """
     Extrae el texto completo del PDF, y además renderiza como imagen
@@ -118,14 +162,30 @@ def extract_text_and_images_from_pdf(file_bytes: bytes) -> tuple[str, List[Image
     full_text = ""
     images: List[Image.Image] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        # Primero se lee el texto de todas las páginas y se anotan sus
+        # imágenes (sin renderizar nada); después se eligen las páginas a
+        # renderizar. Un logo pequeño o un encabezado repetido en cada
+        # página ya no gasta el tope MAX_IMAGE_PAGES antes de llegar a las
+        # páginas que sí traen una imagen (misma regla que imagenes.py:
+        # se ignoran las diminutas y las que se repiten idénticas).
+        pendientes = []  # (página, [(clave, es_página_completa)], ¿fórmulas?)
         for page in pdf.pages:
             text = page.extract_text()
             if text:
                 full_text += text + "\n"
+            claves = [(clave_imagen(im), _es_pagina_completa(page, im))
+                      for im in page.images if not imagen_diminuta(im)]
             # Páginas con fórmulas: su texto extraído pierde la estructura
             # (fracciones, exponentes), así que también van como imagen para
             # que la IA las transcriba en LaTeX (REGLA 13).
-            if (page.images or pagina_con_formulas(page)) and len(images) < MAX_IMAGE_PAGES:
+            pendientes.append((page, claves, pagina_con_formulas(page)))
+            _liberar(page)
+        repetidas = Counter(k for _, claves, _ in pendientes for k, _c in claves)
+        for page, claves, formulas in pendientes:
+            if len(images) >= MAX_IMAGE_PAGES:
+                break
+            significativa = any(completa or repetidas[k] <= 1 or len(pendientes) <= 1 for k, completa in claves)
+            if significativa or formulas:
                 # 200 DPI en vez de 150: el color de las marcas de respuesta
                 # se distingue mejor a esta resolución, sin disparar
                 # demasiado el tamaño de la imagen.
@@ -133,7 +193,7 @@ def extract_text_and_images_from_pdf(file_bytes: bytes) -> tuple[str, List[Image
     return full_text, images
 
 
-def render_all_pages_as_images(file_bytes: bytes) -> List[Image.Image]:
+def render_all_pages_as_images(file_bytes: bytes, con_total: bool = False):
     """
     Renderiza CADA página del PDF como imagen (a diferencia de
     extract_text_and_images_from_pdf, que solo renderiza páginas con
@@ -142,14 +202,20 @@ def render_all_pages_as_images(file_bytes: bytes) -> List[Image.Image]:
     Gemini lea el documento completo visualmente. Cubre tanto el PDF
     escaneado (sin ninguna capa de texto) como el que sí tiene texto pero
     con contenido visual disperso que el modo normal no capturó del todo.
+
+    Solo se renderizan las primeras MAX_IMAGE_PAGES páginas. Con
+    con_total=True devuelve (imágenes, total_de_páginas_del_PDF) para que el
+    llamador pueda avisar de las que quedaron fuera (en un escaneado no hay
+    texto que las cubra y se perderían en silencio).
     """
     images: List[Image.Image] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+        total = len(pdf.pages)
         for page in pdf.pages:
             if len(images) >= MAX_IMAGE_PAGES:
                 break
             images.append(_render(page))
-    return images
+    return (images, total) if con_total else images
 
 
 def pdf_has_embedded_images(file_bytes: bytes) -> bool:
@@ -164,7 +230,28 @@ def pdf_has_embedded_images(file_bytes: bytes) -> bool:
         for page in pdf.pages[:MAX_PAGINAS]:
             if page.images:
                 return True
+            _liberar(page)
     return False
+
+
+def _a_rgb(color):
+    """Color de pdfminer → (r, g, b) en 0-1, o None si no se reconoce.
+    Un valor es gris; tres, RGB; cuatro, CMYK (así exportan a PDF muchos
+    programas de impresión: una respuesta en rojo CMYK no se veía)."""
+    if not isinstance(color, (tuple, list)) or not color:
+        return None
+    try:
+        v = [min(1.0, max(0.0, float(x))) for x in color]
+    except (TypeError, ValueError):
+        return None
+    if len(v) == 1:
+        return (v[0], v[0], v[0])
+    if len(v) == 3:
+        return tuple(v)
+    if len(v) == 4:
+        c, m, y, k = v
+        return ((1 - c) * (1 - k), (1 - m) * (1 - k), (1 - y) * (1 - k))
+    return None
 
 
 def _char_has_color(ch: dict) -> bool:
@@ -175,12 +262,12 @@ def _char_has_color(ch: dict) -> bool:
         # vecino. Contarlo como marca de color daba falsos positivos en
         # documentos completamente en blanco y negro.
         return False
-    color = ch.get("non_stroking_color")
-    if not isinstance(color, (tuple, list)) or len(color) != 3:
-        # Escala de grises (un solo valor), CMYK u otro formato inesperado:
-        # no es una marca de color reconocible.
+    rgb = _a_rgb(ch.get("non_stroking_color"))
+    if rgb is None:
+        # Formato inesperado (patrón, espacio de color con nombre…): no es
+        # una marca de color reconocible.
         return False
-    r, g, b = color
+    r, g, b = rgb
     # Un tono "de color" se aleja de la diagonal gris (r≈g≈b); un umbral
     # pequeño evita falsos positivos por antialiasing o negros/grises
     # ligeramente impuros.
@@ -191,7 +278,7 @@ def _color_name(rgb) -> str:
     """Nombre aproximado de un color RGB (0-1), para que el modelo distinga
     p. ej. una marca en rojo de un título en azul."""
     import colorsys
-    r, g, b = (float(x) for x in rgb)
+    r, g, b = _a_rgb(rgb) or (0.0, 0.0, 0.0)
     h, l, sat = colorsys.rgb_to_hls(r, g, b)
     deg = h * 360
     if deg < 15 or deg >= 330:
@@ -232,9 +319,10 @@ def _is_marker_fill(color) -> bool:
     """Relleno "de marcador": un color con tono (amarillo, verde, celeste…),
     no blanco ni gris — el sombreado gris de una celda o un encabezado no
     es una marca de respuesta."""
-    if not isinstance(color, (tuple, list)) or len(color) != 3:
+    rgb = _a_rgb(color)
+    if rgb is None:
         return False
-    r, g, b = (float(x) for x in color)
+    r, g, b = rgb
     return max(abs(r - g), abs(g - b), abs(r - b)) > 0.15
 
 
@@ -392,6 +480,7 @@ def extract_pages_text_enriched(file_bytes: bytes) -> List[str]:
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
             pages.append(_enriched_page_text(page) if _page_needs_enrichment(page) else (page.extract_text() or ""))
+            _liberar(page)
     return pages
 
 
@@ -402,6 +491,7 @@ def extract_tables(file_bytes: bytes) -> List[List[List[str]]]:
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         for page in pdf.pages:
             tables.extend(_page_tables(page))
+            _liberar(page)
     return tables
 
 
@@ -433,13 +523,19 @@ def extract_pages_enriched_and_tables(file_bytes: bytes) -> tuple[List[str], Lis
         for page in pdf.pages:
             pages.append(_enriched_page_text(page) if _page_needs_enrichment(page) else (page.extract_text() or ""))
             tables.extend(_page_tables(page))
+            _liberar(page)
     return pages, tables
 
 
 def get_colored_page_numbers(file_bytes: bytes) -> List[int]:
     """Números (1-based) de las páginas que usan texto de color."""
+    numeros: List[int] = []
     with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-        return [p.page_number for p in pdf.pages if any(_char_has_color(ch) for ch in p.chars)]
+        for p in pdf.pages:
+            if any(_char_has_color(ch) for ch in p.chars):
+                numeros.append(p.page_number)
+            _liberar(p)
+    return numeros
 
 
 def get_colored_text_pages(file_bytes: bytes) -> List[str]:
@@ -455,6 +551,7 @@ def get_colored_text_pages(file_bytes: bytes) -> List[str]:
         for page in pdf.pages:
             if any(_char_has_color(ch) for ch in page.chars):
                 pages_text.append(page.extract_text() or "")
+            _liberar(page)
     return pages_text
 
 
@@ -472,6 +569,7 @@ def get_colored_pages(file_bytes: bytes) -> tuple[List[int], List[str]]:
             if any(_char_has_color(ch) for ch in page.chars):
                 numbers.append(page.page_number)
                 texts.append(page.extract_text() or "")
+            _liberar(page)
     return numbers, texts
 
 
@@ -488,8 +586,29 @@ def pdf_has_colored_text(file_bytes: bytes) -> bool:
 
 
 def extract_text_from_txt(file_bytes: bytes) -> str:
-    """Decode a text file from raw bytes (UTF-8 with fallback to latin-1)."""
+    """
+    Decodifica un .txt: UTF-8 (con o sin BOM), UTF-16/UTF-32 si traen BOM
+    (el Bloc de notas de Windows guarda así con «Unicode»), Windows-1252 y,
+    como último recurso, latin-1. Windows-1252 va antes que latin-1: sus
+    comillas, guiones y «…» (bytes 0x80–0x9F) en latin-1 salen como
+    caracteres de control invisibles.
+    """
+    for bom in (codecs.BOM_UTF32_LE, codecs.BOM_UTF32_BE):
+        if file_bytes.startswith(bom):
+            try:
+                return file_bytes.decode("utf-32")
+            except UnicodeDecodeError:
+                break
     try:
-        return file_bytes.decode("utf-8")
+        return file_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        pass
+    if file_bytes.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        try:
+            return file_bytes.decode("utf-16")
+        except UnicodeDecodeError:
+            pass
+    try:
+        return file_bytes.decode("cp1252")
     except UnicodeDecodeError:
         return file_bytes.decode("latin-1")

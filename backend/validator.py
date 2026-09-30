@@ -27,7 +27,10 @@ from config import (
     VALID_QUESTION_TYPES,
 )
 from imagenes import errores_imagenes
-from answer_matching import find_cloze_brackets, is_substring_match, is_truncated_answer_match, split_answers, split_options
+from answer_matching import (
+    TRUEFALSE_ALIAS, clave_de_columna, clave_de_huecos, find_cloze_brackets, normalizar_numero,
+    resolver_hueco_cloze, resolver_opcion, split_answers, split_options,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -194,6 +197,7 @@ _ANSWER_ONLY_PATTERNS = [
     r"no tiene una respuesta correcta especificada",
     r"falta la respuesta en la clave",
     r"no coincide con ninguna de las opciones disponibles",
+    r"es ambigua: coincide con varias opciones",
     r"respuesta '.*' inválida.*Verdadero.*Falso",
     r"no es un número válido",
     r"no se encontró una clave de respuestas 'número-letra' válida",
@@ -319,35 +323,27 @@ def _validate_multichoice(
                 f"(multichoice) no tiene texto."
             )
 
-    # Regla: cada respuesta correcta listada debe coincidir con alguna opción
+    # Regla: cada respuesta correcta listada debe identificar UNA opción. La
+    # decisión la toma resolver_opcion, la MISMA función que usa xml_builder.py
+    # para marcar la correcta: antes el validador aceptaba cualquier
+    # coincidencia difusa y el constructor, si no era única, marcaba la «A»
+    # en silencio (clave «Python» con «Python 2» / «Python 3» marcaba otra).
     if correct_answer and options:
-        targets = split_answers(correct_answer)
-        for one_target in targets:
-            ot = one_target.lower()
-            # Igualdad exacta primero (sin mínimo de longitud), y solo
-            # después la coincidencia difusa por subcadena (con su mínimo:
-            # ver is_substring_match) — así el validador exige lo mismo que
-            # xml_builder.py necesita para decidir SIN ambigüedad qué opción
-            # marcar; antes aceptaba aquí lo que allá podía salir mal.
-            found = any(ot == opt.lower() for opt in options.values())
-            if not found:
-                found = any(is_substring_match(ot, opt.lower()) for opt in options.values())
-            if not found:
-                # Antes de rechazarla, revisa si es un caso de respuesta
-                # cortada a mitad de palabra (ver is_truncated_answer_match)
-                # — solo se acepta si coincide con EXACTAMENTE una opción,
-                # para no arriesgar una coincidencia ambigua.
-                prefix_matches = [
-                    opt for opt in options.values()
-                    if is_truncated_answer_match(one_target.lower(), opt.lower())
-                ]
-                found = len(prefix_matches) == 1
-            if not found:
-                target.append(
-                    f"Error: la respuesta correcta '{one_target[:60]}' no coincide "
-                    f"con ninguna de las opciones disponibles en la Pregunta {num}. "
-                    f"Opciones: {list(options.values())}."
-                )
+        for one_target in split_answers(correct_answer):
+            clave, motivo = resolver_opcion(one_target, options)
+            if clave is None:
+                if motivo == "ambigua":
+                    target.append(
+                        f"Error: la respuesta correcta '{one_target[:60]}' es ambigua: coincide con varias "
+                        f"opciones de la Pregunta {num}. Escribe la opción completa. "
+                        f"Opciones: {list(options.values())}."
+                    )
+                else:
+                    target.append(
+                        f"Error: la respuesta correcta '{one_target[:60]}' no coincide "
+                        f"con ninguna de las opciones disponibles en la Pregunta {num}. "
+                        f"Opciones: {list(options.values())}."
+                    )
 
 
 def _validate_truefalse(
@@ -362,7 +358,7 @@ def _validate_truefalse(
     - La respuesta debe ser exactamente "Verdadero" o "Falso"
     - El XML generará exactamente 2 <answer>: true (fraction=100/0) y false (fraction=0/100)
     """
-    if correct_answer.lower() not in ("verdadero", "falso"):
+    if correct_answer.strip().lower() not in TRUEFALSE_ALIAS:
         target.append(
             f"Error: respuesta '{correct_answer}' inválida para el ítem "
             f"Pregunta {num} (truefalse). Se esperaba 'Verdadero' o 'Falso'."
@@ -450,7 +446,7 @@ def _validate_matching(
                     f"Error: la clave de respuestas de la Pregunta {num} (matching) "
                     f"referencia el elemento '{a_num}' de la Columna A, que no existe."
                 )
-            if letter not in col_b:
+            if clave_de_columna(col_b, letter) is None:
                 target.append(
                     f"Error: la clave de respuestas de la Pregunta {num} (matching) "
                     f"referencia la letra '{letter}' de la Columna B, que no existe."
@@ -502,20 +498,10 @@ def _validate_cloze(
     # (SIN_RESPUESTA marcado solo aquí, no dentro de los corchetes) no lo
     # detecta la comparación de igualdad exacta que hace validate_questions
     # más arriba. Se parsea por separado para no dejarlo pasar en silencio.
-    slot_key_answers: Dict[str, List[str]] = {}
-    for m in re.finditer(r'([A-Za-z])[\.:]\s*([^;\n]+)', correct_answer):
-        parts = split_answers(m.group(2))
-        if parts:
-            slot_key_answers[m.group(1).upper()] = parts
-
     # Compatibilidad con el formato legado de un solo espacio sin prefijo de
-    # letra en la clave (ej. correct_answer = "vegetal" a secas): si no se
-    # detectó ningún par "Letra. respuesta" y la pregunta tiene un único
-    # espacio, se usa la clave completa como la respuesta de ese espacio —
-    # igual que ya hace convert_cloze_to_moodle en xml_builder.py.
-    if not slot_key_answers and len(brackets) == 1 and correct_answer.strip():
-        only_letter = brackets[0][2].upper()
-        slot_key_answers[only_letter] = [correct_answer.strip()]
+    # letra en la clave (ej. correct_answer = "vegetal" a secas): lo resuelve
+    # clave_de_huecos, igual que convert_cloze_to_moodle en xml_builder.py.
+    slot_key_answers = clave_de_huecos(correct_answer, len(brackets), brackets[0][2])
 
     # Validar cada espacio individualmente
     for _start, _end, slot_letter, options_raw in brackets:
@@ -545,6 +531,27 @@ def _validate_cloze(
             target.append(
                 f"Error: el espacio [{slot_letter}] en la Pregunta {num} (cloze) no tiene una respuesta correcta especificada."
             )
+        else:
+            # Cada respuesta de la clave debe identificar UNA opción del
+            # hueco (misma función que usa xml_builder.py para marcarla): sin
+            # esto, una clave que no está entre las opciones se resolvía en
+            # silencio marcando la primera («Caracas» con Lima/Quito/Bogotá
+            # salía «=Lima»).
+            for ans in slot_answers:
+                if ans.strip().upper() == "SIN_RESPUESTA":
+                    continue
+                idx, motivo = resolver_hueco_cloze(ans, options)
+                if idx is None:
+                    if motivo == "ambigua":
+                        target.append(
+                            f"Error: la respuesta correcta '{ans[:60]}' del espacio [{slot_letter}] es ambigua: "
+                            f"coincide con varias opciones en la Pregunta {num} (cloze). Opciones: {options}."
+                        )
+                    else:
+                        target.append(
+                            f"Error: la respuesta correcta '{ans[:60]}' del espacio [{slot_letter}] no coincide "
+                            f"con ninguna de las opciones disponibles en la Pregunta {num} (cloze). Opciones: {options}."
+                        )
 
 
 def _validate_numerical(
@@ -558,10 +565,7 @@ def _validate_numerical(
       valor numérico real en el <answer>, no texto libre ni un número
       escrito con palabras).
     """
-    normalized = correct_answer.strip().replace(',', '.')
-    try:
-        float(normalized)
-    except ValueError:
+    if normalizar_numero(correct_answer) is None:
         target.append(
             f"Error: la respuesta '{correct_answer[:60]}' de la Pregunta {num} "
             f"(numerical) no es un número válido."
