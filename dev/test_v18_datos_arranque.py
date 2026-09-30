@@ -13,6 +13,7 @@ database.get_db_path se reemplaza antes de usar la base. Solo claves falsas.
 
 import atexit
 import http.server
+import contextlib
 import json
 import os
 import shutil
@@ -92,7 +93,7 @@ rid = database.save_conversion("b.xml", "Cat", 5.0, "<xml>B</xml>")
 ok(rid == 1 and database.get_xml_content(rid)["xml_content"] == "<xml>B</xml>",
    "save_conversion sin tabla la crea y reintenta una vez")
 # Tabla borrada con la app corriendo
-with sqlite3.connect(DB_FILE) as c:
+with contextlib.closing(sqlite3.connect(DB_FILE)) as c:  # `with conn` no cierra: en Windows bloquea el archivo
     c.execute("DROP TABLE history")
 rid = database.save_conversion("c.xml", "Cat", 5.0, "<xml>C</xml>")
 ok(len(database.get_history_list()) == 1, "tabla borrada a mitad de sesión: se recrea al guardar")
@@ -180,7 +181,7 @@ ok(lista[0]["id"] == ids[-1] and lista[-1]["id"] == ids[15], "se borraron las 15
 ok(database.get_xml_content(ids[0]) is None and database.get_xml_content(ids[-1])["xml_content"] == f"<x>{len(ids) - 1}</x>",
    "las borradas ya no se descargan; las recientes sí")
 ok(database.get_editor_data(ids[-1])["editor_json"] == f'{{"i":{len(ids) - 1}}}', "reabrir (editor_json) sigue funcionando")
-with sqlite3.connect(DB_FILE) as c:
+with contextlib.closing(sqlite3.connect(DB_FILE)) as c:  # `with conn` no cierra: en Windows bloquea el archivo
     modo = c.execute("PRAGMA auto_vacuum").fetchone()[0]
 ok(modo == 2, "la base nueva usa auto_vacuum incremental (el espacio se devuelve sin VACUUM completo)")
 
