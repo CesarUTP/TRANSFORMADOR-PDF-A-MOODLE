@@ -1,9 +1,9 @@
 """
-test_v18_ia_servidor.py — versión 1.8: IA, servidor y pipeline (cancelar de
+test_ia_servidor.py — versión 1.8: IA, servidor y pipeline (cancelar de
 verdad, reintentos, mensajes de error, «Mejorar redacción», avisos de páginas
 y guardado del historial no fatal).
 
-    PYTHONUTF8=1 backend/venv/bin/python dev/test_v18_ia_servidor.py
+    PYTHONUTF8=1 backend/venv/bin/python dev/test_ia_servidor.py
 
 Sin red ni Gemini real: la IA y las respuestas HTTP se simulan. La base del
 historial y la clave NO se tocan: HOME va a una carpeta temporal y
@@ -48,8 +48,18 @@ import requests  # noqa: E402
 import ayuda_ia  # noqa: E402
 import extractor  # noqa: E402
 import formatter  # noqa: E402
+import ia_cancelacion  # noqa: E402
+import ia_gemini  # noqa: E402
+import ia_proveedor  # noqa: E402
+import ia_reintentos  # noqa: E402
 import imagenes  # noqa: E402
 import main  # noqa: E402
+# main.py se partió en rutas_*.py: lo que las pruebas reemplazan (guardado,
+# historial, espera del cupo puntual) hay que reemplazarlo donde se USA.
+import credenciales  # noqa: E402
+import estado_servidor  # noqa: E402
+import rutas_historial  # noqa: E402
+import rutas_xml  # noqa: E402
 import pipeline  # noqa: E402
 import seguridad  # noqa: E402
 
@@ -108,10 +118,13 @@ def _evento(texto, finish=None):
     return {"candidates": [cand], "usageMetadata": {"promptTokenCount": 5, "candidatesTokenCount": 7}}
 
 
+# Solicitud mínima para las pruebas que llaman a la capa de reintentos directamente.
+_SOL = ia_proveedor.SolicitudIA(instruccion="x", partes=[ia_proveedor.parte_texto("x")])
+
 _post_original = requests.post
-_key_original = formatter.get_api_key
-formatter.get_api_key = lambda: "clave-falsa-de-prueba"
-_esperar_original = formatter._esperar
+_key_original = ia_gemini.get_api_key
+ia_gemini.get_api_key = lambda: "clave-falsa-de-prueba"
+_esperar_original = ia_reintentos._esperar
 
 _img = Image.new("RGB", (4, 4), (200, 30, 30))
 
@@ -120,7 +133,7 @@ print("Streaming SSE")
 u2028 = "Pregunta 1: ¿Qué hace esto en dos líneas?\u0085 fin"
 requests.post = lambda *a, **k: _FakeResp(_sse(_evento(u2028), _evento(" listo", "STOP")))
 try:
-    r = formatter._stream_generate({}, 30, None)
+    r = ia_gemini._stream_generate({}, 30, None)
     ok(r.text == u2028 + " listo" and r.finish_reason == "STOP",
        "U+2028 / U+0085 dentro del texto no parten el evento SSE (iter_lines por «\\n»)")
 finally:
@@ -152,7 +165,7 @@ canc = formatter.Cancelacion()
 def _hilo_stream():
     formatter.usar_cancelacion(canc)
     try:
-        formatter._stream_generate({}, 60, None)
+        ia_gemini._stream_generate({}, 60, None)
         res["r"] = "terminó"
     except BaseException as e:  # noqa: BLE001
         res["r"] = e
@@ -198,8 +211,8 @@ def _stream_503(body, timeout, on_text):
     raise formatter.GeminiOverloadedError(503, "saturado")
 
 
-_stream_original = formatter._stream_generate
-formatter._stream_generate = _stream_503
+_stream_original = ia_gemini._stream_generate
+ia_gemini._stream_generate = _stream_503
 canc = formatter.Cancelacion()
 res = {}
 
@@ -207,7 +220,7 @@ res = {}
 def _hilo_reintentos():
     formatter.usar_cancelacion(canc)
     try:
-        formatter._generate_with_retries({}, 10, lambda r: r, 30)
+        ia_reintentos.generar_con_reintentos(_SOL, 10, lambda r: r, 30)
         res["r"] = "terminó"
     except BaseException as e:  # noqa: BLE001
         res["r"] = e
@@ -225,9 +238,9 @@ ok(not t.is_alive() and isinstance(res.get("r"), formatter.ConversionCancelada) 
    "cancelar durante la espera de un reintento (5 s): sale al instante y no hace otra llamada")
 # Sin cancelación activa, _esperar sigue siendo una espera normal.
 t0 = time.monotonic()
-formatter._esperar(0.05)
+ia_cancelacion.esperar(0.05)
 ok(time.monotonic() - t0 >= 0.04, "sin cancelación activa, _esperar espera normal")
-formatter._stream_generate = _stream_original
+ia_gemini._stream_generate = _stream_original
 
 # ═══════════════ 2. Cupos, cola y desconexión del navegador (main) ═════════
 print("Servidor: cupos y desconexión")
@@ -261,7 +274,7 @@ def fn_bloqueada(raw, filename, progress=None):
     progress({"type": "stage", "key": "extract", "message": "leyendo"})
     try:
         while True:
-            formatter._esperar(0.05)  # lo que hace formatter en sus esperas
+            ia_cancelacion.esperar(0.05)  # lo que hace formatter en sus esperas
     finally:
         estado["salio"] = time.monotonic()
 
@@ -320,21 +333,21 @@ finally:
     main._CUPOS_CONVERSION.release()
 main._CUPOS_IA_PUNTUAL.acquire()
 main._CUPOS_IA_PUNTUAL.acquire()
-_espera_original = main._ESPERA_CUPO_PUNTUAL_S
-main._ESPERA_CUPO_PUNTUAL_S = 0.2
+_espera_original = estado_servidor._ESPERA_CUPO_PUNTUAL_S
+estado_servidor._ESPERA_CUPO_PUNTUAL_S = 0.2
 try:
     main._con_cupo_puntual(lambda: 1)
     ok(False, "con su cupo lleno, la ayuda de IA no espera minutos")
 except HTTPException as e:
     ok(e.status_code == 429, "con su propio cupo lleno: 429 con mensaje claro tras una espera corta")
 finally:
-    main._ESPERA_CUPO_PUNTUAL_S = _espera_original
+    estado_servidor._ESPERA_CUPO_PUNTUAL_S = _espera_original
     main._CUPOS_IA_PUNTUAL.release()
     main._CUPOS_IA_PUNTUAL.release()
 
 # Rutas del historial en el threadpool (def), no en el event loop.
 for nombre in ("api_get_history", "api_download_history", "api_history_editor", "api_delete_history"):
-    ok(not inspect.iscoroutinefunction(getattr(main, nombre)), f"{nombre} es `def` (threadpool), no bloquea el event loop")
+    ok(not inspect.iscoroutinefunction(getattr(rutas_historial, nombre)), f"{nombre} es `def` (threadpool), no bloquea el event loop")
 
 # ═══════════════ 3. Reintento del worker: no repite la IA ══════════════════
 print("Reintento del worker: solo el postproceso")
@@ -420,8 +433,8 @@ ok(pipeline._hay_marca_de_respuestas(None, True) is True and pipeline._hay_marca
 
 # ═══════════════ 5. Reintentos de calidad: el mejor resultado no se pierde ═
 print("Reintento de calidad: no se pierde el mejor resultado")
-_gwr = formatter._generate_with_retries
-formatter._esperar = lambda s: None
+_gwr = ia_reintentos.generar_con_reintentos
+ia_reintentos._esperar = lambda s: None
 
 
 def _pj(n, sin_resp):
@@ -429,7 +442,7 @@ def _pj(n, sin_resp):
 
 
 secuencia = [_pj(3, True), HTTPException(status_code=503, detail="saturado")]
-formatter._generate_with_retries = lambda *a, **k: (lambda x: (_ for _ in ()).throw(x) if isinstance(x, Exception) else x)(secuencia.pop(0))
+ia_reintentos.generar_con_reintentos = lambda *a, **k: (lambda x: (_ for _ in ()).throw(x) if isinstance(x, Exception) else x)(secuencia.pop(0))
 try:
     r = formatter.extract_structured("t", [_img], permitir_reintento_calidad=True)
     ok(len(r["preguntas"]) == 3, "JSON: si el 2.º intento de calidad falla (503), se devuelve el 1.º ya obtenido")
@@ -443,7 +456,7 @@ try:
     except HTTPException as e:
         ok(e.status_code == 503, "sin ningún resultado previo, el error se propaga")
 finally:
-    formatter._generate_with_retries = _gwr
+    ia_reintentos.generar_con_reintentos = _gwr
 
 _cgwr = formatter._call_gemini_with_retries
 txt3 = "Pregunta 1: a\nPregunta 2: b\nPregunta 3: c\nRESPUESTAS\n1 SIN_RESPUESTA\n2 SIN_RESPUESTA\n3 SIN_RESPUESTA"
@@ -476,7 +489,7 @@ print("finish_reason y mensajes de error")
 
 
 def _con_stream(fabrica):
-    formatter._stream_generate = fabrica
+    ia_gemini._stream_generate = fabrica
 
 
 def _resultado(finish, texto="Pregunta 1: ¿Algo?\nA) x\nRESPUESTAS\n1 A"):
@@ -496,13 +509,13 @@ def _stream_finish(finish):
 try:
     _con_stream(_stream_finish("STOP"))
     n["c"] = 0
-    out, _ = formatter._call_gemini_with_retries({}, "x")
+    out, _ = formatter._call_gemini_with_retries(_SOL, "x")
     ok(out.startswith("Pregunta 1") and n["c"] == 1, "modo texto: STOP se acepta")
 
     _con_stream(_stream_finish("MAX_TOKENS"))
     n["c"] = 0
     try:
-        formatter._call_gemini_with_retries({}, "x")
+        formatter._call_gemini_with_retries(_SOL, "x")
         ok(False, "modo texto: MAX_TOKENS no se acepta como respuesta completa")
     except HTTPException as e:
         ok(e.status_code == 422 and "demasiado largo" in json.dumps(e.detail, ensure_ascii=False) and n["c"] == 1,
@@ -511,7 +524,7 @@ try:
     _con_stream(_stream_finish("SAFETY"))
     n["c"] = 0
     try:
-        formatter._call_gemini_with_retries({}, "x")
+        formatter._call_gemini_with_retries(_SOL, "x")
         ok(False, "modo texto: SAFETY no se acepta")
     except HTTPException as e:
         ok("SAFETY" in str(e.detail) and "concurrido" not in str(e.detail) and n["c"] == 2,
@@ -524,7 +537,7 @@ try:
     _con_stream(_vacia)
     n["c"] = 0
     try:
-        formatter._call_gemini_with_retries({}, "x")
+        formatter._call_gemini_with_retries(_SOL, "x")
     except HTTPException as e:
         ok("PROHIBITED_CONTENT" in str(e.detail) and "concurrido" not in str(e.detail),
            "bloqueo de seguridad: mensaje veraz (no «servidor muy concurrido»)")
@@ -536,7 +549,7 @@ try:
     _con_stream(_timeout)
     n["c"] = 0
     try:
-        formatter._call_gemini_with_retries({}, "x")
+        formatter._call_gemini_with_retries(_SOL, "x")
     except HTTPException as e:
         ok("tardó demasiado" in str(e.detail) and n["c"] == 2 and "concurrido" not in str(e.detail),
            f"TimeoutError: mensaje veraz y solo UN reintento ({n['c']} llamadas)")
@@ -548,14 +561,14 @@ try:
     _con_stream(_json_malo)
     n["c"] = 0
     try:
-        formatter._generate_with_retries({}, 5, formatter._parse_structured_response, 30)
+        ia_reintentos.generar_con_reintentos(_SOL, 5, formatter._parse_structured_response, 30)
     except HTTPException as e:
         ok("no se pudo interpretar" in str(e.detail) and n["c"] == formatter.GEMINI_MAX_RETRIES,
            "JSON inválido: mensaje veraz tras los reintentos normales")
 
     _con_stream(_stream_finish("RECITATION"))
     try:
-        formatter._generate_with_retries({}, 5, formatter._parse_structured_response, 30)
+        ia_reintentos.generar_con_reintentos(_SOL, 5, formatter._parse_structured_response, 30)
     except HTTPException as e:
         ok("RECITATION" in str(e.detail), "JSON: un finish_reason distinto de STOP también es un intento fallido")
 
@@ -566,13 +579,13 @@ try:
     _con_stream(_cuota)
     n["c"] = 0
     try:
-        formatter._generate_with_retries({}, 5, lambda r: r, 30, quota_waits=1, quota_max_seconds=20)
+        ia_reintentos.generar_con_reintentos(_SOL, 5, lambda r: r, 30, quota_waits=1, quota_max_seconds=20)
         ok(False, "cuota con espera larga en una llamada puntual")
     except HTTPException as e:
         ok(e.status_code == 503 and n["c"] == 1, "llamada de UNA pregunta: si Google pide >20 s de espera, se avisa sin esperar")
 finally:
-    formatter._stream_generate = _stream_original
-    formatter._esperar = _esperar_original
+    ia_gemini._stream_generate = _stream_original
+    ia_reintentos._esperar = _esperar_original
 
 # ═══════════════ 7. Preguntas omitidas: emparejar por «orden» ══════════════
 print("Preguntas omitidas: emparejar por «orden»")
@@ -684,6 +697,23 @@ from pdfminer.pdfdocument import PDFPasswordIncorrect  # noqa: E402
 ok("contraseña" in pipeline._mensaje_error_pdf(PDFPasswordIncorrect()), "PDFPasswordIncorrect (sin texto): mensaje claro sobre la contraseña")
 ok("dañado" in (pipeline._mensaje_error_pdf(type("PDFSyntaxError", (Exception,), {})("x")) or ""), "PDF dañado: mensaje claro")
 ok(pipeline._mensaje_error_pdf(ValueError("otra cosa")) is None, "un error desconocido no se disfraza")
+# PDF cifrado REAL: pdfplumber envuelve PDFPasswordIncorrect en PdfminerException
+# (causa en args[0], str() vacío) y antes se mostraba el mensaje de «dañado».
+import io as _io  # noqa: E402
+import pdfplumber as _pdfplumber  # noqa: E402
+from reportlab.pdfgen import canvas as _canvas  # noqa: E402
+from reportlab.lib.pdfencrypt import StandardEncryption as _Cifrado  # noqa: E402
+_buf = _io.BytesIO()
+_c = _canvas.Canvas(_buf, encrypt=_Cifrado("secreta", canPrint=1))
+_c.drawString(72, 700, "1. Pregunta de prueba")
+_c.save()
+try:
+    with _pdfplumber.open(_io.BytesIO(_buf.getvalue())) as _p:
+        _p.pages[0].extract_text()
+    ok(False, "un PDF cifrado con contraseña debería fallar al leerlo")
+except Exception as _exc:  # noqa: BLE001
+    _msg = pipeline._mensaje_error_pdf(_exc) or ""
+    ok("contraseña" in _msg and "dañado" not in _msg, "PDF cifrado real (excepción envuelta): mensaje de contraseña, no de «dañado»")
 ok(pipeline._detalle_lectura(KeyError(), "Error al leer").endswith("KeyError"), "sin texto en la excepción se muestra su nombre, no un mensaje vacío")
 _pw = pipeline.comprobar_paginas
 
@@ -749,30 +779,30 @@ def _gwr_falso(finish, texto="Texto correcto."):
     return f
 
 
-_gwr2 = formatter._generate_with_retries
+_gwr2 = ia_reintentos.generar_con_reintentos
 try:
-    formatter._generate_with_retries = _gwr_falso("STOP", "¿Cuál es la capital de Francia?")
+    ia_reintentos.generar_con_reintentos = _gwr_falso("STOP", "¿Cuál es la capital de Francia?")
     r = ayuda_ia.mejorar_enunciado({"type": "essay", "data": {"stem": "cual es la capital de francia"}})
     ok(r["enunciado"] == "¿Cuál es la capital de Francia?", "«Mejorar redacción» con STOP funciona")
-    ok(capturado["body"]["generationConfig"]["maxOutputTokens"] >= 8192, "margen amplio de tokens (los de «thinking» cuentan dentro del tope)")
+    ok(capturado["body"].max_tokens >= 8192, "margen amplio de tokens (los de «thinking» cuentan dentro del tope)")
     ok(capturado["kw"].get("quota_waits", 9) <= 1, "llamada de una pregunta: pocas esperas de cuota")
-    formatter._generate_with_retries = _gwr_falso("MAX_TOKENS", "¿Cuál es la capi")
+    ia_reintentos.generar_con_reintentos = _gwr_falso("MAX_TOKENS", "¿Cuál es la capi")
     try:
         ayuda_ia.mejorar_enunciado({"type": "essay", "data": {"stem": "cual es la capital de francia"}})
         ok(False, "respuesta cortada no se aplica")
     except HTTPException as e:
         ok(e.status_code == 502 and "no alcanzó a terminar" in e.detail, "«Mejorar redacción» con MAX_TOKENS: no se aplica un texto cortado")
-    formatter._generate_with_retries = _gwr_falso("STOP", "Porque suma dos.")
+    ia_reintentos.generar_con_reintentos = _gwr_falso("STOP", "Porque suma dos.")
     ayuda_ia.generar({"type": "essay", "data": {"stem": "¿Cuánto es 1+1?"}}, None)
-    ok(capturado["body"]["generationConfig"]["maxOutputTokens"] >= 4096, "retroalimentación: margen amplio de tokens")
-    formatter._generate_with_retries = _gwr_falso("SAFETY", "algo")
+    ok(capturado["body"].max_tokens >= 4096, "retroalimentación: margen amplio de tokens")
+    ia_reintentos.generar_con_reintentos = _gwr_falso("SAFETY", "algo")
     try:
         ayuda_ia.generar({"type": "essay", "data": {"stem": "¿Cuánto es 1+1?"}}, None)
         ok(False, "respuesta interrumpida no se aplica")
     except HTTPException as e:
         ok("SAFETY" in e.detail, "retroalimentación con SAFETY: mensaje claro")
 finally:
-    formatter._generate_with_retries = _gwr2
+    ia_reintentos.generar_con_reintentos = _gwr2
 
 # ═══════════════ 11. Servidor: guardado del historial no fatal ═════════════
 print("Servidor: historial y exportación")
@@ -784,42 +814,42 @@ cuerpo_xml = {
                    "data": {"stem": "¿Cuánto es 2+2?", "options": {"a": "3", "b": "4"}}}],
     "answer_key": {"1": {"type": "multichoice", "answer": "b"}},
 }
-_save = main.save_conversion
+_save = rutas_xml.save_conversion
 
 
 def _guardar_falla(*a, **k):
     raise sqlite3.OperationalError("no such table: history")
 
 
-main.save_conversion = _guardar_falla
+rutas_xml.save_conversion = _guardar_falla
 try:
     r = c.post("/api/generate_xml", headers=H, json=cuerpo_xml)
     st = json.loads(r.headers.get("X-Question-Stats", "{}"))
     ok(r.status_code == 200 and b"<quiz>" in r.content, "el historial falla («no such table»): la exportación NO se aborta, el XML se entrega")
     ok(st.get("historial_guardado") is False and "Historial" in (st.get("aviso_historial") or ""), "…y la respuesta avisa (X-Question-Stats.historial_guardado=false + aviso_historial)")
-    main.save_conversion = lambda *a, **k: 1
+    rutas_xml.save_conversion = lambda *a, **k: 1
     r = c.post("/api/generate_xml", headers=H, json=cuerpo_xml)
     st = json.loads(r.headers.get("X-Question-Stats", "{}"))
     ok(r.status_code == 200 and st.get("historial_guardado") is True and st.get("aviso_historial") is None, "con el historial sano: historial_guardado=true")
     ok(isinstance(st.get("avisos"), list), "los avisos del constructor llegan al frontend (X-Question-Stats.avisos)")
 finally:
-    main.save_conversion = _save
+    rutas_xml.save_conversion = _save
 
-_gh = main.get_history_list
-main.get_history_list = lambda: (_ for _ in ()).throw(sqlite3.OperationalError("database is locked"))
+_gh = rutas_historial.get_history_list
+rutas_historial.get_history_list = lambda: (_ for _ in ()).throw(sqlite3.OperationalError("database is locked"))
 try:
     r = c.get("/api/history", headers=H)
     ok(r.status_code == 503 and "historial" in r.json()["detail"], "historial ilegible: 503 con mensaje claro, no un 500 mudo")
 finally:
-    main.get_history_list = _gh
+    rutas_historial.get_history_list = _gh
 
-_ge = main.get_editor_data
-main.get_editor_data = lambda i: {"filename": "x.pdf", "category": "c", "total_points": 1, "editor_json": "{no json"}
+_ge = rutas_historial.get_editor_data
+rutas_historial.get_editor_data = lambda i: {"filename": "x.pdf", "category": "c", "total_points": 1, "editor_json": "{no json"}
 try:
     r = c.get(f"/api/history/1/editor", headers=H)
     ok(r.status_code == 422 and "dañados" in r.json()["detail"], "editor_json dañado: 422 claro (antes un 500)")
 finally:
-    main.get_editor_data = _ge
+    rutas_historial.get_editor_data = _ge
 
 _init = main.init_db
 try:
@@ -834,16 +864,16 @@ except Exception as e:  # noqa: BLE001
 finally:
     main.init_db = _init
 
-_key = main.credenciales.guardar
-main.credenciales.guardar = lambda k: (_ for _ in ()).throw(PermissionError("denegado"))
-_val = main.credenciales.validar
-main.credenciales.validar = lambda k: None
+_key = credenciales.guardar
+credenciales.guardar = lambda k: (_ for _ in ()).throw(PermissionError("denegado"))
+_val = credenciales.validar
+credenciales.validar = lambda k: None
 try:
     r = c.post("/api/api-key", headers=H, json={"clave": "x" * 30})
     ok(r.status_code == 500 and "no se pudo guardar" in r.json()["detail"] and "permiso" in r.json()["detail"], "guardar la clave sin permiso de escritura: mensaje claro")
 finally:
-    main.credenciales.guardar = _key
-    main.credenciales.validar = _val
+    credenciales.guardar = _key
+    credenciales.validar = _val
 
 print("Avisos en la cabecera y evento de resultado")
 _av = [f"aviso {i}" for i in range(12)]
@@ -854,7 +884,7 @@ ok(main._avisos_para_cabecera(["a", "b"]) == ["a", "b"] and main._avisos_para_ca
    "con pocos avisos (o ninguno) no cambia nada")
 ok(main._evento_ndjson({"type": "ping", "x": "ñ"}) == '{"type": "ping", "x": "ñ"}\n', "el evento NDJSON conserva el formato")
 
-formatter.get_api_key = _key_original
+ia_gemini.get_api_key = _key_original
 requests.post = _post_original
 print()
 print("TODO OK" if not fallas else f"{fallas} FALLA(S)")

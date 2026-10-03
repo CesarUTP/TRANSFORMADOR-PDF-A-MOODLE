@@ -1,9 +1,9 @@
 """
-test_v18_extraccion.py — regresiones de la versión 1.8 en la lectura del
+test_extraccion.py — regresiones de la versión 1.8 en la lectura del
 documento: marcas de respuesta (color, resaltado, Verdadero/Falso), imágenes,
 Word (.docx), .txt y el adaptador del modo JSON.
 
-    PYTHONUTF8=1 backend/venv/bin/python dev/test_v18_extraccion.py
+    PYTHONUTF8=1 backend/venv/bin/python dev/test_extraccion.py
 
 No llama a Gemini, no toca el historial ni la clave guardada. Los PDF y Word
 de prueba se generan en memoria.

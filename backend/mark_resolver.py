@@ -166,15 +166,16 @@ def _anchors(questions: List[Dict[str, Any]], lines: List[_Line]) -> List[Option
 
 
 def _candidates(questions: List[Dict[str, Any]], lines: List[_Line], anchors: List[Optional[int]],
-                only: Optional[str]) -> Tuple[int, List[Tuple[Dict[str, Any], List[str]]]]:
+                only: Optional[str]) -> Tuple[int, List[Tuple[Dict[str, Any], List[str], List[int]]]]:
     """
-    (preguntas ubicadas, [(pregunta, opciones marcadas)]). Con `only`, la
+    (preguntas ubicadas, [(pregunta, opciones marcadas, sus índices base 0 en
+    las letras ordenadas de las opciones)]). Con `only`, la
     marca de respuesta es esa. Sin `only` (marcas mezcladas), cada pregunta
     usa la marca que traigan sus propias opciones, con tal de que sea UNA
     sola: si en la misma pregunta hay dos marcas distintas, no se decide.
     """
     located = 0
-    candidates: List[Tuple[Dict[str, Any], List[str]]] = []
+    candidates: List[Tuple[Dict[str, Any], List[str], List[int]]] = []
     for idx, q in enumerate(questions):
         if q.get("type") != "multichoice" or anchors[idx] is None:
             continue
@@ -200,10 +201,12 @@ def _candidates(questions: List[Dict[str, Any]], lines: List[_Line], anchors: Li
             distinct = {m for m in marks.values() if m}
             letters = [L for L, m in marks.items() if m] if len(distinct) == 1 else []
         marked = [options[L] for L in letters]
+        orden = sorted(options)
+        indices = [orden.index(L) for L in letters]
         # Sin marca, o con TODAS las opciones marcadas (ej. un examen que
         # pone todas las opciones en negrita): eso no señala una respuesta.
         if marked and len(marked) < len(options):
-            candidates.append((q, marked))
+            candidates.append((q, marked, indices))
     return located, candidates
 
 
@@ -241,7 +244,7 @@ def resolve_answer_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, 
     anchors = _anchors(questions, lines)
     dominant = _mark_color(lines)
 
-    chosen: List[Tuple[Dict[str, Any], List[str]]] = []
+    chosen: List[Tuple[Dict[str, Any], List[str], List[int]]] = []
     for mark, only in ((dominant, dominant), (MIXED_MARKS, None)):
         if mark is None:
             continue
@@ -252,7 +255,7 @@ def resolve_answer_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, 
     if not chosen:
         return result
 
-    for q, marked in chosen:
+    for q, marked, indices in chosen:
         new_answer = " | ".join(marked)
         entry = answer_key.setdefault(q["num"], {"type": "multichoice"})
         # La clave que el documento trae de forma explícita manda: una marca
@@ -262,6 +265,9 @@ def resolve_answer_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, 
         if entry.get("answer") != new_answer:
             entry["answer"] = new_answer
             result["changed"] += 1
+        # Las opciones marcadas también como ÍNDICES: una opción como «x | y»
+        # no se parte al leer de nuevo la respuesta (ver modelo.py).
+        entry["correct_idx"] = indices
         q["data"]["answer_from_marks"] = True
         result["applied"] += 1
     if not result["applied"]:
@@ -291,8 +297,14 @@ def resolve_table_marks(questions: List[Dict[str, Any]], answer_key: Dict[int, D
         for table in tables:
             if len(table) < 2:
                 continue
-            header = [_norm(c) for c in table[0]]
-            rows = {_norm(r[0]): r for r in table[1:] if r and r[0]}
+            # El encabezado es la primera fila, salvo que esa sea un título o una
+            # fila superior de celdas combinadas (que no nombra ninguna columna
+            # B): entonces es la primera de las 3 primeras filas que sí las
+            # nombra. Si ninguna lo hace, todo sigue como antes (no hay pareja).
+            hdr = next((i for i in range(min(3, len(table) - 1))
+                        if any(_norm(c) in b_by_norm for c in table[i][1:] if str(c or "").strip())), 0)
+            header = [_norm(c) for c in table[hdr]]
+            rows = {_norm(r[0]): r for r in table[hdr + 1:] if r and r[0]}
             pairs: Dict[str, str] = {}
             for num, item in col_a.items():
                 row = rows.get(_norm(item))

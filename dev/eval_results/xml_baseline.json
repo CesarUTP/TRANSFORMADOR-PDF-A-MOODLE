@@ -1,0 +1,185 @@
+{
+ "s_afirmaciones": {
+  "bytes": 3959,
+  "omitidas": [],
+  "sha256": "2c0816dde48d717996c90633e4f8e44df3d5dc5fb765324e6d10c681bace0bfc",
+  "validas": 4
+ },
+ "s_asterisco": {
+  "bytes": 4046,
+  "omitidas": [
+   3,
+   5
+  ],
+  "sha256": "38ab5cf6b178379e3fbd437ffe91b955449ec8fe1b6c9bd005c9ecaddb3c5803",
+  "validas": 4
+ },
+ "s_base_mixed": {
+  "bytes": 6679,
+  "omitidas": [],
+  "sha256": "ceaace6acf840e3e1c76ca29a306b686ef81f0acbff5cee5181b264d03b0b92f",
+  "validas": 10
+ },
+ "s_cloze": {
+  "bytes": 1725,
+  "omitidas": [
+   4
+  ],
+  "sha256": "7e1369ef49ef9cec171a1107a8d527e3f037020b929adaf19939c27b1e0d472a",
+  "validas": 4
+ },
+ "s_color_mc": {
+  "bytes": 8155,
+  "omitidas": [],
+  "sha256": "02354fb9397dde19a2bfcd9058a75ddbbb7f2fdef141d261a40ef93636d752ca",
+  "validas": 8
+ },
+ "s_largo_150": {
+  "bytes": 117958,
+  "omitidas": [],
+  "sha256": "6db46c02207a9eb146fdca97d1062045e6d13a92e746efa15d8986a58115d35c",
+  "validas": 150
+ },
+ "s_largo_60": {
+  "bytes": 47112,
+  "omitidas": [],
+  "sha256": "d0638f625a90b902eba4c1fb00f622f37445a390d6d7c9b6610365a89436d477",
+  "validas": 60
+ },
+ "s_negrita_mc": {
+  "bytes": 4968,
+  "omitidas": [],
+  "sha256": "86bdaf4c718ad1f8bc693f6eb80dee76a0c4b46d95e10ad92275c4524cfed4a2",
+  "validas": 5
+ },
+ "s_resaltado_mc": {
+  "bytes": 4962,
+  "omitidas": [],
+  "sha256": "47711821bb1baf8943e76c7a7d74d769e2d4483fd62c2b5f4ac3ebb4b7faa964",
+  "validas": 5
+ },
+ "s_sep_completar": {
+  "bytes": 1316,
+  "omitidas": [],
+  "sha256": "9d5e5f35f8cb01c46998ec56597bf2fd6b2d5e50128ecbb5eb3699d547c39d85",
+  "validas": 4
+ },
+ "s_sep_opcion_multiple": {
+  "bytes": 5801,
+  "omitidas": [],
+  "sha256": "1c89c279d226ae3d8ee8af31c110e2adbdf55d8aa65132bb80b8ab711dbcbf3f",
+  "validas": 6
+ },
+ "s_subrayado_mc": {
+  "bytes": 4983,
+  "omitidas": [],
+  "sha256": "2bfd0cd4bb5e96a168841fae72f328c51c6b3122c1962df8fdd5c0ab65a2a54c",
+  "validas": 5
+ },
+ "x01": {
+  "bytes": 31417,
+  "omitidas": [],
+  "sha256": "763dd04daddbf6756906d2adadf58a2f2562de3ca3d96a2851ac1958c1095fff",
+  "validas": 40
+ },
+ "x02": {
+  "bytes": 46140,
+  "omitidas": [],
+  "sha256": "5d66c8d5cc1546336adcb3f884ea317d749206ff1dfbf2e14fb7dc8d803b401a",
+  "validas": 45
+ },
+ "x03": {
+  "bytes": 30662,
+  "omitidas": [],
+  "sha256": "22f07ca4187f96e55c0a3bb7fab36f457e27fc97a7bfe3b78b867bde646c0ec4",
+  "validas": 40
+ },
+ "x04": {
+  "bytes": 31594,
+  "omitidas": [
+   3,
+   5,
+   18
+  ],
+  "sha256": "98e9a064600f9d9c7b03501e9d2477e30d12c6d371c91bde9a370e82a3bfff81",
+  "validas": 37
+ },
+ "x05": {
+  "bytes": 32548,
+  "omitidas": [],
+  "sha256": "f0e5a8186efce92667886697046158010fee79e68f1a1635bddad45ee3155834",
+  "validas": 40
+ },
+ "x06": {
+  "bytes": 39408,
+  "omitidas": [],
+  "sha256": "733f98fd7918ab91cdf079a3715f0b9622984f779779cbf03f0c1a545354653f",
+  "validas": 48
+ },
+ "x07": {
+  "bytes": 21898,
+  "omitidas": [],
+  "sha256": "1736ebfca0ebc11ad561c57b29dd4d193fdf049d89fe265e8c541e1e6967f43a",
+  "validas": 50
+ },
+ "x08": {
+  "bytes": 26349,
+  "omitidas": [],
+  "sha256": "ea4ae23aa1ae01e364682c1d76addd328614d93148213effa6e796fc095e9af3",
+  "validas": 36
+ },
+ "x09": {
+  "bytes": 26598,
+  "omitidas": [],
+  "sha256": "08924bab8d4ba51680d50ea05a264b8877e703e75008fda57808991c4cfe220e",
+  "validas": 36
+ },
+ "x10": {
+  "bytes": 28939,
+  "omitidas": [],
+  "sha256": "3a1889d2bb5d3043f5a5b885a3e82d8bfa0bbcfc315e024490190344a86a642a",
+  "validas": 32
+ },
+ "x11": {
+  "bytes": 25700,
+  "omitidas": [],
+  "sha256": "4533c620d820f9c061ad039fb6f367ecc578e7ce82ad6fee95ffb9174646957b",
+  "validas": 30
+ },
+ "x12": {
+  "bytes": 12845,
+  "omitidas": [
+   1,
+   4,
+   5,
+   6,
+   7,
+   10,
+   12,
+   15,
+   16,
+   18,
+   19,
+   20,
+   22,
+   25,
+   26,
+   34,
+   35,
+   36,
+   37,
+   40
+  ],
+  "sha256": "2e5e109b0cb7cbc04ca6aa691ab47cd112078bcd57cf27476c22451505b56acf",
+  "validas": 20
+ },
+ "x13": {
+  "bytes": 33032,
+  "omitidas": [
+   12,
+   27
+  ],
+  "sha256": "7827e06a9a9ded606702d8275668890bb9dd5420e54e6b5c9794f0d5eb4355e3",
+  "validas": 38
+ }
+}

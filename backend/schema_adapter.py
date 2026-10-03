@@ -14,6 +14,14 @@ Las convenciones de ese formato (letras A, B... en opciones; " | " para
 varias correctas; "1-a; 2-b" en emparejamiento; "[A: x / y]" en cloze con
 clave "A. x; B. y"; SIN_RESPUESTA cuando el documento no marca nada) son
 las mismas que ya validan validator.py y xml_builder.py.
+
+Esas convenciones son texto con separadores (« | », « / »), y una opción cuyo
+propio texto los contiene ("x | y", "10 / 2") no sobrevive a partirse. Por eso
+adapt() entrega TAMBIÉN las respuestas por índice, tomadas directamente de la
+salida estructurada del modelo (opciones con su bandera "correcta"):
+answer_key[n]["correct_idx"] en multichoice y answer_key[n]["huecos"] en cloze
+(ver modelo.py, «Respuestas por índice»). El texto unido se sigue generando
+tal cual, para compatibilidad, pero ya no es la fuente de verdad.
 """
 
 import logging
@@ -22,10 +30,10 @@ from typing import Any, Dict, List, Tuple
 
 from config import TRANSCRIPTION_FAILED_MARKER
 from answer_matching import split_answers
+from modelo import SIN_RESPUESTA, Clave, HuecoClave, Pregunta, preguntas_a_dicts
 
 logger = logging.getLogger(__name__)
 
-SIN_RESPUESTA = "SIN_RESPUESTA"
 # Tope de la retroalimentación: el mismo que valida validator.py (5000) al
 # generar el XML. El límite anterior (2000) cortaba en silencio una
 # justificación larga del documento; ahora solo se corta lo que el validador
@@ -153,25 +161,28 @@ def _index_for_label(label: str, labels: List[str], n: int):
     return None
 
 
-def _multichoice(q: dict) -> Tuple[dict, str]:
+def _multichoice(q: dict) -> Tuple[dict, str, List[int]]:
+    """(data, texto de la respuesta, índices correctos base 0 en el mismo orden
+    que el texto; [] si no hay respuesta)."""
     opts = [o for o in (q.get("opciones") or []) if str(o.get("texto", "")).strip()][:len(_LETTERS)]
     options = {_LETTERS[i]: _line(o["texto"]) for i, o in enumerate(opts)}
     from_key = _resolve_mc_from_key(_clave(q), opts)
     if from_key:
-        correct = [options[_LETTERS[i]] for i in from_key]
+        idx = list(from_key)
     else:
-        correct = [options[_LETTERS[i]] for i, o in enumerate(opts) if o.get("correcta")]
+        idx = [i for i, o in enumerate(opts) if o.get("correcta")]
         if not q.get("respuesta_marcada", True):
-            correct = []
+            idx = []
         # Todas las opciones marcadas (ej. las 4 en rojo): esa marca no señala
         # una respuesta (lo dice el propio prompt, REGLA 8) — antes el modelo
         # la ignoraba y las 4 salían como correctas (dev/eval x04). Se deja
         # sin respuesta para que el docente decida; una clave explícita
         # ("a, b, c, d") sí se respeta, y se resuelve arriba.
-        elif len(opts) >= 2 and len(correct) == len(opts):
-            correct = []
+        elif len(opts) >= 2 and len(idx) == len(opts):
+            idx = []
+    correct = [options[_LETTERS[i]] for i in idx]
     answer = " | ".join(correct) if correct else SIN_RESPUESTA
-    return {"stem": _text(q.get("enunciado")), "options": options}, answer
+    return {"stem": _text(q.get("enunciado")), "options": options}, answer, idx
 
 
 def _truefalse(q: dict) -> Tuple[dict, str]:
@@ -211,7 +222,11 @@ def _matching(q: dict) -> Tuple[dict, str, Dict[str, str]]:
     return data, answer, dict(ordered)
 
 
-def _cloze(q: dict) -> Tuple[dict, str]:
+def _cloze(q: dict) -> Tuple[dict, str, List[HuecoClave]]:
+    """(data, texto de la clave, estructura de cada hueco). El enunciado lleva
+    «[A: x / y]» y la clave «A. x», como siempre; la estructura trae las
+    opciones de cada hueco como LISTA y sus correctas por índice, para que una
+    opción como «10 / 2» o «x | y» no se parta."""
     text = _latex(str(q.get("enunciado") or "")).strip()
     huecos = q.get("huecos") or []
     by_letter = {}
@@ -220,29 +235,33 @@ def _cloze(q: dict) -> Tuple[dict, str]:
         by_letter[letter] = h
 
     key_parts: List[str] = []
+    estructura: List[HuecoClave] = []
 
     def render(m: re.Match) -> str:
         letter = m.group(1).upper()
         h = by_letter.get(letter)
         if not h:
             return m.group(0)
-        # " / " es el separador de opciones de la forma interna; dentro de
-        # una opción se compacta a "/" para no partirla.
-        def clean(o): return _line(o["texto"]).replace(" / ", "/")
-        opts = [clean(o) for o in h.get("opciones") or [] if str(o.get("texto", "")).strip()]
-        correct = [clean(o) for o in h.get("opciones") or []
-                   if o.get("correcta") and str(o.get("texto", "")).strip()]
-        if correct and q.get("respuesta_marcada", True):
-            key_parts.append(f"{letter}. {' | '.join(correct)}")
+        # El texto de la opción se conserva TAL CUAL (antes, " / " dentro de
+        # una opción se compactaba a "/" para no partirla: eso alteraba el
+        # contenido del docente). El texto unido con " / " sigue siendo
+        # ambiguo si una opción lo contiene, pero la estructura por índice no.
+        listadas = [o for o in h.get("opciones") or [] if str(o.get("texto", "")).strip()]
+        opts = [_line(o["texto"]) for o in listadas]
+        idx = [i for i, o in enumerate(listadas) if o.get("correcta")]
+        if idx and q.get("respuesta_marcada", True):
+            key_parts.append(f"{letter}. {' | '.join(opts[i] for i in idx)}")
+            estructura.append(HuecoClave(letter, opts, idx))
             return f"[{letter}: {' / '.join(opts)}]"
         # Mismo convenio que el formato de texto (REGLA 5): el hueco sin
         # respuesta lleva SIN_RESPUESTA dentro de los corchetes y en la clave.
         key_parts.append(f"{letter}. {SIN_RESPUESTA}")
+        estructura.append(HuecoClave(letter, [SIN_RESPUESTA] + opts, []))
         return f"[{letter}: {' / '.join([SIN_RESPUESTA] + opts)}]"
 
     rendered = _SLOT.sub(render, text)
     answer = "; ".join(key_parts) if key_parts else SIN_RESPUESTA
-    return {"text": rendered}, answer
+    return {"text": rendered}, answer, estructura
 
 
 def _plain(q: dict, qtype: str) -> Tuple[dict, str]:
@@ -282,20 +301,23 @@ def adapt(payload: dict) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]
     igual que la renumeración limpia del formato de texto.
     """
     raw_qs = sorted(payload.get("preguntas") or [], key=lambda q: (q.get("orden") or 0))
-    questions: List[Dict[str, Any]] = []
-    answer_key: Dict[int, Dict[str, Any]] = {}
+    preguntas: List[Pregunta] = []
 
     for num, q in enumerate(raw_qs, start=1):
         qtype = q.get("tipo")
         pairs = None
+        correct_idx = None
+        huecos = None
         if qtype == "multichoice":
-            data, answer = _multichoice(q)
+            data, answer, idx = _multichoice(q)
+            correct_idx = idx or None
         elif qtype == "truefalse":
             data, answer = _truefalse(q)
         elif qtype == "matching":
             data, answer, pairs = _matching(q)
         elif qtype == "cloze":
-            data, answer = _cloze(q)
+            data, answer, huecos = _cloze(q)
+            huecos = huecos or None
         elif qtype in ("essay", "shortanswer", "numerical"):
             data, answer = _plain(q, qtype)
         else:
@@ -304,52 +326,55 @@ def adapt(payload: dict) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]
             # tolerante (validator.partition_questions) la muestra entre las
             # omitidas con su enunciado para que el docente la revise.
             logger.warning("Pregunta %d con tipo desconocido %r: se conserva como omitida.", num, qtype)
-            questions.append({
+            preguntas.append(Pregunta.desde_dict({
                 "num": num, "type": str(qtype or "?"),
                 "data": {"stem": _text(q.get("enunciado"))},
                 "error": f"El tipo de pregunta «{qtype}» no se reconoce. Revísala y agrégala a mano.",
-            })
+            }))
             continue
+
+        # La pregunta pasa por el modelo tipado (modelo.py): los campos que
+        # se agregan abajo son atributos, y al final se vuelve al dict de siempre.
+        p = Pregunta.desde_dict({"num": num, "type": qtype, "data": data})
 
         # REGLA 11: imagen ilegible y sin respuesta → el validador reconoce
         # este marcador y da el motivo específico ("revisa la imagen a
         # mano") en vez del genérico "no tiene respuesta".
         low_conf = q.get("confianza") == "baja"
         if low_conf and answer == SIN_RESPUESTA:
-            key = "text" if qtype == "cloze" else "stem"
-            data[key] = f"{TRANSCRIPTION_FAILED_MARKER} {data.get(key, '')}".strip()
+            if qtype == "cloze":
+                p.text = f"{TRANSCRIPTION_FAILED_MARKER} {p.text or ''}".strip()
+            else:
+                p.stem = f"{TRANSCRIPTION_FAILED_MARKER} {p.stem or ''}".strip()
         elif low_conf:
-            data["low_confidence"] = True
+            p.low_confidence = True
 
         page = q.get("pagina")
         if isinstance(page, int) and page > 0:
-            data["page"] = page
+            p.pagina = page
 
-        # Retroalimentación OPCIONAL: solo si el documento traía una
-        # justificación (el modelo la copia; nunca la inventa). Vacía = sin
-        # retroalimentación, y el docente puede escribirla en el editor.
         # Preguntas encadenadas que usan la misma imagen que la anterior,
         # según la IA (que ve las páginas). Marca interna:
         # imagenes.asignar_imagenes la usa y la quita antes de devolver el
         # resultado.
         if isinstance(q.get("comparte_imagen_anterior"), bool):
-            data["_comparte_imagen"] = q["comparte_imagen_anterior"]
+            p.comparte_imagen = q["comparte_imagen_anterior"]
 
+        # Retroalimentación OPCIONAL: solo si el documento traía una
+        # justificación (el modelo la copia; nunca la inventa). Vacía = sin
+        # retroalimentación, y el docente puede escribirla en el editor.
         feedback = _text(q.get("retroalimentacion"))
         if feedback:
             if len(feedback) > MAX_FEEDBACK:
                 logger.warning("Retroalimentación de la pregunta %d recortada de %d a %d caracteres.",
                                num, len(feedback), MAX_FEEDBACK)
-            data["feedback"] = feedback[:MAX_FEEDBACK]
+            p.feedback = feedback[:MAX_FEEDBACK]
 
-        questions.append({"num": num, "type": qtype, "data": data})
-        entry: Dict[str, Any] = {"type": qtype, "answer": answer}
-        if pairs is not None:
-            entry["pairs"] = pairs
         # La respuesta salió de una clave explícita del documento (no de una
         # marca ni del modelo): mark_resolver no la sobrescribe con marcas.
-        if _desde_clave(q, qtype):
-            entry["from_key"] = True
-        answer_key[num] = entry
+        p.respuesta = Clave(tipo=qtype, answer=answer, pairs=pairs,
+                            from_key=True if _desde_clave(q, qtype) else None,
+                            correct_idx=correct_idx, huecos=huecos)
+        preguntas.append(p)
 
-    return questions, answer_key
+    return preguntas_a_dicts(preguntas)

@@ -28,6 +28,8 @@ import extractor  # noqa: E402
 import extractor_docx  # noqa: E402
 import imagenes  # noqa: E402
 import formatter  # noqa: E402
+import ia_gemini  # noqa: E402
+import ia_reintentos  # noqa: E402
 import pipeline  # noqa: E402
 import ayuda_ia  # noqa: E402
 import schema_adapter  # noqa: E402
@@ -176,6 +178,7 @@ respuesta_ia = {"es_examen": True, "preguntas": [
     preg(4, "¿Qué muestra la figura?", [op("a", "Un ícono"), op("b", "Un mapa")]),
 ]}
 pipeline.get_api_key = lambda: "clave-de-prueba"
+ia_gemini.get_api_key = lambda: "clave-de-prueba"  # _comprobar_entrada ahora pregunta al proveedor de IA
 pipeline.extract_structured = lambda *a, **k: respuesta_ia
 r = pipeline.parse_document(word_de_prueba(mezcladas=False), "prueba.docx")
 qs = {q["num"]: q for q in r["questions"]}
@@ -473,13 +476,18 @@ ok(not extractor.pagina_con_formulas(_Pagina(["Symbol"] * 20 + ["Calibri"] * 50)
 print("Escribir retroalimentación con IA (Gemini simulado)")
 from fastapi import HTTPException  # noqa: E402
 _enviado = {}
+def _a_gemini(sol):
+    """La solicitud neutra (SolicitudIA) tal como viaja a Gemini: así se siguen
+    comprobando las partes y la configuración que recibe la IA."""
+    return ia_gemini.construir_cuerpo(sol.partes, instruccion=sol.instruccion, esquema=sol.esquema,
+                                      temperatura=sol.temperatura, max_tokens=sol.max_tokens)
 class _Resp:
     text = '"Retroalimentación: **Al sumar** se obtiene \\(\\frac{4}{4}\\) = 1."'
 def _falso(body, n, parse, timeout, **_):
-    _enviado["body"] = body
+    _enviado["body"] = _a_gemini(body)
     return parse(_Resp())
-_original = formatter._generate_with_retries
-formatter._generate_with_retries = _falso
+_original = ia_reintentos.generar_con_reintentos
+ia_reintentos.generar_con_reintentos = _falso
 try:
     pq = {"type": "multichoice", "data": {"stem": "¿Cuánto vale \\(\\frac{3}{4}+\\frac{1}{4}\\)?",
           "options": {"A": "\\(\\frac{1}{2}\\)", "B": "1"},
@@ -501,7 +509,7 @@ try:
         except HTTPException as e:
             ok(e.status_code == 422, f"{motivo}: se rechaza sin llamar a la IA")
 finally:
-    formatter._generate_with_retries = _original
+    ia_reintentos.generar_con_reintentos = _original
 
 print("Mejorar redacción (Gemini simulado)")
 _respuesta_ia = {}
@@ -510,9 +518,9 @@ class _RespE:
     def text(self):
         return _respuesta_ia["t"]
 def _falso_e(body, n, parse, timeout, **_):
-    _enviado["body"] = body
+    _enviado["body"] = _a_gemini(body)
     return parse(_RespE())
-formatter._generate_with_retries = _falso_e
+ia_reintentos.generar_con_reintentos = _falso_e
 try:
     pe = {"type": "multichoice", "data": {"stem": "que imprime el siguiente codigo\nx = 5\nprint(x*2)", "options": {"A": "10", "B": "52"}}}
     _respuesta_ia["t"] = "Enunciado: ¿Qué imprime el siguiente código?\nx = 5\nprint(x*2)"
@@ -542,7 +550,7 @@ try:
     except HTTPException as e:
         ok(e.status_code == 422, "preguntas de completar: se editan en su constructor")
 finally:
-    formatter._generate_with_retries = _original
+    ia_reintentos.generar_con_reintentos = _original
 
 print("Mejorar redacción: cambios de significado que 'el código comprueba'")
 casos_significado = [

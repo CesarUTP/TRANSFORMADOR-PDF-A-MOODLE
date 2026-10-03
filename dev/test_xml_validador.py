@@ -1,11 +1,11 @@
 """
-test_v18_xml_validador.py — Versión 1.8: resolución de la respuesta correcta
+test_xml_validador.py — Versión 1.8: resolución de la respuesta correcta
 (validador y constructor deciden con la MISMA función y nunca inventan),
 texto de Completar con saltos de línea y sangría, números estrictos,
 matching con letras en mayúscula, Verdadero/Falso con alias, categoría
 saneada y aviso de puntos en Completar.
 
-    backend/venv/bin/python dev/test_v18_xml_validador.py
+    backend/venv/bin/python dev/test_xml_validador.py
 
 No llama a Gemini ni toca el historial, la clave o la base de datos (no
 importa main).

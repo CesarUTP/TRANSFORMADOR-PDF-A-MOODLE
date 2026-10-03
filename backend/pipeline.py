@@ -18,8 +18,13 @@ from typing import Any, Callable, Dict, List, Optional
 
 from fastapi import HTTPException
 
-from config import ENRICH_PDF_TEXT, MISSING_API_KEY_MESSAGE, NORMALIZER_MODE, NORMALIZER_MODE_AI
-from credenciales import get_api_key
+from config import ENRICH_PDF_TEXT, NORMALIZER_MODE, NORMALIZER_MODE_AI
+# get_api_key ya no se usa aquí (la comprobación la hace el proveedor de IA), pero
+# las pruebas lo sustituyen en este módulo: se conserva el nombre.
+from credenciales import get_api_key  # noqa: F401
+import confianza
+import ia_proveedor
+import origen_pdf
 from extractor import (
     MAX_IMAGE_PAGES,
     DocumentoDemasiadoGrande,
@@ -151,16 +156,34 @@ def _mensaje_error_pdf(exc: Exception) -> Optional[str]:
     (None si no se reconoce). Antes se mostraba «Error al extraer el texto del
     archivo: » con el detalle vacío (pdfminer lanza PDFPasswordIncorrect sin
     mensaje)."""
-    nombre = type(exc).__name__
-    texto = str(exc).strip()
-    if nombre in ("PDFPasswordIncorrect", "PDFEncryptionError") or "password" in texto.lower():
+    cadena = list(_cadena_de_excepciones(exc))
+    if any(type(e).__name__ in ("PDFPasswordIncorrect", "PDFEncryptionError") or "password" in str(e).lower()
+           for e in cadena):
         return ("El PDF está protegido con contraseña y no se puede leer. Ábrelo con la contraseña, "
                 "quítale la protección (por ejemplo, «Imprimir» → «Guardar como PDF») y súbelo de nuevo.")
-    if nombre in ("PDFSyntaxError", "PSEOF", "PSSyntaxError", "PDFException", "PDFNoValidXRef", "PDFTextExtractionNotAllowed",
-                  "PdfminerException", "PDFObjectNotFound", "PDFXRefFallback"):
+    if any(type(e).__name__ in ("PDFSyntaxError", "PSEOF", "PSSyntaxError", "PDFException", "PDFNoValidXRef",
+                                "PDFTextExtractionNotAllowed", "PdfminerException", "PDFObjectNotFound",
+                                "PDFXRefFallback") for e in cadena):
         return ("El PDF parece dañado o no se puede leer. Ábrelo en un lector de PDF y vuelve a guardarlo "
                 "(«Imprimir» → «Guardar como PDF»), o prueba con otra copia del archivo.")
     return None
+
+
+def _cadena_de_excepciones(exc: BaseException, profundidad: int = 5):
+    """La excepción y las que lleva dentro: pdfplumber envuelve la de pdfminer
+    en PdfminerException (con la causa en args[0] y str() vacío), así que
+    mirar solo el tipo de afuera confundía «con contraseña» con «dañado»."""
+    vistas = set()
+    pendientes = [(exc, 0)]
+    while pendientes:
+        actual, nivel = pendientes.pop(0)
+        if id(actual) in vistas or nivel > profundidad:
+            continue
+        vistas.add(id(actual))
+        yield actual
+        hijos = [a for a in getattr(actual, "args", ()) if isinstance(a, BaseException)]
+        hijos += [e for e in (actual.__cause__, actual.__context__) if e is not None]
+        pendientes.extend((h, nivel + 1) for h in hijos)
 
 
 def _detalle_lectura(exc: Exception, prefijo: str) -> str:
@@ -170,11 +193,16 @@ def _detalle_lectura(exc: Exception, prefijo: str) -> str:
 
 
 def _comprobar_entrada(raw_bytes: bytes, suffix: str) -> None:
-    """Antes de leer el documento (lo más caro después de Gemini): sin
-    clave de la API no hay conversión posible, y un PDF con demasiadas
-    páginas se rechaza sin procesarlo."""
-    if not get_api_key():
-        raise HTTPException(status_code=503, detail=MISSING_API_KEY_MESSAGE)
+    """Antes de leer el documento (lo más caro después de la IA): sin la
+    credencial del proveedor de IA no hay conversión posible (cada proveedor
+    sabe qué le falta: ver ia_proveedor.comprobar_listo), y un PDF con
+    demasiadas páginas se rechaza sin procesarlo."""
+    try:
+        ia_proveedor.proveedor_actual().comprobar_listo()
+    except ia_proveedor.IASinClaveError as exc:
+        raise HTTPException(status_code=503, detail=exc.mensaje)
+    except ia_proveedor.ErrorConfiguracionIA as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
     if suffix == ".pdf":
         try:
             comprobar_paginas(raw_bytes)
@@ -350,6 +378,7 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
             filename, payload,
             estimated_question_count, colored_pages_text, color_marks_notice,
             colored_page_numbers, marks, imagenes_preguntas,
+            pdf_bytes=raw_bytes if suffix == ".pdf" else None,
         )
 
     if ia_cache is not None and "texto" in ia_cache:
@@ -369,6 +398,7 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
     return finalize_parse_response(
         filename, full_text, reformatted_text, was_reformatted,
         estimated_question_count, colored_pages_text, color_marks_notice, marks,
+        pdf_bytes=raw_bytes if suffix == ".pdf" else None,
     )
 
 
@@ -447,7 +477,7 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
         return _finalize_structured(
             filename, payload,
             estimated_question_count, colored_pages_text, color_marks_notice,
-            colored_page_numbers, marks, aviso_paginas=aviso_paginas,
+            colored_page_numbers, marks, aviso_paginas=aviso_paginas, pdf_bytes=raw_bytes,
         )
 
     if ia_cache is not None and "texto" in ia_cache:
@@ -466,7 +496,7 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
     return finalize_parse_response(
         filename, full_text, reformatted_text, was_reformatted,
         estimated_question_count, colored_pages_text, color_marks_notice, marks,
-        aviso_paginas=aviso_paginas,
+        aviso_paginas=aviso_paginas, pdf_bytes=raw_bytes,
     )
 
 
@@ -493,6 +523,7 @@ def finalize_parse_response(
     color_marks_notice: Any,
     marks=None,
     aviso_paginas: Optional[str] = None,
+    pdf_bytes: Optional[bytes] = None,
 ) -> Dict[str, Any]:
     """
     Cola común de ambos flujos: ya con el texto reformateado por Gemini, de
@@ -532,11 +563,42 @@ def finalize_parse_response(
             }
         )
 
+    # Página verificada y recuadro de cada pregunta (solo PDF con texto).
+    _ubicar_en_pdf(questions, pdf_bytes)
+    # Modo texto: la respuesta se atribuye al documento solo si él trae su
+    # propia clave y la de la IA es idéntica (ver confianza.clave_documento_coincide).
+    desde_documento = confianza.clave_documento_coincide(original_answer_key, answer_key)
+
     return _finalize_common(
         filename, questions, effective_answer_key, was_reformatted,
         estimated_question_count, colored_pages_text, color_marks_notice, marks,
-        aviso_paginas=aviso_paginas,
+        aviso_paginas=aviso_paginas, desde_documento=desde_documento,
     )
+
+
+def _ubicar_en_pdf(questions: List[Dict[str, Any]], pdf_bytes: Optional[bytes]) -> int:
+    """Escribe en cada pregunta que se pueda ubicar en el PDF su página
+    VERIFICADA (data["page"], que reemplaza a la que dijo la IA) y su recuadro
+    (data["recuadro"], fracciones 0–1 de la página). Las que no se ubican con
+    certeza quedan como estaban (con la página de la IA, si la dio). Solo PDF
+    con texto; ver origen_pdf.py. Informativo: nunca cambia una respuesta."""
+    if not pdf_bytes:
+        return 0
+    try:
+        ubicadas = origen_pdf.ubicar_preguntas(pdf_bytes, questions)
+    except Exception as exc:  # noqa: BLE001 — sin ubicación, la conversión sigue igual
+        logger.warning("No se pudieron ubicar las preguntas en el PDF: %s", exc)
+        return 0
+    n = 0
+    for q in questions:
+        u = ubicadas.get(q.get("num"))
+        if u and isinstance(q.get("data"), dict):
+            q["data"]["page"] = u["page"]
+            q["data"]["recuadro"] = u["recuadro"]
+            n += 1
+    if n:
+        logger.info("Preguntas ubicadas en el PDF: %d de %d.", n, len(questions))
+    return n
 
 
 # Cuántas preguntas omitidas hace falta detectar para intentar
@@ -632,6 +694,7 @@ def _completar_omitidas(payload: Dict[str, Any], imagenes_preguntas, page_images
         posteriores = [o for o in ordenes if o > anterior_orden]
         siguiente_orden = min(posteriores) if posteriores else anterior_orden + 1
         nueva["orden"] = (anterior_orden + siguiente_orden) / 2
+        nueva["_rescatada"] = True  # confianza.py: la recuperó un reintento, no la IA en la primera pasada
         preguntas_raw.append(nueva)
         ordenes.append(nueva["orden"])
     payload["preguntas"] = preguntas_raw
@@ -656,12 +719,17 @@ def _finalize_structured(
     marks=None,
     imagenes_preguntas=None,
     aviso_paginas: Optional[str] = None,
+    pdf_bytes: Optional[bytes] = None,
 ) -> Dict[str, Any]:
     """Modo JSON: la salida del modelo ya viene estructurada; el adaptador
     la deja en la misma forma que produce parser.py en el modo texto."""
     questions, answer_key = adapt(payload)
-    # Con la página de origen que informa el modelo, el aviso "revisar marca
-    # de color" deja de ser un heurístico por texto: es exacto por página.
+    rescatadas, desde_documento = confianza.senales_del_payload(payload)
+    # Página verificada en el PDF (reemplaza a la que dijo la IA) y recuadro.
+    _ubicar_en_pdf(questions, pdf_bytes)
+    # Con la página de origen (la verificada, o la que informa el modelo), el
+    # aviso "revisar marca de color" deja de ser un heurístico por texto: es
+    # exacto por página.
     colored = set(colored_page_numbers)
     for q in questions:
         if q["type"] == "multichoice" and q["data"].get("page") in colored:
@@ -678,6 +746,7 @@ def _finalize_structured(
         filename, questions, answer_key, True,
         estimated_question_count, colored_pages_text, color_marks_notice, marks,
         imagenes_preguntas, aviso_paginas=aviso_paginas,
+        rescatadas=rescatadas, desde_documento=desde_documento,
     )
 
 
@@ -692,6 +761,8 @@ def _finalize_common(
     marks=None,
     imagenes_preguntas=None,
     aviso_paginas: Optional[str] = None,
+    rescatadas=(),
+    desde_documento=(),
 ) -> Dict[str, Any]:
     """Cola compartida por ambos modos: marcas resueltas en código, modo
     tolerante, avisos y recorte de la clave a las preguntas válidas."""
@@ -734,6 +805,10 @@ def _finalize_common(
     for q in valid_questions:
         if q["data"].get("answer_from_marks") or effective_answer_key.get(q["num"], {}).get("from_key"):
             q["data"].pop("color_review_hint", None)
+    # De dónde salió cada respuesta y cuánta confianza da (solo informativo;
+    # ver confianza.py). Va después de las marcas y de «revisar marca», que son
+    # sus entradas.
+    confianza.etiquetar(valid_questions, effective_answer_key, rescatadas, desde_documento)
     n_uncertain = sum(1 for q in valid_questions if q["data"].get("color_review_hint"))
     from_marks = [q for q in valid_questions if q["data"].get("answer_from_marks")]
     color_marks_notice = _marks_notice(

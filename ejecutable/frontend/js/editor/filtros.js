@@ -1,9 +1,11 @@
 /**
- * filtros.js — filtro por tipo de pregunta.
+ * filtros.js — filtro por tipo de pregunta y «Revisar primero».
  */
 import { buildReviewRail } from './panel.js';
 import { _closeCollapsiblePanel, togglePanel } from './paneles.js';
+import { FILTRO_REVISAR, coincideConFiltro } from './procedencia.js';
 import { QUESTION_TYPE_DEFS, QUESTION_TYPE_LABEL_MAP, autoGrowTextarea } from './tarjetas.js';
+import { crearIconos } from '../util.js';
 
 // Reconstruye los chips "Filtrar" contando las tarjetas que de verdad
 // quedan en el DOM, para que "Todas (N)" y los conteos por tipo nunca
@@ -17,22 +19,28 @@ export function refreshFilterChips() {
 
   const cards = document.querySelectorAll('.editor-card');
   const typeCounts = Object.fromEntries(QUESTION_TYPE_DEFS.map(t => [t.key, 0]));
+  let porRevisar = 0;
   cards.forEach(card => {
     const t = card.dataset.qtype;
     if (t in typeCounts) typeCounts[t]++;
+    if (card.dataset.revisar === '1') porRevisar++;
   });
 
   // Si el tipo filtrado ya no tiene preguntas (se borró la última), no
   // tiene sentido dejar ese filtro activo.
-  if (activeFilter !== 'all' && typeCounts[activeFilter] === 0) activeFilter = 'all';
+  if (activeFilter === FILTRO_REVISAR ? porRevisar === 0 : (activeFilter !== 'all' && typeCounts[activeFilter] === 0)) activeFilter = 'all';
 
-  const chip = (type, label, count) =>
-    `<button type="button" class="filter-chip" data-filter="${type}" aria-pressed="${activeFilter === type}" data-accion="selectFilter" data-arg="${type}">${label} <span class="count">(${count})</span></button>`;
+  const chip = (type, label, count, icono = '') =>
+    `<button type="button" class="filter-chip" data-filter="${type}" aria-pressed="${activeFilter === type}" data-accion="selectFilter" data-arg="${type}">${icono}${label} <span class="count">(${count})</span></button>`;
   let html = chip('all', 'Todas', cards.length);
+  // «Revisar primero»: respuestas con confianza baja o propuestas por la IA
+  // que el docente aún no ha tocado. Solo aparece si hay alguna.
+  if (porRevisar > 0) html += chip(FILTRO_REVISAR, 'Revisar primero', porRevisar, '<i data-lucide="shield-alert" aria-hidden="true"></i>');
   Object.entries(typeCounts).forEach(([type, count]) => {
     if (count > 0) html += chip(type, QUESTION_TYPE_LABEL_MAP[type], count);
   });
-  bar.innerHTML = `<div class="filter-chips" role="group" aria-label="Mostrar solo un tipo de pregunta">${html}</div>`;
+  bar.innerHTML = `<div class="filter-chips" role="group" aria-label="Mostrar solo un tipo de pregunta o las que conviene revisar primero">${html}</div>`;
+  crearIconos(bar);
 
   filterQuestionsByType(activeFilter);
 }
@@ -65,7 +73,7 @@ function filterQuestionsByType(type) {
     });
   }
   document.querySelectorAll('.editor-card').forEach(card => {
-    const show = type === 'all' || card.dataset.qtype === type;
+    const show = coincideConFiltro(type, { tipo: card.dataset.qtype, revisar: card.dataset.revisar === '1' });
     const wasHidden = card.style.display === 'none';
     card.style.display = show ? '' : 'none';
     if (show && wasHidden) card.querySelectorAll('textarea').forEach(autoGrowTextarea);

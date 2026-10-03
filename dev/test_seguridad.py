@@ -240,6 +240,63 @@ except extractor.DocumentoDemasiadoGrande:
 w, h = extractor.render_all_pages_as_images(_pdf(1, 14400, 14400))[0].size
 ok(w * h <= extractor.MAX_PIXELES_RENDER, f"página gigante renderizada con tope ({w}x{h})")
 
+print("Rutas (main.py + rutas_*.py): el middleware cubre TODAS")
+# Contrato de la 1.8: main.py se partió en rutas_*.py sin cambiar ninguna ruta.
+# Si agregas un endpoint, súmalo aquí A PROPÓSITO (y la prueba de abajo exige
+# que también rechace sin token y con Host/Origin ajeno).
+RUTAS_ESPERADAS = {
+    ("GET", "/"), ("GET", "/openapi.json"), ("GET", "/docs"), ("GET", "/docs/oauth2-redirect"), ("GET", "/redoc"),
+    ("GET", "/api/salud"), ("GET", "/api/actualizacion"), ("GET", "/api/acerca"),
+    ("POST", "/api/check_special_cases"), ("POST", "/api/parse"), ("POST", "/api/normalize_with_ai"),
+    ("POST", "/api/parse_stream"), ("POST", "/api/normalize_with_ai_stream"),
+    ("POST", "/api/generate_xml"),
+    ("GET", "/api/history"), ("GET", "/api/history/{record_id}/download"),
+    ("GET", "/api/history/{record_id}/editor"), ("DELETE", "/api/history/{record_id}"),
+    ("POST", "/api/retroalimentacion"), ("POST", "/api/mejorar_enunciado"),
+    ("GET", "/api/api-key"), ("POST", "/api/api-key"), ("DELETE", "/api/api-key"),
+}
+MONTAJES_ESPERADOS = {"/static", "/css", "/js", "/img", "/fonts", "/legal"}
+
+_rutas = set()
+_montajes = set()
+for _r in main.app.routes:
+    _metodos = getattr(_r, "methods", None)
+    if _metodos is None:
+        _montajes.add(_r.path)
+    else:
+        _rutas |= {(m, _r.path) for m in _metodos if m != "HEAD"}
+ok(_rutas == RUTAS_ESPERADAS,
+   "el conjunto de rutas (método + ruta) es exactamente el de antes de partir main.py"
+   + ("" if _rutas == RUTAS_ESPERADAS else f" — sobran {sorted(_rutas - RUTAS_ESPERADAS)}, faltan {sorted(RUTAS_ESPERADAS - _rutas)}"))
+ok(_montajes == MONTAJES_ESPERADOS, "los montajes estáticos son los mismos")
+
+_CON_TOKEN_SIN_PELIGRO = {"/api/acerca"}  # los demás GET/DELETE harían red o borrarían datos
+for _metodo, _ruta in sorted(_rutas):
+    _url = _ruta.replace("{record_id}", "1")
+    _x = f"{_metodo} {_ruta}"
+    _pide = lambda **kw: c.request(_metodo, _url, content=b"" if _metodo in ("POST", "DELETE") else None, **kw)  # noqa: E731
+    # Host ajeno y Origin ajeno: se rechazan en TODA ruta (con o sin token).
+    ok(_pide(headers={**H, "Host": "malo.example:8000"}).status_code == 400, f"{_x}: Host ajeno -> 400")
+    ok(_pide(headers={**H, "Origin": "https://malo.example"}).status_code == 403, f"{_x}: Origin ajeno -> 403")
+    if _ruta.startswith("/api/") and _ruta != seguridad.RUTA_SALUD:
+        ok(_pide().status_code == 401, f"{_x}: sin token -> 401")
+        ok(_pide(headers={"X-Conversor-Token": "x" * 43}).status_code == 401, f"{_x}: token falso -> 401")
+        ok(_pide(headers={"Host": "malo.example:8000"}).status_code == 400, f"{_x}: sin token y Host ajeno -> 400")
+        # Con token las rutas con cuerpo obligatorio responden 422 (sin tocar nada) y llevan CSP.
+        if _metodo == "POST":
+            _resp = _pide(headers=H)
+            ok(_resp.status_code == 422 and "script-src 'self'" in _resp.headers.get("content-security-policy", ""),
+               f"{_x}: con token llega a la ruta (422 sin cuerpo) y lleva CSP")
+        elif _ruta in _CON_TOKEN_SIN_PELIGRO:
+            _resp = _pide(headers=H)
+            ok(_resp.status_code == 200 and "script-src 'self'" in _resp.headers.get("content-security-policy", ""),
+               f"{_x}: con token -> 200 y lleva CSP")
+for _m in sorted(MONTAJES_ESPERADOS):
+    ok(c.get(_m + "/x", headers={"Host": "malo.example:8000"}).status_code == 400, f"{_m}: Host ajeno -> 400")
+    ok(c.get(_m + "/x", headers={"Origin": "https://malo.example"}).status_code == 403, f"{_m}: Origin ajeno -> 403")
+ok(c.get("/api/salud?n=abc").json().get("firma") == seguridad.firma_salud("abc"),
+   "/api/salud responde la firma sin token (así lo exige el launcher)")
+
 print("Launcher")
 import launcher  # noqa: E402
 

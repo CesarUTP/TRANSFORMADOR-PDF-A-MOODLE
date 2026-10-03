@@ -41,14 +41,28 @@ jobs:
         run: python dev/test_seguridad.py
       - name: Word, imágenes, retroalimentación y fórmulas
         run: python dev/test_mejoras.py
+      - name: XML idéntico a la línea base (red de seguridad de refactores)
+        run: python dev/test_xml_baseline.py
+      - name: Modelo de pregunta tipado (ida y vuelta exacta)
+        run: python dev/test_modelo.py
+      - name: Origen, confianza y ubicación en el PDF
+        run: python dev/test_confianza.py
+      - name: Frontend (lógica y sintaxis, en Node)
+        run: node dev/test_frontend.mjs
       - name: Extracción y marcas (1.8)
-        run: python dev/test_v18_extraccion.py
+        run: python dev/test_extraccion.py
+      - name: Word avanzado (numeración por estilo y celdas combinadas)
+        run: python dev/test_word_avanzado.py
+      - name: Opciones con | y / (índices en paralelo al texto)
+        run: python dev/test_opciones_separadores.py
       - name: XML y validador (1.8)
-        run: python dev/test_v18_xml_validador.py
+        run: python dev/test_xml_validador.py
       - name: IA, cancelación y servidor (1.8)
-        run: python dev/test_v18_ia_servidor.py
+        run: python dev/test_ia_servidor.py
+      - name: Capa de proveedor de IA (prompts intactos, proveedor falso)
+        run: python dev/test_ia_proveedor.py
       - name: Base de datos y arranque (1.8)
-        run: python dev/test_v18_datos_arranque.py
+        run: python dev/test_datos_arranque.py
       # Solo una vez (no en los 3 sistemas: compara archivos, no depende
       # del SO). Antes nadie se enteraba de que ejecutable/ o
       # ejecutable_mac/ quedaron desfasados de backend/frontend hasta

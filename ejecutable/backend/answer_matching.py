@@ -216,6 +216,86 @@ def resolver_hueco_cloze(respuesta: str, opciones: Sequence[str]) -> Tuple[Optio
     return (int(clave) if clave is not None else None), motivo
 
 
+# ── Respuestas por ÍNDICE (la fuente de verdad cuando existen) ────────────────
+# Las respuestas correctas viajan como TEXTO con separadores (« | » entre
+# respuestas, « / » entre opciones de un hueco), y una opción cuyo propio texto
+# contiene « | » o « / » ("x | y", "10 / 2") se partía mal. Por eso, junto al
+# texto, viajan los ÍNDICES (base 0) de las opciones correctas: con ellos no
+# hay nada que partir. Se usan solo si son válidos y COINCIDEN con el texto de
+# la clave (si alguien editó el texto sin tocar los índices, manda el texto, que
+# es lo de siempre); si faltan (historiales viejos, claves del documento en
+# texto) se analiza el texto como antes.
+
+def indices_utilizables(indices: object, n: int) -> Optional[List[int]]:
+    """Los índices sin repetir y en su orden, o None si no sirven: no es una
+    lista, está vacía, o algún valor no es un entero dentro de 0..n-1."""
+    if not isinstance(indices, (list, tuple)) or not indices:
+        return None
+    out: List[int] = []
+    for i in indices:
+        if isinstance(i, bool) or not isinstance(i, int) or not 0 <= i < n:
+            return None
+        if i not in out:
+            out.append(i)
+    return out
+
+
+def _colapsar(texto: str) -> str:
+    return " ".join(str(texto or "").split())
+
+
+def indices_coinciden_con_texto(textos: Sequence[str], respuesta: str) -> bool:
+    """¿Las opciones señaladas por los índices, unidas con « | », son lo que dice
+    el texto de la clave (sin importar espacios repetidos)?"""
+    return _colapsar(" | ".join(textos)) == _colapsar(respuesta)
+
+
+def resolver_correctas_multichoice(
+    opciones: Dict[str, str], respuesta: str, indices: object = None,
+) -> Tuple[List[str], List[Tuple[str, str]]]:
+    """(letras correctas sin repetir, fallos) de una pregunta de opción múltiple.
+    `indices` son posiciones (base 0) en las letras ORDENADAS de `opciones`.
+    Con índices utilizables y que coinciden con `respuesta`, se usan tal cual;
+    si no, se parte `respuesta` por « | » y cada parte pasa por resolver_opcion."""
+    letras_ordenadas = sorted(opciones)
+    usables = indices_utilizables(indices, len(letras_ordenadas))
+    if usables is not None and indices_coinciden_con_texto(
+            [opciones[letras_ordenadas[i]] for i in usables], respuesta):
+        return [letras_ordenadas[i] for i in usables], []
+    letras: List[str] = []
+    fallos: List[Tuple[str, str]] = []
+    for objetivo in split_answers(respuesta):
+        letra, motivo = resolver_opcion(objetivo, opciones)
+        if letra is None:
+            fallos.append((objetivo, motivo or "ninguna"))
+        elif letra not in letras:
+            letras.append(letra)
+    return letras, fallos
+
+
+def resolver_correctas_cloze(
+    opciones: Sequence[str], respuestas: Sequence[str], indices: object = None,
+) -> Tuple[List[int], List[Tuple[str, str]]]:
+    """(índices de las opciones correctas de un hueco sin repetir, fallos). Con
+    `indices` utilizables se devuelven tal cual; si no, cada respuesta de la
+    clave pasa por resolver_hueco_cloze."""
+    usables = indices_utilizables(indices, len(opciones))
+    if usables is not None:
+        return usables, []
+    out: List[int] = []
+    fallos: List[Tuple[str, str]] = []
+    for resp in respuestas:
+        resp = resp.strip()
+        if not resp:
+            continue
+        idx, motivo = resolver_hueco_cloze(resp, opciones)
+        if idx is None:
+            fallos.append((resp, motivo or "ninguna"))
+        elif idx not in out:
+            out.append(idx)
+    return out, fallos
+
+
 def clave_de_huecos(respuesta_clave: str, n_huecos: int, letra_unica: str = "") -> Dict[str, List[str]]:
     """
     {"A": ["resp", ...], ...} a partir de la clave de un Cloze

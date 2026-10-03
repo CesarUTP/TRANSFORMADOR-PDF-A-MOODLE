@@ -5,6 +5,7 @@
 import { collectEditorData } from './tarjetas.js';
 import { crearIconos, esc_html, scrollBehavior } from '../util.js';
 import { questionIssues } from '../validacion.js';
+import { chipsDeProcedencia, chipsHtml, motivoRevisarPrimero, necesitaRevisarPrimero, requiereRevision } from './procedencia.js';
 
 // ── Panel de revisión (mapa del examen) ────────────────────────────────
 // Un cuadrito por pregunta VISIBLE (respeta el filtro activo): la actual
@@ -30,6 +31,34 @@ export function scrollToEditorCard(card, { enfocar = false } = {}) {
   if (enfocar) card.focus({ preventScroll: true });
 }
 
+// Pone al día lo que depende de DÓNDE sale la respuesta: la fila de chips
+// (página, origen, confianza) y las marcas del mapa y del filtro «Revisar
+// primero». Corre tras cada edición (con retraso), así que «Editada por ti»
+// aparece sin volver a dibujar la tarjeta. Solo toca el DOM si algo cambió.
+function _actualizarProcedencia(card, q) {
+  const data = q ? q.data : null;
+  const chips = chipsDeProcedencia(data, q && q.type);
+  const html = chipsHtml(chips);
+  let fila = card.querySelector(':scope > .card-procedencia');
+  if (html && !fila) {
+    fila = document.createElement('div');
+    fila.className = 'card-procedencia';
+    fila.setAttribute('role', 'group');
+    fila.setAttribute('aria-label', 'De dónde sale la respuesta');
+    card.querySelector(':scope > .card-head')?.insertAdjacentElement('afterend', fila);
+  }
+  if (fila && fila.dataset.html !== html) {
+    fila.dataset.html = html;
+    fila.innerHTML = html;
+    crearIconos(fila);
+  }
+  if (fila && !html) fila.remove();
+  const revisar = necesitaRevisarPrimero(data);
+  if (revisar) { card.dataset.revisar = '1'; card.dataset.motivo = motivoRevisarPrimero(data); }
+  else { delete card.dataset.revisar; delete card.dataset.motivo; }
+  if (requiereRevision(data)) card.dataset.review = '1'; else delete card.dataset.review;
+}
+
 // Marca cada tarjeta (borde rojo + qué le falta) y devuelve cuántas
 // quedan incompletas. collectEditorData recorre las tarjetas en el mismo
 // orden del DOM, así que el índice de cada pregunta es el de su tarjeta.
@@ -43,6 +72,7 @@ export function refreshQuestionIssues() {
   cards.forEach((card, i) => {
     const q = questions[i];
     const issues = q ? questionIssues(q, answer_key[q.num]) : [];
+    if (q) _actualizarProcedencia(card, q);
     const texto = issues.join(' · ');
     card.classList.toggle('is-incomplete', issues.length > 0);
     if (card.dataset.issues !== texto) card.dataset.issues = texto;
@@ -53,7 +83,7 @@ export function refreshQuestionIssues() {
         box = document.createElement('div');
         box.className = 'card-issues';
         box.setAttribute('role', 'status');
-        card.firstElementChild.insertAdjacentElement('afterend', box);
+        (card.querySelector(':scope > .card-procedencia') || card.firstElementChild).insertAdjacentElement('afterend', box);
       }
       // Solo se reescribe si el texto cambió: un aviso role="status" que se
       // rehace en cada pausa se vuelve a leer en voz alta sin motivo.
@@ -114,6 +144,14 @@ export function buildReviewRail() {
   const headerH = `${document.querySelector('.app-header')?.offsetHeight || 0}px`;
   if (rail.style.getPropertyValue('--header-h') !== headerH) rail.style.setProperty('--header-h', headerH);
   refreshQuestionIssues();
+  // El contador del filtro «Revisar primero» baja cuando el docente edita una
+  // respuesta dudosa. Solo se cambia el número: la lista no se vuelve a filtrar
+  // para que la pregunta que se está editando no desaparezca bajo el cursor.
+  const chipRevisar = document.querySelector('#filter-chips-bar .filter-chip[data-filter="revisar"] .count');
+  if (chipRevisar) {
+    const n = document.querySelectorAll('#editor-questions-container .editor-card[data-revisar="1"]').length;
+    if (chipRevisar.textContent !== `(${n})`) chipRevisar.textContent = `(${n})`;
+  }
   const cards = _visibleEditorCards();
   // Si la grilla quedó igual, ni se toca (se conserva también el cuadrito
   // «actual», que updateReviewProgress vuelve a marcar).
@@ -121,12 +159,16 @@ export function buildReviewRail() {
     const missing = c.dataset.issues || '';
     const review = !missing && c.dataset.review === '1';
     const cls = missing ? ' incomplete' : review ? ' needs-review' : '';
-    const tip = missing ? ` — ${missing}` : review ? ' — tiene un aviso para revisar' : '';
+    const tip = missing ? ` — ${missing}` : review ? ` — ${c.dataset.motivo || 'tiene un aviso para revisar'}` : '';
     return `<div role="listitem"><button type="button" class="rail-item${cls}" data-pos="${i}"
       title="Pregunta ${esc_html(c.dataset.qnum)}${esc_html(tip)}" aria-label="Pregunta ${esc_html(c.dataset.qnum)}${esc_html(tip)}">${esc_html(c.dataset.qnum)}</button></div>`;
   }).join(''));
   const missing = cards.filter(c => c.dataset.issues).length;
-  const pending = cards.filter(c => !c.dataset.issues && c.dataset.review === '1').length;
+  const pendientes = cards.filter(c => !c.dataset.issues && c.dataset.review === '1');
+  const pending = pendientes.length;
+  // De esas, cuántas tienen una respuesta dudosa (confianza baja o propuesta por
+  // la IA): se dice con palabras, no solo con el color del aviso.
+  const dudosas = pendientes.filter(c => c.dataset.revisar === '1').length;
   // Íconos dibujados (Lucide), no glifos ✕/⚠ de texto.
   const nextMissing = document.getElementById('rail-incomplete-next');
   nextMissing.classList.toggle('visible', missing > 0);
@@ -134,7 +176,7 @@ export function buildReviewRail() {
   nextMissing.title = 'Ir a la siguiente pregunta incompleta';
   const next = document.getElementById('rail-review-next');
   next.classList.toggle('visible', pending > 0);
-  _ponerHtml(next, `<i data-lucide="eye"></i>${pending === 1 ? '1 pregunta para revisar' : `${pending} preguntas para revisar`}`);
+  _ponerHtml(next, `<i data-lucide="eye"></i><span>${pending === 1 ? '1 pregunta para revisar' : `${pending} preguntas para revisar`}${dudosas ? ` · ${dudosas === 1 ? '1 con respuesta dudosa' : `${dudosas} con respuesta dudosa`}` : ''}</span>`);
   next.title = 'Ir a la siguiente pregunta con aviso';
   const errShort = document.getElementById('rail-error-short');
   errShort.classList.toggle('visible', missing > 0);
@@ -143,7 +185,7 @@ export function buildReviewRail() {
   const warnShort = document.getElementById('rail-warn-short');
   warnShort.classList.toggle('visible', pending > 0);
   _ponerHtml(warnShort, `<i data-lucide="eye"></i>${pending}`);
-  warnShort.setAttribute('aria-label', `${pending} para revisar`);
+  warnShort.setAttribute('aria-label', `${pending} para revisar${dudosas ? `, ${dudosas} con respuesta dudosa` : ''}`);
   _railCurrent = -1;
   updateReviewProgress();
 }

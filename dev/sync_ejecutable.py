@@ -15,7 +15,7 @@ Borra los archivos que ya no existen en el original. Nunca copia un .env
 (la API key se pone a mano junto al ejecutable instalado).
 
 Antes de copiar nada corre las pruebas (dev/test_casos_borde.py,
-dev/test_seguridad.py, dev/test_mejoras.py y dev/test_v18_*.py): si alguna falla, no se
+dev/test_seguridad.py, dev/test_mejoras.py y las demás test_*.py de PRUEBAS): si alguna falla, no se
 actualizan los instaladores. --sin-pruebas las salta (solo para una
 emergencia).
 
@@ -100,10 +100,16 @@ PRUEBAS = (
     "test_casos_borde.py",
     "test_seguridad.py",
     "test_mejoras.py",
-    "test_v18_extraccion.py",
-    "test_v18_xml_validador.py",
-    "test_v18_ia_servidor.py",
-    "test_v18_datos_arranque.py",
+    "test_xml_baseline.py",
+    "test_modelo.py",
+    "test_confianza.py",
+    "test_extraccion.py",
+    "test_word_avanzado.py",
+    "test_xml_validador.py",
+    "test_opciones_separadores.py",
+    "test_ia_servidor.py",
+    "test_ia_proveedor.py",
+    "test_datos_arranque.py",
 )
 
 
@@ -115,6 +121,18 @@ def _correr_pruebas() -> None:
         if r.returncode:
             print(r.stdout[-4000:], r.stderr[-4000:], sep="\n")
             sys.exit(f"Fallan las pruebas de {prueba}: no se actualizan los instaladores.")
+    # Lógica del frontend en Node (sin navegador ni dependencias). Si esta
+    # máquina no tiene Node se avisa y se sigue: el CI sí la corre siempre.
+    node = shutil.which("node")
+    if node:
+        print("Corriendo test_frontend.mjs…")
+        r = subprocess.run([node, str(ROOT / "dev" / "test_frontend.mjs")], cwd=ROOT,
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if r.returncode:
+            print(r.stdout[-4000:], r.stderr[-4000:], sep="\n")
+            sys.exit("Fallan las pruebas del frontend: no se actualizan los instaladores.")
+    else:
+        print("AVISO: no hay Node en el PATH; se omiten las pruebas del frontend (el CI las corre).")
     print("Pruebas OK.\n")
 
 

@@ -54,6 +54,7 @@ R_EMBED = "{%s}embed" % NS["r"]
 MAX_DESCOMPRIMIDO = 80 * 1024 * 1024   # todo el .docx abierto
 MAX_XML = 30 * 1024 * 1024             # un solo XML (document.xml, estilos…)
 MAX_IMAGENES = 30
+MAX_COLUMNAS_TABLA = 63  # el máximo de columnas de una tabla en Word
 MAX_PIXELES_IMAGEN = 12_000_000  # ver el comentario en imagen()
 _PARSER = etree.XMLParser(resolve_entities=False, no_network=True, huge_tree=False, remove_comments=True)
 
@@ -284,6 +285,13 @@ def _ecuacion(el) -> str:
 
 # ── Lectura del documento ──────────────────────────────────────────────────
 
+def _entero_ooxml(el) -> int:
+    """El w:val numérico de un elemento (gridSpan, gridBefore), acotado a
+    las columnas que Word permite; lo ausente o ilegible es 0."""
+    v = _val(el)
+    return min(int(v), MAX_COLUMNAS_TABLA) if v and v.isdigit() else 0
+
+
 def _leer(z: zipfile.ZipFile, nombre: str) -> bytes:
     info = z.getinfo(nombre)
     if info.file_size > MAX_XML:
@@ -291,24 +299,114 @@ def _leer(z: zipfile.ZipFile, nombre: str) -> bytes:
     return z.read(nombre)
 
 
-def _numeracion(z: zipfile.ZipFile) -> Dict[str, Dict[str, Tuple[str, str, int]]]:
-    """numId → {nivel: (formato, plantilla, inicio)} desde numbering.xml."""
+@dataclass
+class _Nivel:
+    """Un nivel de una lista (<w:lvl>): cómo se cuenta y cómo se escribe."""
+    formato: str
+    plantilla: str
+    inicio: int
+    reinicio: Optional[int] = None   # w:lvlRestart (None: tras cualquier nivel superior)
+    estilo: Optional[str] = None     # w:pStyle: estilo de párrafo ligado a este nivel
+
+
+@dataclass
+class _Lista:
+    """Un <w:num>: la lista que usa un párrafo."""
+    clave: str                                  # abstractNum al que cuenta (listas con el mismo continúan)
+    niveles: Dict[str, _Nivel]
+    inicios: Dict[str, int] = field(default_factory=dict)   # w:startOverride por nivel (reinicia)
+
+
+def _nivel(lvl) -> _Nivel:
+    inicio = _val(lvl.find("w:start", NS))
+    reinicio = _val(lvl.find("w:lvlRestart", NS))
+    return _Nivel(
+        _val(lvl.find("w:numFmt", NS)) or "decimal",
+        _val(lvl.find("w:lvlText", NS)) or "",
+        int(inicio) if inicio and inicio.isdigit() else 1,
+        int(reinicio) if reinicio and reinicio.isdigit() else None,
+        _val(lvl.find("w:pStyle", NS)),
+    )
+
+
+def _numpr_estilos(z: zipfile.ZipFile) -> Dict[str, Tuple[Optional[str], Optional[str]]]:
+    """styleId → (numId, ilvl) de la numeración que el ESTILO de párrafo
+    declara en styles.xml (p. ej. «List Number»), con herencia basedOn. Solo
+    están los estilos que terminan con numId."""
+    if "word/styles.xml" not in z.namelist():
+        return {}
+    raiz = etree.fromstring(_leer(z, "word/styles.xml"), _PARSER)
+    crudos: Dict[str, Tuple[Optional[str], Optional[str], Optional[str]]] = {}
+    for st in raiz.findall("w:style", NS):
+        sid = _val(st, "styleId")
+        if not sid:
+            continue
+        np_ = st.find("w:pPr/w:numPr", NS)
+        crudos[sid] = (_val(st.find("w:basedOn", NS)),
+                       _val(np_.find("w:numId", NS)) if np_ is not None else None,
+                       _val(np_.find("w:ilvl", NS)) if np_ is not None else None)
+    resueltos: Dict[str, Tuple[Optional[str], Optional[str]]] = {}
+    for sid in crudos:  # iterativo y con memoria, como _estilos (cadenas largas y ciclos)
+        cadena: List[str] = []
+        visto = set()
+        actual: Optional[str] = sid
+        heredado: Tuple[Optional[str], Optional[str]] = (None, None)
+        while actual and actual not in visto:
+            if actual in resueltos:
+                heredado = resueltos[actual]
+                break
+            if actual not in crudos:
+                break
+            visto.add(actual)
+            cadena.append(actual)
+            actual = crudos[actual][0]
+        for nodo in reversed(cadena):
+            _, nid, lvl = crudos[nodo]
+            heredado = (nid if nid is not None else heredado[0], lvl if lvl is not None else heredado[1])
+            resueltos[nodo] = heredado
+    return {sid: v for sid, v in resueltos.items() if v[0] is not None}
+
+
+def _numeracion(z: zipfile.ZipFile, estilos_num: Dict[str, Tuple[Optional[str], Optional[str]]]) -> Dict[str, _Lista]:
+    """numId → lista, desde numbering.xml: sus niveles (formato, plantilla,
+    inicio), el abstractNum que comparte contador con otras listas y los
+    reinicios (w:lvlOverride)."""
     if "word/numbering.xml" not in z.namelist():
         return {}
     nx = etree.fromstring(_leer(z, "word/numbering.xml"), _PARSER)
-    abstractos = {}
+    abstractos: Dict[Optional[str], Tuple[Dict[str, _Nivel], Optional[str]]] = {}
     for a in nx.findall("w:abstractNum", NS):
-        niveles = {}
-        for lvl in a.findall("w:lvl", NS):
-            inicio = _val(lvl.find("w:start", NS))
-            niveles[_val(lvl, "ilvl")] = (
-                _val(lvl.find("w:numFmt", NS)) or "decimal",
-                _val(lvl.find("w:lvlText", NS)) or "",
-                int(inicio) if inicio and inicio.isdigit() else 1,
-            )
-        abstractos[_val(a, "abstractNumId")] = niveles
-    return {_val(n, "numId"): abstractos.get(_val(n.find("w:abstractNumId", NS)), {})
-            for n in nx.findall("w:num", NS)}
+        abstractos[_val(a, "abstractNumId")] = (
+            {_val(lvl, "ilvl"): _nivel(lvl) for lvl in a.findall("w:lvl", NS)},
+            _val(a.find("w:numStyleLink", NS)))
+    nums = {_val(n, "numId"): n for n in nx.findall("w:num", NS)}
+
+    def abstracto(aid: Optional[str], saltos: int = 0) -> Tuple[Optional[str], Dict[str, _Nivel]]:
+        """Un abstractNum sin niveles que apunta a un estilo de lista
+        (w:numStyleLink) usa los niveles de la lista de ese estilo."""
+        niveles, vinculo = abstractos.get(aid, ({}, None))
+        if niveles or not vinculo or saltos >= 3:
+            return aid, niveles
+        destino = nums.get((estilos_num.get(vinculo) or (None, None))[0])
+        if destino is None:
+            return aid, niveles
+        return abstracto(_val(destino.find("w:abstractNumId", NS)), saltos + 1)
+
+    listas: Dict[str, _Lista] = {}
+    for nid, n in nums.items():
+        clave, niveles = abstracto(_val(n.find("w:abstractNumId", NS)))
+        niveles = dict(niveles)
+        inicios: Dict[str, int] = {}
+        for ov in n.findall("w:lvlOverride", NS):
+            il = _val(ov, "ilvl")
+            so = _val(ov.find("w:startOverride", NS))
+            if il is not None and so and so.isdigit():
+                inicios[il] = int(so)
+            lvl = ov.find("w:lvl", NS)
+            if il is not None and lvl is not None:
+                niveles[il] = _nivel(lvl)
+        listas[nid] = _Lista(str(clave), niveles, inicios)
+    return listas
 
 
 def _letras(n: int) -> str:
@@ -382,8 +480,13 @@ def _leer_docx(raw: bytes) -> DocxLeido:
         for e in etree.fromstring(_leer(z, "word/_rels/document.xml.rels"), _PARSER).iter("{%s}Relationship" % NS["rel"]):
             rels[e.get("Id")] = e.get("Target", "")
     estilos = _estilos(z)
-    numeracion = _numeracion(z)
+    estilos_num = _numpr_estilos(z)
+    numeracion = _numeracion(z, estilos_num)
+    # Los contadores van por abstractNum y nivel: dos listas (numId) que
+    # comparten abstractNum continúan la cuenta, salvo que una traiga
+    # w:startOverride (reinicia al usarse por primera vez).
     contadores: Dict[Tuple[str, str], int] = {}
+    usadas: set = set()  # (numId, nivel) ya usados: su startOverride ya se aplicó
 
     lineas_ricas: List[str] = []
     lineas_planas: List[str] = []
@@ -421,24 +524,45 @@ def _leer_docx(raw: bytes) -> DocxLeido:
 
     def prefijo(p) -> str:
         np_ = p.find("w:pPr/w:numPr", NS)
-        if np_ is None:
+        nid = _val(np_.find("w:numId", NS)) if np_ is not None else None
+        lvl = _val(np_.find("w:ilvl", NS)) if np_ is not None else None
+        estilo_p = _val(p.find("w:pPr/w:pStyle", NS))
+        if nid is None and estilo_p in estilos_num:
+            # Sin numeración propia: la del ESTILO del párrafo (p. ej. «Lista
+            # con números»). Un numId propio, incluido el 0 («sin lista»), manda.
+            nid, lvl_estilo = estilos_num[estilo_p]
+            if lvl is None:
+                lvl = lvl_estilo
+            if lvl is None:  # el nivel que la lista liga a este estilo (w:lvl/w:pStyle)
+                lista_e = numeracion.get(nid)
+                lvl = next((k for k, v in sorted((lista_e.niveles if lista_e else {}).items())
+                            if v.estilo == estilo_p), None)
+        if np_ is None and nid is None:
             return ""
-        nid, lvl = _val(np_.find("w:numId", NS)), _val(np_.find("w:ilvl", NS)) or "0"
-        niveles = numeracion.get(nid)
-        if not niveles or lvl not in niveles:
+        lvl = lvl or "0"
+        lista = numeracion.get(nid)
+        if not lista or lvl not in lista.niveles:
             return ""
-        fmt, plantilla, inicio = niveles[lvl]
-        if fmt == "bullet":
+        nivel = lista.niveles[lvl]
+        if nivel.formato == "bullet":
             return ""
-        actual = contadores.get((nid, lvl), inicio - 1) + 1
-        contadores[(nid, lvl)] = actual
-        for (n2, l2) in list(contadores):  # un nivel superior reinicia los inferiores
-            if n2 == nid and l2.isdigit() and lvl.isdigit() and int(l2) > int(lvl):
-                del contadores[(n2, l2)]
-        texto = plantilla
-        for k, (f, _, ini) in sorted(niveles.items()):
+        if (nid, lvl) not in usadas:
+            usadas.add((nid, lvl))
+            if lvl in lista.inicios:  # w:startOverride: esta lista reinicia aquí
+                contadores[(lista.clave, lvl)] = lista.inicios[lvl] - 1
+        actual = contadores.get((lista.clave, lvl), nivel.inicio - 1) + 1
+        contadores[(lista.clave, lvl)] = actual
+        for (c2, l2) in list(contadores):  # un nivel superior reinicia los inferiores
+            if c2 == lista.clave and l2.isdigit() and lvl.isdigit() and int(l2) > int(lvl):
+                # w:lvlRestart: 0 = nunca; n = solo tras un nivel de más arriba que el n-ésimo
+                reinicio = lista.niveles[l2].reinicio if l2 in lista.niveles else None
+                if reinicio is None or (reinicio > 0 and int(lvl) < reinicio):
+                    del contadores[(c2, l2)]
+        texto = nivel.plantilla
+        for k, n_k in sorted(lista.niveles.items()):
             if k.isdigit():
-                texto = texto.replace(f"%{int(k) + 1}", _formatear(f, contadores.get((nid, k), ini)))
+                ini = lista.inicios.get(k, n_k.inicio)
+                texto = texto.replace(f"%{int(k) + 1}", _formatear(n_k.formato, contadores.get((lista.clave, k), ini)))
         return (texto + " ") if texto.strip() else ""
 
     def parrafo(p, profundidad: int = 0) -> Tuple[str, str]:
@@ -552,10 +676,22 @@ def _leer_docx(raw: bytes) -> DocxLeido:
             elif el.tag == W + "tbl":
                 filas = []
                 for tr in el.findall("w:tr", NS):
-                    celdas = []
+                    # Rejilla lógica: una celda combinada (gridSpan) ocupa sus
+                    # columnas, con su texto en la primera y vacías las demás;
+                    # las columnas que la fila se salta (gridBefore) quedan
+                    # vacías; y lo escrito en una celda que continúa una
+                    # combinación vertical (vMerge) no se ve en Word, así que
+                    # no cuenta. Así cada marca queda en la columna que se ve.
+                    celdas = [("", "")] * _entero_ooxml(tr.find("w:trPr/w:gridBefore", NS))
                     for tc in tr.findall("w:tc", NS):
                         partes = [parrafo(p) for p in tc.findall(".//w:p", NS)]
-                        celdas.append((" ".join(r for r, _ in partes), " ".join(pl for _, pl in partes)))
+                        celda = (" ".join(r for r, _ in partes), " ".join(pl for _, pl in partes))
+                        vm = tc.find("w:tcPr/w:vMerge", NS)
+                        if vm is not None and (_val(vm) or "continue").lower() != "restart":
+                            celda = ("", "")
+                        celdas.append(celda)
+                        columnas = max(1, _entero_ooxml(tc.find("w:tcPr/w:gridSpan", NS)))
+                        celdas.extend([("", "")] * max(0, min(columnas - 1, MAX_COLUMNAS_TABLA - len(celdas))))
                     filas.append(celdas)
                 tablas.append([[pl for _, pl in f] for f in filas])
                 lineas_ricas.append(_render_table([[r for r, _ in f] for f in filas]))

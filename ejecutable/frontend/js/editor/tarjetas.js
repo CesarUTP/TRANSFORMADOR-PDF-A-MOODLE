@@ -1,6 +1,7 @@
 /**
  * tarjetas.js — dibuja cada pregunta del editor y vuelve a leerla del DOM.
  */
+import { claveDeOpcionMultiple, letrasCorrectasPorIndice } from './respuesta-indices.js';
 import { clozeBuildTextAndAnswer, initClozeBuilder, parseClozeSegments, renderClozeBuilder } from './cloze.js';
 import { scrollToEditorCard } from './panel.js';
 import { _editorTotalPoints, reiniciarPanelPuntos, sincronizarPanelPuntos } from './puntos-ui.js';
@@ -9,7 +10,8 @@ import { imagenesDeTarjeta, imagenesHtml, prepararImagenes } from './imagenes.js
 import { estado, notificar } from '../estado.js';
 import { DEFAULT_TYPE_WEIGHTS, fmtPoints } from '../puntos.js';
 import { showToast } from '../ui/toast.js';
-import { crearIconos, esc_html, humanizeSkipReason, scrollBehavior, splitAnswers, textoConFormulas, tieneFormulas } from '../util.js';
+import { crearIconos, esc_html, findClozeBrackets, humanizeSkipReason, scrollBehavior, splitAnswers, textoConFormulas, tieneFormulas } from '../util.js';
+import { chipsDeProcedencia, chipsHtml, copiaSinImagenes, firmaRespuesta, marcarSiCambio, mostrarAvisoConfianzaLegado, mostrarAvisoMarcaLegado, motivoRevisarPrimero, necesitaRevisarPrimero, requiereRevision, respuestaCambio } from './procedencia.js';
 
 // estado.currentParseResult es la única fuente de datos que usa renderEditor()
 // para redibujar TODAS las tarjetas de golpe (al añadir una pregunta, o
@@ -494,6 +496,11 @@ export function renderEditor(data) {
   container.querySelectorAll('.editor-card').forEach(actualizarFormulas);
   prepararImagenes(container);
   _observarAncho(container);
+  // La respuesta tal como quedó dibujada: lo que se compara después para saber
+  // si el docente la cambió.
+  const firmas = [];
+  collectEditorData({ conImagenes: false, firmas });
+  container.querySelectorAll('.editor-card').forEach((card, k) => _firmaInicial.set(card, firmas[k]));
   // Un solo aviso: los chips de filtro, el mapa del examen y el contador
   // de puntos se actualizan solos (ver suscripciones en app.js).
   notificar('editor redibujado');
@@ -549,6 +556,8 @@ export function changeQuestionType(select) {
   const qNum = q.num;
   const oldAnswer = (estado.currentParseResult.answer_key[qNum] || {}).answer || '';
   q.type = newType;
+  // Cambiar el tipo cambia lo que significa la respuesta: queda como editada por el docente.
+  marcarSiCambio(q.data, true);
   estado.currentParseResult.answer_key[qNum] = { type: newType, answer: _respuestaAlCambiarTipo(oldType, newType, oldAnswer) };
 
   renderEditor(estado.currentParseResult);
@@ -577,19 +586,20 @@ function _respuestaAlCambiarTipo(oldType, newType, oldAnswer) {
 }
 
 function _cardHtml(q, i, keyInfo) {
-  const needsReview = q.data.from_table || q.data.color_review_hint || q.data.low_confidence || q.data.rescatada;
+  const needsReview = requiereRevision(q.data);
   const flags = [
     q.data.from_table && _flagBadge('flag-review', 'table-2', 'convertida de tabla', 'El sistema detectó un cuadro en el documento original y lo convirtió en esta pregunta de emparejamiento. Revísala con cuidado antes de generar el XML.'),
     q.data.color_review_hint && _flagBadge('flag-review', 'palette', 'revisar marca', 'Esta pregunta viene de una página con respuestas marcadas (color, resaltado, subrayado o negrita), pero el sistema no pudo leer la marca con certeza. Compara las opciones correctas con el documento original.'),
-    q.data.low_confidence && _flagBadge('flag-review', 'eye-off', 'confianza baja', 'La IA no pudo leer con total claridad una imagen que esta pregunta necesita (código o marca borrosa o cortada). Compárala con el documento original.'),
-    q.data.answer_from_marks && _flagBadge('flag-neutral', 'highlighter', 'respuesta por marca', 'La respuesta se tomó directamente de la marca del documento (color, resaltado, subrayado, negrita o X en un cuadro), leída del PDF sin que la IA la interprete.'),
+    mostrarAvisoConfianzaLegado(q.data) && _flagBadge('flag-review', 'eye-off', 'confianza baja', 'La IA no pudo leer con total claridad una imagen que esta pregunta necesita (código o marca borrosa o cortada). Compárala con el documento original.'),
+    mostrarAvisoMarcaLegado(q.data) && _flagBadge('flag-neutral', 'highlighter', 'respuesta por marca', 'La respuesta se tomó directamente de la marca del documento (color, resaltado, subrayado, negrita o X en un cuadro), leída del PDF sin que la IA la interprete.'),
     q.data.rescatada && _flagBadge('flag-review', 'list-plus', 'rescatada', 'La IA no había incluido esta pregunta; se agregó con lo que se pudo extraer del documento. Revisa su enunciado, su tipo y su respuesta.'),
   ].filter(Boolean).join('');
+  const chips = chipsHtml(chipsDeProcedencia(q.data, q.type));
 
   // num y type ya vienen saneados (_sanearDatos); se escapan igual, por si
   // algún día se llama a esta función con datos sin pasar por ahí.
   const N = esc_html(q.num), T = esc_html(q.type);
-  let html = `<article class="editor-card" tabindex="-1" data-idx="${i}" data-qnum="${N}" data-qtype="${T}"${needsReview ? ' data-review="1"' : ''} aria-labelledby="q-title-${i}">
+  let html = `<article class="editor-card" tabindex="-1" data-idx="${i}" data-qnum="${N}" data-qtype="${T}"${needsReview ? ' data-review="1"' : ''}${necesitaRevisarPrimero(q.data) ? ` data-revisar="1" data-motivo="${esc_html(motivoRevisarPrimero(q.data))}"` : ''} aria-labelledby="q-title-${i}">
     <div class="card-head">
       <div class="card-title">
         <h3 id="q-title-${i}">Pregunta ${N}</h3>
@@ -603,6 +613,7 @@ function _cardHtml(q, i, keyInfo) {
         </button>
       </div>
     </div>
+    ${chips ? `<div class="card-procedencia" role="group" aria-label="De dónde sale la respuesta">${chips}</div>` : ''}
     ${flags ? `<div class="card-flags">${flags}</div>` : ''}`;
 
   if (q.type !== 'cloze') {
@@ -623,6 +634,9 @@ function _cardHtml(q, i, keyInfo) {
 
   if (q.type === 'multichoice') {
     const optEntries = Object.entries(q.data.options || {});
+    // Si la clave trae las correctas por posición (y concuerdan con su texto),
+    // esas son las marcadas: no se vuelve a partir el texto.
+    const letrasPorIndice = letrasCorrectasPorIndice(q.data.options, keyInfo);
     const answerTargets = splitAnswers(keyInfo.answer).map(s => s.toLowerCase());
     // Un objetivo de la clave que coincide EXACTO con el texto de
     // alguna opción es esa opción y NINGUNA otra: con opciones
@@ -631,6 +645,7 @@ function _cardHtml(q, i, keyInfo) {
     // C, y porque "java" está contenido en "javascript").
     const allOptTexts = optEntries.map(([, txt]) => txt.trim().toLowerCase());
     const isOptCorrect = (letter, optText) => {
+      if (letrasPorIndice) return letrasPorIndice.includes(letter);
       const optClean = optText.trim().toLowerCase();
       return answerTargets.some(t => {
         if (t === optClean) return true;
@@ -670,7 +685,7 @@ function _cardHtml(q, i, keyInfo) {
     html += `<div><p class="field-label">Enunciado con espacios en blanco</p>
       <p class="card-note" style="margin:4px 0 8px;">Escribe el texto normal y pulsa <strong>Espacio en blanco</strong> donde falte una palabra; luego marca la opción correcta.</p>
     </div>`;
-    const segments = parseClozeSegments(q.data.text || '', keyInfo.answer);
+    const segments = parseClozeSegments(q.data.text || '', keyInfo.answer, keyInfo.huecos);
     html += renderClozeBuilder(i, segments);
 
   } else if (q.type === 'matching') {
@@ -1001,7 +1016,16 @@ function _observarAncho(container) {
 // las imágenes (base64, varios MB) ni se leen ni se copian: la revisión en
 // vivo de preguntas incompletas corre tras cada pausa al escribir y no las
 // necesita.
-export function collectEditorData({ conImagenes = true } = {}) {
+//
+// Respuesta editada por el docente: al dibujar cada tarjeta se guarda un
+// resumen de su respuesta correcta (_firmaInicial). Aquí se lee de nuevo y, si
+// cambió, la pregunta sale con origen_respuesta = «docente» (ver procedencia.js);
+// un foco o clic sin cambio no cuenta. `confianza`, `page` y `recuadro` viajan
+// tal cual (vienen dentro de `data`, que se copia entero).
+// `firmas` (interno): si se pasa un arreglo, recibe el resumen de cada tarjeta.
+const _firmaInicial = new WeakMap();
+
+export function collectEditorData({ conImagenes = true, firmas = null } = {}) {
   const qs = [];
   const ak = {};
   const cards = document.querySelectorAll('.editor-card');
@@ -1015,8 +1039,7 @@ export function collectEditorData({ conImagenes = true } = {}) {
 
     // Copia profunda SIN las imágenes: se vuelven a leer de la tarjeta más
     // abajo (o se omiten), así que copiarlas con JSON era trabajo perdido.
-    const { images: _imagenesPrevias, ...datosSinImagenes } = originalQ.data || {};
-    const newQ = JSON.parse(JSON.stringify({ ...originalQ, data: datosSinImagenes }));
+    const newQ = copiaSinImagenes(originalQ);
     newQ.num = qNum; // Update question number if additions/deletions happened
 
     // Puntaje propio de esta pregunta (editable a mano o por el panel
@@ -1032,6 +1055,9 @@ export function collectEditorData({ conImagenes = true } = {}) {
       if (typeClass) newQ.type = typeClass;
     }
 
+    // Lo que define la respuesta correcta de esta tarjeta (ver firmaRespuesta).
+    const partesFirma = {};
+
     if (newQ.type === 'multichoice' || newQ.type === 'truefalse' || newQ.type === 'matching' || newQ.type === 'essay' || newQ.type === 'shortanswer' || newQ.type === 'numerical') {
       const stemEl = card.querySelector('.q-stem');
       if (stemEl) newQ.data.stem = stemEl.value;
@@ -1045,15 +1071,15 @@ export function collectEditorData({ conImagenes = true } = {}) {
       });
       // Puede haber más de una casilla marcada ("selecciona todas las
       // que correspondan") — se unen con " | " para que el backend
-      // sepa que son varias respuestas correctas, no solo una.
-      const correctTexts = [];
+      // sepa que son varias respuestas correctas, no solo una. Además viajan
+      // como posiciones (correct_idx): una opción cuyo texto lleva " | " no
+      // se parte al leerla (ver respuesta-indices.js).
+      const marcadas = [];
       card.querySelectorAll('.q-opt-correct').forEach(cb => {
-        if (cb.checked) {
-          const letter = cb.getAttribute('data-letter');
-          correctTexts.push(newQ.data.options[letter] || '');
-        }
+        if (cb.checked) marcadas.push(cb.getAttribute('data-letter'));
       });
-      ak[qNum] = { type: newQ.type, answer: correctTexts.filter(Boolean).join(' | ') };
+      partesFirma.letras = marcadas.slice();
+      ak[qNum] = { type: newQ.type, ...claveDeOpcionMultiple(newQ.data.options, marcadas) };
 
     } else if (newQ.type === 'truefalse') {
       const ansEl = card.querySelector('.q-ans');
@@ -1062,9 +1088,11 @@ export function collectEditorData({ conImagenes = true } = {}) {
     } else if (newQ.type === 'cloze') {
       const builderEl = card.querySelector('.cloze-builder');
       if (builderEl) {
-        const { text, answer } = clozeBuildTextAndAnswer(builderEl);
+        const { text, answer, huecos } = clozeBuildTextAndAnswer(builderEl);
         newQ.data.text = text;
-        ak[qNum] = { type: newQ.type, answer };
+        partesFirma.huecos = findClozeBrackets(text).map(b => `${b.letter}:${b.optionsRaw}`);
+        // `huecos`: opciones como lista y correctas por posición (ver cloze-segmentos.js).
+        ak[qNum] = { type: newQ.type, answer, huecos };
       } else {
         ak[qNum] = { type: newQ.type, answer: '' };
       }
@@ -1091,6 +1119,7 @@ export function collectEditorData({ conImagenes = true } = {}) {
 
       newQ.data.col_a = colA;
       newQ.data.col_b = colB;
+      Object.assign(partesFirma, { colA, colB, pares: pairsMap });
       ak[qNum] = { type: newQ.type, answer: keyPairs.join('; '), pairs: pairsMap };
 
     } else if (newQ.type === 'essay') {
@@ -1105,6 +1134,11 @@ export function collectEditorData({ conImagenes = true } = {}) {
       const ansEl = card.querySelector('.q-nu-answer');
       ak[qNum] = { type: newQ.type, answer: ansEl ? ansEl.value.trim() : '' };
     }
+
+    partesFirma.respuesta = (ak[qNum] || {}).answer;
+    const firma = firmaRespuesta(newQ.type, partesFirma);
+    if (firmas) firmas.push(firma);
+    marcarSiCambio(newQ.data, respuestaCambio(_firmaInicial.get(card), firma));
 
     // Imágenes que siguen en la tarjeta (el docente puede quitarlas) y
     // retroalimentación opcional (vacía = sin retroalimentación).

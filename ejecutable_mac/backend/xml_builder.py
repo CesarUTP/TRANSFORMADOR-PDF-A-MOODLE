@@ -9,7 +9,6 @@ Generates XML that conforms to the Moodle XML Question Format spec:
 
 import html
 import logging
-import math
 import re
 from typing import Dict, List, Optional
 
@@ -21,9 +20,11 @@ from config import (
     DEFAULT_MATCHING_STEM,
 )
 from models import QuestionStats
-from answer_matching import (
-    TRUEFALSE_ALIAS, RespuestaNoResuelta, clave_de_columna, clave_de_huecos, find_cloze_brackets,
-    normalizar_numero, resolver_hueco_cloze, resolver_opcion, split_answers, split_options,
+from answer_matching import RespuestaNoResuelta, find_cloze_brackets
+from modelo import (
+    Clave, Hueco, HuecoClave, Pregunta, PreguntaCloze, PreguntaEssay, PreguntaMatching, PreguntaMultichoice,
+    PreguntaNumerical, PreguntaShortanswer, PreguntaTruefalse, huecos_de_cloze,
+    preguntas_desde_dicts,
 )
 
 logger = logging.getLogger(__name__)
@@ -111,17 +112,15 @@ def _pesos_cloze(n_huecos: int, peso_total: Optional[int]) -> List[int]:
 _ESCALAS = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30, 40, 50, 70, 100, 200, 500, 1000)
 
 
-def _nota_de(q: dict, grades: Dict[str, float]) -> float:
+def _nota_de(p: Pregunta, grades: Dict[str, float]) -> float:
     """<defaultgrade> de una pregunta: su puntaje propio del editor o, si no
     llegó, el reparto por peso de tipo."""
-    q_points = q.get("points")
-    has_points = (isinstance(q_points, (int, float)) and not isinstance(q_points, bool)
-                  and math.isfinite(q_points) and q_points >= 0)
-    return q_points if has_points else grades.get(q["type"], 1.0)
+    puntos = p.puntos_validos
+    return puntos if puntos is not None else grades.get(p.tipo, 1.0)
 
 
-def _plan_puntos(questions: List[dict], grades: Dict[str, float]) -> tuple:
-    """(escala, {id(pregunta): <defaultgrade> final}) para que el total y el
+def _plan_puntos(preguntas: List[Pregunta], grades: Dict[str, float]) -> tuple:
+    """(escala, [<defaultgrade> final de cada pregunta]) para que el total y el
     valor de cada pregunta en Moodle coincidan con el editor.
 
     Moodle IGNORA el <defaultgrade> de «Completar»: vale la suma de los
@@ -134,12 +133,12 @@ def _plan_puntos(questions: List[dict], grades: Dict[str, float]) -> tuple:
          demás preguntas, así el total en Moodle es exactamente el del
          editor × factor (ej. 100 → 100, no 102,9).
     """
-    notas = {id(q): _nota_de(q, grades) for q in questions}
-    casos = []
-    for q in questions:
-        if q.get("type") == "cloze" and "error" not in q and notas[id(q)] > 0:
-            huecos = max(1, len(find_cloze_brackets((q.get("data") or {}).get("text", ""))))
-            casos.append((notas[id(q)], huecos))
+    def n_huecos(p: Pregunta) -> int:
+        return max(1, len(find_cloze_brackets(p.text or "")))
+
+    notas = [_nota_de(p, grades) for p in preguntas]
+    es_cloze = [isinstance(p, PreguntaCloze) and not p.tiene_error for p in preguntas]
+    casos = [(notas[i], n_huecos(p)) for i, p in enumerate(preguntas) if es_cloze[i] and notas[i] > 0]
 
     def cabe(k: int, tolerancia: float) -> bool:
         return all(n * k >= h and abs(round(n * k) - n * k) <= tolerancia * n * k for n, h in casos)
@@ -147,16 +146,15 @@ def _plan_puntos(questions: List[dict], grades: Dict[str, float]) -> tuple:
     escala = next((k for k in _ESCALAS if cabe(k, 0.005)), None)
     if escala is None:
         escala = next((k for k in _ESCALAS if cabe(k, 0.06)), 1)
-    finales = {i: round(n * escala, 7) for i, n in notas.items()}
+    finales = [round(n * escala, 7) for n in notas]
 
-    huecos_de = {id(q): max(1, len(find_cloze_brackets((q.get("data") or {}).get("text", ""))))
-                 for q in questions if q.get("type") == "cloze" and "error" not in q and finales[id(q)] > 0}
-    suma_resto = sum(v for i, v in finales.items() if i not in huecos_de)
+    huecos_de = {i: n_huecos(p) for i, p in enumerate(preguntas) if es_cloze[i] and finales[i] > 0}
+    suma_resto = sum(v for i, v in enumerate(finales) if i not in huecos_de)
     if huecos_de and suma_resto > 0:
         suma_cloze = sum(max(huecos_de[i], round(finales[i])) for i in huecos_de)
-        factor = (sum(finales.values()) - suma_cloze) / suma_resto
+        factor = (sum(finales) - suma_cloze) / suma_resto
         if 0.95 <= factor <= 1.05:
-            for i in finales:
+            for i in range(len(finales)):
                 if i not in huecos_de:
                     finales[i] = round(finales[i] * factor, 7)
     return escala, finales
@@ -200,6 +198,20 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
     format="html">) y los huecos escapados sin tocar sus barras y comillas de escape.
     """
 
+    key_info = answer_key.get(q_num, {})
+    clave = Clave.desde_dict(key_info) if isinstance(key_info, dict) else Clave()
+    return _cloze_a_moodle(cloze_text, q_num, str(key_info.get("answer", "")), peso_total, como_html,
+                           clave.huecos)
+
+
+def _cloze_a_moodle(cloze_text: str, q_num: int, raw_key_ans: str,
+                    peso_total: Optional[int], como_html: bool,
+                    estructura: Optional[List[HuecoClave]] = None) -> str:
+    """Cuerpo de convert_cloze_to_moodle, con la clave ya como texto.
+    `estructura` (clave.huecos): opciones de cada hueco como lista y sus
+    correctas por índice; con ella una opción que contiene « / » o « | » sale
+    entera. Sin ella se parte el texto como siempre."""
+
     def escape_cloze_syntax(s: str) -> str:
         """Escape Moodle's own Cloze delimiter characters (~ # { } and the
         backslash itself) so a literal occurrence in an option's text isn't
@@ -213,49 +225,41 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
                  .replace('{', '\\{')
                  .replace('}', '\\}'))
 
-    key_info = answer_key.get(q_num, {})
-    raw_key_ans = str(key_info.get("answer", ""))
-
     # Respuestas por hueco ("A. respuesta A; B. respuesta B"). Un hueco puede
     # tener MÁS DE UNA respuesta correcta, unidas con " | " (así marca el
     # editor de la app un hueco de "seleccionar varias"); un hueco normal es
-    # una lista de un elemento. Misma función que usa el validador.
-    brackets_all = find_cloze_brackets(cloze_text)
-    slot_answers = clave_de_huecos(raw_key_ans, len(brackets_all), brackets_all[0][2] if brackets_all else "")
+    # una lista de un elemento. Misma función que usa el validador
+    # (modelo.huecos_de_cloze).
+    huecos = huecos_de_cloze(cloze_text, raw_key_ans, estructura)
 
     # Moodle IGNORA el <defaultgrade> de una pregunta de completar: su nota
     # máxima es la suma de los pesos de sus huecos. Por eso los pesos se
     # reparten para que sumen los puntos de la pregunta (peso_total).
-    n_huecos = max(1, len(find_cloze_brackets(cloze_text)))
+    n_huecos = max(1, len(huecos))
     pesos = _pesos_cloze(n_huecos, peso_total)
     usados: List[str] = []
 
-    def render_slot(letter: str, options_raw: str) -> Optional[str]:
+    def render_slot(hueco: Hueco) -> Optional[str]:
         """Texto Moodle para UN espacio, o None si no hay opciones (el
         corchete original se deja tal cual, igual que antes)."""
-        options = split_options(options_raw)
+        letter = hueco.letra.upper()
+        options = hueco.opciones
         if not options:
             return None
 
         # Cuáles opciones son las correctas de este hueco — normalmente una,
         # pero uno de "seleccionar varias" puede marcar más. Cada respuesta de
-        # la clave debe identificar UNA opción (resolver_hueco_cloze, la misma
+        # la clave debe identificar UNA opción (Hueco.resolver, la misma
         # función del validador); si no, no se adivina: antes se marcaba la
         # primera opción («Caracas» con Lima/Quito/Bogotá salía «=Lima»).
-        correct_indices: List[int] = []
-        for target_ans in slot_answers.get(letter, []):
-            target_ans = target_ans.strip()
-            if not target_ans:
-                continue
-            match_idx, motivo = resolver_hueco_cloze(target_ans, options)
-            if match_idx is None:
-                raise RespuestaNoResuelta(
-                    f"Pregunta {q_num} (cloze): la respuesta '{target_ans[:60]}' del espacio [{letter}] "
-                    + ("es ambigua: coincide con varias opciones." if motivo == "ambigua"
-                       else "no coincide con ninguna de las opciones.")
-                )
-            if match_idx not in correct_indices:
-                correct_indices.append(match_idx)
+        correct_indices, fallos = hueco.resolver()
+        if fallos:
+            target_ans, motivo = fallos[0]
+            raise RespuestaNoResuelta(
+                f"Pregunta {q_num} (cloze): la respuesta '{target_ans[:60]}' del espacio [{letter}] "
+                + ("es ambigua: coincide con varias opciones." if motivo == "ambigua"
+                   else "no coincide con ninguna de las opciones.")
+            )
 
         if not correct_indices:
             raise RespuestaNoResuelta(
@@ -292,21 +296,21 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
         return f"{{{slot_num}:{qtype_name}:{'~'.join(moodle_options)}}}"
 
     # Reconstruye el texto reemplazando cada espacio por su sintaxis Moodle.
-    # No se usa re.sub porque find_cloze_brackets balancea corchetes
+    # No se usa re.sub porque find_cloze_brackets (vía huecos_de_cloze) balancea corchetes
     # internos (ver su docstring) — algo que una sola expresión regular no
     # puede hacer.
     out: List[str] = []
     last = 0
-    for start, end, letter, options_raw in brackets_all:
-        replacement = render_slot(letter.upper(), options_raw.strip())
-        hueco = replacement if replacement is not None else cloze_text[start:end]
+    for h in huecos:
+        replacement = render_slot(h)
+        hueco = replacement if replacement is not None else cloze_text[h.inicio:h.fin]
         if como_html:
-            out.append(_html_fuera_de_huecos(cloze_text[last:start], last == 0))
+            out.append(_html_fuera_de_huecos(cloze_text[last:h.inicio], last == 0))
             out.append(html.escape(_sin_control(hueco), quote=False))
         else:
-            out.append(cloze_text[last:start])
+            out.append(cloze_text[last:h.inicio])
             out.append(hueco)
-        last = end
+        last = h.fin
     if como_html:
         out.append(_html_fuera_de_huecos(cloze_text[last:], last == 0))
     else:
@@ -316,23 +320,33 @@ def convert_cloze_to_moodle(cloze_text: str, q_num: int, answer_key: Dict[int, d
 
 
 
-def _questiontext(html_text: str, data: dict, name: str) -> List[str]:
+def _campo(valor, nombre: str):
+    """Un dato que el constructor necesita. Si falta es un KeyError, como
+    cuando se leía data["stem"]: nunca se escribe «None» en el XML."""
+    if valor is None:
+        raise KeyError(nombre)
+    return valor
+
+
+def _questiontext(html_text: str, p: Pregunta, name: str) -> List[str]:
     """<questiontext> con sus imágenes y, si la hay, la retroalimentación
     general. Las imágenes van como las exporta el propio Moodle: <img
     src="@@PLUGINFILE@@/nombre"> en el texto y el archivo en base64 dentro
     de <questiontext> (<file ... encoding="base64">). Sus nombres y
     contenido ya vienen validados (validator.py → imagenes.errores_imagenes)."""
-    imagenes = data.get("images") or []
+    imagenes = p.images or []
     html_imgs = "".join(
-        f'<p><img src="@@PLUGINFILE@@/{im["name"]}" alt="{esc("Imagen de " + name)}"></p>' for im in imagenes
+        f'<p><img src="@@PLUGINFILE@@/{_campo(im.name, "name")}" alt="{esc("Imagen de " + name)}"></p>'
+        for im in imagenes
     )
     lines = ['    <questiontext format="html">',
              f'      <text>{cdata(html_text + html_imgs)}</text>']
-    lines += [f'      <file name="{im["name"]}" path="/" encoding="base64">{im["b64"]}</file>' for im in imagenes]
+    lines += [f'      <file name="{im.name}" path="/" encoding="base64">{_campo(im.b64, "b64")}</file>'
+              for im in imagenes]
     lines.append('    </questiontext>')
     # Retroalimentación OPCIONAL: solo si el docente la dejó (o venía en el
     # documento). Moodle la muestra al estudiante después de responder.
-    feedback = str(data.get("feedback") or "").strip()
+    feedback = (p.feedback or "").strip()
     if feedback:
         lines.append('    <generalfeedback format="html">')
         lines.append(f'      <text>{cdata("<p>" + texto_html(feedback) + "</p>")}</text>')
@@ -400,7 +414,9 @@ def build_xml(
         grades = {t: 1.0 for t in TYPE_WEIGHTS}
     stats = QuestionStats()
     category = sanear_categoria(category)
-    escala, notas_finales = _plan_puntos(questions, grades)
+    # Cada dict pasa al modelo tipado (modelo.py) junto con su entrada de la clave.
+    preguntas = preguntas_desde_dicts(questions, answer_key)
+    escala, notas_finales = _plan_puntos(preguntas, grades)
     stats.escala = escala
     xml_parts: List[str] = []
     xml_parts.append('<?xml version="1.0" encoding="UTF-8"?>')
@@ -418,14 +434,11 @@ def build_xml(
     # profesores). Rellenar con ceros según la cantidad de preguntas del
     # examen (P01, P02... P10) hace que el orden alfabético coincida con el
     # numérico sin importar cuántas preguntas tenga el examen.
-    name_width = len(str(max((q["num"] for q in questions), default=1)))
+    name_width = len(str(max((p.num for p in preguntas), default=1)))
 
-    for q in questions:
-        num: int = q["num"]
-        qtype: str = q["type"]
-        data: dict = q["data"]
-        key_info = answer_key.get(num, {})
-        correct_answer: str = key_info.get("answer", "")
+    for i, p in enumerate(preguntas):
+        num: int = p.num
+        correct_answer: str = p.respuesta_texto
         name = f"P{num:0{name_width}d}"
 
         # Puntaje: el docente puede fijar un valor propio por pregunta desde
@@ -441,35 +454,33 @@ def build_xml(
         # lo que el editor mostraba en pantalla.
         # _nota_de descarta Infinity/NaN (Infinity pasaba "q_points >= 0" y
         # quedaba como <defaultgrade>inf</defaultgrade> en el XML).
-        grade_val = notas_finales[id(q)]
+        grade_val = notas_finales[i]
 
         # ── multichoice ──
         # Spec: <answer fraction="100"/"0"> for each choice, <single>, <shuffleanswers>
-        if qtype == "multichoice":
-            stem = data["stem"]
-            options: Dict[str, str] = data["options"]
+        if isinstance(p, PreguntaMultichoice):
+            stem = _campo(p.stem, "stem")
+            options: Dict[str, str] = _campo(p.options, "options")
 
             # correct_answer puede listar MÁS DE UNA respuesta correcta,
             # separadas por " | " (pregunta de "selecciona todas las que
             # correspondan"). El caso normal de una sola respuesta es
             # simplemente una lista de un elemento, así que el comportamiento
             # de siempre queda intacto.
-            # Cada respuesta debe identificar UNA opción (resolver_opcion, la
-            # misma función del validador: texto igual > letra > texto sin
-            # tildes > subcadena única > respuesta cortada única). Si no, no
-            # se adivina: antes se marcaba la «A» en silencio, y con la clave
-            # «Python» y las opciones «Java / Python 2 / Python 3» salía Java.
-            correct_letters: List[str] = []
-            for target in split_answers(correct_answer):
-                match_letter, motivo = resolver_opcion(target, options)
-                if match_letter is None:
-                    raise RespuestaNoResuelta(
-                        f"Pregunta {num} (multichoice): la respuesta '{target[:60]}' "
-                        + ("es ambigua: coincide con varias opciones." if motivo == "ambigua"
-                           else "no coincide con ninguna de las opciones.")
-                    )
-                if match_letter not in correct_letters:
-                    correct_letters.append(match_letter)
+            # Cada respuesta debe identificar UNA opción (resolver_correctas →
+            # resolver_opcion, la misma función del validador: texto igual >
+            # letra > texto sin tildes > subcadena única > respuesta cortada
+            # única). Si no, no se adivina: antes se marcaba la «A» en
+            # silencio, y con la clave «Python» y las opciones «Java / Python 2
+            # / Python 3» salía Java.
+            correct_letters, fallos = p.resolver_correctas()
+            if fallos:
+                target, motivo = fallos[0]
+                raise RespuestaNoResuelta(
+                    f"Pregunta {num} (multichoice): la respuesta '{target[:60]}' "
+                    + ("es ambigua: coincide con varias opciones." if motivo == "ambigua"
+                       else "no coincide con ninguna de las opciones.")
+                )
 
             if not correct_letters:
                 raise RespuestaNoResuelta(f"Pregunta {num} (multichoice): no hay respuesta correcta en la clave.")
@@ -478,7 +489,7 @@ def build_xml(
 
             xml_parts.append('  <question type="multichoice">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", p, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append(f'    <penalty>{MULTICHOICE_PENALTY}</penalty>')
             xml_parts.append('    <shuffleanswers>1</shuffleanswers>')
@@ -521,17 +532,17 @@ def build_xml(
 
         # ── truefalse ──
         # Spec: exactly 2 <answer> tags (true + false), fraction 100/0
-        elif qtype == "truefalse":
-            stem = data["stem"]
-            if correct_answer.strip().lower() not in TRUEFALSE_ALIAS:
+        elif isinstance(p, PreguntaTruefalse):
+            stem = _campo(p.stem, "stem")
+            is_true = p.es_verdadero()
+            if is_true is None:
                 raise RespuestaNoResuelta(
                     f"Pregunta {num} (truefalse): la respuesta '{correct_answer[:40]}' no es Verdadero ni Falso."
                 )
-            is_true = TRUEFALSE_ALIAS[correct_answer.strip().lower()]
 
             xml_parts.append('  <question type="truefalse">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", p, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
 
             if is_true:
@@ -558,10 +569,10 @@ def build_xml(
 
         # ── matching ──
         # Spec: <subquestion> with <text> + <answer><text>, <shuffleanswers>
-        elif qtype == "matching":
-            col_a: Dict[str, str] = data.get("col_a", {})
-            col_b: Dict[str, str] = data.get("col_b", {})
-            pairs_map: Dict[str, str] = key_info.get("pairs", {})
+        elif isinstance(p, PreguntaMatching):
+            col_a: Dict[str, str] = p.col_a or {}
+            col_b: Dict[str, str] = p.col_b or {}
+            pairs_map: Dict[str, str] = p.parejas
 
             pairs_ordered: list[tuple[str, str]] = []
             letras_usadas: set = set()
@@ -576,7 +587,7 @@ def build_xml(
             if not pairs_map:
                 raise RespuestaNoResuelta(f"Pregunta {num} (matching): no hay una clave de respuestas 'número-letra'.")
             for a_k in a_keys:
-                letter = clave_de_columna(col_b, pairs_map.get(str(a_k), ""))
+                letter = p.letra_de(a_k)
                 a_val = col_a[a_k].strip()
                 if letter is None:
                     raise RespuestaNoResuelta(
@@ -600,13 +611,13 @@ def build_xml(
                 if letra not in letras_usadas and b_val:
                     pairs_ordered.append(("", b_val))
 
-            stem = data.get("stem")
+            stem = p.stem
             if not stem:
                 stem = DEFAULT_MATCHING_STEM
 
             xml_parts.append('  <question type="matching">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", p, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('    <shuffleanswers>true</shuffleanswers>')
 
@@ -621,16 +632,16 @@ def build_xml(
 
         # ── cloze ──
         # Spec: questiontext contains {N:TYPE:...} syntax, no separate <answer> tags
-        elif qtype == "cloze":
-            raw_text = data["text"]
-            cloze_text = convert_cloze_to_moodle(raw_text, num, answer_key,
-                                                 peso_total=round(grade_val) if grade_val > 0 else None,
-                                                 como_html=True)
+        elif isinstance(p, PreguntaCloze):
+            raw_text = _campo(p.text, "text")
+            cloze_text = _cloze_a_moodle(raw_text, num, correct_answer,
+                                         round(grade_val) if grade_val > 0 else None, True,
+                                         p.respuesta.huecos if p.respuesta is not None else None)
             _avisar_puntos_cloze(stats, num, raw_text, grade_val)
 
             xml_parts.append('  <question type="cloze">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.extend(_questiontext(f"<p>{cloze_text}</p>", data, name))
+            xml_parts.extend(_questiontext(f"<p>{cloze_text}</p>", p, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('  </question>')
             stats.cloze += 1
@@ -638,12 +649,12 @@ def build_xml(
         # ── essay ──
         # Spec: sin respuesta real ni grade que calificar — el docente
         # califica manualmente en Moodle.
-        elif qtype == "essay":
-            stem = data["stem"]
+        elif isinstance(p, PreguntaEssay):
+            stem = _campo(p.stem, "stem")
 
             xml_parts.append('  <question type="essay">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", p, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('    <answer fraction="0">')
             xml_parts.append('      <text></text>')
@@ -654,12 +665,12 @@ def build_xml(
         # ── shortanswer ──
         # Spec: <answer> con el texto esperado; <usecase>0</usecase> para no
         # exigir coincidencia exacta de mayúsculas/minúsculas.
-        elif qtype == "shortanswer":
-            stem = data["stem"]
+        elif isinstance(p, PreguntaShortanswer):
+            stem = _campo(p.stem, "stem")
 
             xml_parts.append('  <question type="shortanswer">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", p, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append('    <usecase>0</usecase>')
             # Un "*" es el comodín de shortanswer en Moodle (coincide con
@@ -690,18 +701,18 @@ def build_xml(
 
         # ── numerical ──
         # Spec: <answer> con un valor numérico; <tolerance> (0 = coincidencia exacta).
-        elif qtype == "numerical":
-            stem = data["stem"]
+        elif isinstance(p, PreguntaNumerical):
+            stem = _campo(p.stem, "stem")
 
             xml_parts.append('  <question type="numerical">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
-            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", data, name))
+            xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", p, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             # El validador ya acepta "3,5" (coma decimal, común al copiar un
             # documento en español) convirtiéndola a "3.5" para comprobar que
             # es un número — pero aquí se escribía tal cual ("3,5") en el
             # XML, y Moodle no entiende la coma como separador decimal.
-            valor_numerico = normalizar_numero(correct_answer)
+            valor_numerico = p.valor_numerico()
             if valor_numerico is None:
                 raise RespuestaNoResuelta(
                     f"Pregunta {num} (numerical): la respuesta '{correct_answer[:40]}' no es un número válido."

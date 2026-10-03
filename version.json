@@ -1,5 +1,5 @@
 {
-  "version": "1.8",
+  "version": "1.9",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Más fiable: ya no se marca una respuesta que el examen no indica, Cancelar detiene la conversión, avisos claros con archivos grandes o dañados, el Historial se recupera solo y el editor es más ágil con imágenes."
+  "notas": "Cimientos para la 2.0: cada pregunta muestra su página, de dónde sale la respuesta y su confianza; las opciones con | o / ya no se rompen; Word con numeración por estilo y celdas combinadas; el código queda ordenado en módulos."
 }

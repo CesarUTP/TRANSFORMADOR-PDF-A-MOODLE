@@ -4,7 +4,7 @@
  */
 import { autoGrowTextarea } from './tarjetas.js';
 import { showToast } from '../ui/toast.js';
-import { parseClozeSegments } from './cloze-segmentos.js';
+import { construirClozeDesdeSegmentos, parseClozeSegments } from './cloze-segmentos.js';
 import { crearIconos, esc_html } from '../util.js';
 
 // (parseClozeSegments vive en cloze-segmentos.js: es lógica pura con pruebas.)
@@ -234,33 +234,13 @@ export function clozeRemoveOption(btn) {
   clozeRerender(builderEl, segments, { i: idx, sel: '[data-accion="clozeRemoveOption"]', n: optIdx });
 }
 
-// Reconstruye el texto "[A: opt1 / opt2]" y la clave de respuesta que
-// el backend espera, a partir del estado actual del builder. Varias
-// respuestas correctas para un mismo espacio se unen con " | " — eso
-// es lo que hace que el backend elija MULTIRESPONSE_S en vez de
-// MULTICHOICE_S al generar el XML.
+// Reconstruye el texto "[A: opt1 / opt2]", la clave de respuesta que el
+// backend espera y la estructura de cada hueco (opciones como lista y
+// correctas por posición: una opción como "10 / 2" o "x | y" no se parte al
+// volver a leerla), a partir del estado actual del builder. Varias respuestas
+// correctas para un mismo espacio se unen con " | " en la clave — eso es lo
+// que hace que el backend elija MULTIRESPONSE_S en vez de MULTICHOICE_S al
+// generar el XML. La construcción es lógica pura: cloze-segmentos.js.
 export function clozeBuildTextAndAnswer(builderEl) {
-  const segments = readClozeSegmentsFromDOM(builderEl);
-  let text = '';
-  let letterCode = 65; // 'A'
-  const answerParts = [];
-  segments.forEach(seg => {
-    if (seg.type === 'text') {
-      text += seg.value;
-    } else {
-      const letter = String.fromCharCode(letterCode++);
-      const rawOpts = seg.options.map(o => o.trim());
-      const rawCorrectTexts = seg.correctIndices.map(i => rawOpts[i]).filter(Boolean);
-      // Las opciones vacías (filas agregadas y nunca completadas) se
-      // omiten para no dejar una alternativa en blanco en el desplegable
-      // final que vería el estudiante en Moodle.
-      const opts = rawOpts.filter(o => o.length > 0);
-      const correctTexts = rawCorrectTexts.filter(t => opts.includes(t));
-      text += `[${letter}: ${opts.join(' / ')}]`;
-      // Un espacio sin opción marcada NO lleva respuesta en la clave: no se
-      // elige una por el docente (questionIssues lo señala como incompleto).
-      if (correctTexts.length) answerParts.push(`${letter}. ${correctTexts.join(' | ')}`);
-    }
-  });
-  return { text, answer: answerParts.join('; ') };
+  return construirClozeDesdeSegmentos(readClozeSegmentsFromDOM(builderEl));
 }

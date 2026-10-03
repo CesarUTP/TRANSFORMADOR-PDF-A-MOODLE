@@ -16,7 +16,7 @@ Reglas validadas (basadas en "Formato Moodle XML.txt"):
 import re
 import logging
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from config import (
     REQUIRED_FIELDS,
@@ -27,9 +27,10 @@ from config import (
     VALID_QUESTION_TYPES,
 )
 from imagenes import errores_imagenes
-from answer_matching import (
-    TRUEFALSE_ALIAS, clave_de_columna, clave_de_huecos, find_cloze_brackets, normalizar_numero,
-    resolver_hueco_cloze, resolver_opcion, split_answers, split_options,
+from answer_matching import clave_de_columna
+from modelo import (
+    Clave, Pregunta, PreguntaCloze, PreguntaMatching, PreguntaMultichoice, PreguntaNumerical,
+    PreguntaTruefalse, SIN_RESPUESTA,
 )
 
 logger = logging.getLogger(__name__)
@@ -96,8 +97,13 @@ def validate_questions(
     if result.errors:
         return result
 
+    # A partir de aquí la forma ya es válida: cada pregunta pasa al modelo
+    # tipado (modelo.py) junto con su entrada de la clave.
+    preguntas = [Pregunta.desde_dict(q) for q in questions]
+    claves = _claves(answer_key)
+
     # 1. Cruzar la clave de respuestas con las preguntas procesadas para encontrar faltantes o fallidas
-    parsed_nums = {q["num"] for q in questions if "error" not in q}
+    parsed_nums = {p.num for p in preguntas if not p.tiene_error}
     for num in sorted(answer_key.keys()):
         if num not in parsed_nums:
             # Buscar si el parser dejó un error registrado para este número
@@ -108,10 +114,10 @@ def validate_questions(
                 target.append(f"Error: Pregunta {num} está en la clave de respuestas pero no se encontró su enunciado en el documento.")
 
     # 2. Validar detalladamente cada pregunta que se parseó sin error crítico previo
-    for q in questions:
-        if "error" in q:
+    for p in preguntas:
+        if p.tiene_error:
             continue
-        target.extend(_collect_question_errors(q["num"], q["type"], q["data"], answer_key.get(q["num"], {})))
+        target.extend(_collect_question_errors(p, claves.get(p.num)))
 
     logger.info(
         "Validación completada: %d errores, %d warnings.",
@@ -120,12 +126,12 @@ def validate_questions(
     return result
 
 
-def _collect_question_errors(
-    num: int,
-    qtype: str,
-    data: Dict[str, Any],
-    key_info: Dict[str, Any],
-) -> List[str]:
+def _claves(answer_key: Dict[Any, Any]) -> Dict[Any, Clave]:
+    """answer_key (dicts) → {num: Clave}; una entrada que no es dict no cuenta."""
+    return {n: Clave.desde_dict(e) for n, e in (answer_key or {}).items() if isinstance(e, dict)}
+
+
+def _collect_question_errors(p: Pregunta, key_info: Optional[Clave]) -> List[str]:
     """
     Corre todas las validaciones de UNA sola pregunta (clave presente,
     respuesta especificada, campos obligatorios, reglas por tipo) y
@@ -135,7 +141,9 @@ def _collect_question_errors(
     pregunta, para /api/parse — ver Modo Tolerante más abajo).
     """
     errors: List[str] = []
-    correct_answer = key_info.get("answer", "")
+    num, qtype = p.num, p.tipo
+    p.respuesta = key_info
+    correct_answer = p.respuesta_texto
 
     # Marca explícita de REGLA 11: la IA vio una imagen que necesitaba para
     # esta pregunta pero no pudo leerla con confianza (borrosa, cortada,
@@ -143,7 +151,7 @@ def _collect_question_errors(
     # diferencia de "no tiene respuesta especificada" (que suena a que el
     # documento original no marcó nada), este es un motivo distinto y más
     # accionable: hay que ir a revisar esa imagen a mano.
-    stem_or_text = data.get("stem") or data.get("text") or ""
+    stem_or_text = p.enunciado
     if TRANSCRIPTION_FAILED_MARKER in stem_or_text:
         errors.append(
             f"Error: la Pregunta {num} ({qtype}) contiene una imagen que la IA no "
@@ -152,7 +160,7 @@ def _collect_question_errors(
         )
         return errors
 
-    if not key_info:
+    if not key_info:   # sin entrada, o vacía ({}): igual que no tener clave
         errors.append(f"Error: falta la respuesta en la clave para el ítem Pregunta {num}.")
         return errors
 
@@ -161,25 +169,25 @@ def _collect_question_errors(
     # chequeo universal de abajo, sin importar qué texto (o ninguno) haya
     # quedado en la clave para esta pregunta.
     if qtype != "essay":
-        if not correct_answer.strip() or correct_answer.strip().upper() == "SIN_RESPUESTA":
+        if p.sin_respuesta:
             errors.append(f"Error: la Pregunta {num} ({qtype}) no tiene una respuesta correcta especificada en el examen.")
             return errors
 
     required = REQUIRED_FIELDS.get(qtype, [])
     for field_name in required:
-        if field_name not in data or not data[field_name]:
+        if not getattr(p, field_name, None):
             errors.append(f"Error: falta '{field_name}' en el ítem Pregunta {num} ({qtype}).")
 
-    if qtype == "multichoice":
-        _validate_multichoice(num, data, correct_answer, errors)
-    elif qtype == "truefalse":
-        _validate_truefalse(num, data, correct_answer, errors)
-    elif qtype == "matching":
-        _validate_matching(num, data, correct_answer, key_info.get("pairs", {}), errors)
-    elif qtype == "cloze":
-        _validate_cloze(num, data, correct_answer, errors)
-    elif qtype == "numerical":
-        _validate_numerical(num, correct_answer, errors)
+    if isinstance(p, PreguntaMultichoice):
+        _validate_multichoice(p, errors)
+    elif isinstance(p, PreguntaTruefalse):
+        _validate_truefalse(p, errors)
+    elif isinstance(p, PreguntaMatching):
+        _validate_matching(p, errors)
+    elif isinstance(p, PreguntaCloze):
+        _validate_cloze(p, errors)
+    elif isinstance(p, PreguntaNumerical):
+        _validate_numerical(p, errors)
 
     return errors
 
@@ -234,21 +242,23 @@ def partition_questions(
     """
     valid: List[Dict[str, Any]] = []
     skipped: List[Dict[str, Any]] = []
+    claves = _claves(answer_key)
 
     for q in questions:
         num = q["num"]
+        p = Pregunta.desde_dict(q)
         if "error" in q:
             skipped.append({
                 "num": num, "type": q.get("type", "?"),
-                "reasons": [q["error"]], "preview": _extract_preview(q),
+                "reasons": [q["error"]], "preview": _extract_preview(p),
             })
             continue
 
-        errors = _collect_question_errors(num, q["type"], q["data"], answer_key.get(num, {}))
+        errors = _collect_question_errors(p, claves.get(num))
         if errors:
             entry = {
                 "num": num, "type": q["type"],
-                "reasons": errors, "preview": _extract_preview(q),
+                "reasons": errors, "preview": _extract_preview(p),
             }
             # Si el enunciado/opciones/columnas ya se parsearon bien y lo
             # único que falla es la respuesta, se manda esa data completa
@@ -267,7 +277,7 @@ def partition_questions(
     return valid, skipped
 
 
-def _extract_preview(q: Dict[str, Any], max_len: int = 160) -> str:
+def _extract_preview(p: Pregunta, max_len: int = 160) -> str:
     """
     Fragmento del enunciado real de una pregunta omitida, para mostrarlo
     en el resumen — identificar una pregunta SOLO por su número no
@@ -276,8 +286,7 @@ def _extract_preview(q: Dict[str, Any], max_len: int = 160) -> str:
     el que tenía la pregunta en el documento original y puede confundir
     más de lo que ayuda.
     """
-    data = q.get("data") or {}
-    text = data.get("stem") or data.get("text") or q.get("raw_text") or ""
+    text = p.enunciado or p.raw_text or ""
     text = text.replace(TRANSCRIPTION_FAILED_MARKER, "").strip()
     text = " ".join(text.split())  # colapsa saltos de línea/espacios repetidos
     if len(text) > max_len:
@@ -287,12 +296,7 @@ def _extract_preview(q: Dict[str, Any], max_len: int = 160) -> str:
 
 # ── Validadores por tipo ────────────────────────────────────────────────────
 
-def _validate_multichoice(
-    num: int,
-    data: Dict[str, Any],
-    correct_answer: str,
-    target: List[str],
-) -> None:
+def _validate_multichoice(p: PreguntaMultichoice, target: List[str]) -> None:
     """
     Valida pregunta multichoice contra el spec Moodle XML:
     - Necesita al menos 2 opciones (spec: "one <answer> tag for each choice")
@@ -302,7 +306,8 @@ def _validate_multichoice(
       ("selecciona todas las que correspondan"); cada una se valida por
       separado para no rechazar en falso una pregunta de varias respuestas.
     """
-    options = data.get("options", {})
+    num = p.num
+    options = p.options or {}
 
     # Regla: al menos MIN_MULTICHOICE_OPTIONS opciones
     if len(options) < MIN_MULTICHOICE_OPTIONS:
@@ -324,54 +329,43 @@ def _validate_multichoice(
             )
 
     # Regla: cada respuesta correcta listada debe identificar UNA opción. La
-    # decisión la toma resolver_opcion, la MISMA función que usa xml_builder.py
-    # para marcar la correcta: antes el validador aceptaba cualquier
-    # coincidencia difusa y el constructor, si no era única, marcaba la «A»
-    # en silencio (clave «Python» con «Python 2» / «Python 3» marcaba otra).
-    if correct_answer and options:
-        for one_target in split_answers(correct_answer):
-            clave, motivo = resolver_opcion(one_target, options)
-            if clave is None:
-                if motivo == "ambigua":
-                    target.append(
-                        f"Error: la respuesta correcta '{one_target[:60]}' es ambigua: coincide con varias "
-                        f"opciones de la Pregunta {num}. Escribe la opción completa. "
-                        f"Opciones: {list(options.values())}."
-                    )
-                else:
-                    target.append(
-                        f"Error: la respuesta correcta '{one_target[:60]}' no coincide "
-                        f"con ninguna de las opciones disponibles en la Pregunta {num}. "
-                        f"Opciones: {list(options.values())}."
-                    )
+    # decisión la toma resolver_correctas (answer_matching.resolver_opcion),
+    # la MISMA que usa xml_builder.py para marcar la correcta: antes el
+    # validador aceptaba cualquier coincidencia difusa y el constructor, si no
+    # era única, marcaba la «A» en silencio (clave «Python» con «Python 2» /
+    # «Python 3» marcaba otra).
+    if p.respuesta_texto and options:
+        _letras, fallos = p.resolver_correctas()
+        for respuesta, motivo in fallos:
+            if motivo == "ambigua":
+                target.append(
+                    f"Error: la respuesta correcta '{respuesta[:60]}' es ambigua: coincide con varias "
+                    f"opciones de la Pregunta {num}. Escribe la opción completa. "
+                    f"Opciones: {list(options.values())}."
+                )
+            else:
+                target.append(
+                    f"Error: la respuesta correcta '{respuesta[:60]}' no coincide "
+                    f"con ninguna de las opciones disponibles en la Pregunta {num}. "
+                    f"Opciones: {list(options.values())}."
+                )
 
 
-def _validate_truefalse(
-    num: int,
-    data: Dict[str, Any],
-    correct_answer: str,
-    target: List[str],
-) -> None:
+def _validate_truefalse(p: PreguntaTruefalse, target: List[str]) -> None:
     """
     Valida pregunta truefalse contra el spec Moodle XML:
     - Debe tener enunciado (stem)
     - La respuesta debe ser exactamente "Verdadero" o "Falso"
     - El XML generará exactamente 2 <answer>: true (fraction=100/0) y false (fraction=0/100)
     """
-    if correct_answer.strip().lower() not in TRUEFALSE_ALIAS:
+    if p.es_verdadero() is None:
         target.append(
-            f"Error: respuesta '{correct_answer}' inválida para el ítem "
-            f"Pregunta {num} (truefalse). Se esperaba 'Verdadero' o 'Falso'."
+            f"Error: respuesta '{p.respuesta_texto}' inválida para el ítem "
+            f"Pregunta {p.num} (truefalse). Se esperaba 'Verdadero' o 'Falso'."
         )
 
 
-def _validate_matching(
-    num: int,
-    data: Dict[str, Any],
-    correct_answer: str,
-    pairs: Dict[str, str],
-    target: List[str],
-) -> None:
+def _validate_matching(p: PreguntaMatching, target: List[str]) -> None:
     """
     Valida pregunta matching contra el spec Moodle XML:
     - Necesita al menos MIN_MATCHING_PAIRS pares (spec: <subquestion> tags)
@@ -381,8 +375,10 @@ def _validate_matching(
       que "cuadran en cantidad" pero no corresponden a las columnas reales)
     - Cada <subquestion> necesita <text> (item) y <answer><text> (respuesta)
     """
-    col_a = data.get("col_a", {})
-    col_b = data.get("col_b", {})
+    num, correct_answer = p.num, p.respuesta_texto
+    col_a = p.col_a or {}
+    col_b = p.col_b or {}
+    pairs = p.parejas
 
     if not pairs:
         target.append(
@@ -453,12 +449,7 @@ def _validate_matching(
                 )
 
 
-def _validate_cloze(
-    num: int,
-    data: Dict[str, Any],
-    correct_answer: str,
-    target: List[str],
-) -> None:
+def _validate_cloze(p: PreguntaCloze, target: List[str]) -> None:
     """
     Valida pregunta cloze contra el spec Moodle XML:
     - El questiontext debe contener al menos un espacio [A: opción1 / opción2]
@@ -467,15 +458,20 @@ def _validate_cloze(
     - Cada espacio debe tener una respuesta correcta identificada en la clave
       "A. respuesta; B. respuesta" — no solo dentro de los corchetes.
     """
-    text = data.get("text", "")
+    num = p.num
+    text = p.text or ""
 
-    # Buscar corchetes [X: ...] (formato pre-conversión a Moodle). Balanceados:
-    # un "[0]" dentro de una opción (código, ej. "arr[0]") no cierra el
-    # espacio a mitad de camino (ver find_cloze_brackets).
-    brackets = find_cloze_brackets(text)
+    # Los espacios [X: ...] (formato pre-conversión a Moodle) y lo que dice la
+    # clave de cada uno. Balanceados: un "[0]" dentro de una opción (código,
+    # ej. "arr[0]") no cierra el espacio a mitad de camino (ver
+    # find_cloze_brackets). La clave de un Cloze documenta CADA espacio por
+    # separado ("A. respuesta; B. respuesta"), a diferencia de los demás tipos
+    # donde la respuesta es un único valor; el formato legado de un solo
+    # espacio sin prefijo de letra lo resuelve clave_de_huecos.
+    huecos = p.huecos()
 
     # Caso: ya tiene etiquetas Moodle nativas vacías (error de Gemini)
-    if not brackets and "{1:MULTICHOICE:" in text:
+    if not huecos and "{1:MULTICHOICE:" in text:
         target.append(
             f"Error: se detectó una etiqueta Moodle vacía o inválida "
             f"({{1:MULTICHOICE:}}) en el ítem Pregunta {num} (cloze). "
@@ -484,7 +480,7 @@ def _validate_cloze(
         return
 
     # Caso: no tiene ningún espacio
-    if not brackets:
+    if not huecos:
         target.append(
             f"Error: no se detectaron espacios con opciones '[A: ...]' en "
             f"el ítem Pregunta {num} (cloze). Formato esperado: "
@@ -492,20 +488,9 @@ def _validate_cloze(
         )
         return
 
-    # La clave de respuestas de un cloze documenta CADA espacio por separado
-    # ("A. respuesta; B. respuesta"), a diferencia de los demás tipos donde
-    # correct_answer es un único valor — así que un espacio sin respuesta
-    # (SIN_RESPUESTA marcado solo aquí, no dentro de los corchetes) no lo
-    # detecta la comparación de igualdad exacta que hace validate_questions
-    # más arriba. Se parsea por separado para no dejarlo pasar en silencio.
-    # Compatibilidad con el formato legado de un solo espacio sin prefijo de
-    # letra en la clave (ej. correct_answer = "vegetal" a secas): lo resuelve
-    # clave_de_huecos, igual que convert_cloze_to_moodle en xml_builder.py.
-    slot_key_answers = clave_de_huecos(correct_answer, len(brackets), brackets[0][2])
-
     # Validar cada espacio individualmente
-    for _start, _end, slot_letter, options_raw in brackets:
-        options = split_options(options_raw)
+    for hueco in huecos:
+        slot_letter, options = hueco.letra, hueco.opciones
 
         if len(options) < MIN_CLOZE_OPTIONS:
             target.append(
@@ -514,20 +499,20 @@ def _validate_cloze(
             )
             continue
 
-        if any("SIN_RESPUESTA" in opt.upper() for opt in options):
+        if any(SIN_RESPUESTA in opt.upper() for opt in options):
             target.append(
                 f"Error: el espacio [{slot_letter}] en la Pregunta {num} (cloze) no tiene una respuesta correcta especificada."
             )
             continue
 
-        slot_answers = slot_key_answers.get(slot_letter.upper())
+        slot_answers = hueco.respuestas
         if not slot_answers:
             target.append(
                 f"Error: no se encontró la respuesta correcta del espacio [{slot_letter}] "
                 f"en la clave de respuestas de la Pregunta {num} (cloze). Formato "
                 f"esperado en RESPUESTAS: '{slot_letter}. respuesta_correcta'."
             )
-        elif any(ans.strip().upper() == "SIN_RESPUESTA" for ans in slot_answers):
+        elif any(ans.strip().upper() == SIN_RESPUESTA for ans in slot_answers):
             target.append(
                 f"Error: el espacio [{slot_letter}] en la Pregunta {num} (cloze) no tiene una respuesta correcta especificada."
             )
@@ -537,37 +522,30 @@ def _validate_cloze(
             # esto, una clave que no está entre las opciones se resolvía en
             # silencio marcando la primera («Caracas» con Lima/Quito/Bogotá
             # salía «=Lima»).
-            for ans in slot_answers:
-                if ans.strip().upper() == "SIN_RESPUESTA":
-                    continue
-                idx, motivo = resolver_hueco_cloze(ans, options)
-                if idx is None:
-                    if motivo == "ambigua":
-                        target.append(
-                            f"Error: la respuesta correcta '{ans[:60]}' del espacio [{slot_letter}] es ambigua: "
-                            f"coincide con varias opciones en la Pregunta {num} (cloze). Opciones: {options}."
-                        )
-                    else:
-                        target.append(
-                            f"Error: la respuesta correcta '{ans[:60]}' del espacio [{slot_letter}] no coincide "
-                            f"con ninguna de las opciones disponibles en la Pregunta {num} (cloze). Opciones: {options}."
-                        )
+            _indices, fallos = hueco.resolver()
+            for ans, motivo in fallos:
+                if motivo == "ambigua":
+                    target.append(
+                        f"Error: la respuesta correcta '{ans[:60]}' del espacio [{slot_letter}] es ambigua: "
+                        f"coincide con varias opciones en la Pregunta {num} (cloze). Opciones: {options}."
+                    )
+                else:
+                    target.append(
+                        f"Error: la respuesta correcta '{ans[:60]}' del espacio [{slot_letter}] no coincide "
+                        f"con ninguna de las opciones disponibles en la Pregunta {num} (cloze). Opciones: {options}."
+                    )
 
 
-def _validate_numerical(
-    num: int,
-    correct_answer: str,
-    target: List[str],
-) -> None:
+def _validate_numerical(p: PreguntaNumerical, target: List[str]) -> None:
     """
     Valida pregunta numerical contra el spec Moodle XML:
     - La respuesta debe poder interpretarse como un número (Moodle exige un
       valor numérico real en el <answer>, no texto libre ni un número
       escrito con palabras).
     """
-    if normalizar_numero(correct_answer) is None:
+    if p.valor_numerico() is None:
         target.append(
-            f"Error: la respuesta '{correct_answer[:60]}' de la Pregunta {num} "
+            f"Error: la respuesta '{p.respuesta_texto[:60]}' de la Pregunta {p.num} "
             f"(numerical) no es un número válido."
         )
 

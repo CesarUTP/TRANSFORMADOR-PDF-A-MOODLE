@@ -1,9 +1,9 @@
 """
-test_v18_datos_arranque.py — versión 1.8: base del historial robusta (base
+test_datos_arranque.py — versión 1.8: base del historial robusta (base
 dañada, tabla ausente, poda a 300), arranque del launcher (hilo muerto, sin
 proxy, carpeta de datos) y clave guardada (caché, archivos ilegibles).
 
-    PYTHONUTF8=1 backend/venv/bin/python dev/test_v18_datos_arranque.py
+    PYTHONUTF8=1 backend/venv/bin/python dev/test_datos_arranque.py
 
 No usa red externa ni Gemini. TODO va a una carpeta temporal (con acentos y
 espacios a propósito): HOME se cambia ANTES de importar nada de la app para
