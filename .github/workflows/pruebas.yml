@@ -36,32 +36,46 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r backend/requirements.txt -r dev/requirements-dev.txt "pywebview==6.2.1"
       - name: Casos borde (marcas, clave, XML)
+        if: ${{ !cancelled() }}
         run: python dev/test_casos_borde.py
       - name: Seguridad (servidor local, launcher, límites)
+        if: ${{ !cancelled() }}
         run: python dev/test_seguridad.py
       - name: Word, imágenes, retroalimentación y fórmulas
+        if: ${{ !cancelled() }}
         run: python dev/test_mejoras.py
       - name: XML idéntico a la línea base (red de seguridad de refactores)
+        if: ${{ !cancelled() }}
         run: python dev/test_xml_baseline.py
       - name: Modelo de pregunta tipado (ida y vuelta exacta)
+        if: ${{ !cancelled() }}
         run: python dev/test_modelo.py
       - name: Origen, confianza y ubicación en el PDF
+        if: ${{ !cancelled() }}
         run: python dev/test_confianza.py
       - name: Frontend (lógica y sintaxis, en Node)
+        if: ${{ !cancelled() }}
         run: node dev/test_frontend.mjs
       - name: Extracción y marcas (1.8)
+        if: ${{ !cancelled() }}
         run: python dev/test_extraccion.py
       - name: Word avanzado (numeración por estilo y celdas combinadas)
+        if: ${{ !cancelled() }}
         run: python dev/test_word_avanzado.py
       - name: Opciones con | y / (índices en paralelo al texto)
+        if: ${{ !cancelled() }}
         run: python dev/test_opciones_separadores.py
       - name: XML y validador (1.8)
+        if: ${{ !cancelled() }}
         run: python dev/test_xml_validador.py
       - name: IA, cancelación y servidor (1.8)
+        if: ${{ !cancelled() }}
         run: python dev/test_ia_servidor.py
       - name: Capa de proveedor de IA (prompts intactos, proveedor falso)
+        if: ${{ !cancelled() }}
         run: python dev/test_ia_proveedor.py
       - name: Base de datos y arranque (1.8)
+        if: ${{ !cancelled() }}
         run: python dev/test_datos_arranque.py
       # Solo una vez (no en los 3 sistemas: compara archivos, no depende
       # del SO). Antes nadie se enteraba de que ejecutable/ o

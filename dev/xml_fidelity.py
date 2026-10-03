@@ -48,8 +48,44 @@ class _Captured(Exception):
         self.qs = qs
 
 
+def _tolerar_fuentes_ausentes() -> None:
+    """generate_adversarial.py dibuja PDFs con fuentes de macOS (Arial Unicode,
+    Menlo). Aquí NO se dibuja nada: solo se leen los datos de las preguntas,
+    que no dependen de la fuente. En Linux o Windows esas rutas no existen y
+    el generador se caía antes de entregar los datos (el CI lo descubrió), así
+    que si la fuente falta se usa otra que siempre hay (Vera, de reportlab; la
+    fuente por defecto de Pillow)."""
+    import os
+    import reportlab
+    from PIL import ImageFont
+    from reportlab.pdfbase import ttfonts
+
+    vera = os.path.join(os.path.dirname(reportlab.__file__), "fonts", "Vera.ttf")
+    if not getattr(ttfonts.TTFont, "_sin_fuentes_del_sistema", False):
+        init_original = ttfonts.TTFont.__init__
+
+        def init(self, name, filename, *args, **kwargs):
+            if isinstance(filename, str) and not os.path.exists(filename):
+                filename = vera
+                kwargs.pop("subfontIndex", None)
+            init_original(self, name, filename, *args, **kwargs)
+        ttfonts.TTFont.__init__ = init
+        ttfonts.TTFont._sin_fuentes_del_sistema = True
+
+    if not getattr(ImageFont, "_sin_fuentes_del_sistema", False):
+        truetype_original = ImageFont.truetype
+
+        def truetype(font=None, size=10, *args, **kwargs):
+            if isinstance(font, str) and not os.path.exists(font):
+                return ImageFont.load_default(size=size)
+            return truetype_original(font, size, *args, **kwargs)
+        ImageFont.truetype = truetype
+        ImageFont._sin_fuentes_del_sistema = True
+
+
 def load_exams() -> dict:
     """{nombre: [preguntas]} de los 12 adversariales, sin escribir ningún archivo."""
+    _tolerar_fuentes_ausentes()
     spec = importlib.util.spec_from_file_location("ga", ROOT / "dev/synthetic/generate_adversarial.py")
     ga = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ga)
