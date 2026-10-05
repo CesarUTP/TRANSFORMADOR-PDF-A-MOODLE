@@ -40,9 +40,11 @@ class DatosPortada(BaseModel):
     instrucciones: str = Field("", max_length=exportar_pdf.LIMITE_INSTRUCCIONES)
     contenido: str = "examen_y_clave"
     papel: str = "carta"
+    margenes: str = "moderados"
     campos_estudiante: bool = True
     rotulo_docente: str = "facilitador"
     partes: bool = True
+    mezclar: bool = True
     # Logos en base64 (el diálogo los reduce antes de enviarlos); "" = sin logo.
     logo_izquierdo: str = Field("", max_length=exportar_pdf.LIMITE_LOGO)
     logo_derecho: str = Field("", max_length=exportar_pdf.LIMITE_LOGO)
@@ -59,13 +61,13 @@ class ExportarPdfRequest(BaseModel):
 def _exportar_sync(req: ExportarPdfRequest, clave: Dict[int, Any]):
     validar_para_exportar(req.questions, clave)
     d = req.datos
-    if d.contenido not in exportar_pdf.CONTENIDOS or d.papel not in exportar_pdf.PAPELES or d.rotulo_docente not in exportar_pdf.ROTULOS:
+    if d.contenido not in exportar_pdf.CONTENIDOS or d.papel not in exportar_pdf.PAPELES or d.margenes not in exportar_pdf.MARGENES or d.rotulo_docente not in exportar_pdf.ROTULOS:
         raise HTTPException(status_code=422, detail="Opciones de exportación no válidas.")
     datos = exportar_pdf.DatosExamen(
         institucion=d.institucion, facultad=d.facultad, departamento=d.departamento, materia=d.materia, docente=d.docente, actividad=d.actividad,
         grupo=d.grupo, fecha=d.fecha, instrucciones=d.instrucciones,
-        titulo_respaldo=Path(req.filename).stem, contenido=d.contenido, papel=d.papel,
-        campos_estudiante=d.campos_estudiante, rotulo_docente=d.rotulo_docente, partes=d.partes,
+        titulo_respaldo=Path(req.filename).stem, contenido=d.contenido, papel=d.papel, margenes=d.margenes,
+        campos_estudiante=d.campos_estudiante, rotulo_docente=d.rotulo_docente, partes=d.partes, mezclar=d.mezclar,
         logo_izquierdo=d.logo_izquierdo, logo_derecho=d.logo_derecho)
     return exportar_pdf.generar_pdf(req.questions, clave, req.total_points, datos)
 

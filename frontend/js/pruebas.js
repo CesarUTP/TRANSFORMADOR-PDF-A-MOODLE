@@ -800,6 +800,9 @@ prueba('Exportar PDF: lo guardado se valida campo por campo', () => {
   const v = valoresIniciales({ docente: '  Ana   Pérez ', papel: 'folio', contenido: 'solo_clave', campos_estudiante: 'sí', materia: 5, institucion: 'x'.repeat(500) });
   igual(v.docente, 'Ana Pérez');
   igual(v.papel, 'carta');                       // desconocido: el de siempre
+  igual(valoresIniciales(null).margenes, 'moderados');
+  igual(valoresIniciales({ margenes: 'anchos' }).margenes, 'anchos');
+  igual(valoresIniciales({ margenes: 'enormes' }).margenes, 'moderados');
   igual(v.contenido, 'solo_clave');
   igual(valoresIniciales({ contenido: 'folleto_hoja_clave' }).contenido, 'folleto_hoja_clave');
   igual(v.campos_estudiante, true);              // no es booleano: el de siempre
@@ -807,6 +810,9 @@ prueba('Exportar PDF: lo guardado se valida campo por campo', () => {
   igual(v.institucion.length, LIMITE_CAMPO);
   igual(valoresIniciales(null).contenido, 'examen_y_clave');
   igual(valoresIniciales(null).partes, true);
+  igual(valoresIniciales(null).mezclar, true);
+  igual(valoresIniciales({ mezclar: false }).mezclar, false);
+  igual(valoresIniciales({ mezclar: 'no' }).mezclar, true);
   igual(valoresIniciales({ partes: false }).partes, false);
   igual(valoresIniciales({ partes: 'no' }).partes, true);
   igual(valoresIniciales('basura').papel, 'carta');

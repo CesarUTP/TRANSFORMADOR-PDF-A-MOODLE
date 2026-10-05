@@ -11,15 +11,16 @@ export const LIMITE_LOGO = 2000000;
 
 export const CONTENIDOS = ['examen_y_clave', 'solo_examen', 'solo_clave', 'folleto_hoja_clave'];
 export const PAPELES = ['carta', 'legal', 'a4'];
+export const MARGENES = ['normal', 'estrechos', 'moderados', 'anchos'];
 export const ROTULOS = ['facilitador', 'docente', 'profesor'];
 export const ACTIVIDADES = ['Parcial', 'Quiz', 'Prueba corta', 'Examen final', 'Taller', 'Evaluación diagnóstica'];
 
 /** Lo que se recuerda entre exámenes (no la fecha: cambia cada vez). */
-const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'papel', 'campos_estudiante', 'partes'];
+const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'papel', 'margenes', 'campos_estudiante', 'partes', 'mezclar'];
 
 const VACIOS = {
   institucion: '', facultad: '', departamento: '', rotulo_docente: 'facilitador', logo_izquierdo: '', logo_derecho: '', materia: '', docente: '', actividad: '', grupo: '', fecha: '', instrucciones: '',
-  contenido: 'examen_y_clave', papel: 'carta', campos_estudiante: true, partes: true,
+  contenido: 'examen_y_clave', papel: 'carta', margenes: 'moderados', campos_estudiante: true, partes: true, mezclar: true,
 };
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -68,12 +69,14 @@ export function valoresIniciales(guardado) {
   if (typeof guardado.instrucciones === 'string') out.instrucciones = limpiarTexto(guardado.instrucciones);
   if (CONTENIDOS.includes(guardado.contenido)) out.contenido = guardado.contenido;
   if (PAPELES.includes(guardado.papel)) out.papel = guardado.papel;
+  if (MARGENES.includes(guardado.margenes)) out.margenes = guardado.margenes;
   if (ROTULOS.includes(guardado.rotulo_docente)) out.rotulo_docente = guardado.rotulo_docente;
   for (const k of ['logo_izquierdo', 'logo_derecho']) {
     if (logoValido(guardado[k])) out[k] = guardado[k];
   }
   if (typeof guardado.campos_estudiante === 'boolean') out.campos_estudiante = guardado.campos_estudiante;
   if (typeof guardado.partes === 'boolean') out.partes = guardado.partes;
+  if (typeof guardado.mezclar === 'boolean') out.mezclar = guardado.mezclar;
   return out;
 }
 

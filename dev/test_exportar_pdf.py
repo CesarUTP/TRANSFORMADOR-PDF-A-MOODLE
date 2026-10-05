@@ -176,7 +176,8 @@ tc = texto_de(c.pdf)
 ok("CLAVE DE RESPUESTAS" in tc and all(f"TOK{n}OK" in tc for n in range(1, 13)), "solo_clave: las respuestas correctas están")
 ok(not any(f"TOK{n}NO" in tc for n in range(1, 13)), "solo_clave: ninguna opción incorrecta")
 ok("Selecciona una." not in tc and "Respuesta: ____" not in tc and c.paginas < e.paginas, "solo_clave: no repite el examen")
-ok("izqTOK15a → b) derTOK15b" in tc.replace("  ", " ") or "izqTOK15a → b)" in tc, "la clave del emparejamiento une cada elemento con su pareja")
+ley = re.search(r"([a-z])\) derTOK15b", te).group(1)        # la letra con que salió impresa la pareja del elemento 1
+ok(f"izqTOK15a → {re.search(r'([a-z])[)] derTOK15a', te).group(1)})" in tc.replace("  ", " ") or f"→ {ley})" in tc.replace("  ", " "), f"la clave del emparejamiento une cada elemento con la letra IMPRESA de su pareja ({ley})")
 ok("TOK14OK" in tc and "TOK14NO1" not in tc, "la clave del «Completar» solo dice la correcta")
 
 j = pdf_de(qs, key)
@@ -204,12 +205,35 @@ ok(not partidas and len(pags) >= 3, f"79 preguntas en {len(pags)} páginas y nin
 with pdfplumber.open(io.BytesIO(r.pdf)) as d:
     ancho, alto = d.pages[0].width, d.pages[0].height
     fuera = [(i, round(w["x0"]), round(w["x1"])) for i, p in enumerate(d.pages) for w in p.extract_words()
-             if w["x0"] < 56 or w["x1"] > p.width - 56 or w["bottom"] > p.height - 20]
+             if w["x0"] < 53.5 or w["x1"] > p.width - 53.5 or w["bottom"] > p.height - 20]   # márgenes «moderados» (1,91 cm)
 lg = pdf_de(qs2[:5], key2, papel="legal")
 with pdfplumber.open(io.BytesIO(lg.pdf)) as d:
     ok(abs(d.pages[0].width - 612) < 1 and abs(d.pages[0].height - 1008) < 1, "Legal (21,59 x 35,56 cm) si se pide")
 ok(abs(ancho - 612) < 1 and abs(alto - 792) < 1, f"papel Carta por defecto ({ancho:.0f}x{alto:.0f})")
 ok(not fuera, f"ninguna palabra fuera de los márgenes ({fuera[:3]})")
+import base64 as _b64
+_buf = io.BytesIO(); Image.new("RGB", (60, 60), (30, 90, 200)).save(_buf, "PNG"); logo_demo = _b64.b64encode(_buf.getvalue()).decode()
+for nombre_m, (m_ar, m_ab, m_iz, m_de) in ep.MARGENES.items():
+    c28 = 72 / 2.54
+    rm_ = pdf_de(qs2[:40], key2, margenes=nombre_m, logo_izquierdo=logo_demo, logo_derecho=logo_demo, contenido="folleto_hoja_clave")
+    with pdfplumber.open(io.BytesIO(rm_.pdf)) as d:
+        malas = []
+        for i, pg in enumerate(d.pages):
+            ws_ = pg.extract_words()
+            malas += [(i, round(w["x0"]), round(w["x1"])) for w in ws_ if w["x0"] < m_iz * c28 - 1 or w["x1"] > pg.width - m_de * c28 + 1 or w["bottom"] > pg.height - 4]
+            lineas_ = sorted({round(w["top"]) for w in ws_})
+            if i == 1 and len(lineas_) > 2:                   # el encabezado corrido no pisa el texto
+                cab = max(w["bottom"] for w in ws_ if round(w["top"]) == lineas_[0])
+                if cab + 1 >= lineas_[1]:
+                    malas.append((i, "encabezado pisa el texto"))
+            imgs_ = [im for im in pg.images if im["x1"] > pg.width - m_de * c28 + 1 or im["x0"] < m_iz * c28 - 1]
+            malas += [(i, "imagen fuera") for _ in imgs_]
+    ok(not malas, f"márgenes «{nombre_m}» ({m_ar}/{m_iz} cm): nada fuera, ni el encabezado ni el pie, con logos y hoja de respuestas ({malas[:2]})")
+with pdfplumber.open(io.BytesIO(pdf_de(qs2[:3], key2, margenes="estrechos").pdf)) as d:
+    ok(min(w["x0"] for w in d.pages[0].extract_words()) < 40, "«Estrechos» (1,27 cm) de verdad usa más hoja que «Moderados»")
+with pdfplumber.open(io.BytesIO(pdf_de(qs2[:3], key2, margenes="anchos").pdf)) as d:
+    ok(min(w["x0"] for w in d.pages[0].extract_words()) > 140, "«Anchos» (5,08 cm a los lados) deja los lados anchos")
+ok(len(paginas_de(pdf_de(qs2, key2, margenes="estrechos", contenido="solo_examen").pdf)) < len(paginas_de(pdf_de(qs2, key2, margenes="anchos", contenido="solo_examen").pdf)), "con márgenes estrechos caben más preguntas por página")
 a4 = pdf_de(qs2[:5], key2, papel="a4")
 with pdfplumber.open(io.BytesIO(a4.pdf)) as d:
     ok(abs(d.pages[0].width - 595.3) < 1 and abs(d.pages[0].height - 841.9) < 1, "A4 si se pide")
@@ -222,7 +246,7 @@ r = pdf_de([largo[0][0]], {1: largo[0][1]})
 ok(r.paginas >= 2 and len(r.pdf) > 1000, f"una pregunta de varias páginas no rompe la maquetación ({r.paginas} págs)")
 palabra = mc(1, "Una_sola_palabra_muy_larga_sin_espacios_" * 12, ["x" * 400, "y"], [0])
 with pdfplumber.open(io.BytesIO(pdf_de([palabra[0]], {1: palabra[1]}).pdf)) as d:
-    ok(all(w["x1"] <= d.pages[0].width - 56 for w in d.pages[0].extract_words()), "una palabra sin espacios se parte en vez de salirse de la hoja")
+    ok(all(w["x1"] <= d.pages[0].width - 53.5 for w in d.pages[0].extract_words()), "una palabra sin espacios se parte en vez de salirse de la hoja")
 
 t0 = time.time()
 muchas = [mc(n, f"Pregunta {n} con su enunciado", ["uno", "dos", "tres", "cuatro"], [n % 4]) for n in range(1, 151)]
@@ -342,13 +366,58 @@ ok("CLAVE" in tk_ and "NOMBRE:" in tk_, "la clave es la hoja de respuestas con �
 orden_cloze = re.findall(r"([a-z])\) (TOK\w+)", tf_)
 letra_ok = next(le for le, tx in orden_cloze if tx == "TOKOK")
 ok(re.search(r"\(1\)\s*" + letra_ok + r"\s", tk_) is not None and "(2) Panamá" in tk_.replace("  ", " "), f"la clave del «Completar» escribe la MISMA letra que el folleto ({letra_ok}) y el texto del espacio libre")
-ok("1. a 2. b" not in tk_ and re.search(r"1\.\s*b\s+2\.\s*a", tk_) is not None, "la clave del emparejamiento escribe la letra de cada elemento")
+let_b = re.search(r"([a-z])\) der-b", tf_).group(1); let_a = re.search(r"([a-z])\) der-a", tf_).group(1)
+ok(re.search(r"1\.\s*" + let_b + r"\s+2\.\s*" + let_a, tk_) is not None, f"la clave del emparejamiento escribe la letra impresa de cada elemento (1→{let_b}, 2→{let_a})")
 ok("RESP-CORTA" in tk_ and "42" in tk_ and "ORIENTA-FOLL" in tk_, "la clave trae la respuesta corta, la numérica y la orientación del desarrollo")
 ok("Página 1 de" in pf[0] and f"Página 1 de {len(hoja)}" in hoja[0].replace("\n", " ") and f"Página 1 de {len(clave)}" in clave[0].replace("\n", " "), "cada sección numera sus páginas")
 ok(len(paginas_de(pdf_de(fq, fk, contenido="folleto_hoja_clave", partes=False).pdf)) >= 3, "también sin dividir en partes")
 cli_pdf = pdf_de(fq, fk, contenido="folleto_hoja_clave", campos_estudiante=False)
 ok("NOMBRE:" not in texto_de(cli_pdf.pdf) and "HOJA DE RESPUESTAS" in texto_de(cli_pdf.pdf), "sin cuadro de estudiante, la hoja no lo lleva (y sigue siendo la hoja)")
 
+print("   Orden mezclado: la clave no forma un patrón")
+def pareos(n_pares, **kw):
+    q = {"num": 1, "type": "matching", "data": {"stem": "MEZ-PAREO", "col_a": {str(i): f"item{i}" for i in range(1, n_pares + 1)},
+                                                 "col_b": {chr(96 + i): f"pareja{i}" for i in range(1, n_pares + 1)}}}
+    k = {1: {"type": "matching", "answer": "; ".join(f"{i}-{chr(96 + i)}" for i in range(1, n_pares + 1)),
+             "pairs": {str(i): chr(96 + i) for i in range(1, n_pares + 1)}}}      # el documento trae 1-a, 2-b, 3-c…
+    return pdf_de([q], k, **kw)
+for n_p in (3, 5, 8):
+    r_ = pareos(n_p, contenido="folleto_hoja_clave")
+    pg_ = paginas_de(r_.pdf)
+    ex = plano("\n".join(pg_[:next(i for i, g in enumerate(pg_) if "HOJA DE RESPUESTAS" in g and "NOMBRE:" in g)]))
+    letra_de = {int(m.group(2)): m.group(1) for m in re.finditer(r"([a-z])\) pareja(\d+)", ex)}       # letra impresa de cada pareja
+    clave_ = plano(pg_[-1]) if "CLAVE" in pg_[-1] else plano("\n".join(pg_))
+    dada = [re.search(rf"(?<![\d])({i})\.\s*([a-z])\b", clave_.split("CLAVE DE RESPUESTAS")[-1]) for i in range(1, n_p + 1)]
+    seq = [ord(letra_de[i]) - 96 for i in range(1, n_p + 1)]
+    ok(seq != sorted(seq) and seq != sorted(seq, reverse=True) and sum(1 for i, s_ in enumerate(seq, 1) if i == s_) <= n_p // 3,
+       f"{n_p} pares con la clave del documento 1-a, 2-b…: las respuestas impresas son {''.join(map(chr, [96 + x for x in seq]))} (sin patrón)")
+    ok(all(d_ and d_.group(2) == letra_de[i] for i, d_ in enumerate(dada, 1)), f"…y la clave/hoja llena escribe esas mismas letras ({n_p} pares)")
+sin = plano(texto_de(pareos(5, contenido="solo_examen", mezclar=False).pdf))
+ok(all(f"{chr(96 + i)}) pareja{i}" in sin for i in range(1, 6)), "con «mezclar» desactivado la Columna B sale en el orden del documento")
+ok(texto_de(pareos(5, contenido="solo_examen").pdf) == texto_de(pareos(5, contenido="solo_examen").pdf), "el mismo examen sale siempre con el mismo orden")
+
+mcs = [mc(k, f"MEZ-MC{k:02d}", [f"opcion{k}A", f"opcion{k}B", f"opcion{k}C", f"opcion{k}D"], [0])[0] for k in range(1, 31)]        # la correcta SIEMPRE es la A del documento
+kmc = {q["num"]: {"type": "multichoice", "answer": "A"} for q in mcs}
+rmc = pdf_de(mcs, kmc, contenido="folleto_hoja_clave")
+pmc_ = paginas_de(rmc.pdf)
+i_h = next(i for i, g in enumerate(pmc_) if "HOJA DE RESPUESTAS" in g and "NOMBRE:" in g)
+ex_mc = plano("\n".join(pmc_[:i_h]))
+impresa = [re.search(rf"([A-D])\) opcion{k}A", ex_mc).group(1) for k in range(1, 31)]
+ok(len(set(impresa)) >= 3 and impresa != sorted(impresa) and impresa.count("A") < 20, f"30 preguntas con la correcta siempre en A: impresas {''.join(impresa)} (sin patrón)")
+clave_mc = pdf_de(mcs, kmc, contenido="solo_clave")
+tcl_ = plano(texto_de(clave_mc.pdf))
+ok(all(re.search(rf"\b{impresa[k - 1]}\) opcion{k}A", tcl_) for k in range(1, 31)), "la clave dice la letra IMPRESA de la opción correcta, con su texto")
+with pdfplumber.open(io.BytesIO(rmc.pdf)) as d_:
+    ok(tiene_relleno(d_.pages[i_h]) == 0, "la hoja de respuestas para llenar sigue en blanco")
+sm = pdf_de(mcs[:3], kmc, contenido="solo_examen", mezclar=False)
+ok(all(re.search(rf"A\) opcion{k}A\s+B\) opcion{k}B", plano(texto_de(sm.pdf))) for k in (1, 2, 3)), "con «mezclar» desactivado las opciones salen en su orden")
+posicional = [mc(1, "MEZ-POS", ["Python", "Java", "Ninguna de las anteriores"], [2])[0], mc(2, "MEZ-POS2", ["x", "y", "A y B"], [2])[0], mc(3, "MEZ-POS3", ["x", "y", "Ambas son correctas"], [2])[0]]
+tpos = plano(texto_de(pdf_de(posicional, {1: {"type": "multichoice", "answer": "C"}, 2: {"type": "multichoice", "answer": "C"}, 3: {"type": "multichoice", "answer": "C"}}, contenido="solo_examen").pdf))
+ok("A) Python B) Java C) Ninguna de las anteriores" in tpos and "C) A y B" in tpos and "C) Ambas son correctas" in tpos, "las preguntas con «ninguna de las anteriores», «A y B»… conservan su orden")
+pat = plano(texto_de(pdf_de([mc(1, "MEZ-X", ["opciónA", "opciónB", "opciónC", "opciónD"], [1])[0]], {1: {"type": "multichoice", "answer": "B"}}, contenido="solo_examen", mezclar=True).pdf))
+ok(re.search(r"A\) \S+ B\) \S+ C\) \S+ D\) \S+", pat) is not None, "al mezclar, las letras se reasignan A, B, C, D en orden")
+
+# ══════════════════════════════════════════════════════════════════════════
 print("5. Imágenes, fórmulas y texto raro")
 # ══════════════════════════════════════════════════════════════════════════
 import base64  # noqa: E402
@@ -370,7 +439,7 @@ r = pdf_de([q1, q2], {1: k1, 2: k2}, contenido="solo_examen")
 with pdfplumber.open(io.BytesIO(r.pdf)) as d:
     imgs = [im for p in d.pages for im in p.images]
 ok(len(imgs) == 2, f"las dos imágenes válidas están en el PDF ({len(imgs)})")
-ok(all(im["x1"] <= 612 - 56 + 1 for im in imgs) and max(im["height"] for im in imgs) <= 7.5 * 28.35 + 1, "la imagen grande se ajusta a la hoja")
+ok(all(im["x1"] <= 612 - 54 + 1 for im in imgs) and max(im["height"] for im in imgs) <= 7.5 * 28.35 + 1, "la imagen grande se ajusta a la hoja")
 ok(min(im["width"] for im in imgs) < 40, "la imagen pequeña no se agranda")
 ok(any("pregunta 2" in a for a in r.avisos), f"la imagen ilegible se avisa y no rompe nada ({r.avisos})")
 
@@ -447,6 +516,8 @@ ok("_folleto_hoja_y_clave.pdf" in cli.post("/api/exportar_pdf", json={**cuerpo, 
 ok("_clave.pdf" in cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"contenido": "solo_clave"}}, headers=H).headers["content-disposition"], "solo la clave: _clave.pdf")
 ok(cli.post("/api/exportar_pdf", json=cuerpo).status_code == 401, "sin token: 401")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"contenido": "otra cosa"}}, headers=H).status_code == 422, "contenido desconocido: 422")
+ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"margenes": "enormes"}}, headers=H).status_code == 422, "márgenes desconocidos: 422")
+ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"margenes": "estrechos"}}, headers=H).status_code == 200, "márgenes «estrechos»: 200")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"papel": "folio"}}, headers=H).status_code == 422, "papel desconocido: 422")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"docente": "x" * 500}}, headers=H).status_code == 422, "un dato demasiado largo: 422")
 malo = {**cuerpo, "questions": [{"num": 1, "type": "inventado", "data": {"stem": "a"}}], "answer_key": {"1": {"type": "essay", "answer": ""}}}

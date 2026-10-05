@@ -53,7 +53,9 @@ from xml_builder import compute_grades
 
 CONTENIDOS = ("examen_y_clave", "solo_examen", "solo_clave", "folleto_hoja_clave")
 PAPELES = {"carta": letter, "legal": legal, "a4": A4}      # legal = 21,59 x 35,56 cm
-MARGEN = 2 * cm
+# Márgenes como los de Word (en cm): (arriba, abajo, izquierda, derecha).
+MARGENES = {"normal": (2.5, 2.5, 3.0, 3.0), "estrechos": (1.27, 1.27, 1.27, 1.27),
+            "moderados": (2.54, 2.54, 1.91, 1.91), "anchos": (2.54, 2.54, 5.08, 5.08)}
 LIMITE_CAMPO = 160
 LIMITE_INSTRUCCIONES = 1500
 LIMITE_LOGO = 2_000_000                 # caracteres base64 (~1,5 MB) por logo
@@ -62,6 +64,11 @@ ROTULOS = {"facilitador": "FACILITADOR", "docente": "DOCENTE", "profesor": "PROF
 ROMANOS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"]
 NOMBRE_PARTE = {"multichoice": "SELECCIÓN MÚLTIPLE", "truefalse": "VERDADERO O FALSO", "matching": "EMPAREJAMIENTO",
                 "cloze": "COMPLETAR", "shortanswer": "RESPUESTA CORTA", "numerical": "RESPUESTA NUMÉRICA", "essay": "DESARROLLO"}
+
+# Opciones que dependen de su POSICIÓN («todas las anteriores», «A y B»…): esa pregunta no se mezcla.
+_POSICIONAL = re.compile(r"\b(anteriores?|ambas|ambos|las dos|los dos|todas las (opciones|respuestas|de arriba)|"
+                         r"ninguna de (las|los)|ninguno de (las|los)|(opci[oó]n|incisos?|literal(es)?)\s+[A-J])\b|"
+                         r"\b[A-J]\s*(y|e|o|,)\s*[A-J]\b", re.I)
 
 _DIR_FUENTES = Path(__file__).resolve().parent / "fuentes"
 _FAMILIA = "DejaVu"
@@ -87,8 +94,10 @@ class DatosExamen:
     titulo_respaldo: str = "Examen"          # si no hay actividad ni materia (el nombre del archivo)
     contenido: str = "examen_y_clave"        # CONTENIDOS
     papel: str = "carta"                     # PAPELES
+    margenes: str = "moderados"              # MARGENES
     campos_estudiante: bool = True           # cuadro de Nombre / Cédula / Grupo / Fecha y Calificación
     rotulo_docente: str = "facilitador"      # ROTULOS
+    mezclar: bool = True                     # mezclar las opciones y la Columna B: que la clave no forme un patrón
     partes: bool = True                      # agrupar por tipo: «I PARTE: …» con su indicación y su valor
     logo_izquierdo: str = ""                 # imagen en base64 ("" = sin logo)
     logo_derecho: str = ""
@@ -230,7 +239,8 @@ class _Lienzo(canvas.Canvas):
             vistas[s] = vistas.get(s, 0) + 1
             self.setFont(_FAMILIA, 8)
             self.setFillColor(_GRIS)
-            self.drawRightString(self._pagesize[0] - MARGEN, 1.1 * cm, f"Página {vistas[s]} de {por_seccion[s]}")
+            self.drawRightString(self._pagesize[0] - getattr(self, "_margen_der", 2 * cm), getattr(self, "_pie_y", 1.1 * cm),
+                                 f"Página {vistas[s]} de {por_seccion[s]}")
             super().showPage()
         super().save()
 
@@ -408,7 +418,9 @@ class _Constructor:
     def __init__(self, preguntas: List[Pregunta], puntos: List[float], datos: DatosExamen, simple: bool = False):
         self.preguntas, self.puntos, self.datos, self.simple = preguntas, puntos, datos, simple
         self.tam = PAPELES.get(datos.papel, letter)
-        self.ancho = self.tam[0] - 2 * MARGEN
+        arriba, abajo, izquierda, derecha = (x * cm for x in MARGENES.get(datos.margenes, MARGENES["moderados"]))
+        self.m_sup, self.m_inf, self.m_izq, self.m_der = arriba, abajo, izquierda, derecha
+        self.ancho = self.tam[0] - izquierda - derecha
         # Hueco del número de pregunta: «100.» no cabe en lo que cabe «10.».
         self.sangria = 18 + 9 * max(0, len(str(len(preguntas))) - 2)
         self.est = _estilos(self.sangria)
@@ -449,6 +461,47 @@ class _Constructor:
                                ("TOPPADDING", (1, 0), (1, 0), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
         return t
 
+    # ---- orden en que se IMPRIMEN las opciones (y por tanto la clave) ----
+    def _opciones_impresas(self, p: PreguntaMultichoice) -> List[Tuple[str, str, bool]]:
+        """[(letra impresa, texto, es correcta)] en el orden del papel. Con `mezclar` se barajan (siempre igual para la
+        misma pregunta) para que la clave no forme un patrón; una pregunta cuyas opciones dependen de su posición
+        («todas las anteriores», «A y B») conserva el suyo. Al barajar, las letras se reasignan A, B, C…"""
+        correctas = set(p.resolver_correctas()[0])
+        items = [(L, p.options[L]) for L in sorted(p.options or {})]
+        if self.datos.mezclar and len(items) > 1 and not any(_POSICIONAL.search(str(tx)) for _, tx in items):
+            random.Random(f"mc-{p.num}").shuffle(items)
+            return [(chr(65 + i) if i < 26 else str(i + 1), tx, L in correctas) for i, (L, tx) in enumerate(items)]
+        return [(L, tx, L in correctas) for L, tx in items]
+
+    def _pareo(self, p: PreguntaMatching):
+        """(claves de la Columna A, [(letra impresa, texto)] de la Columna B, {clave de A: letra impresa de su pareja}).
+        Con `mezclar` la Columna B se baraja hasta que las respuestas no formen un patrón (1-a, 2-b, 3-c… o al revés,
+        o casi todas en su sitio): en el documento original suele ir en el mismo orden que la A."""
+        col_a, col_b = p.col_a or {}, p.col_b or {}
+        a_claves = sorted(col_a, key=lambda x: int(x) if str(x).isdigit() else str(x))
+        b_claves = sorted(col_b)
+        parejas = [p.letra_de(k) for k in a_claves]
+        orden = list(b_claves)
+        if self.datos.mezclar and len(orden) > 1:
+            for intento in range(80):
+                cand = list(b_claves)
+                random.Random(f"mt-{p.num}-{intento}").shuffle(cand)
+                seq = [cand.index(L) for L in parejas if L is not None]
+                if len(seq) < 3:
+                    bueno = cand != b_claves
+                else:
+                    fijos = sum(1 for i, s in enumerate(seq) if i == s)
+                    bueno = seq != sorted(seq) and seq != sorted(seq, reverse=True) and fijos <= len(seq) // 3
+                orden = cand
+                if bueno:
+                    break
+            letras = [chr(97 + i) if i < 26 else str(i + 1) for i in range(len(orden))]
+        else:
+            letras = list(orden)
+        impresas = [(letras[i], col_b[L]) for i, L in enumerate(orden)]
+        nueva = {L: letras[i] for i, L in enumerate(orden)}
+        return a_claves, impresas, {k: nueva.get(L) for k, L in zip(a_claves, parejas)}
+
     # ---- una pregunta del examen (sin respuestas) ----
     def pregunta(self, n: int, p: Pregunta, puntos: float, ayudas: bool = True) -> KeepTogether:
         if self.folleto:
@@ -460,7 +513,7 @@ class _Constructor:
             items.append(Indenter(left=self.sangria))
             if ayudas:
                 items.append(self._p("Selecciona todas las que correspondan." if varias else "Selecciona una.", "ayuda"))
-            for letra, texto in sorted((p.options or {}).items()):
+            for letra, texto, _ok in self._opciones_impresas(p):
                 items.append(self._opcion(_Casilla(redonda=not varias), f"<b>{self.txt.marcado(letra)})</b> {self.txt.marcado(texto)}"))
             items.append(Indenter(left=-self.sangria))
             return KeepTogether(items)
@@ -471,13 +524,12 @@ class _Constructor:
             return KeepTogether(items)
 
         if isinstance(p, PreguntaMatching):
-            col_a, col_b = p.col_a or {}, p.col_b or {}
-            a_claves = sorted(col_a, key=lambda x: int(x) if str(x).isdigit() else str(x))
-            b_claves = sorted(col_b)
+            col_a = p.col_a or {}
+            a_claves, b_impresas, _de_a = self._pareo(p)
             filas = [[self._p("<b>Columna A</b>", "celda"), self._p("<b>Columna B</b>", "celda")]]
-            for i in range(max(len(a_claves), len(b_claves))):
+            for i in range(max(len(a_claves), len(b_impresas))):
                 izq = (f"<b>______ {self.txt.marcado(a_claves[i])}.</b> {self.txt.marcado(col_a[a_claves[i]])}") if i < len(a_claves) else ""
-                der = (f"<b>{self.txt.marcado(b_claves[i])})</b> {self.txt.marcado(col_b[b_claves[i]])}") if i < len(b_claves) else ""
+                der = (f"<b>{self.txt.marcado(b_impresas[i][0])})</b> {self.txt.marcado(b_impresas[i][1])}") if i < len(b_impresas) else ""
                 filas.append([self._p(izq, "celda"), self._p(der, "celda")])
             mitad = (self.ancho - self.sangria) / 2
             tabla = Table(filas, colWidths=[mitad, mitad])
@@ -507,16 +559,15 @@ class _Constructor:
             if ayudas:
                 items.append(self._p("Selecciona todas las que correspondan." if varias else "Selecciona una.", "ayuda"))
             items += [Paragraph(self.txt.marcado(texto), self.est["opcion_folleto"], bulletText=f"{self.txt.marcado(letra)})")
-                      for letra, texto in sorted((p.options or {}).items())]
+                      for letra, texto, _ok in self._opciones_impresas(p)]
             return KeepTogether(items + [Indenter(left=-self.sangria)])
         if isinstance(p, PreguntaMatching):
-            col_a, col_b = p.col_a or {}, p.col_b or {}
-            a_claves = sorted(col_a, key=lambda x: int(x) if str(x).isdigit() else str(x))
-            b_claves = sorted(col_b)
+            col_a = p.col_a or {}
+            a_claves, b_impresas, _de_a = self._pareo(p)
             filas = [[self._p("<b>Columna A</b>", "celda"), self._p("<b>Columna B</b>", "celda")]]
-            for i in range(max(len(a_claves), len(b_claves))):
+            for i in range(max(len(a_claves), len(b_impresas))):
                 izq = f"<b>{self.txt.marcado(a_claves[i])}.</b> {self.txt.marcado(col_a[a_claves[i]])}" if i < len(a_claves) else ""
-                der = f"<b>{self.txt.marcado(b_claves[i])})</b> {self.txt.marcado(col_b[b_claves[i]])}" if i < len(b_claves) else ""
+                der = f"<b>{self.txt.marcado(b_impresas[i][0])})</b> {self.txt.marcado(b_impresas[i][1])}" if i < len(b_impresas) else ""
                 filas.append([self._p(izq, "celda"), self._p(der, "celda")])
             mitad = (self.ancho - self.sangria) / 2
             tabla = Table(filas, colWidths=[mitad, mitad])
@@ -592,14 +643,15 @@ class _Constructor:
         t = self.txt
         lineas: List[str] = []
         if isinstance(p, PreguntaMultichoice):
-            letras, _ = p.resolver_correctas()
-            lineas = [f"<b>{t.marcado(L)})</b> {t.marcado((p.options or {}).get(L, ''))}" for L in sorted(letras)]
+            lineas = [f"<b>{t.marcado(L)})</b> {t.marcado(tx)}" for L, tx, ok in self._opciones_impresas(p) if ok]
         elif isinstance(p, PreguntaTruefalse):
             v = p.es_verdadero()
             lineas = ["<b>Verdadero</b>" if v else "<b>Falso</b>"] if v is not None else []
         elif isinstance(p, PreguntaMatching):
-            lineas = [f"{t.marcado(x.num)}. {t.marcado(x.izquierda)} → <b>{t.marcado(x.letra)})</b> {t.marcado(x.derecha)}"
-                      for x in p.lista_parejas()]
+            a_claves, b_impresas, de_a = self._pareo(p)
+            textos_b = dict(b_impresas)
+            lineas = [f"{t.marcado(k)}. {t.marcado((p.col_a or {})[k])} → <b>{t.marcado(de_a[k])})</b> {t.marcado(textos_b[de_a[k]])}"
+                      for k in a_claves if de_a.get(k)]
         elif isinstance(p, PreguntaCloze):
             for k_hueco, h in enumerate(p.huecos(), 1):
                 idx, _ = h.resolver()
@@ -646,8 +698,8 @@ class _Constructor:
     def _fila_hoja(self, n: int, p: Pregunta, llena: bool) -> list:
         """Lo que escribe el estudiante para una pregunta que no es de burbujas (con `llena`, la respuesta)."""
         if isinstance(p, PreguntaMatching):
-            a_claves = sorted(p.col_a or {}, key=lambda x: int(x) if str(x).isdigit() else str(x))
-            items = [(f"{self.txt.plano(k)}.", (self.txt.plano(p.letra_de(k) or "") if llena else None), 1.5 * cm) for k in a_claves]
+            a_claves, _b, de_a = self._pareo(p)
+            items = [(f"{self.txt.plano(k)}.", (self.txt.plano(de_a.get(k) or "") if llena else None), 1.5 * cm) for k in a_claves]
             return [_Huecos(n, items)]
         if isinstance(p, PreguntaCloze):
             items = []
@@ -674,8 +726,9 @@ class _Constructor:
         if isinstance(p, PreguntaTruefalse):
             v = p.es_verdadero()
             return _Burbujas(n, ["V", "F"], True, [("V" if v else "F")] if llena and v is not None else [])
-        letras, _ = p.resolver_correctas()
-        return _Burbujas(n, sorted(p.options or {}), len(letras) <= 1, letras if llena else [])
+        opciones = self._opciones_impresas(p)
+        correctas = [L for L, _tx, ok in opciones if ok]
+        return _Burbujas(n, [L for L, _tx, _ok in opciones], len(correctas) <= 1, correctas if llena else [])
 
     def hoja_respuestas(self, llena: bool) -> list:
         """La hoja de respuestas por partes: burbujas para opción múltiple y verdadero/falso, rayas para lo demás.
@@ -695,7 +748,7 @@ class _Constructor:
                 if not corrida:
                     return
                 maximo = max(len(b.letras) for b in corrida)
-                cols = 4 if maximo <= 2 else 3 if maximo <= 7 else 2 if maximo <= 12 else 1
+                cols = max(1, min(4, int(self.ancho // (28 + maximo * _Burbujas.PASO + 8))))
                 filas = -(-len(corrida) // cols)
                 celdas = [[corrida[c * filas + r] if c * filas + r < len(corrida) else "" for c in range(cols)] for r in range(filas)]
                 tabla = Table(celdas, colWidths=[self.ancho / cols] * cols)
@@ -864,12 +917,15 @@ class _Constructor:
         rotulo = ROTULOS.get(d.rotulo_docente, ROTULOS["facilitador"])
         if estudiante:
             w = self.ancho
+            # Las etiquetas miden lo que miden (con márgenes anchos no pueden partirse): el resto se reparte entre los espacios.
+            e1 = max(self._ancho_negrita(x, 10.5) for x in ("NOMBRE:", "GRUPO:")) + 14
+            e2 = max(self._ancho_negrita(x, 10.5) for x in ("CÉDULA:", "FECHA:")) + 14
             etiqueta = lambda s: self._p(s, "rotulo")
             valor = lambda s, estilo="base": self._p(self.txt.marcado(s), estilo)
             nombre = self._p("<i>CLAVE</i>", "rotulo") if clave else ""
             cuadro = Table([[etiqueta("NOMBRE:"), nombre, etiqueta("CÉDULA:"), ""],
                             [etiqueta("GRUPO:"), valor(_campo(d.grupo, LIMITE_CAMPO)), etiqueta("FECHA:"), valor(_campo(d.fecha, LIMITE_CAMPO))]],
-                           colWidths=[w * 0.14, w * 0.41, w * 0.13, w * 0.32], rowHeights=[0.95 * cm, 0.95 * cm])
+                           colWidths=[e1, (w - e1 - e2) * 0.56, e2, (w - e1 - e2) * 0.44], rowHeights=[0.95 * cm, 0.95 * cm])
             cuadro.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.8, colors.black), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                                         ("LEFTPADDING", (0, 0), (-1, -1), 6)]))
             items += [cuadro, Spacer(1, 12)]
@@ -925,6 +981,8 @@ class _Constructor:
 
         def dibujar(c, doc):
             c._seccion = seccion                     # para «Página X de Y» dentro de su sección (ver _Lienzo)
+            c._margen_der = self.m_der               # el pie va dentro del margen inferior, a la altura que quepa
+            c._pie_y = max(0.45 * cm, self.m_inf - 0.8 * cm)
             # Primera hoja de la sección: lleva el encabezado grande, no el corrido.
             self._vista["n"] = self._vista["n"] + 1 if self._vista["seccion"] == seccion else 1
             self._vista["seccion"] = seccion
@@ -933,12 +991,12 @@ class _Constructor:
             c.saveState()
             c.setFont(_FAMILIA, 8)
             c.setFillColor(_GRIS)
-            y = self.tam[1] - 1.3 * cm
-            c.drawString(MARGEN, y, self.txt.plano(izquierda))
-            c.drawRightString(self.tam[0] - MARGEN, y, self.txt.plano(derecha))
+            y = self.tam[1] - max(0.55 * cm, self.m_sup - 0.8 * cm)      # dentro del margen superior
+            c.drawString(self.m_izq, y, self.txt.plano(izquierda))
+            c.drawRightString(self.tam[0] - self.m_der, y, self.txt.plano(derecha))
             c.setStrokeColor(_GRIS_CLARO)
             c.setLineWidth(0.5)
-            c.line(MARGEN, y - 4, self.tam[0] - MARGEN, y - 4)
+            c.line(self.m_izq, y - 4, self.tam[0] - self.m_der, y - 4)
             c.restoreState()
         return dibujar
 
@@ -946,8 +1004,8 @@ class _Constructor:
         d = self.datos
         total = sum(self.puntos)
         buf = io.BytesIO()
-        doc = BaseDocTemplate(buf, pagesize=self.tam, leftMargin=MARGEN, rightMargin=MARGEN,
-                              topMargin=2.2 * cm, bottomMargin=2 * cm, title=self.txt.plano(self.titulo),
+        doc = BaseDocTemplate(buf, pagesize=self.tam, leftMargin=self.m_izq, rightMargin=self.m_der,
+                              topMargin=self.m_sup, bottomMargin=self.m_inf, title=self.txt.plano(self.titulo),
                               author=self.txt.plano(_campo(d.docente, 80)), subject=self.txt.plano(_campo(d.materia, 80)),
                               creator="Conversor a Moodle XML")
         marco = lambda: Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="m", leftPadding=0, rightPadding=0,

@@ -972,6 +972,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
               </select>
             </div>
             <div class="form-group">
+              <label class="field-label" for="pdf-margenes">Márgenes</label>
+              <select id="pdf-margenes" name="margenes" class="form-input">
+                <option value="normal">Normal (2,5 cm · lados 3 cm)</option>
+                <option value="estrechos">Estrechos (1,27 cm)</option>
+                <option value="moderados">Moderados (2,54 cm · lados 1,91 cm)</option>
+                <option value="anchos">Anchos (2,54 cm · lados 5,08 cm)</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label class="field-label" for="pdf-rotulo">El docente se llama</label>
               <select id="pdf-rotulo" name="rotulo_docente" class="form-input">
                 <option value="facilitador">Facilitador</option>
@@ -980,6 +989,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
               </select>
             </div>
           </div>
+          <label class="pdf-opcion"><input type="checkbox" name="mezclar"> <span><strong>Mezclar el orden de las opciones</strong><small>Baraja las opciones de selección múltiple y la Columna B de los emparejamientos para que la clave no forme un patrón (por ejemplo 1-a, 2-b, 3-c). Las preguntas con «todas las anteriores» o «A y B» conservan su orden. La clave usa las letras impresas.</small></span></label>
           <label class="pdf-opcion"><input type="checkbox" name="partes"> <span><strong>Dividir el examen en partes</strong><small>Agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con la indicación para el estudiante y el valor de cada parte. Las preguntas del mismo tipo quedan juntas.</small></span></label>
           <label class="pdf-opcion"><input type="checkbox" name="campos_estudiante"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>
           <p class="field-error" id="pdf-error" role="alert" hidden></p>

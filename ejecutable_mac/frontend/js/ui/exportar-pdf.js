@@ -41,8 +41,10 @@ function llenar(v) {
   $('pdf-fecha').value = '';
   form.elements.contenido.value = v.contenido;
   form.elements.papel.value = v.papel;
+  form.elements.margenes.value = v.margenes;
   form.elements.campos_estudiante.checked = v.campos_estudiante;
   form.elements.partes.checked = v.partes;
+  form.elements.mezclar.checked = v.mezclar;
   form.elements.rotulo_docente.value = v.rotulo_docente;
   Object.keys(LADOS).forEach(k => mostrarLogo(k, v[k]));
 }
@@ -97,8 +99,10 @@ function leer() {
   CAMPOS_TEXTO.forEach(k => { datos[k] = $(`pdf-${k}`).value; });
   datos.contenido = form.elements.contenido.value;
   datos.papel = form.elements.papel.value;
+  datos.margenes = form.elements.margenes.value;
   datos.campos_estudiante = form.elements.campos_estudiante.checked;
   datos.partes = form.elements.partes.checked;
+  datos.mezclar = form.elements.mezclar.checked;
   datos.rotulo_docente = form.elements.rotulo_docente.value;
   Object.assign(datos, logos);
   return datos;
