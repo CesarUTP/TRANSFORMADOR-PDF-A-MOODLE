@@ -12,18 +12,29 @@ export const LIMITE_LOGO = 2000000;
 export const CONTENIDOS = ['examen_y_clave', 'solo_examen', 'solo_clave', 'folleto_hoja_clave'];
 export const PAPELES = ['carta', 'legal', 'a4'];
 export const MARGENES = ['normal', 'estrechos', 'moderados', 'anchos'];
+export const FUENTES = ['dejavu', 'arial', 'times'];
+/** Tamaños (pt) que acepta el servidor y los de siempre. */
+export const TAM_MIN = 7;
+export const TAM_MAX = 20;
 export const ROTULOS = ['facilitador', 'docente', 'profesor'];
 export const ACTIVIDADES = ['Parcial', 'Quiz', 'Prueba corta', 'Examen final', 'Taller', 'Evaluación diagnóstica'];
 
 /** Lo que se recuerda entre exámenes (no la fecha: cambia cada vez). */
-const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'papel', 'margenes', 'campos_estudiante', 'partes', 'mezclar'];
+const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas', 'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar'];
 
 const VACIOS = {
   institucion: '', facultad: '', departamento: '', rotulo_docente: 'facilitador', logo_izquierdo: '', logo_derecho: '', materia: '', docente: '', actividad: '', grupo: '', fecha: '', instrucciones: '',
-  contenido: 'examen_y_clave', papel: 'carta', margenes: 'moderados', campos_estudiante: true, partes: true, mezclar: true,
+  contenido: 'examen_y_clave', papel: 'carta', margenes: 'moderados', fuente_titulos: 'dejavu', tam_titulos: 11, fuente_preguntas: 'dejavu', tam_preguntas: 10, campos_estudiante: true, partes: true, mezclar: true,
 };
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+/** Un tamaño de letra como número entre TAM_MIN y TAM_MAX (acepta «12» o «12,5»), con medios puntos; null si no sirve. */
+export function tamanoValido(v) {
+  const n = typeof v === 'string' ? Number(v.trim().replace(',', '.')) : v;
+  if (typeof n !== 'number' || !Number.isFinite(n) || n < TAM_MIN || n > TAM_MAX) return null;
+  return Math.round(n * 2) / 2;
+}
 
 /** ¿Es una imagen en base64 (sin el «data:…» delante) de un tamaño razonable? */
 export function logoValido(v) {
@@ -70,6 +81,13 @@ export function valoresIniciales(guardado) {
   if (CONTENIDOS.includes(guardado.contenido)) out.contenido = guardado.contenido;
   if (PAPELES.includes(guardado.papel)) out.papel = guardado.papel;
   if (MARGENES.includes(guardado.margenes)) out.margenes = guardado.margenes;
+  for (const k of ['fuente_titulos', 'fuente_preguntas']) {
+    if (FUENTES.includes(guardado[k])) out[k] = guardado[k];
+  }
+  for (const k of ['tam_titulos', 'tam_preguntas']) {
+    const n = tamanoValido(guardado[k]);
+    if (n !== null) out[k] = n;
+  }
   if (ROTULOS.includes(guardado.rotulo_docente)) out.rotulo_docente = guardado.rotulo_docente;
   for (const k of ['logo_izquierdo', 'logo_derecho']) {
     if (logoValido(guardado[k])) out[k] = guardado[k];

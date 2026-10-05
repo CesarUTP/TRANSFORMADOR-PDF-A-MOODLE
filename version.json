@@ -1,5 +1,5 @@
 {
-  "version": "2.2",
+  "version": "2.2.1",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Versión 2.2: el PDF del examen ahora permite elegir los márgenes (Normal, Estrechos, Moderados, Anchos) y mezcla las opciones y la Columna B de los emparejamientos para que la clave no forme un patrón. La clave usa las letras impresas."
+  "notas": "Versión 2.2.1: en el PDF del examen se elige el tipo de letra (DejaVu Sans, Arial o Times New Roman) y el tamaño por separado para los títulos, encabezados e indicaciones y para las preguntas, opciones y clave."
 }

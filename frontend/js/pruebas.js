@@ -16,7 +16,7 @@ import { MAX_ABIERTAS, abiertasPorDefecto, recortar } from './editor/plegado-log
 import { detectarProblemas, normalizar, similitud } from './editor/calidad.js';
 import { faltaRespuesta } from './validacion.js';
 import { describirSugerencia } from './editor/sugerencias-logica.js';
-import { LIMITE_CAMPO, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, valoresIniciales } from './ui/exportar-pdf-logica.js';
+import { LIMITE_CAMPO, tamanoValido, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, valoresIniciales } from './ui/exportar-pdf-logica.js';
 import { ZOOMS, paginaDe, recuadroValido, urlOriginal, vecino, zoomVecino } from './ui/original-logica.js';
 import { duracionValida, estimarDuracion, onProgressQueue, onProgressStage, stopProgress } from './progreso.js';
 import { avisosDelXml, crearIconos, detalleDeError, esc_html, findClozeBrackets, humanizeSkipReason, splitAnswers, splitOptions } from './util.js';
@@ -857,6 +857,22 @@ prueba('Exportar PDF: logos y encabezado de la institución', () => {
   const v = valoresIniciales({ facultad: ' Ingeniería ', rotulo_docente: 'jefe', logo_derecho: 'AAAA', logo_izquierdo: '<script>' });
   igual([v.facultad, v.rotulo_docente, v.logo_derecho, v.logo_izquierdo], ['Ingeniería', 'facilitador', 'AAAA', '']);
   igual(paraGuardar({ logo_izquierdo: 'AAAA', fecha: 'x' }).logo_izquierdo, 'AAAA');
+});
+
+prueba('Exportar PDF: tipo de letra y tamaños', () => {
+  igual(tamanoValido('12'), 12);
+  igual(tamanoValido('12,5'), 12.5);
+  igual(tamanoValido(10.3), 10.5);          // medios puntos
+  igual(tamanoValido('6'), null);
+  igual(tamanoValido(21), null);
+  igual(tamanoValido(''), null);
+  igual(tamanoValido('abc'), null);
+  igual(tamanoValido(NaN), null);
+  const v = valoresIniciales({ fuente_titulos: 'times', tam_titulos: '12', fuente_preguntas: 'comic', tam_preguntas: 99 });
+  igual([v.fuente_titulos, v.tam_titulos, v.fuente_preguntas, v.tam_preguntas], ['times', 12, 'dejavu', 10]);
+  const d = valoresIniciales(null);
+  igual([d.fuente_titulos, d.tam_titulos, d.fuente_preguntas, d.tam_preguntas], ['dejavu', 11, 'dejavu', 10]);
+  igual(datosParaEnviar({ tam_titulos: '12', tam_preguntas: '10' }).tam_titulos, 12);
 });
 
 // ── Cómo se muestra (solo en pruebas.html; en Node no hay lista y no hace nada) ──

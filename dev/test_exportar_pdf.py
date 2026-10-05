@@ -418,6 +418,53 @@ pat = plano(texto_de(pdf_de([mc(1, "MEZ-X", ["opciónA", "opciónB", "opciónC",
 ok(re.search(r"A\) \S+ B\) \S+ C\) \S+ D\) \S+", pat) is not None, "al mezclar, las letras se reasignan A, B, C, D en orden")
 
 # ══════════════════════════════════════════════════════════════════════════
+print("   Tipo de letra y tamaño")
+def letras(pdf_bytes, contiene, pagina=0):
+    """(tamaño, nombre de la fuente) de los caracteres de la primera palabra que contiene `contiene`."""
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as d:
+        cs = d.pages[pagina].chars
+    texto = "".join(c["text"] for c in cs)
+    i = texto.index(contiene)
+    sel = cs[i:i + len(contiene)]
+    return round(sum(c["size"] for c in sel) / len(sel), 1), sel[0]["fontname"]
+base_q = [mc(1, "FUENTE-ENUNCIADO", ["opcion uno", "opcion dos"], [0])[0]]
+base_k = {1: {"type": "multichoice", "answer": "A"}}
+r0 = pdf_de(base_q, base_k, contenido="solo_examen", institucion="Universidad X")
+tam_h, fu_h = letras(r0.pdf, "UNIVERSIDAD")
+tam_q, fu_q = letras(r0.pdf, "FUENTE-ENUNCIADO")
+ok(abs(tam_h - 11) < 0.2 and abs(tam_q - 10) < 0.2 and "DejaVu" in fu_h and "DejaVu" in fu_q, f"por defecto: encabezado {tam_h} pt y preguntas {tam_q} pt en DejaVu (como siempre)")
+r1 = pdf_de(base_q, base_k, contenido="solo_examen", institucion="Universidad X", fuente_titulos="arial", tam_titulos=14, fuente_preguntas="times", tam_preguntas=12)
+tam_h, fu_h = letras(r1.pdf, "UNIVERSIDAD")
+tam_q, fu_q = letras(r1.pdf, "FUENTE-ENUNCIADO")
+tam_p, fu_p = letras(r1.pdf, "I PARTE")
+ok(abs(tam_h - 14) < 0.2 and "LiberationSans" in fu_h, f"el encabezado sale a 14 pt en Arial ({tam_h}, {fu_h})")
+ok(abs(tam_q - 12) < 0.2 and "LiberationSerif" in fu_q, f"las preguntas salen a 12 pt en Times ({tam_q}, {fu_q})")
+ok(abs(tam_p - 14 * 10.5 / 11) < 0.3 and "LiberationSans" in fu_p, f"el título de la parte sigue el grupo del encabezado ({tam_p} pt, {fu_p})")
+tam_o, fu_o = letras(r1.pdf, "opcion uno")
+ok(abs(tam_o - 12) < 0.2 and "LiberationSerif" in fu_o, "las opciones siguen el tamaño de las preguntas")
+rj = pdf_de(base_q, base_k, contenido="folleto_hoja_clave", fuente_titulos="times", tam_titulos=12, fuente_preguntas="arial", tam_preguntas=10, institucion="Universidad X")
+ok(len(paginas_de(rj.pdf)) == 3, "también el folleto, la hoja de respuestas y la clave")
+fq = [mc(1, "Para \\(\\forall x \\in A\\) con α y β", ["a", "b"], [0])[0]]
+rf_ = pdf_de(fq, base_k, contenido="solo_examen", fuente_titulos="arial", fuente_preguntas="arial")
+with pdfplumber.open(io.BytesIO(rf_.pdf)) as d:
+    cs = d.pages[0].chars
+fuentes_de = {c["text"]: c["fontname"] for c in cs}
+ok("∀" in fuentes_de and "DejaVu" in fuentes_de["∀"] and "LiberationSans" in fuentes_de["α"], f"lo que Arial no tiene (∀) se escribe con DejaVu y el resto sigue en Arial")
+for fam_ in ("dejavu", "arial", "times"):
+    rg = pdf_de(qs2[:30], key2, contenido="folleto_hoja_clave", fuente_titulos=fam_, tam_titulos=16, fuente_preguntas=fam_, tam_preguntas=14,
+                institucion="Universidad Tecnológica de Panamá", facultad="Facultad de Ingeniería de Sistemas Computacionales", docente="Ing. César O. González C.",
+                logo_izquierdo=logo_demo, logo_derecho=logo_demo)
+    with pdfplumber.open(io.BytesIO(rg.pdf)) as d:
+        fuera_ = [(i, round(w["x1"])) for i, pg in enumerate(d.pages) for w in pg.extract_words() if w["x0"] < 53 or w["x1"] > pg.width - 53]
+        ws_ = d.pages[0].extract_words()
+    ok(not fuera_ and len(d.pages) >= 4, f"{fam_} a 16 y 14 pt: nada se sale de los márgenes ({len(d.pages)} págs)")
+r_chico = pdf_de(base_q, base_k, contenido="solo_examen", tam_titulos=8, tam_preguntas=8)
+ok(abs(letras(r_chico.pdf, "FUENTE-ENUNCIADO")[0] - 8) < 0.2, "tamaños pequeños (8 pt)")
+rfa = pdf_de(base_q, base_k, contenido="folleto_hoja_clave", docente="Ing. Ana María de los Ángeles Fernández", tam_titulos=16, fuente_titulos="times")
+with pdfplumber.open(io.BytesIO(rfa.pdf)) as d:
+    ws2 = [w for pg in d.pages for w in pg.extract_words() if w["text"] in ("FACILITADOR:", "CALIFICACIÓN:")]
+ok(len(ws2) >= 2, "el facilitador y la calificación siguen en el encabezado con tamaños grandes")
+
 print("5. Imágenes, fórmulas y texto raro")
 # ══════════════════════════════════════════════════════════════════════════
 import base64  # noqa: E402
@@ -516,6 +563,9 @@ ok("_folleto_hoja_y_clave.pdf" in cli.post("/api/exportar_pdf", json={**cuerpo, 
 ok("_clave.pdf" in cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"contenido": "solo_clave"}}, headers=H).headers["content-disposition"], "solo la clave: _clave.pdf")
 ok(cli.post("/api/exportar_pdf", json=cuerpo).status_code == 401, "sin token: 401")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"contenido": "otra cosa"}}, headers=H).status_code == 422, "contenido desconocido: 422")
+ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"fuente_titulos": "comic"}}, headers=H).status_code == 422, "tipo de letra desconocido: 422")
+ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"tam_preguntas": 5}}, headers=H).status_code == 422 and cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"tam_titulos": 40}}, headers=H).status_code == 422, "tamaños fuera de 7 a 20 pt: 422")
+ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"fuente_titulos": "times", "tam_titulos": 12.5, "fuente_preguntas": "arial", "tam_preguntas": 10}}, headers=H).status_code == 200, "tipo de letra y tamaños válidos: 200")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"margenes": "enormes"}}, headers=H).status_code == 422, "márgenes desconocidos: 422")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"margenes": "estrechos"}}, headers=H).status_code == 200, "márgenes «estrechos»: 200")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"papel": "folio"}}, headers=H).status_code == 422, "papel desconocido: 422")

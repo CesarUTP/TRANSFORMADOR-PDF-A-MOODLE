@@ -91,6 +91,11 @@ def main(salida: Path) -> None:
         seccion("Fuente DejaVu Sans 2.37 (PDF del examen)", "Bitstream Vera / dominio público",
                 [("LICENSE", dejavu.read_text(encoding="utf-8").strip())])
 
+    liberation = (raiz / "backend" if (raiz / "backend").is_dir() else raiz.parent / "backend") / "fuentes" / "LICENSE-liberation.txt"
+    if liberation.is_file():
+        seccion("Fuentes Liberation Sans y Liberation Serif 2.1.5 (PDF del examen: «Arial» y «Times New Roman»)", "SIL OFL 1.1",
+                [("LICENSE", liberation.read_text(encoding="utf-8").strip())])
+
     # Paquetes de Python. PyObjC (macOS) son ~150 paquetes del mismo
     # proyecto y la misma licencia: van agrupados.
     dists = {}

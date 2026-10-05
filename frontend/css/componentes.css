@@ -991,3 +991,7 @@ strong.txt-fuerte { color: var(--color-text); }
 .pdf-logo { flex-wrap: wrap; }
 .pdf-logo-boton { white-space: nowrap; }
 .pdf-logo [hidden] { display: none; }
+.pdf-letra { display: grid; grid-template-columns: 1fr 96px; gap: 6px 10px; align-items: center; }
+.pdf-letra-rotulo { grid-column: 1 / -1; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-muted); margin-top: 4px; }
+.pdf-letra-rotulo:first-child { margin-top: 0; }
+@media (max-width: 560px) { .pdf-letra { grid-template-columns: 1fr 84px; } }

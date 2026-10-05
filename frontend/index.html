@@ -989,6 +989,26 @@ Ahora convierte el examen adjunto a este formato.</pre>
               </select>
             </div>
           </div>
+          <fieldset class="pdf-grupo">
+            <legend class="field-label">Tipo de letra y tamaño</legend>
+            <div class="pdf-letra">
+              <label class="pdf-letra-rotulo" for="pdf-fuente-titulos">Títulos, encabezados e indicaciones</label>
+              <select id="pdf-fuente-titulos" name="fuente_titulos" class="form-input">
+                <option value="dejavu">DejaVu Sans (predeterminada)</option>
+                <option value="arial">Arial (Liberation Sans)</option>
+                <option value="times">Times New Roman (Liberation Serif)</option>
+              </select>
+              <input type="number" id="pdf-tam-titulos" name="tam_titulos" class="form-input" min="7" max="20" step="0.5" value="11" aria-label="Tamaño de los títulos, en puntos">
+              <label class="pdf-letra-rotulo" for="pdf-fuente-preguntas">Preguntas, opciones y clave</label>
+              <select id="pdf-fuente-preguntas" name="fuente_preguntas" class="form-input">
+                <option value="dejavu">DejaVu Sans (predeterminada)</option>
+                <option value="arial">Arial (Liberation Sans)</option>
+                <option value="times">Times New Roman (Liberation Serif)</option>
+              </select>
+              <input type="number" id="pdf-tam-preguntas" name="tam_preguntas" class="form-input" min="7" max="20" step="0.5" value="10" aria-label="Tamaño de las preguntas, en puntos">
+            </div>
+            <p class="field-hint pdf-pista">Tamaño en puntos (de 7 a 20). Lo demás de cada grupo se ajusta en proporción: con 12 en los títulos y 10 en las preguntas, los encabezados y los títulos de las partes pasan a 12 pt y las preguntas se quedan en 10 pt.</p>
+          </fieldset>
           <label class="pdf-opcion"><input type="checkbox" name="mezclar"> <span><strong>Mezclar el orden de las opciones</strong><small>Baraja las opciones de selección múltiple y la Columna B de los emparejamientos para que la clave no forme un patrón (por ejemplo 1-a, 2-b, 3-c). Las preguntas con «todas las anteriores» o «A y B» conservan su orden. La clave usa las letras impresas.</small></span></label>
           <label class="pdf-opcion"><input type="checkbox" name="partes"> <span><strong>Dividir el examen en partes</strong><small>Agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con la indicación para el estudiante y el valor de cada parte. Las preguntas del mismo tipo quedan juntas.</small></span></label>
           <label class="pdf-opcion"><input type="checkbox" name="campos_estudiante"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>

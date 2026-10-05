@@ -13,7 +13,7 @@ import { detalleDeError, friendlyHttpError } from '../util.js';
 import { abrirModal, cerrarModal } from './modales.js';
 import { showToast } from './toast.js';
 import {
-  ACTIVIDADES, avisosDelPdf, cuerpoPdf, fechaLegible, medidasReducidas, nombreDeDescarga, paraGuardar, valoresIniciales,
+  ACTIVIDADES, avisosDelPdf, cuerpoPdf, fechaLegible, medidasReducidas, nombreDeDescarga, paraGuardar, tamanoValido, valoresIniciales,
 } from './exportar-pdf-logica.js';
 
 const CLAVE_GUARDADO = 'conversor.exportar_pdf';
@@ -42,6 +42,10 @@ function llenar(v) {
   form.elements.contenido.value = v.contenido;
   form.elements.papel.value = v.papel;
   form.elements.margenes.value = v.margenes;
+  form.elements.fuente_titulos.value = v.fuente_titulos;
+  form.elements.fuente_preguntas.value = v.fuente_preguntas;
+  form.elements.tam_titulos.value = v.tam_titulos;
+  form.elements.tam_preguntas.value = v.tam_preguntas;
   form.elements.campos_estudiante.checked = v.campos_estudiante;
   form.elements.partes.checked = v.partes;
   form.elements.mezclar.checked = v.mezclar;
@@ -100,6 +104,10 @@ function leer() {
   datos.contenido = form.elements.contenido.value;
   datos.papel = form.elements.papel.value;
   datos.margenes = form.elements.margenes.value;
+  datos.fuente_titulos = form.elements.fuente_titulos.value;
+  datos.fuente_preguntas = form.elements.fuente_preguntas.value;
+  datos.tam_titulos = form.elements.tam_titulos.value;      // valoresIniciales() los valida (7–20 pt) al enviar
+  datos.tam_preguntas = form.elements.tam_preguntas.value;
   datos.campos_estudiante = form.elements.campos_estudiante.checked;
   datos.partes = form.elements.partes.checked;
   datos.mezclar = form.elements.mezclar.checked;
@@ -139,6 +147,10 @@ async function exportar(e) {
   if (!estado.exportable || btnExportar.disabled) return;
   const datos = leer();
   mostrarError('');
+  if (tamanoValido(datos.tam_titulos) === null || tamanoValido(datos.tam_preguntas) === null) {
+    mostrarError('El tamaño de la letra debe estar entre 7 y 20 puntos.');
+    return;
+  }
   ocupado(true);
   try {
     const res = await apiFetch('/api/exportar_pdf', {

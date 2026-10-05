@@ -24,6 +24,7 @@ import base64
 import io
 import random
 import re
+import threading
 import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -71,9 +72,15 @@ _POSICIONAL = re.compile(r"\b(anteriores?|ambas|ambos|las dos|los dos|todas las 
                          r"\b[A-J]\s*(y|e|o|,)\s*[A-J]\b", re.I)
 
 _DIR_FUENTES = Path(__file__).resolve().parent / "fuentes"
-_FAMILIA = "DejaVu"
-_ARCHIVOS = {_FAMILIA: "DejaVuSans.ttf", _FAMILIA + "-B": "DejaVuSans-Bold.ttf",
-             _FAMILIA + "-I": "DejaVuSans-Oblique.ttf", _FAMILIA + "-BI": "DejaVuSans-BoldOblique.ttf"}
+_FAMILIA = "DejaVu"                       # la fuente de respaldo: tiene casi todos los símbolos
+_ESTILOS_FUENTE = {"": 0, "-B": 1, "-I": 2, "-BI": 3}
+# Tipos de letra elegibles: clave → (nombre en ReportLab, [normal, negrita, cursiva, negrita cursiva]).
+FUENTES = {
+    "dejavu": ("DejaVu", ["DejaVuSans.ttf", "DejaVuSans-Bold.ttf", "DejaVuSans-Oblique.ttf", "DejaVuSans-BoldOblique.ttf"]),
+    "arial": ("LiberationSans", ["LiberationSans-Regular.ttf", "LiberationSans-Bold.ttf", "LiberationSans-Italic.ttf", "LiberationSans-BoldItalic.ttf"]),
+    "times": ("LiberationSerif", ["LiberationSerif-Regular.ttf", "LiberationSerif-Bold.ttf", "LiberationSerif-Italic.ttf", "LiberationSerif-BoldItalic.ttf"]),
+}
+TAM_MIN, TAM_MAX = 7.0, 20.0
 _GRIS = colors.HexColor("#555555")
 _GRIS_CLARO = colors.HexColor("#b8b8b8")
 _FONDO = colors.HexColor("#f2f2f2")
@@ -98,6 +105,10 @@ class DatosExamen:
     campos_estudiante: bool = True           # cuadro de Nombre / Cédula / Grupo / Fecha y Calificación
     rotulo_docente: str = "facilitador"      # ROTULOS
     mezclar: bool = True                     # mezclar las opciones y la Columna B: que la clave no forme un patrón
+    fuente_titulos: str = "dejavu"           # FUENTES: títulos, encabezados e indicaciones
+    tam_titulos: float = 11.0                # tamaño (pt) del encabezado; lo demás de ese grupo es proporcional
+    fuente_preguntas: str = "dejavu"         # FUENTES: las preguntas, sus opciones y la clave
+    tam_preguntas: float = 10.0              # tamaño (pt) del enunciado; lo demás de ese grupo es proporcional
     partes: bool = True                      # agrupar por tipo: «I PARTE: …» con su indicación y su valor
     logo_izquierdo: str = ""                 # imagen en base64 ("" = sin logo)
     logo_derecho: str = ""
@@ -113,19 +124,22 @@ class ResultadoPdf:
 
 # ── Fuente ──────────────────────────────────────────────────────────────────
 
-_COBERTURA: Optional[frozenset] = None
+_COBERTURA: Dict[str, frozenset] = {}
+_CANDADO = threading.Lock()
 
 
-def _registrar_fuentes() -> None:
-    """Registra DejaVu Sans una sola vez (ReportLab guarda las fuentes por nombre)."""
-    global _COBERTURA
-    if _COBERTURA is not None:
-        return
-    for nombre, archivo in _ARCHIVOS.items():
-        pdfmetrics.registerFont(TTFont(nombre, str(_DIR_FUENTES / archivo)))
-    pdfmetrics.registerFontFamily(_FAMILIA, normal=_FAMILIA, bold=_FAMILIA + "-B",
-                                  italic=_FAMILIA + "-I", boldItalic=_FAMILIA + "-BI")
-    _COBERTURA = frozenset(pdfmetrics.getFont(_FAMILIA).face.charToGlyph)
+def _registrar_fuentes(*claves: str) -> None:
+    """Registra DejaVu (siempre, es la de respaldo) y los tipos de letra pedidos; ReportLab guarda las fuentes por
+    nombre, así que cada una se registra una sola vez por proceso."""
+    with _CANDADO:
+        for clave in ("dejavu",) + tuple(claves):
+            nombre, archivos = FUENTES[clave]
+            if nombre in _COBERTURA:
+                continue
+            for sufijo, archivo in zip(_ESTILOS_FUENTE, archivos):
+                pdfmetrics.registerFont(TTFont(nombre + sufijo, str(_DIR_FUENTES / archivo)))
+            pdfmetrics.registerFontFamily(nombre, normal=nombre, bold=nombre + "-B", italic=nombre + "-I", boldItalic=nombre + "-BI")
+            _COBERTURA[nombre] = frozenset(pdfmetrics.getFont(nombre).face.charToGlyph)
 
 
 # ── Texto: de lo que escribió el docente al marcado de un párrafo ───────────
@@ -134,9 +148,11 @@ class _Texto:
     """Convierte textos del examen en marcado seguro de Paragraph y cuenta lo que no se pudo
     escribir tal cual (para avisarlo)."""
 
-    def __init__(self) -> None:
+    def __init__(self, familias: Tuple[str, ...] = (_FAMILIA,)) -> None:
         self.formulas_crudas = 0
         self.sin_glifo = 0
+        # Lo que NO tienen todas las fuentes elegidas se escribe con DejaVu (que casi lo tiene todo).
+        self.cobertura = [_COBERTURA[f] for f in set(familias) if f != _FAMILIA]
 
     def plano(self, s: Any) -> str:
         """El texto con las fórmulas convertidas y sin caracteres imposibles de imprimir (SIN escapar)."""
@@ -146,7 +162,7 @@ class _Texto:
         self.formulas_crudas += crudas
         out: List[str] = []
         for ch in s:
-            if ch == "\n" or ord(ch) in _COBERTURA:
+            if ch == "\n" or ord(ch) in _COBERTURA[_FAMILIA]:
                 out.append(ch)
             elif unicodedata.category(ch) in ("Cf", "Cc", "Mn", "Me", "Cs", "Co", "Cn"):
                 continue                       # invisibles (ZWJ, selectores de variación, control)
@@ -159,7 +175,24 @@ class _Texto:
         t = self.plano(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         t = re.sub(r" {2,}", lambda m: " " * (len(m.group(0)) - 1) + " ", t)
         t = re.sub(r"(?m)^ ", " ", t)
+        if self.cobertura:
+            t = re.sub(r"[^\x00-\x7f]+", lambda m: self._respaldo(m.group(0)), t)
         return t.replace("\n", "<br/>")
+
+    def _respaldo(self, trozo: str) -> str:
+        """Los caracteres que la fuente elegida no tiene van con DejaVu, en el mismo párrafo."""
+        salida, fuera = [], []
+        for ch in trozo:
+            if any(ord(ch) not in c for c in self.cobertura):
+                fuera.append(ch)
+            else:
+                if fuera:
+                    salida.append(f'<font name="{_FAMILIA}">{"".join(fuera)}</font>')
+                    fuera = []
+                salida.append(ch)
+        if fuera:
+            salida.append(f'<font name="{_FAMILIA}">{"".join(fuera)}</font>')
+        return "".join(salida)
 
 
 def _campo(s: Any, limite: int) -> str:
@@ -237,7 +270,7 @@ class _Lienzo(canvas.Canvas):
             self.__dict__.update(estado)
             s = estado.get("_seccion")
             vistas[s] = vistas.get(s, 0) + 1
-            self.setFont(_FAMILIA, 8)
+            self.setFont(getattr(self, "_fuente_pie", _FAMILIA), 8)
             self.setFillColor(_GRIS)
             self.drawRightString(self._pagesize[0] - getattr(self, "_margen_der", 2 * cm), getattr(self, "_pie_y", 1.1 * cm),
                                  f"Página {vistas[s]} de {por_seccion[s]}")
@@ -251,9 +284,9 @@ class _Burbujas(Flowable):
 
     PASO = 19
 
-    def __init__(self, num: int, letras: List[str], redonda: bool, marcadas=()):
+    def __init__(self, num: int, letras: List[str], redonda: bool, marcadas=(), fam: str = _FAMILIA):
         super().__init__()
-        self.num, self.letras, self.redonda, self.marcadas = num, list(letras), redonda, set(marcadas)
+        self.num, self.letras, self.redonda, self.marcadas, self.fam = num, list(letras), redonda, set(marcadas), fam
 
     def wrap(self, aw, ah):
         self.aw = aw
@@ -261,11 +294,11 @@ class _Burbujas(Flowable):
 
     def draw(self):
         c = self.canv
-        c.setFont(_FAMILIA + "-B", 9)
+        c.setFont(self.fam + "-B", 9)
         c.setFillColor(colors.black)
         etiqueta = f"{self.num}."
         c.drawString(0, 5, etiqueta)
-        x = max(24, pdfmetrics.stringWidth(etiqueta, _FAMILIA + "-B", 9) + 6)
+        x = max(24, pdfmetrics.stringWidth(etiqueta, self.fam + "-B", 9) + 6)
         r = 6.6
         for letra in self.letras:
             lleno = letra in self.marcadas
@@ -277,7 +310,7 @@ class _Burbujas(Flowable):
             else:
                 c.rect(x, 9.5 - r, 2 * r, 2 * r, stroke=1, fill=1)
             c.setFillColor(colors.white if lleno else colors.black)
-            c.setFont(_FAMILIA, 7)
+            c.setFont(self.fam, 7)
             c.drawCentredString(x + r, 7.2, letra)
             x += self.PASO
 
@@ -289,12 +322,12 @@ class _Huecos(Flowable):
 
     PASO = 24
 
-    def __init__(self, num: int, items, tam: float = 10):
+    def __init__(self, num: int, items, tam: float = 10, fam: str = _FAMILIA):
         super().__init__()
-        self.num, self.items, self.tam = num, list(items), tam
+        self.num, self.items, self.tam, self.fam = num, list(items), tam, fam
 
     def _disponer(self, aw):
-        fb = _FAMILIA + "-B"
+        fb = self.fam + "-B"
         x0 = pdfmetrics.stringWidth(f"{self.num}.", fb, self.tam) + 10
         filas, fila, x = [], [], x0
         for etiqueta, valor, largo in self.items:
@@ -315,7 +348,7 @@ class _Huecos(Flowable):
 
     def draw(self):
         c = self.canv
-        fb = _FAMILIA + "-B"
+        fb = self.fam + "-B"
         alto = len(self.filas) * self.PASO + 2
         for r, fila in enumerate(self.filas):
             y = alto - (r + 1) * self.PASO + 8
@@ -340,33 +373,36 @@ class _Huecos(Flowable):
 
 # ── Estilos ─────────────────────────────────────────────────────────────────
 
-def _estilos(sangria: float) -> Dict[str, ParagraphStyle]:
-    base = ParagraphStyle("base", fontName=_FAMILIA, fontSize=10, leading=13.5)
+def _estilos(sangria: float, fe: str, fp: str, tam_titulos: float, tam_preguntas: float) -> Dict[str, ParagraphStyle]:
+    """Dos grupos: lo de la institución (encabezado, partes, indicaciones: fuente `fe`, tamaño `tam_titulos`) y lo
+    del examen (enunciados, opciones, clave: fuente `fp`, tamaño `tam_preguntas`). Cada estilo mide lo que medía
+    con 11 y 10 pt, en proporción."""
+    r, q = tam_titulos / 11.0, tam_preguntas / 10.0
+    base = ParagraphStyle("base", fontName=fp, fontSize=10 * q, leading=13.5 * q)
+    en = lambda nombre, **kw: ParagraphStyle(nombre, parent=base, **{"fontName": fe, **kw})
     return {
         "base": base,
         "enunciado": ParagraphStyle("enunciado", parent=base, leftIndent=sangria, bulletIndent=0,
-                                    bulletFontName=_FAMILIA + "-B", spaceBefore=11, spaceAfter=3),
-        "ayuda": ParagraphStyle("ayuda", parent=base, fontName=_FAMILIA + "-I", fontSize=8.5,
-                                leading=11, textColor=_GRIS, spaceAfter=3),
+                                    bulletFontName=fp + "-B", spaceBefore=11, spaceAfter=3),
+        "ayuda": ParagraphStyle("ayuda", parent=base, fontName=fp + "-I", fontSize=8.5 * q,
+                                leading=11 * q, textColor=_GRIS, spaceAfter=3),
         "opcion": ParagraphStyle("opcion", parent=base),
-        "parte": ParagraphStyle("parte", parent=base, fontName=_FAMILIA + "-B", fontSize=10.5, leading=14, spaceBefore=16,
-                                spaceAfter=2),
-        "aviso_folleto": ParagraphStyle("aviso_folleto", parent=base, fontName=_FAMILIA + "-B", fontSize=9, alignment=1, textColor=_GRIS),
-        "opcion_lista": ParagraphStyle("opcion_lista", parent=base, fontSize=9.5, leading=12.5, leftIndent=16, bulletIndent=0,
-                                       bulletFontName=_FAMILIA + "-B", spaceAfter=1.5),
-        "celda": ParagraphStyle("celda", parent=base, fontSize=9.5, leading=12.5),
-        "titulo": ParagraphStyle("titulo", parent=base, fontName=_FAMILIA + "-B", fontSize=16, leading=20,
-                                 alignment=1, spaceAfter=4),
-        "institucion": ParagraphStyle("institucion", parent=base, fontSize=10.5, alignment=1,
-                                      textColor=_GRIS, spaceAfter=2),
-        "cabecera": ParagraphStyle("cabecera", parent=base, fontName=_FAMILIA + "-B", fontSize=11, leading=14.5, alignment=1),
-        "rotulo": ParagraphStyle("rotulo", parent=base, fontName=_FAMILIA + "-B", fontSize=10.5, leading=14),
-        "indicacion": ParagraphStyle("indicacion", parent=base, leftIndent=22, bulletIndent=8, bulletFontName=_FAMILIA, spaceAfter=2),
-        "datos": ParagraphStyle("datos", parent=base, fontSize=9.5, alignment=1, textColor=_GRIS, spaceAfter=8),
-        "etiqueta": ParagraphStyle("etiqueta", parent=base, fontName=_FAMILIA + "-B", fontSize=9),
-        "pequeno": ParagraphStyle("pequeno", parent=base, fontSize=9, leading=12),
+        "parte": en("parte", fontName=fe + "-B", fontSize=10.5 * r, leading=14 * r, spaceBefore=16, spaceAfter=2),
+        "aviso_folleto": en("aviso_folleto", fontName=fe + "-B", fontSize=9 * r, leading=12 * r, alignment=1, textColor=_GRIS),
+        "opcion_lista": ParagraphStyle("opcion_lista", parent=base, fontSize=9.5 * q, leading=12.5 * q, leftIndent=16, bulletIndent=0,
+                                       bulletFontName=fp + "-B", spaceAfter=1.5),
+        "celda": ParagraphStyle("celda", parent=base, fontSize=9.5 * q, leading=12.5 * q),
+        "titulo": en("titulo", fontName=fe + "-B", fontSize=16 * r, leading=20 * r, alignment=1, spaceAfter=4),
+        "institucion": en("institucion", fontSize=10.5 * r, leading=14 * r, alignment=1, textColor=_GRIS, spaceAfter=2),
+        "cabecera": en("cabecera", fontName=fe + "-B", fontSize=11 * r, leading=14.5 * r, alignment=1),
+        "rotulo": en("rotulo", fontName=fe + "-B", fontSize=10.5 * r, leading=14 * r),
+        "indicacion": en("indicacion", fontSize=10 * r, leading=13.5 * r, leftIndent=22, bulletIndent=8, bulletFontName=fe, spaceAfter=2),
+        "datos": en("datos", fontSize=9.5 * r, leading=12.5 * r, alignment=1, textColor=_GRIS, spaceAfter=8),
+        "valor": en("valor", fontSize=10 * r, leading=13 * r),
+        "etiqueta": en("etiqueta", fontName=fe + "-B", fontSize=9 * r, leading=12 * r),
+        "pequeno": ParagraphStyle("pequeno", parent=base, fontSize=9 * q, leading=12 * q),
         "clave": ParagraphStyle("clave", parent=base, leftIndent=sangria, bulletIndent=0,
-                                bulletFontName=_FAMILIA + "-B", spaceBefore=5),
+                                bulletFontName=fp + "-B", spaceBefore=5),
     }
 
 
@@ -423,10 +459,15 @@ class _Constructor:
         self.ancho = self.tam[0] - izquierda - derecha
         # Hueco del número de pregunta: «100.» no cabe en lo que cabe «10.».
         self.sangria = 18 + 9 * max(0, len(str(len(preguntas))) - 2)
-        self.est = _estilos(self.sangria)
+        # Tipos de letra y tamaños: lo desconocido o fuera de rango vuelve al de siempre (la ruta ya lo rechaza).
+        self.fe = FUENTES.get(datos.fuente_titulos, FUENTES["dejavu"])[0]
+        self.fp = FUENTES.get(datos.fuente_preguntas, FUENTES["dejavu"])[0]
+        self.H = min(TAM_MAX, max(TAM_MIN, float(datos.tam_titulos))) if datos.tam_titulos == datos.tam_titulos else 11.0
+        self.Q = min(TAM_MAX, max(TAM_MIN, float(datos.tam_preguntas))) if datos.tam_preguntas == datos.tam_preguntas else 10.0
+        self.est = _estilos(self.sangria, self.fe, self.fp, self.H, self.Q)
         self.est['opcion_folleto'] = ParagraphStyle('opcion_folleto', parent=self.est['base'], leftIndent=18, bulletIndent=0,
-                                                    bulletFontName=_FAMILIA + '-B', spaceAfter=2)
-        self.txt = _Texto()
+                                                    bulletFontName=self.fp + '-B', spaceAfter=2)
+        self.txt = _Texto((self.fe, self.fp))
         self.imagenes_fallidas: List[int] = []
         self.logos_fallidos: List[str] = []
         self.folleto = False                  # True mientras se arma el folleto: preguntas sin espacio para responder
@@ -439,7 +480,7 @@ class _Constructor:
 
     def _enunciado(self, n: int, texto: str, puntos: float) -> Paragraph:
         cuerpo = self.txt.marcado(texto)
-        return Paragraph(f"{cuerpo} <font size='8' color='#555555'>({_pts(puntos)})</font>",
+        return Paragraph(f"{cuerpo} <font size='{self.Q * 0.8:.1f}' color='#555555'>({_pts(puntos)})</font>",
                          self.est["enunciado"], bulletText=f"{n}.")
 
     def _imagenes(self, p: Pregunta, n: int) -> list:
@@ -610,7 +651,7 @@ class _Constructor:
             trozos.append(f"<b>({k})</b>\u00a0{raya}")
             ultimo = h.fin
         trozos.append(self.txt.marcado(texto[ultimo:]))
-        enunciado = Paragraph("".join(trozos) + f" <font size='8' color='#555555'>({_pts(puntos)})</font>",
+        enunciado = Paragraph("".join(trozos) + f" <font size='{self.Q * 0.8:.1f}' color='#555555'>({_pts(puntos)})</font>",
                               self.est["enunciado"], bulletText=f"{n}.")
         filas = []
         for k_hueco, h in enumerate(huecos, 1):
@@ -674,7 +715,7 @@ class _Constructor:
                 lineas.append(f"<i>Orientación:</i> {t.marcado(p.feedback.strip())}")
         if not lineas:
             lineas = ["<i>(sin respuesta válida en la clave)</i>"]
-        cabecera = self.txt.marcado(self._resumen(p)) + f" <font size='8' color='#555555'>({_pts(puntos)})</font>"
+        cabecera = self.txt.marcado(self._resumen(p)) + f" <font size='{self.Q * 0.8:.1f}' color='#555555'>({_pts(puntos)})</font>"
         return KeepTogether([Paragraph(cabecera, self.est["clave"], bulletText=f"{n}."),
                              Indenter(left=self.sangria)] + [self._p(x, "pequeno") for x in lineas] + [Indenter(left=-self.sangria)])
 
@@ -700,19 +741,19 @@ class _Constructor:
         if isinstance(p, PreguntaMatching):
             a_claves, _b, de_a = self._pareo(p)
             items = [(f"{self.txt.plano(k)}.", (self.txt.plano(de_a.get(k) or "") if llena else None), 1.5 * cm) for k in a_claves]
-            return [_Huecos(n, items)]
+            return [_Huecos(n, items, self.Q, self.fp)]
         if isinstance(p, PreguntaCloze):
             items = []
             for k, h in enumerate(p.huecos(), 1):
                 con_opciones = len(h.opciones) >= 2
                 items.append((f"({k})", self.txt.plano(self._valor_cloze(p, h)) if llena else None, 1.7 * cm if con_opciones else 5.5 * cm))
-            return [_Huecos(n, items)]
+            return [_Huecos(n, items, self.Q, self.fp)]
         if isinstance(p, PreguntaNumerical):
             v = (p.valor_numerico() or p.respuesta_texto.strip()) if llena and not p.sin_respuesta else None
-            return [_Huecos(n, [("", self.txt.plano(v) if v else None, 5 * cm)])]
+            return [_Huecos(n, [("", self.txt.plano(v) if v else None, 5 * cm)], self.Q, self.fp)]
         if isinstance(p, PreguntaShortanswer):
             v = p.respuesta_texto.strip() if llena and not p.sin_respuesta else None
-            return [_Huecos(n, [("", self.txt.plano(v) if v else None, None)])]
+            return [_Huecos(n, [("", self.txt.plano(v) if v else None, None)], self.Q, self.fp)]
         if isinstance(p, PreguntaEssay):
             if llena:
                 texto = f"<b>{n}.</b> <i>Respuesta abierta: se califica a mano.</i>"
@@ -725,10 +766,10 @@ class _Constructor:
     def _burbujas(self, n: int, p: Pregunta, llena: bool) -> _Burbujas:
         if isinstance(p, PreguntaTruefalse):
             v = p.es_verdadero()
-            return _Burbujas(n, ["V", "F"], True, [("V" if v else "F")] if llena and v is not None else [])
+            return _Burbujas(n, ["V", "F"], True, [("V" if v else "F")] if llena and v is not None else [], self.fp)
         opciones = self._opciones_impresas(p)
         correctas = [L for L, _tx, ok in opciones if ok]
-        return _Burbujas(n, [L for L, _tx, _ok in opciones], len(correctas) <= 1, correctas if llena else [])
+        return _Burbujas(n, [L for L, _tx, _ok in opciones], len(correctas) <= 1, correctas if llena else [], self.fp)
 
     def hoja_respuestas(self, llena: bool) -> list:
         """La hoja de respuestas por partes: burbujas para opción múltiple y verdadero/falso, rayas para lo demás.
@@ -864,9 +905,8 @@ class _Constructor:
         return self._p(self.txt.marcado(texto), "parte")
 
     # ---- portada, encabezados y documento ----
-    @staticmethod
-    def _ancho_negrita(texto: str, tam: float) -> float:
-        return pdfmetrics.stringWidth(texto, _FAMILIA + "-B", tam)
+    def _ancho_negrita(self, texto: str, tam: float) -> float:
+        return pdfmetrics.stringWidth(texto, self.fe + "-B", tam)
 
     def _una_linea(self, texto: str, ancho: float, tam: float, alinear: int = 0) -> Paragraph:
         """Un párrafo en negrita de tamaño `tam` que cabe SIEMPRE en una línea de `ancho`: lo que sobre se
@@ -918,14 +958,14 @@ class _Constructor:
         if estudiante:
             w = self.ancho
             # Las etiquetas miden lo que miden (con márgenes anchos no pueden partirse): el resto se reparte entre los espacios.
-            e1 = max(self._ancho_negrita(x, 10.5) for x in ("NOMBRE:", "GRUPO:")) + 14
-            e2 = max(self._ancho_negrita(x, 10.5) for x in ("CÉDULA:", "FECHA:")) + 14
+            e1 = max(self._ancho_negrita(x, self.H * 10.5 / 11) for x in ("NOMBRE:", "GRUPO:")) + 14
+            e2 = max(self._ancho_negrita(x, self.H * 10.5 / 11) for x in ("CÉDULA:", "FECHA:")) + 14
             etiqueta = lambda s: self._p(s, "rotulo")
-            valor = lambda s, estilo="base": self._p(self.txt.marcado(s), estilo)
+            valor = lambda s, estilo="valor": self._p(self.txt.marcado(s), estilo)
             nombre = self._p("<i>CLAVE</i>", "rotulo") if clave else ""
             cuadro = Table([[etiqueta("NOMBRE:"), nombre, etiqueta("CÉDULA:"), ""],
                             [etiqueta("GRUPO:"), valor(_campo(d.grupo, LIMITE_CAMPO)), etiqueta("FECHA:"), valor(_campo(d.fecha, LIMITE_CAMPO))]],
-                           colWidths=[e1, (w - e1 - e2) * 0.56, e2, (w - e1 - e2) * 0.44], rowHeights=[0.95 * cm, 0.95 * cm])
+                           colWidths=[e1, (w - e1 - e2) * 0.56, e2, (w - e1 - e2) * 0.44], rowHeights=[max(0.95 * cm, self.H * 2.1)] * 2)
             cuadro.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.8, colors.black), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                                         ("LEFTPADDING", (0, 0), (-1, -1), 6)]))
             items += [cuadro, Spacer(1, 12)]
@@ -947,10 +987,10 @@ class _Constructor:
             # por igual (hasta 7 pt) y, si aun así sobra, se corta el nombre con «…».
             hueco = 12 if nota else 0
             plano_i, plano_n = self.txt.plano(izquierda), self.txt.plano(nota or "")
-            tam = 10.5
+            tam = self.H * 10.5 / 11
             suma = self._ancho_negrita(plano_i, tam) + self._ancho_negrita(plano_n, tam)
             if suma + hueco > self.ancho - 6:
-                tam = max(7.0, tam * (self.ancho - 6 - hueco) / suma)
+                tam = max(TAM_MIN, tam * (self.ancho - 6 - hueco) / suma)
             ancho_nota = (self._ancho_negrita(plano_n, tam) + 2) if nota else 0
             ancho_izq = self.ancho - ancho_nota - hueco
             celdas = [self._una_linea(izquierda, ancho_izq, tam) if izquierda else ""]
@@ -983,13 +1023,14 @@ class _Constructor:
             c._seccion = seccion                     # para «Página X de Y» dentro de su sección (ver _Lienzo)
             c._margen_der = self.m_der               # el pie va dentro del margen inferior, a la altura que quepa
             c._pie_y = max(0.45 * cm, self.m_inf - 0.8 * cm)
+            c._fuente_pie = self.fe
             # Primera hoja de la sección: lleva el encabezado grande, no el corrido.
             self._vista["n"] = self._vista["n"] + 1 if self._vista["seccion"] == seccion else 1
             self._vista["seccion"] = seccion
             if primera_sin and self._vista["n"] == 1:
                 return
             c.saveState()
-            c.setFont(_FAMILIA, 8)
+            c.setFont(self.fe, 8)
             c.setFillColor(_GRIS)
             y = self.tam[1] - max(0.55 * cm, self.m_sup - 0.8 * cm)      # dentro del margen superior
             c.drawString(self.m_izq, y, self.txt.plano(izquierda))
@@ -1090,7 +1131,9 @@ def generar_pdf(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[str,
                 total_points: float, datos: DatosExamen) -> ResultadoPdf:
     """El PDF del examen (y su clave). `questions` y `answer_key` son los mismos que recibe
     xml_builder.build_xml: aquí no se valida (lo hace la ruta, igual que para el XML)."""
-    _registrar_fuentes()
+    if datos.fuente_titulos not in FUENTES or datos.fuente_preguntas not in FUENTES:
+        raise ValueError("tipo de letra no válido")
+    _registrar_fuentes(datos.fuente_titulos, datos.fuente_preguntas)
     if datos.contenido not in CONTENIDOS:
         raise ValueError("contenido no válido")
     preguntas = [p for p in preguntas_desde_dicts(questions, answer_key) if not p.tiene_error]
