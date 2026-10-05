@@ -11,6 +11,7 @@ import { estado } from './estado.js';
 import { showPanel } from './navegacion.js';
 import { stopProgress } from './progreso.js';
 import { showToast } from './ui/toast.js';
+import { animarCifras } from './ui/cuenta.js';
 import { avisosDelXml, crearIconos, describeArcSlice, detalleDeError, esc_html, friendlyHttpError, getCssVar, humanizeSkipReason, polarToCartesian, textColorOnFill } from './util.js';
 
 // Recibe las preguntas TAL COMO se acaban de enviar a generar el XML
@@ -76,6 +77,7 @@ function updateSuccessStats(questions) {
     <span class="breakdown-total breakdown-points" style="color:var(--color-text);">${fmt(totalPts)}</span>`;
 
   renderPointsPie(items);
+  animarCifras(document.getElementById('points-pie-legend'), '.breakdown-count, .breakdown-points');
 }
 
 // El pastel solo aparece con 2 tipos o más (con uno sería un círculo

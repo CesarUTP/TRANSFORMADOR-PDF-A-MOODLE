@@ -1,5 +1,5 @@
 {
-  "version": "1.9",
+  "version": "1.9.5",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Cimientos para la 2.0: cada pregunta muestra su página, de dónde sale la respuesta y su confianza; las opciones con | o / ya no se rompen; Word con numeración por estilo y celdas combinadas; el código queda ordenado en módulos."
+  "notas": "Revisión más ligera: preguntas plegadas en filas con su resumen, menos etiquetas y botones repetidos, Guía más corta y actualizada. Las respuestas que vienen de la clave del documento (Completar, emparejamiento en LaTeX) ya no salen como «de la IA»."
 }

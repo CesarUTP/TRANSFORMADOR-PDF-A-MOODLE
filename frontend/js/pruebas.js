@@ -12,6 +12,7 @@ import { questionIssues } from './validacion.js';
 import { construirClozeDesdeSegmentos, huecoDeEstructura, indicesUtilizables, parseClozeSegments } from './editor/cloze-segmentos.js';
 import { claveDeOpcionMultiple, letrasCorrectasPorIndice } from './editor/respuesta-indices.js';
 import * as proc from './editor/procedencia.js';
+import { MAX_ABIERTAS, abiertasPorDefecto, recortar } from './editor/plegado-logica.js';
 import { duracionValida, estimarDuracion, onProgressQueue, onProgressStage, stopProgress } from './progreso.js';
 import { avisosDelXml, crearIconos, detalleDeError, esc_html, findClozeBrackets, humanizeSkipReason, splitAnswers, splitOptions } from './util.js';
 
@@ -600,6 +601,40 @@ prueba('completar: estado viejo (sin huecos) o que ya no concuerda se reconstruy
   const h = huecoDeEstructura([{ letra: 'A', options: ['uno', 'dos'], correct_idx: [0] }], 'A', 'uno / dos', 'A. dos');
   igual(h, { options: ['uno', 'dos'], indices: null });
   igual(parseClozeSegments('Es [A: uno / dos]', 'A. dos', [{ letra: 'A', options: ['uno', 'dos'], correct_idx: [0] }])[1].correctIndices, [1]);
+});
+
+// ── Tarjetas plegables (editor/plegado-logica.js) y chips visibles ──────────
+prueba('plegado: sin avisos solo se abre la primera; con avisos, las que piden revisión (tope MAX_ABIERTAS)', () => {
+  igual(abiertasPorDefecto([{}, {}, {}]), [true, false, false]);
+  igual(abiertasPorDefecto([{}, { revisar: true }, {}, { incompleta: true }]), [false, true, false, true]);
+  const muchas = Array.from({ length: 10 }, () => ({ revisar: true }));
+  const r = abiertasPorDefecto(muchas);
+  igual(r.filter(Boolean).length, MAX_ABIERTAS);
+  igual(r.slice(0, MAX_ABIERTAS), [true, true, true]);
+});
+prueba('plegado: listas vacías o inválidas no rompen', () => {
+  igual(abiertasPorDefecto([]), []);
+  igual(abiertasPorDefecto(null), []);
+});
+prueba('plegado: el resumen se recorta a una línea con «…» y colapsa espacios y saltos', () => {
+  igual(recortar('  Hola\n\n  mundo  '), 'Hola mundo');
+  igual(recortar(null), '');
+  const largo = recortar('palabra '.repeat(50), 40);
+  igual(largo.length <= 40 && largo.endsWith('…'), true);
+  igual(recortar('corto', 10), 'corto');
+});
+prueba('chips visibles: solo la página y lo que se sale de lo normal', () => {
+  const t = (d, tipo = 'multichoice') => textos(proc.chipsVisibles(d, tipo));
+  igual(t({ page: 3, origen_respuesta: 'documento', confianza: 'alta' }), ['Pág. 3']);
+  igual(t({ page: 3, origen_respuesta: 'marca', confianza: 'alta' }), ['Pág. 3']);
+  igual(t({ page: 3, origen_respuesta: 'marca', confianza: 'media' }), ['Pág. 3', 'Confianza media']);
+  igual(t({ origen_respuesta: 'ia', confianza: 'baja' }), ['Interpretada por la IA — revisar', 'Confianza baja']);
+  igual(t({ origen_respuesta: 'docente', confianza: 'baja' }), ['Editada por ti']);
+  igual(t({}), []);
+});
+prueba('chips visibles: no cambian lo que chipsDeProcedencia sabe (el detalle completo sigue ahí)', () => {
+  igual(textos(proc.chipsDeProcedencia({ page: 3, origen_respuesta: 'documento', confianza: 'alta' }, 'multichoice')),
+    ['Pág. 3', 'Clave del documento', 'Confianza alta']);
 });
 
 // ── Cómo se muestra (solo en pruebas.html; en Node no hay lista y no hace nada) ──

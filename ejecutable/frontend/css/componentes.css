@@ -254,14 +254,6 @@
 }
 .btn-icon-text:active { transform: scale(0.97); }
 
-/* La Guía es la puerta de entrada de ayuda para un usuario nuevo: se
-   distingue del resto de la navegación (que es neutra). */
-.btn-icon-text.btn-guide {
-  background: var(--color-cta);
-  border-color: transparent;
-  color: #ffffff;
-}
-
 /* Hover solo con mouse: en pantallas táctiles el hover queda "pegado"
    tras un toque. Sin elevar botones (translateY) — solo color. */
 @media (hover: hover) and (pointer: fine) {
@@ -277,7 +269,6 @@
   .btn-icon:hover:not(:disabled) { background: var(--color-surface-hover); color: var(--color-text); }
   .btn-icon.btn-danger-text:hover:not(:disabled) { color: var(--color-error); background: var(--color-error-bg); }
   .btn-icon-text:hover { color: var(--color-text); border-color: var(--color-accent); background: var(--color-surface); }
-  .btn-icon-text.btn-guide:hover { color: #fff; border-color: transparent; background: var(--color-cta-hover); }
 }
 
 /* ── DROPZONE ────────────────────────────────────────────────────────── */
@@ -856,3 +847,51 @@ code.inline {
   .btn-icon-text { padding: 10px; }
   .brand-title { font-size: 17px; }
 }
+
+/* ── GUÍA (ventana de ayuda) ──────────────────────────────────────────────
+   Es un texto para leer, no un tablero: secciones con título y listas, sin
+   una caja por cada párrafo. */
+.guia { display: flex; flex-direction: column; gap: 26px; }
+.guia-sec h3 {
+  font-family: var(--font-heading); font-size: var(--text-lg); font-weight: 800;
+  color: var(--color-text); letter-spacing: -0.2px; margin: 0 0 8px;
+}
+.guia-sec > p { font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); margin: 0 0 8px; max-width: 68ch; }
+.guia-sec strong { color: var(--color-text); font-weight: 700; }
+.guia-lista, .guia-leyenda, .guia-etiquetas { list-style: none; display: flex; flex-direction: column; gap: 10px; padding: 0; margin: 0; }
+.guia-lista li { position: relative; padding-left: 16px; font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); max-width: 68ch; }
+.guia-lista li::before { content: ""; position: absolute; left: 2px; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--color-text-subtle); }
+.guia-leyenda li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); }
+.guia-sw { width: 22px; height: 22px; border-radius: var(--radius-sm); flex-shrink: 0; margin-top: 1px; }
+.sw-actual { background: var(--color-accent); outline: 2px solid var(--color-accent); outline-offset: 1px; }
+.sw-error { border: 1.5px solid var(--color-error); background: var(--color-error-bg); }
+.sw-aviso { border: 1.5px dashed var(--color-warning); }
+.guia-etiquetas li { display: grid; grid-template-columns: minmax(150px, 230px) 1fr; gap: 6px 14px; align-items: start; font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); }
+.guia-etiquetas li > :first-child { justify-self: start; }
+.guia-nota { font-size: var(--text-sm); color: var(--color-text-subtle); margin: 8px 0 0; }
+@media (max-width: 560px) { .guia-etiquetas li { grid-template-columns: 1fr; } }
+
+/* Piezas de las demás pestañas de la Guía (antes eran estilos en línea). */
+.fila-icono { display: flex; gap: 10px; align-items: flex-start; }
+.txt-cuerpo { font-size: 13.5px; line-height: 1.6; color: var(--color-text-muted); }
+strong.txt-fuerte { color: var(--color-text); }
+.ico-fila { flex-shrink: 0; margin-top: 2px; }
+.ico-16, .ico-fila { width: 16px; height: 16px; }
+.ico-14 { width: 14px; height: 14px; }
+.ico-15 { width: 15px; height: 15px; }
+.ico-18 { width: 18px; height: 18px; }
+.ico-acento { color: var(--color-accent); }
+.ico-exito { color: var(--color-success); }
+.ico-error { color: var(--color-error); }
+.ico-aviso { color: var(--color-warning); }
+.ico-mt { color: var(--color-mt); }
+.ico-sutil { color: var(--color-text-subtle); }
+.caja-guia { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 18px; }
+.caja-guia.caja-compacta { padding: 14px; }
+.guia-titulo { font-size: 13px; font-weight: 800; color: var(--color-accent); letter-spacing: 0.2px; margin-bottom: 10px; }
+.pila-10 { display: flex; flex-direction: column; gap: 10px; }
+.pila-14 { display: flex; flex-direction: column; gap: 14px; }
+.pila-16 { display: flex; flex-direction: column; gap: 16px; }
+.mt-8 { margin-top: 8px; }
+.nota-pie { font-size: 12px; color: var(--color-text-subtle); margin-top: 8px; }
+.no-encoge { flex-shrink: 0; }

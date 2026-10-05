@@ -81,7 +81,7 @@ function goToEditorWithParsedData(parsedData, ptsVal) {
   autoDistributePoints(parsedData.questions, ptsVal, 'byType');
   reiniciarPanelPuntos();
   showPanel('editor', { enfocar: false });
-  renderEditor(parsedData);
+  renderEditor(parsedData, { nuevo: true });
   document.getElementById('editor-title')?.focus({ preventScroll: true });
   // Desde este momento la revisión ya se puede retomar si algo se cierra.
   guardarBorradorAhora();

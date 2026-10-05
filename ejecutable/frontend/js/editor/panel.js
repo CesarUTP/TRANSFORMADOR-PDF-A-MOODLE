@@ -3,9 +3,10 @@
  * y navegación entre ellas.
  */
 import { collectEditorData } from './tarjetas.js';
+import { abrirTarjeta, actualizarEstado } from './plegado.js';
 import { crearIconos, esc_html, scrollBehavior } from '../util.js';
 import { questionIssues } from '../validacion.js';
-import { chipsDeProcedencia, chipsHtml, motivoRevisarPrimero, necesitaRevisarPrimero, requiereRevision } from './procedencia.js';
+import { chipsVisibles, chipsHtml, motivoRevisarPrimero, necesitaRevisarPrimero, requiereRevision } from './procedencia.js';
 
 // ── Panel de revisión (mapa del examen) ────────────────────────────────
 // Un cuadrito por pregunta VISIBLE (respeta el filtro activo): la actual
@@ -26,6 +27,8 @@ function _headerBottom() {
 // `enfocar` mueve también el foco del teclado a la tarjeta, para que Tab
 // siga desde ahí (y el lector de pantalla la anuncie).
 export function scrollToEditorCard(card, { enfocar = false } = {}) {
+  // Ir a una pregunta plegada la abre: se llega a verla, no a una fila.
+  abrirTarjeta(card);
   const top = card.getBoundingClientRect().top + window.scrollY - _headerBottom() - 16;
   window.scrollTo({ top, behavior: scrollBehavior() });
   if (enfocar) card.focus({ preventScroll: true });
@@ -37,7 +40,7 @@ export function scrollToEditorCard(card, { enfocar = false } = {}) {
 // aparece sin volver a dibujar la tarjeta. Solo toca el DOM si algo cambió.
 function _actualizarProcedencia(card, q) {
   const data = q ? q.data : null;
-  const chips = chipsDeProcedencia(data, q && q.type);
+  const chips = chipsVisibles(data, q && q.type);
   const html = chipsHtml(chips);
   let fila = card.querySelector(':scope > .card-procedencia');
   if (html && !fila) {
@@ -72,7 +75,7 @@ export function refreshQuestionIssues() {
   cards.forEach((card, i) => {
     const q = questions[i];
     const issues = q ? questionIssues(q, answer_key[q.num]) : [];
-    if (q) _actualizarProcedencia(card, q);
+    if (q) { _actualizarProcedencia(card, q); actualizarEstado(card); }
     const texto = issues.join(' · ');
     card.classList.toggle('is-incomplete', issues.length > 0);
     if (card.dataset.issues !== texto) card.dataset.issues = texto;

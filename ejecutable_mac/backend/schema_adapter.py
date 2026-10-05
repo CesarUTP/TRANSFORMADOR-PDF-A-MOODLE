@@ -93,6 +93,18 @@ def _norm(s: Any) -> str:
 
 _QNUM_PREFIX = re.compile(r"^\s*\d{1,3}\s*[.)]\s+(?=\S)")
 
+# Flechas con que un documento escribe «1 → a»: Unicode, ASCII y LaTeX
+# («1 $\\rightarrow$ a», típico de lo que sale de un chat de IA). Todas se leen
+# como «-» antes de buscar los pares; sin esto una clave en LaTeX no se
+# reconocía y la respuesta se contaba como «interpretada por la IA».
+_FLECHAS = re.compile(r"\$?\s*\\(?:long)?(?:right|to|mapsto)(?:arrow)?\b\s*\$?|-+>|=+>|[→⇒⟶–—]")
+
+
+def _pares_de_clave(clave_texto: Any) -> List[Tuple[str, str]]:
+    """«1-b, 2-a» / «1 → b» / «1 $\\rightarrow$ b» → [("1", "b"), ("2", "a")]."""
+    texto = _FLECHAS.sub("-", str(clave_texto or ""))
+    return re.findall(r"(\d+)\s*[-.:]\s*([A-Za-z])\b", texto)
+
 
 def _clave(q: dict) -> str:
     """clave_texto sin el número de la pregunta que a veces antepone el
@@ -202,7 +214,7 @@ def _matching(q: dict) -> Tuple[dict, str, Dict[str, str]]:
     pairs: Dict[str, str] = {}
     # Clave compacta del documento ("1-b, 2-a"): se aplica tal cual, en
     # código, si todos los pares caen dentro de las columnas.
-    key_pairs = re.findall(r"(\d+)\s*[-.→:]\s*([A-Za-z])\b", str(q.get("clave_texto") or ""))
+    key_pairs = _pares_de_clave(q.get("clave_texto"))
     if key_pairs and all(1 <= int(n) <= len(left) and ord(L.lower()) - 96 <= len(col_b) for n, L in key_pairs):
         pairs = {str(int(n)): L.lower() for n, L in key_pairs}
     # Sin clave en el documento (respuesta_marcada=false) las parejas que el
@@ -287,11 +299,32 @@ def _desde_clave(q: dict, qtype: str) -> bool:
         raw = _clave(q)
         return bool(raw) and raw.split()[0].strip(".,;:()").lower() in _TF
     if qtype == "matching":
-        key_pairs = re.findall(r"(\d+)\s*[-.→:]\s*([A-Za-z])\b", str(q.get("clave_texto") or ""))
+        key_pairs = _pares_de_clave(q.get("clave_texto"))
         left = [x for x in (q.get("items_izquierda") or []) if str(x).strip()]
         right = [x for x in (q.get("items_derecha") or []) if str(x).strip()][:len(_LETTERS)]
         return bool(key_pairs) and all(1 <= int(n) <= len(left) and ord(L.lower()) - 96 <= len(right) for n, L in key_pairs)
+    if qtype == "cloze":
+        return _cloze_coincide_con_clave(q)
     return False
+
+
+def _cloze_coincide_con_clave(q: dict) -> bool:
+    """«Completar»: el documento trae una clave separada y la opción correcta de
+    CADA hueco que devolvió la IA aparece en ella (como palabras completas). Si
+    la IA «corrigió» la clave o no hay clave, no se atribuye al documento: la
+    respuesta queda como de la IA. Es solo una etiqueta; la respuesta no cambia."""
+    clave = _norm(q.get("clave_texto"))
+    huecos = q.get("huecos") or []
+    if not clave or not huecos:
+        return False
+    for h in huecos:
+        correctas = [_norm(_line(o.get("texto"))) for o in (h.get("opciones") or []) if o.get("correcta")]
+        if not correctas:
+            return False
+        for texto in correctas:
+            if not texto or not re.search(r"(?<!\w)" + re.escape(texto) + r"(?!\w)", clave):
+                return False
+    return True
 
 
 def adapt(payload: dict) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]]]:

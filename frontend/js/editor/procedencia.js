@@ -96,6 +96,20 @@ export function chipsDeProcedencia(data, tipo) {
   return chips;
 }
 
+/**
+ * Lo que la tarjeta muestra de verdad: la página y solo lo que se SALE de lo
+ * normal. «Clave del documento», «Marca del documento» y «Confianza alta» son
+ * el caso corriente y salen en casi todas las tarjetas, así que se omiten: lo
+ * que queda a la vista (IA, editada por ti, confianza media o baja) es lo que
+ * pide atención. El detalle completo sigue en chipsDeProcedencia.
+ */
+export function chipsVisibles(data, tipo) {
+  return chipsDeProcedencia(data, tipo).filter(c =>
+    c.clave === 'pagina'
+    || (c.clave === 'origen' && (c.valor === 'ia' || c.valor === 'docente'))
+    || (c.clave === 'confianza' && c.valor !== 'alta'));
+}
+
 /** HTML de la fila de chips ('' si no hay ninguna). Los íconos los dibuja crearIconos(). */
 export function chipsHtml(chips) {
   return chips.map(c =>

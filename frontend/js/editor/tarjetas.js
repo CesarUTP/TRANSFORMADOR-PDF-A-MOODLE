@@ -4,6 +4,7 @@
 import { claveDeOpcionMultiple, letrasCorrectasPorIndice } from './respuesta-indices.js';
 import { clozeBuildTextAndAnswer, initClozeBuilder, parseClozeSegments, renderClozeBuilder } from './cloze.js';
 import { scrollToEditorCard } from './panel.js';
+import { abiertasEnOrden, aplicarPlegado } from './plegado.js';
 import { _editorTotalPoints, reiniciarPanelPuntos, sincronizarPanelPuntos } from './puntos-ui.js';
 import { apiFetch } from '../api.js';
 import { imagenesDeTarjeta, imagenesHtml, prepararImagenes } from './imagenes.js';
@@ -11,7 +12,7 @@ import { estado, notificar } from '../estado.js';
 import { DEFAULT_TYPE_WEIGHTS, fmtPoints } from '../puntos.js';
 import { showToast } from '../ui/toast.js';
 import { crearIconos, esc_html, findClozeBrackets, humanizeSkipReason, scrollBehavior, splitAnswers, textoConFormulas, tieneFormulas } from '../util.js';
-import { chipsDeProcedencia, chipsHtml, copiaSinImagenes, firmaRespuesta, marcarSiCambio, mostrarAvisoConfianzaLegado, mostrarAvisoMarcaLegado, motivoRevisarPrimero, necesitaRevisarPrimero, requiereRevision, respuestaCambio } from './procedencia.js';
+import { chipsVisibles, chipsHtml, copiaSinImagenes, firmaRespuesta, marcarSiCambio, mostrarAvisoConfianzaLegado, mostrarAvisoMarcaLegado, motivoRevisarPrimero, necesitaRevisarPrimero, requiereRevision, respuestaCambio } from './procedencia.js';
 
 // estado.currentParseResult es la única fuente de datos que usa renderEditor()
 // para redibujar TODAS las tarjetas de golpe (al añadir una pregunta, o
@@ -73,6 +74,8 @@ export function deleteQuestionCard(btn) {
         syncParseResultFromDOM();
         const res = estado.currentParseResult;
         const donde = Math.min(pos, res.questions.length);
+        const abiertas = abiertasEnOrden();
+        abiertas.splice(donde, 0, true);
         res.questions.splice(donde, 0, borrada);
         // Se renumera todo: la clave va por número de pregunta.
         const nuevaClave = {};
@@ -82,7 +85,7 @@ export function deleteQuestionCard(btn) {
           if (clave) nuevaClave[i + 1] = clave;
         });
         res.answer_key = nuevaClave;
-        renderEditor(res);
+        renderEditor(res, { abiertas });
         const back = document.querySelectorAll('.editor-card')[donde];
         if (back) scrollToEditorCard(back, { enfocar: true });
         showToast(`Pregunta ${pos + 1} restaurada`, 'info');
@@ -210,7 +213,9 @@ export function recoverSkippedQuestion(skippedIdx) {
     if (Number.isInteger(o.despues_de) && o.despues_de >= pos) o.despues_de += 1;
   });
 
-  renderEditor(estado.currentParseResult);
+  const abiertas = abiertasEnOrden();
+  abiertas.splice(pos, 0, true);
+  renderEditor(estado.currentParseResult, { abiertas });
   showToast(sq.type === 'essay' ? `Pregunta ${nextNum} añadida — revisa su enunciado` : `Pregunta ${nextNum} añadida — marca la respuesta correcta`, 'info');
   requestAnimationFrame(() => {
     const card = document.querySelector(`.editor-card[data-qnum="${nextNum}"]`);
@@ -360,7 +365,11 @@ function _sanearDatos(data) {
   });
 }
 
-export function renderEditor(data) {
+// `nuevo`: un examen recién abierto (se aplican los plegados por defecto).
+// Sin él se conserva lo que el docente tenía abierto (`abiertas` lo fija quien
+// inserta una pregunta en medio y desplaza las demás).
+export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
+  const abiertasPrevias = nuevo ? null : (abiertas || abiertasEnOrden());
   _sanearDatos(data);
   estado.currentParseResult = data;
   const container = document.getElementById('editor-questions-container');
@@ -439,6 +448,9 @@ export function renderEditor(data) {
         Puntos: <strong id="points-assigned-label">0 / 0 pts</strong>
         <i data-lucide="chevron-down" class="chev" aria-hidden="true"></i>
       </button>
+      <button type="button" id="btn-plegar-todas" class="btn btn-ghost toolbar-btn toolbar-btn-corto" data-accion="alternarTodas" aria-label="Abrir todas las preguntas">
+        <i data-lucide="chevrons-up-down" style="width:16px;height:16px;"></i> <span>Abrir todas</span>
+      </button>
     </div>
     <div id="filter-chips-bar" class="collapsible-panel"></div>
     <div id="points-tool-panel" class="collapsible-panel" style="flex-direction:column;gap:12px;">
@@ -504,7 +516,14 @@ export function renderEditor(data) {
   // Un solo aviso: los chips de filtro, el mapa del examen y el contador
   // de puntos se actualizan solos (ver suscripciones en app.js).
   notificar('editor redibujado');
+  aplicarPlegado(abiertasPrevias);
   crearIconos(container);
+  // Un examen recién abierto entra en cascada (solo la primera pantalla);
+  // al añadir o borrar una pregunta no se repite.
+  if (nuevo) {
+    container.classList.add('entrando');
+    setTimeout(() => container.classList.remove('entrando'), 700);
+  }
 }
 
 // Miniaturas de las imágenes de una pregunta no incluida: el motivo dice
@@ -594,7 +613,7 @@ function _cardHtml(q, i, keyInfo) {
     mostrarAvisoMarcaLegado(q.data) && _flagBadge('flag-neutral', 'highlighter', 'respuesta por marca', 'La respuesta se tomó directamente de la marca del documento (color, resaltado, subrayado, negrita o X en un cuadro), leída del PDF sin que la IA la interprete.'),
     q.data.rescatada && _flagBadge('flag-review', 'list-plus', 'rescatada', 'La IA no había incluido esta pregunta; se agregó con lo que se pudo extraer del documento. Revisa su enunciado, su tipo y su respuesta.'),
   ].filter(Boolean).join('');
-  const chips = chipsHtml(chipsDeProcedencia(q.data, q.type));
+  const chips = chipsHtml(chipsVisibles(q.data, q.type));
 
   // num y type ya vienen saneados (_sanearDatos); se escapan igual, por si
   // algún día se llama a esta función con datos sin pasar por ahí.
@@ -602,9 +621,12 @@ function _cardHtml(q, i, keyInfo) {
   let html = `<article class="editor-card" tabindex="-1" data-idx="${i}" data-qnum="${N}" data-qtype="${T}"${needsReview ? ' data-review="1"' : ''}${necesitaRevisarPrimero(q.data) ? ` data-revisar="1" data-motivo="${esc_html(motivoRevisarPrimero(q.data))}"` : ''} aria-labelledby="q-title-${i}">
     <div class="card-head">
       <div class="card-title">
-        <h3 id="q-title-${i}">Pregunta ${N}</h3>
+        <h3 id="q-title-${i}"><button type="button" class="card-toggle" data-accion="alternarTarjeta" data-este aria-expanded="false" aria-label="Abrir la pregunta ${N}">
+          <i data-lucide="chevron-right" class="card-chevron" aria-hidden="true"></i>Pregunta ${N}</button></h3>
         ${_tipoBadgeHtml(q, N, T)}
       </div>
+      <p class="card-resumen"></p>
+      <span class="card-estado"></span>
       <div class="card-meta">
         <input type="number" class="q-points form-input" step="0.01" min="0" value="${q.points != null ? esc_html(q.points) : ''}" aria-label="Puntos de la pregunta ${N}" title="Puntos que vale esta pregunta" />
         <span class="pts-unit" aria-hidden="true">pts</span>

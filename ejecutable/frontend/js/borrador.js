@@ -144,7 +144,7 @@ export function abrirEnEditor(meta, parse) {
   estado.downloadBlob = null;
   showPanel('editor', { enfocar: false });
   reiniciarPanelPuntos();
-  renderEditor(parse);
+  renderEditor(parse, { nuevo: true });
   document.getElementById('editor-title')?.focus({ preventScroll: true });
 }
 

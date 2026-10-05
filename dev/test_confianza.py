@@ -550,6 +550,65 @@ finally:
     ia_proveedor.quitar_proveedor("falso")
     ia_gemini.get_api_key = _ia_key
 
+# ══════════════════════════════════════════════════════════════════════════
+print("7. Respuestas que SÍ están en el documento no se cuentan como «de la IA» (QUIZ GERENCIA, 1.9.5)")
+# ══════════════════════════════════════════════════════════════════════════
+# Un examen con clave separada (tabla «Clave de respuestas») en «Completar» y en
+# emparejamiento salía con TODAS las respuestas «interpretadas por la IA» y
+# «revisar primero»: «Completar» nunca se atribuía al documento y la clave de
+# emparejamiento escrita en LaTeX («1 $\\rightarrow$ a») no se reconocía.
+
+def _cloze_q(orden, clave_texto, correcta_a="carta del proyecto", correcta_b="alinear objetivos"):
+    return {
+        "orden": orden, "tipo": "cloze", "enunciado": "Se define como la [A] y sirve para [B].",
+        "huecos": [
+            {"marcador": "A", "opciones": [{"texto": "matriz de trazabilidad", "correcta": False},
+                                           {"texto": correcta_a, "correcta": True}]},
+            {"marcador": "B", "opciones": [{"texto": "detallar el código", "correcta": False},
+                                           {"texto": correcta_b, "correcta": True}]},
+        ],
+        "clave_texto": clave_texto, "respuesta_marcada": True, "confianza": "alta",
+    }
+
+
+def _matching_q(orden, clave_texto):
+    return {
+        "orden": orden, "tipo": "matching", "enunciado": "Relaciona.",
+        "items_izquierda": ["uno", "dos", "tres"], "items_derecha": ["a1", "b1", "c1"],
+        "parejas": [{"izquierda": 1, "derecha": 1}, {"izquierda": 2, "derecha": 2}, {"izquierda": 3, "derecha": 3}],
+        "clave_texto": clave_texto, "respuesta_marcada": True, "confianza": "alta",
+    }
+
+
+def _etiquetas(payload):
+    qs, key = adapt(payload)
+    confianza.etiquetar(qs, key)
+    return [(q["num"], q["data"].get("origen_respuesta"), q["data"].get("confianza")) for q in qs], key
+
+
+res, key = _etiquetas({"preguntas": [
+    _cloze_q(1, "1. carta del proyecto\n2. alinear objetivos"),
+    _cloze_q(2, ""),
+    _cloze_q(3, "1. otra cosa\n2. alinear objetivos"),
+    _matching_q(4, "1 $\\rightarrow$ a\n2 $\\rightarrow$ b\n3 $\\rightarrow$ c"),
+    _matching_q(5, "1 → a; 2 → b; 3 → c"),
+    _matching_q(6, "1-a, 2-b, 3-c"),
+    _matching_q(7, ""),
+]})
+ok(res[0][1:] == ("documento", "alta"), "completar con clave que coincide con la opción de cada hueco: origen «documento», confianza alta")
+ok(res[1][1:] == ("ia", "media"), "completar SIN clave separada: sigue siendo «ia» (no se atribuye al documento sin evidencia)")
+ok(res[2][1:] == ("ia", "media"), "completar cuya clave NO coincide con lo que marcó la IA: «ia» (la IA pudo corregir la clave)")
+ok(res[3][1:] == ("documento", "alta"), "emparejamiento con la clave en LaTeX («1 $\\rightarrow$ a»): «documento»")
+ok(res[4][1:] == ("documento", "alta"), "emparejamiento con flechas Unicode («1 → a»): «documento»")
+ok(res[5][1:] == ("documento", "alta"), "emparejamiento con la clave compacta de siempre («1-a, 2-b»): sigue igual")
+ok(res[6][1:] == ("ia", "media"), "emparejamiento sin clave: «ia»")
+ok(key[4]["answer"] == "1-a; 2-b; 3-c" and key[1]["answer"].startswith("A. carta del proyecto"),
+   "la respuesta no cambia: solo cambia la etiqueta")
+import schema_adapter as _sa
+ok(_sa._pares_de_clave("1 $\\rightarrow$ a\n2 \\to b; 3 => c, 4 – d") == [("1", "a"), ("2", "b"), ("3", "c"), ("4", "d")],
+   "_pares_de_clave lee flechas LaTeX, ASCII y Unicode")
+ok(_sa._pares_de_clave("c") == [] and _sa._pares_de_clave("60") == [], "una clave de una sola letra o un número no son pares")
+
 print()
 print("TODO OK" if not fallas else f"{fallas} FALLA(S)")
 sys.exit(1 if fallas else 0)
