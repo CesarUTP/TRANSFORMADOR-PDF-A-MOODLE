@@ -16,6 +16,7 @@ import { MAX_ABIERTAS, abiertasPorDefecto, recortar } from './editor/plegado-log
 import { detectarProblemas, normalizar, similitud } from './editor/calidad.js';
 import { faltaRespuesta } from './validacion.js';
 import { describirSugerencia } from './editor/sugerencias-logica.js';
+import { LIMITE_CAMPO, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, valoresIniciales } from './ui/exportar-pdf-logica.js';
 import { ZOOMS, paginaDe, recuadroValido, urlOriginal, vecino, zoomVecino } from './ui/original-logica.js';
 import { duracionValida, estimarDuracion, onProgressQueue, onProgressStage, stopProgress } from './progreso.js';
 import { avisosDelXml, crearIconos, detalleDeError, esc_html, findClozeBrackets, humanizeSkipReason, splitAnswers, splitOptions } from './util.js';
@@ -793,6 +794,63 @@ prueba('IA asistida: la propuesta se lee en palabras', () => {
   igual(describirSugerencia('matching', { pares: { 1: 'a' } }, q), 'Perú → Lima');
   igual(describirSugerencia('cloze', { huecos: { A: 1 } }, q), 'Espacio A: opción 2');
   igual(describirSugerencia('truefalse', { respuesta: 'Falso' }, q), 'Falso');
+});
+
+prueba('Exportar PDF: lo guardado se valida campo por campo', () => {
+  const v = valoresIniciales({ docente: '  Ana   Pérez ', papel: 'folio', contenido: 'solo_clave', campos_estudiante: 'sí', materia: 5, institucion: 'x'.repeat(500) });
+  igual(v.docente, 'Ana Pérez');
+  igual(v.papel, 'carta');                       // desconocido: el de siempre
+  igual(v.contenido, 'solo_clave');
+  igual(valoresIniciales({ contenido: 'folleto_hoja_clave' }).contenido, 'folleto_hoja_clave');
+  igual(v.campos_estudiante, true);              // no es booleano: el de siempre
+  igual(v.materia, '');                          // no es texto
+  igual(v.institucion.length, LIMITE_CAMPO);
+  igual(valoresIniciales(null).contenido, 'examen_y_clave');
+  igual(valoresIniciales(null).partes, true);
+  igual(valoresIniciales({ partes: false }).partes, false);
+  igual(valoresIniciales({ partes: 'no' }).partes, true);
+  igual(valoresIniciales('basura').papel, 'carta');
+});
+prueba('Exportar PDF: no se recuerda la fecha y sí lo demás', () => {
+  const g = paraGuardar({ docente: 'Ana', fecha: '12 de octubre de 2026', papel: 'a4', instrucciones: 'Sin calculadora.' });
+  igual('fecha' in g, false);
+  igual([g.docente, g.papel, g.instrucciones], ['Ana', 'a4', 'Sin calculadora.']);
+});
+prueba('Exportar PDF: fecha legible y textos limpios', () => {
+  igual(fechaLegible('2026-10-12'), '12 de octubre de 2026');
+  igual(fechaLegible('2026-02-03'), '3 de febrero de 2026');
+  igual(fechaLegible(''), '');
+  igual(fechaLegible('12/10/2026'), '');
+  igual(fechaLegible('2026-13-01'), '');
+  igual(limpiarCampo('  a \n  b\t c '), 'a b c');
+  igual(limpiarTexto('uno\r\n\n\n\ndos  tres'), 'uno\n\ndos tres');
+});
+prueba('Exportar PDF: el cuerpo lleva el mismo examen del XML y los datos limpios', () => {
+  const examen = { filename: 'a.docx', total_points: 20, questions: [{ num: 1 }], answer_key: { 1: { answer: 'A' } } };
+  const c = cuerpoPdf(examen, { docente: ' Ana ', fecha: '12 de octubre de 2026', contenido: 'solo_examen' });
+  igual([c.filename, c.total_points, c.questions, c.answer_key], ['a.docx', 20, [{ num: 1 }], { 1: { answer: 'A' } }]);
+  igual([c.datos.docente, c.datos.fecha, c.datos.contenido, c.datos.papel], ['Ana', '12 de octubre de 2026', 'solo_examen', 'carta']);
+});
+prueba('Exportar PDF: nombre del archivo y avisos de la respuesta', () => {
+  igual(nombreDeDescarga("attachment; filename=\"examen.pdf\"; filename*=UTF-8''Ex%C3%A1men.pdf", 'x.pdf'), 'Exámen.pdf');
+  igual(nombreDeDescarga('attachment; filename="a.pdf"', 'x.pdf'), 'a.pdf');
+  igual(nombreDeDescarga(null, 'x.pdf'), 'x.pdf');
+  igual(avisosDelPdf('{"paginas":3,"avisos":["Uno.","  "]}'), ['Uno.']);
+  igual(avisosDelPdf('no es json'), []);
+  igual(avisosDelPdf(null), []);
+});
+
+prueba('Exportar PDF: logos y encabezado de la institución', () => {
+  igual(logoValido('iVBORw0KGgo='), true);
+  igual(logoValido(''), false);
+  igual(logoValido('data:image/png;base64,AAAA'), false);   // se guarda sin el «data:» delante
+  igual(logoValido(5), false);
+  igual(medidasReducidas(1600, 800), { ancho: 320, alto: 160 });
+  igual(medidasReducidas(100, 50), { ancho: 100, alto: 50 });   // no se agranda
+  igual(medidasReducidas(0, 50), null);
+  const v = valoresIniciales({ facultad: ' Ingeniería ', rotulo_docente: 'jefe', logo_derecho: 'AAAA', logo_izquierdo: '<script>' });
+  igual([v.facultad, v.rotulo_docente, v.logo_derecho, v.logo_izquierdo], ['Ingeniería', 'facilitador', 'AAAA', '']);
+  igual(paraGuardar({ logo_izquierdo: 'AAAA', fecha: 'x' }).logo_izquierdo, 'AAAA');
 });
 
 // ── Cómo se muestra (solo en pruebas.html; en Node no hay lista y no hace nada) ──

@@ -249,7 +249,7 @@ RUTAS_ESPERADAS = {
     ("GET", "/api/salud"), ("GET", "/api/actualizacion"), ("GET", "/api/acerca"),
     ("POST", "/api/check_special_cases"), ("POST", "/api/parse"), ("POST", "/api/normalize_with_ai"),
     ("POST", "/api/parse_stream"), ("POST", "/api/normalize_with_ai_stream"), ("POST", "/api/importar_xml"),
-    ("POST", "/api/generate_xml"),
+    ("POST", "/api/generate_xml"), ("POST", "/api/exportar_pdf"),
     ("GET", "/api/history"), ("GET", "/api/history/{record_id}/download"),
     ("GET", "/api/history/{record_id}/editor"), ("DELETE", "/api/history/{record_id}"),
     ("POST", "/api/retroalimentacion"), ("POST", "/api/mejorar_enunciado"), ("POST", "/api/sugerir_respuesta"),

@@ -52,6 +52,7 @@ export function resetAll() {
   clearFile();
   estado.downloadBlob = null;
   estado.downloadFilename = '';
+  estado.exportable = null;
   estado.originalId = null;
   estado.errorReturnPanel = 'upload';
   showPanel('upload');

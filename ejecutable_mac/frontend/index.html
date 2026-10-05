@@ -253,12 +253,16 @@
             <i data-lucide="download" class="ico-18"></i>
             <span id="btn-download-label">Descargar Moodle XML</span>
           </button>
+          <button type="button" id="btn-exportar-pdf" class="btn btn-ghost btn-lg" data-accion="abrirExportarPdf">
+            <i data-lucide="file-text" class="ico-16"></i>
+            Exportar examen en PDF
+          </button>
           <button type="button" id="btn-back-to-review" class="btn btn-ghost btn-lg">
             <i data-lucide="arrow-left" class="ico-16"></i>
             Volver a la revisión
           </button>
         </div>
-        <p class="success-next">Siguiente paso: impórtalo en Moodle, en <em>Banco de preguntas → Importar</em>. <button type="button" class="text-link" data-accion="openHelp" data-arg="moodle">Ver cómo, paso a paso</button></p>
+        <p class="success-next">Siguiente paso: impórtalo en Moodle, en <em>Banco de preguntas → Importar</em>. <button type="button" class="text-link" data-accion="openHelp" data-arg="moodle">Ver cómo, paso a paso</button><br>Para tenerlo en papel o guardar la clave, usa <strong>Exportar examen en PDF</strong>: es un documento de apoyo, lo que se importa a Moodle sigue siendo el XML.</p>
 
         <!-- Preguntas omitidas: se rellena en updateSuccessStats(). -->
         <div id="success-skipped-notice" class="callout is-warning" style="display:none;margin-bottom:20px;"></div>
@@ -768,6 +772,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
           </div>
 
           <div class="callout" style="margin-top:16px;">
+            <i data-lucide="file-text"></i>
+            <span><strong>¿Lo quieres también en papel?</strong> En la pantalla final, <em>Exportar examen en PDF</em> genera el mismo examen listo para imprimir y su clave de respuestas (en páginas aparte). Es solo un apoyo: a Moodle siempre se importa el XML.</span>
+          </div>
+
+          <div class="callout" style="margin-top:16px;">
             <i data-lucide="info"></i>
             <span>Los nombres y la ubicación de los menús cambian según la versión de Moodle de tu institución; lo que no cambia es el orden: crear el cuestionario, importar el XML en el banco de preguntas y añadir esas preguntas al cuestionario.</span>
           </div>
@@ -871,6 +880,115 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <button type="button" id="orig-sig-rev" class="btn btn-ghost btn-sm" title="Siguiente para revisar (Mayús + →)">Siguiente para revisar <i data-lucide="eye" class="ico-16"></i></button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ EXPORTAR EL EXAMEN EN PDF ════════════════
+       Pide los datos de la portada y descarga el examen impreso con su clave
+       (backend/exportar_pdf.py). Lógica en ui/exportar-pdf.js. -->
+  <div id="modal-pdf" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pdf-titulo">
+    <div class="modal-box modal-md">
+      <div class="modal-header">
+        <h2 class="modal-title" id="pdf-titulo">
+          <i data-lucide="file-text" style="width:20px;height:20px;color:var(--color-accent);"></i>
+          Exportar examen en PDF
+        </h2>
+        <button type="button" id="btn-pdf-cerrar" class="btn btn-icon" aria-label="Cerrar" title="Cerrar">
+          <i data-lucide="x" class="ico-18"></i>
+        </button>
+      </div>
+      <form id="pdf-form" class="pdf-form" novalidate>
+        <div class="modal-body pdf-cuerpo">
+          <p class="pdf-intro">El mismo examen que acabas de generar, con el encabezado de tu institución, listo para el papel. Todos los datos son opcionales y se recuerdan para el próximo examen.</p>
+          <div class="config-grid">
+            <div class="form-group">
+              <label class="field-label" for="pdf-institucion">Institución</label>
+              <input type="text" id="pdf-institucion" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Universidad Tecnológica de Panamá">
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="pdf-facultad">Facultad</label>
+              <input type="text" id="pdf-facultad" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Facultad de Ingeniería de Sistemas">
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="pdf-departamento">Departamento</label>
+              <input type="text" id="pdf-departamento" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Ingeniería de Software">
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="pdf-materia">Materia</label>
+              <input type="text" id="pdf-materia" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Diseño de Interfaces">
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="pdf-actividad">Tipo de actividad</label>
+              <input type="text" id="pdf-actividad" class="form-input" maxlength="160" autocomplete="off" list="pdf-actividades" placeholder="Ej.: Parcial N.2">
+              <datalist id="pdf-actividades"></datalist>
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="pdf-grupo">Grupo o curso</label>
+              <input type="text" id="pdf-grupo" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: 1IL-131">
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="pdf-docente">Docente</label>
+              <input type="text" id="pdf-docente" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Ing. Ana Pérez">
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="pdf-fecha">Fecha del examen</label>
+              <input type="date" id="pdf-fecha" class="form-input">
+            </div>
+          </div>
+          <fieldset class="pdf-grupo">
+            <legend class="field-label">Logos <span class="opcional">(opcional)</span></legend>
+            <div class="pdf-logos">
+              <div class="pdf-logo" id="pdf-logo-izq-caja">
+                <div class="pdf-logo-vista"><img id="pdf-logo-izq-vista" alt="Logo izquierdo"></div>
+                <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo izquierdo<input type="file" id="pdf-logo-izq-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+                <button type="button" id="pdf-logo-izq-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
+              </div>
+              <div class="pdf-logo" id="pdf-logo-der-caja">
+                <div class="pdf-logo-vista"><img id="pdf-logo-der-vista" alt="Logo derecho"></div>
+                <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo derecho<input type="file" id="pdf-logo-der-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+                <button type="button" id="pdf-logo-der-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
+              </div>
+            </div>
+            <p class="field-hint pdf-pista">Elige uno o los dos: salen a los lados del título. La imagen se reduce y se guarda solo en este equipo para el próximo examen.</p>
+          </fieldset>
+          <div class="form-group">
+            <label class="field-label" for="pdf-instrucciones">Indicaciones generales <span class="opcional">(una por línea)</span></label>
+            <textarea id="pdf-instrucciones" class="form-input" rows="3" maxlength="1500" placeholder="Toda respuesta dejada a lápiz no tiene derecho a reclamo.&#10;No se permite ningún dispositivo electrónico."></textarea>
+          </div>
+          <fieldset class="pdf-grupo">
+            <legend class="field-label">Qué incluir</legend>
+            <label class="pdf-opcion"><input type="radio" name="contenido" value="examen_y_clave"> <span><strong>El examen y su clave</strong><small>La clave va en páginas aparte, al final. Imprime solo las primeras para los estudiantes.</small></span></label>
+            <label class="pdf-opcion"><input type="radio" name="contenido" value="solo_examen"> <span><strong>Solo el examen</strong><small>Sin respuestas: listo para entregar.</small></span></label>
+            <label class="pdf-opcion"><input type="radio" name="contenido" value="folleto_hoja_clave"> <span><strong>Folleto, hoja de respuestas y clave</strong><small>Para repartir: un folleto de preguntas sin espacios para escribir, una hoja de respuestas para llenar (con nombre y calificación) y la clave, que es esa misma hoja ya llena. Cada parte empieza en su propia página.</small></span></label>
+            <label class="pdf-opcion"><input type="radio" name="contenido" value="solo_clave"> <span><strong>Solo la clave</strong><small>Cada respuesta con su letra y su texto, porque Moodle mezcla las opciones.</small></span></label>
+          </fieldset>
+          <div class="config-grid">
+            <div class="form-group">
+              <label class="field-label" for="pdf-papel">Papel</label>
+              <select id="pdf-papel" name="papel" class="form-input">
+                <option value="carta">Carta</option>
+                <option value="legal">Legal</option>
+                <option value="a4">A4</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="pdf-rotulo">El docente se llama</label>
+              <select id="pdf-rotulo" name="rotulo_docente" class="form-input">
+                <option value="facilitador">Facilitador</option>
+                <option value="docente">Docente</option>
+                <option value="profesor">Profesor</option>
+              </select>
+            </div>
+          </div>
+          <label class="pdf-opcion"><input type="checkbox" name="partes"> <span><strong>Dividir el examen en partes</strong><small>Agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con la indicación para el estudiante y el valor de cada parte. Las preguntas del mismo tipo quedan juntas.</small></span></label>
+          <label class="pdf-opcion"><input type="checkbox" name="campos_estudiante"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>
+          <p class="field-error" id="pdf-error" role="alert" hidden></p>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" id="btn-pdf-exportar" class="btn btn-primary"><span id="btn-pdf-exportar-etiqueta">Exportar PDF</span></button>
+          <button type="button" id="btn-pdf-cancelar" class="btn btn-ghost">Cancelar</button>
+        </div>
+      </form>
     </div>
   </div>
 

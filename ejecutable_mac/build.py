@@ -101,6 +101,14 @@ cmd = [
     # al vivir en backend/ como datos, no se detecta solo ──────────────────
     "--collect-all", "PIL",
     "--hidden-import", "pypdfium2",
+    # ── exportar_pdf.py (PDF imprimible del examen): reportlab y su detector
+    # de codificaciones; backend/ va como datos, así que tampoco se detectan
+    # solos los módulos estándar que solo usa el código de backend/ ─────────
+    "--collect-all", "reportlab",
+    "--collect-all", "chardet",
+    "--hidden-import", "random",
+    "--hidden-import", "unicodedata",
+    "--hidden-import", "base64",
 ]
 
 print("Construyendo ConvertidorMoodle.app ...")

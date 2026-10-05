@@ -11,6 +11,8 @@ export const estado = {
   /** XML generado, listo para descargar (Blob). */
   downloadBlob: null,
   downloadFilename: '',
+  /** Lo que se envió para generar ese XML (preguntas, clave, puntos): de ahí sale el PDF. */
+  exportable: null,
   /** Última respuesta del backend: preguntas y clave. */
   currentParseResult: null,
   /** PDF de esta sesión que el servidor conserva en memoria (null: Historial, Word, TXT o ya no está). */

@@ -9,7 +9,7 @@ Cada uno lleva una COPIA del backend, el frontend y el launcher: si no se
 sincronizan antes de compilar, el instalador sale con código viejo (pasó:
 quedaron días atrás, sin pipeline.py, schema_adapter.py ni mark_resolver.py).
 
-Copia solo lo que la app necesita para correr: los módulos .py de backend/,
+Copia solo lo que la app necesita para correr: los módulos .py de backend/ (y su carpeta fuentes/),
 su requirements.txt, todo frontend/ (index.html, css/, js/) y launcher.py.
 Borra los archivos que ya no existen en el original. Nunca copia un .env
 (la API key se pone a mano junto al ejecutable instalado).
@@ -47,6 +47,9 @@ def _sources() -> list:
            (ROOT / "dev" / "generar_avisos_terceros.py", Path("generar_avisos_terceros.py")),
            (ROOT / "requirements-build.lock", Path("requirements-build.lock"))]
     out += [(src, Path("backend") / src.name) for src in sorted((ROOT / "backend").glob("*.py"))]
+    # Fuente del PDF del examen (backend/fuentes/): backend/ va entero como datos del instalador.
+    out += [(src, src.relative_to(ROOT)) for src in sorted((ROOT / "backend" / "fuentes").glob("*"))
+            if src.is_file() and not src.name.startswith(".")]
     out += [(src, src.relative_to(ROOT))
             for src in sorted((ROOT / "frontend").rglob("*"))
             if src.is_file() and not src.name.startswith(".")
@@ -67,7 +70,8 @@ def _desfase(dest: Path) -> tuple:
                          if not dst.exists() or not filecmp.cmp(src, dst, shallow=False)]
     expected = {dest / rel for _, rel in _sources()}
     sobran = []
-    for folder, pattern in ((dest / "backend", "*.py"), (dest / "frontend", "**/*")):
+    for folder, pattern in ((dest / "backend", "*.py"), (dest / "backend" / "fuentes", "*"),
+                            (dest / "frontend", "**/*")):
         if not folder.is_dir():
             continue
         for stale in folder.rglob(pattern) if pattern.startswith("**") else folder.glob(pattern):
@@ -114,6 +118,7 @@ PRUEBAS = (
     "test_original.py",
     "test_ia_asistida.py",
     "test_importar_xml.py",
+    "test_exportar_pdf.py",
 )
 
 

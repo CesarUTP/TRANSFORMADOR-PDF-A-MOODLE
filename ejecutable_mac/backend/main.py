@@ -8,6 +8,7 @@ Los endpoints están por tema (cada uno es un APIRouter sin prefijo):
 
   rutas_convertir.py   /api/check_special_cases, /api/parse*, /api/normalize_with_ai*
   rutas_xml.py         /api/generate_xml
+  rutas_pdf.py         /api/exportar_pdf
   rutas_historial.py   /api/history*
   rutas_ayuda.py       /api/retroalimentacion, /api/mejorar_enunciado
   rutas_clave.py       /api/salud, /api/actualizacion, /api/acerca, /api/api-key
@@ -47,6 +48,7 @@ import rutas_clave
 import rutas_convertir
 import rutas_historial
 import rutas_original
+import rutas_pdf
 import rutas_xml
 
 logger = logging.getLogger(__name__)
@@ -104,6 +106,7 @@ def startup_event():
 app.include_router(rutas_clave.router)       # /api/salud, /api/actualizacion, /api/acerca, /api/api-key
 app.include_router(rutas_convertir.router)   # /api/check_special_cases, /api/parse*, /api/normalize_with_ai*
 app.include_router(rutas_xml.router)         # /api/generate_xml
+app.include_router(rutas_pdf.router)         # /api/exportar_pdf
 app.include_router(rutas_historial.router)   # /api/history*
 app.include_router(rutas_ayuda.router)       # /api/retroalimentacion, /api/mejorar_enunciado, /api/sugerir_respuesta
 app.include_router(rutas_original.router)    # /api/original/{id}/pagina/{n}

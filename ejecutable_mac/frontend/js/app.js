@@ -25,6 +25,7 @@ import { closeHistory, confirmDeleteHistory, downloadHistoryDesdeBoton, loadHist
 import { confirmDiscardReview, resetAll, showPanel } from './navegacion.js';
 import { generateXml, saveFileToUser } from './resultado.js';
 import { abrirAcerca } from './ui/acerca.js';
+import { abrirExportarPdf, iniciarExportarPdf } from './ui/exportar-pdf.js';
 import { iniciarOriginal, verOriginal } from './ui/original.js';
 import { avisarSiHayVersionNueva } from './ui/actualizacion.js';
 import { claveObligatoria, comprobarClaveAlIniciar } from './ui/clave.js';
@@ -51,7 +52,7 @@ suscribir(() => {
 // ACCIONES[nombre] con: data-arg (texto), data-arg-n (número), data-este (el
 // propio elemento) o nada. Solo las funciones de esta lista: un atributo
 // inyectado no puede llamar a otra cosa.
-const ACCIONES = { sugerirRespuesta, verOriginal, alternarTarjeta, alternarTodas, addMatchingPairRow, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, changeQuestionType, closeHistory, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDeleteHistory, confirmDiscardReview, deleteQuestionCard, downloadHistoryDesdeBoton, generarRetroalimentacion, generateXml, jumpToNextFlagged, loadHistoryList, openHelp, renderHistoryList, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, reopenHistory, resetAll, selectFilter, setPointsToolMode, startDeleteHistory, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
+const ACCIONES = { abrirExportarPdf, sugerirRespuesta, verOriginal, alternarTarjeta, alternarTodas, addMatchingPairRow, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, changeQuestionType, closeHistory, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDeleteHistory, confirmDiscardReview, deleteQuestionCard, downloadHistoryDesdeBoton, generarRetroalimentacion, generateXml, jumpToNextFlagged, loadHistoryList, openHelp, renderHistoryList, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, reopenHistory, resetAll, selectFilter, setPointsToolMode, startDeleteHistory, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
 
 function _ejecutarAccion(el, nombre) {
   if (!Object.hasOwn(ACCIONES, nombre)) return;
@@ -202,6 +203,7 @@ window.addEventListener('pagehide', () => {
 iniciarArrastreImagenes(document.getElementById('editor-questions-container'));
 registrarPlegado(document.getElementById('editor-questions-container'));
 iniciarOriginal();
+iniciarExportarPdf();
 
 document.getElementById('editor-questions-container').addEventListener('input', e => {
   if (e.target.classList.contains('q-points')) updatePointsAssignedLabel();

@@ -42,16 +42,10 @@ class GenerateXmlRequest(BaseModel):
     questions: List[Dict[str, Any]]
     answer_key: Dict[str, Any]
 
-def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any]):
-    """
-    Todo el trabajo síncrono de /api/generate_xml (validar, construir el
-    XML, parsearlo de vuelta para chequear que quedó bien formado, guardar
-    en el historial). Corre en threadpool — igual que parse_document en
-    /api/parse — para no bloquear el event loop de FastAPI: con un examen
-    grande (150 preguntas) este trabajo, hecho directo en la corrutina,
-    retrasaba los eventos NDJSON de OTRAS conversiones en curso en
-    /api/parse_stream.
-    """
+def validar_para_exportar(questions: List[Dict[str, Any]], parsed_answer_key: Dict[int, Any]) -> None:
+    """Lo que debe cumplir lo que llega del editor antes de generar el XML o el PDF (2.1: el PDF
+    sale de la misma revisión y rechaza lo mismo, así nunca muestra algo que el XML no aceptaría).
+    Lanza HTTPException 422 con la lista de errores."""
     # ── 6.5 Re-validate: el usuario pudo editar libremente en el navegador,
     # así que no podemos confiar en que los datos que llegan aquí sigan
     # cumpliendo el spec Moodle (p. ej. un emparejamiento sin pares, o una
@@ -64,7 +58,7 @@ def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any
     # validate_questions la salta sin revisar su forma (type/data/imágenes),
     # así que aceptarla aquí tal cual dejaría pasar cualquier dato sin
     # validar, viniendo directo de la petición HTTP.
-    campos_no_permitidos = [q.get("num", "?") for q in req.questions if isinstance(q, dict) and "error" in q]
+    campos_no_permitidos = [q.get("num", "?") for q in questions if isinstance(q, dict) and "error" in q]
     if campos_no_permitidos:
         raise HTTPException(
             status_code=422,
@@ -74,7 +68,7 @@ def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any
             },
         )
 
-    validation = validate_questions(req.questions, parsed_answer_key, strict=True)
+    validation = validate_questions(questions, parsed_answer_key, strict=True)
     if not validation.is_valid:
         raise HTTPException(
             status_code=422,
@@ -83,6 +77,20 @@ def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any
                 "errors": validation.errors,
             },
         )
+
+
+
+def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any]):
+    """
+    Todo el trabajo síncrono de /api/generate_xml (validar, construir el
+    XML, parsearlo de vuelta para chequear que quedó bien formado, guardar
+    en el historial). Corre en threadpool — igual que parse_document en
+    /api/parse — para no bloquear el event loop de FastAPI: con un examen
+    grande (150 preguntas) este trabajo, hecho directo en la corrutina,
+    retrasaba los eventos NDJSON de OTRAS conversiones en curso en
+    /api/parse_stream.
+    """
+    validar_para_exportar(req.questions, parsed_answer_key)
 
     # ── 7. Compute weighted grades & generate XML ───────────────────────
     grades = compute_grades(req.questions, req.total_points)

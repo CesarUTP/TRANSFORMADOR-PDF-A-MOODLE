@@ -1,5 +1,5 @@
 {
-  "version": "2.0",
+  "version": "2.1",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Versión 2.0: revisa cada pregunta junto a su página del PDF original, pide a la IA una respuesta cuando falta la clave (tú decides), abre un XML de Moodle existente, avisa de preguntas repetidas y el XML se importa bien en Moodle. Interfaz más ligera, con preguntas plegables."
+  "notas": "Versión 2.1: exporta el examen en PDF para imprimir, con tu encabezado y logos, partes con su indicación y valor, y la clave. También folleto de preguntas, hoja de respuestas y clave. A Moodle se sigue importando solo el XML."
 }

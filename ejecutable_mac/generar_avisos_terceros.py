@@ -85,6 +85,12 @@ def main(salida: Path) -> None:
         seccion(f"Fuente {f.stem.replace('LICENSE-', '')} (Fontsource 5.3.0)", "SIL OFL 1.1",
                 [("LICENSE", f.read_text(encoding="utf-8").strip())])
 
+    # Fuente del PDF del examen (backend/fuentes/, ver exportar_pdf.py).
+    dejavu = (raiz / "backend" if (raiz / "backend").is_dir() else raiz.parent / "backend") / "fuentes" / "LICENSE-dejavu.txt"
+    if dejavu.is_file():
+        seccion("Fuente DejaVu Sans 2.37 (PDF del examen)", "Bitstream Vera / dominio público",
+                [("LICENSE", dejavu.read_text(encoding="utf-8").strip())])
+
     # Paquetes de Python. PyObjC (macOS) son ~150 paquetes del mismo
     # proyecto y la misma licencia: van agrupados.
     dists = {}

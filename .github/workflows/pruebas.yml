@@ -89,6 +89,9 @@ jobs:
       - name: Importar un Moodle XML (2.0)
         if: ${{ !cancelled() }}
         run: python dev/test_importar_xml.py
+      - name: Exportar el examen en PDF (2.1)
+        if: ${{ !cancelled() }}
+        run: python dev/test_exportar_pdf.py
       # Solo una vez (no en los 3 sistemas: compara archivos, no depende
       # del SO). Antes nadie se enteraba de que ejecutable/ o
       # ejecutable_mac/ quedaron desfasados de backend/frontend hasta

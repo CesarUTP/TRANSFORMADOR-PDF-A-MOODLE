@@ -226,6 +226,7 @@ export async function generateXml() {
     const blob = await res.blob();
     estado.downloadBlob = blob;
     estado.downloadFilename = filename;
+    estado.exportable = { filename: payload.filename, total_points: payload.total_points, questions, answer_key };
   } catch (err) {
     stopProgress(false);
     showError('No se pudo conectar con la aplicación para generar el archivo. Tu revisión está intacta: vuelve e inténtalo de nuevo. (Detalle: ' + err.message + ')', 'editor');

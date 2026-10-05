@@ -41,4 +41,5 @@ Ninguna evidencia externa formal (sin testimonios, casos de estudio ni métricas
 2. Preferir rechazar o marcar una pregunta como omitida, con motivo claro, antes que arriesgar un XML importado silenciosamente incorrecto.
 3. El docente revisa y aprueba cada pregunta antes de exportar — nunca un flujo de un solo clic sin inspección.
 4. Cero fricción técnica para el usuario final: instalador nativo, sin configuración ni conocimientos de Moodle XML requeridos.
-5. El procesamiento del documento se queda en el equipo del usuario; hacia la IA sale el texto extraído y, cuando hace falta (código en captura, marcas en imágenes, PDF escaneados), imágenes de algunas páginas; nunca el archivo original.
+5. Lo que se importa a Moodle es SOLO el XML. Desde la 2.1 la app también genera un PDF imprimible del examen y su clave, pero como documento de apoyo (sale de las mismas preguntas y la misma clave; nunca otro camino a Moodle).
+6. El procesamiento del documento se queda en el equipo del usuario; hacia la IA sale el texto extraído y, cuando hace falta (código en captura, marcas en imágenes, PDF escaneados), imágenes de algunas páginas; nunca el archivo original.

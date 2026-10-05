@@ -61,6 +61,7 @@ flowchart LR
 - **Marcas leídas del PDF, no adivinadas**: color, resaltado, subrayado, negrita, ✓ y cuadros con X — resueltas **en código**, no por la IA.
 - **PDF escaneados**: "Leer el PDF con IA" lee las páginas como imagen (hasta 15); como el código no puede comprobar ninguna marca, todas sus respuestas salen con confianza baja y un aviso («Escaneado: verifica cada respuesta contra el original»).
 - **Importar un Moodle XML** existente (uno de la app o exportado de tu banco de preguntas) al editor, sin IA: se corrige y se vuelve a generar. Lo que no se puede editar (calculadas, arrastrar y soltar…) queda entre las «no incluidas», con su motivo ([`backend/importar_xml.py`](backend/importar_xml.py)).
+- **Exportar el examen en PDF** (2.1): junto al XML, un botón genera el examen impreso —con docente, materia, actividad, grupo y fecha que el docente escribe— y su **clave de respuestas** en páginas aparte (o solo uno de los dos). Es un documento de apoyo: sale de las mismas preguntas y la misma clave que el XML, así que no puede discrepar de él; la clave pone letra Y texto de cada respuesta porque Moodle mezcla las opciones. Las fórmulas `\( … \)` se escriben como texto (x², ½, √, α) y lo que no se entiende queda en LaTeX con un aviso ([`backend/exportar_pdf.py`](backend/exportar_pdf.py), [`backend/latex_texto.py`](backend/latex_texto.py); ReportLab y la fuente DejaVu Sans, que viaja en `backend/fuentes/`).
 - **Rechaza lo que no es un examen**: si suben una presentación, un manual o un artículo, lo dice claro en vez de inventar preguntas.
 
 </td>
@@ -199,6 +200,8 @@ Conversor a Moodle XML/
 │   ├── mark_resolver.py  ← Decide en código las respuestas marcadas
 │   ├── originales.py     ← El PDF de la sesión, solo en memoria, y el dibujo del recorte
 │   ├── importar_xml.py   ← Moodle XML existente → editor (sin IA)
+│   ├── exportar_pdf.py   ← El examen y su clave como PDF imprimible (ReportLab)
+│   ├── latex_texto.py    ← Fórmulas \( … \) → texto Unicode, para el PDF
 │   ├── validator.py      ← Validación contra el spec Moodle XML
 │   ├── xml_builder.py    ← Generación del XML Moodle
 │   ├── database.py       ← Historial de conversiones (SQLite)
@@ -383,6 +386,7 @@ Las preguntas **cloze** usan corchetes en el cuerpo, con letras correlativas si 
 | `POST` | `/api/retroalimentacion` | «Escribir con IA»: retroalimentación de UNA pregunta (texto plano) |
 | `POST` | `/api/mejorar_enunciado` | «Mejorar redacción»: enunciado corregido; se rechaza si la IA cambió números, fórmulas o código |
 | `POST` | `/api/sugerir_respuesta` | «Sugerir respuesta con IA»: propone la respuesta de UNA pregunta sin clave; el código la valida contra la pregunta (`NO_SE` es una respuesta válida) |
+| `POST` | `/api/exportar_pdf` | Mismas preguntas y clave que `/api/generate_xml` más los datos de la portada; devuelve el PDF del examen y/o su clave (no se guarda en el Historial) |
 | `POST` | `/api/importar_xml` | Abre un Moodle XML existente en el editor (sin IA): devuelve lo mismo que `/api/parse` |
 | `GET` | `/api/original/{id}/pagina/{n}` | PNG de la página (o del recorte de la pregunta) del PDF de esta sesión; `?vista=recorte\|pagina&recuadro=x0,y0,x1,y1&zoom=1..3` |
 | `GET` | `/api/history` | Últimos 300 exámenes convertidos (solo metadatos; el buscador filtra sobre esta lista) |

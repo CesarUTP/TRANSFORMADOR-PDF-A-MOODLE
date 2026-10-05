@@ -144,14 +144,18 @@ _URLS_PERMITIDAS = ("https://aistudio.google.com/", "https://ai.google.dev/", PR
 
 def save_xml_file(filename: str, b64_content: str) -> dict:
     """
-    Abre el dialogo nativo 'Guardar como', escribe el XML y devuelve
-    {'saved': True, 'path': '...'} o {'saved': False}.
+    Abre el dialogo nativo 'Guardar como', escribe el archivo (el XML de Moodle o,
+    desde la 2.1, el PDF del examen: el tipo sale de la extension del nombre) y
+    devuelve {'saved': True, 'path': '...'} o {'saved': False}.
     """
     try:
         if _VENTANA is None:
             return {"saved": False, "error": "Ventana no disponible"}
 
         import webview
+
+        # Solo xml o pdf: es lo que la interfaz guarda.
+        ext = "pdf" if str(filename).lower().endswith(".pdf") else "xml"
 
         # Carpeta inicial: Descargas del usuario
         downloads = os.path.join(os.path.expanduser("~"), "Downloads")
@@ -162,7 +166,7 @@ def save_xml_file(filename: str, b64_content: str) -> dict:
             webview.SAVE_DIALOG,
             directory=downloads,
             save_filename=os.path.basename(str(filename)),
-            file_types=("Archivos XML (*.xml)", "Todos los archivos (*.*)"),
+            file_types=(f"Archivos {ext.upper()} (*.{ext})", "Todos los archivos (*.*)"),
         )
 
         if not result:
@@ -170,9 +174,9 @@ def save_xml_file(filename: str, b64_content: str) -> dict:
 
         save_path = result[0] if isinstance(result, (list, tuple)) else result
 
-        # Asegurar extension .xml
-        if not save_path.lower().endswith(".xml"):
-            save_path += ".xml"
+        # Asegurar la extension del archivo
+        if not save_path.lower().endswith("." + ext):
+            save_path += "." + ext
 
         content_bytes = base64.b64decode(b64_content)
         with open(save_path, "wb") as f:
