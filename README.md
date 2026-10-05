@@ -59,7 +59,8 @@ flowchart LR
 - **7 tipos de pregunta Moodle**: opción múltiple, verdadero/falso, emparejamiento, completar (Cloze), ensayo, respuesta corta y numérica.
 - **Respuestas múltiples** en opción múltiple y en cada espacio de un Cloze.
 - **Marcas leídas del PDF, no adivinadas**: color, resaltado, subrayado, negrita, ✓ y cuadros con X — resueltas **en código**, no por la IA.
-- **PDF escaneados**: "Leer el PDF con IA" lee las páginas como imagen (hasta 15).
+- **PDF escaneados**: "Leer el PDF con IA" lee las páginas como imagen (hasta 15); como el código no puede comprobar ninguna marca, todas sus respuestas salen con confianza baja y un aviso («Escaneado: verifica cada respuesta contra el original»).
+- **Importar un Moodle XML** existente (uno de la app o exportado de tu banco de preguntas) al editor, sin IA: se corrige y se vuelve a generar. Lo que no se puede editar (calculadas, arrastrar y soltar…) queda entre las «no incluidas», con su motivo ([`backend/importar_xml.py`](backend/importar_xml.py)).
 - **Rechaza lo que no es un examen**: si suben una presentación, un manual o un artículo, lo dice claro en vez de inventar preguntas.
 
 </td>
@@ -70,6 +71,9 @@ flowchart LR
 - **Mapa del examen** siempre a la vista: la pregunta actual, las **incompletas en rojo** y las que conviene mirar con **borde ámbar discontinuo**. *Generar XML* no avanza mientras haya incompletas.
 - **La primera pregunta a la vista**: avisos en una línea y herramientas plegadas (Mostrar por tipo · Puntos); *Añadir pregunta* va al final.
 - **Nada se pierde**: *Deshacer* al borrar una pregunta o repartir puntos, la revisión **se guarda sola** (*Retomar revisión* al volver a abrir la app), *Volver a la revisión* desde la pantalla final y *Descartar* con confirmación.
+- **Revisión con el original** (PDF): el chip «Pág. N» abre un modal con el recorte de la página donde está la pregunta, resaltado, junto a la respuesta que propone la app con su origen y su confianza; zoom, «página completa» y paso a la anterior/siguiente (o «para revisar») sin cerrar. El PDF vive **solo en memoria** mientras la app está abierta (nada del original va al Historial) ([`backend/originales.py`](backend/originales.py), [`frontend/js/ui/original.js`](frontend/js/ui/original.js)).
+- **IA asistida, siempre marcada**: cuando la clave no trae una respuesta, «Sugerir respuesta con IA» la propone con su motivo; el código la valida contra las opciones de la pregunta y solo se aplica si el docente la acepta (queda como «Sugerida por IA», confianza baja). Además, avisos de calidad **sin IA**: preguntas repetidas, opciones iguales, opciones que dependen de las demás («todas las anteriores», que Moodle desordena) ([`frontend/js/editor/calidad.js`](frontend/js/editor/calidad.js)).
+- **Preguntas plegables**: cada pregunta es una fila con su resumen; solo se abren las que piden revisión.
 - **Atajos de teclado**: <kbd>J</kbd>/<kbd>K</kbd> siguiente/anterior, <kbd>I</kbd> siguiente incompleta, <kbd>R</kbd> siguiente para revisar, <kbd>?</kbd> abre la guía.
 - **Constructor visual de Cloze**: sin escribir corchetes a mano.
 - **Progreso en vivo**: avance real de la subida del archivo, por qué pregunta va la IA y cuánto falta (se puede cancelar).
@@ -193,6 +197,8 @@ Conversor a Moodle XML/
 │   ├── parser.py         ← Lee el formato de texto que devuelve la IA
 │   ├── schema_adapter.py ← Convierte la salida JSON de la IA
 │   ├── mark_resolver.py  ← Decide en código las respuestas marcadas
+│   ├── originales.py     ← El PDF de la sesión, solo en memoria, y el dibujo del recorte
+│   ├── importar_xml.py   ← Moodle XML existente → editor (sin IA)
 │   ├── validator.py      ← Validación contra el spec Moodle XML
 │   ├── xml_builder.py    ← Generación del XML Moodle
 │   ├── database.py       ← Historial de conversiones (SQLite)
@@ -376,6 +382,9 @@ Las preguntas **cloze** usan corchetes en el cuerpo, con letras correlativas si 
 | `POST` | `/api/generate_xml` | Recibe las preguntas (editadas o no) y devuelve el Moodle XML final |
 | `POST` | `/api/retroalimentacion` | «Escribir con IA»: retroalimentación de UNA pregunta (texto plano) |
 | `POST` | `/api/mejorar_enunciado` | «Mejorar redacción»: enunciado corregido; se rechaza si la IA cambió números, fórmulas o código |
+| `POST` | `/api/sugerir_respuesta` | «Sugerir respuesta con IA»: propone la respuesta de UNA pregunta sin clave; el código la valida contra la pregunta (`NO_SE` es una respuesta válida) |
+| `POST` | `/api/importar_xml` | Abre un Moodle XML existente en el editor (sin IA): devuelve lo mismo que `/api/parse` |
+| `GET` | `/api/original/{id}/pagina/{n}` | PNG de la página (o del recorte de la pregunta) del PDF de esta sesión; `?vista=recorte\|pagina&recuadro=x0,y0,x1,y1&zoom=1..3` |
 | `GET` | `/api/history` | Últimos 300 exámenes convertidos (solo metadatos; el buscador filtra sobre esta lista) |
 | `GET` | `/api/history/{id}/download` | Vuelve a descargar el XML de una conversión anterior |
 | `GET` | `/api/history/{id}/editor` | Preguntas tal como quedaron en el editor, para *Reabrir* esa revisión |

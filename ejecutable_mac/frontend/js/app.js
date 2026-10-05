@@ -9,10 +9,11 @@
 // Primero: lee el token de la URL antes de que nada la toque (ver api.js).
 import './api.js';
 import { borrarBorrador, guardarBorrador, guardarBorradorAhora, mostrarAvisoBorrador, retomarBorrador } from './borrador.js';
-import { cancelConversion, clearFile, handleFileSelected, runConversion, runNormalizeWithAI } from './carga.js';
+import { cancelConversion, clearFile, handleFileSelected, runConversion, runImportXml, runNormalizeWithAI } from './carga.js';
 import { aiPromptText, btnConvert, btnCopyPrompt, btnRemoveFile, copyIcon, copyLabel, dropZone, fileInput, modalDisclaimer, modalHelp, modalHistory, modalTabs, pointsError, pointsInput } from './dom.js';
 import { clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti } from './editor/cloze.js';
 import { refreshFilterChips, selectFilter, toggleFilterMenu } from './editor/filtros.js';
+import { sugerirRespuesta } from './editor/sugerencias.js';
 import { alternarTarjeta, alternarTodas, registrarPlegado } from './editor/plegado.js';
 import { buildReviewRail, closeRailGrid, jumpRelative, jumpToNextFlagged, scheduleIssuesRefresh, toggleRailGrid } from './editor/panel.js';
 import { toggleAddQuestionMenu } from './editor/paneles.js';
@@ -24,6 +25,7 @@ import { closeHistory, confirmDeleteHistory, downloadHistoryDesdeBoton, loadHist
 import { confirmDiscardReview, resetAll, showPanel } from './navegacion.js';
 import { generateXml, saveFileToUser } from './resultado.js';
 import { abrirAcerca } from './ui/acerca.js';
+import { iniciarOriginal, verOriginal } from './ui/original.js';
 import { avisarSiHayVersionNueva } from './ui/actualizacion.js';
 import { claveObligatoria, comprobarClaveAlIniciar } from './ui/clave.js';
 import { cerrarConfirmacion } from './ui/confirmar.js';
@@ -49,7 +51,7 @@ suscribir(() => {
 // ACCIONES[nombre] con: data-arg (texto), data-arg-n (número), data-este (el
 // propio elemento) o nada. Solo las funciones de esta lista: un atributo
 // inyectado no puede llamar a otra cosa.
-const ACCIONES = { alternarTarjeta, alternarTodas, addMatchingPairRow, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, changeQuestionType, closeHistory, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDeleteHistory, confirmDiscardReview, deleteQuestionCard, downloadHistoryDesdeBoton, generarRetroalimentacion, generateXml, jumpToNextFlagged, loadHistoryList, openHelp, renderHistoryList, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, reopenHistory, resetAll, selectFilter, setPointsToolMode, startDeleteHistory, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
+const ACCIONES = { sugerirRespuesta, verOriginal, alternarTarjeta, alternarTodas, addMatchingPairRow, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, changeQuestionType, closeHistory, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDeleteHistory, confirmDiscardReview, deleteQuestionCard, downloadHistoryDesdeBoton, generarRetroalimentacion, generateXml, jumpToNextFlagged, loadHistoryList, openHelp, renderHistoryList, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, reopenHistory, resetAll, selectFilter, setPointsToolMode, startDeleteHistory, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
 
 function _ejecutarAccion(el, nombre) {
   if (!Object.hasOwn(ACCIONES, nombre)) return;
@@ -199,6 +201,7 @@ window.addEventListener('pagehide', () => {
 
 iniciarArrastreImagenes(document.getElementById('editor-questions-container'));
 registrarPlegado(document.getElementById('editor-questions-container'));
+iniciarOriginal();
 
 document.getElementById('editor-questions-container').addEventListener('input', e => {
   if (e.target.classList.contains('q-points')) updatePointsAssignedLabel();
@@ -229,6 +232,12 @@ document.getElementById('btn-error-normalize').addEventListener('click', () => {
 
 btnConvert.addEventListener('click', async () => {
   if (!estado.selectedFile) return;
+  // Un XML de Moodle se abre tal cual (sin IA ni aviso de imágenes); sus puntos vienen en el XML.
+  if (/\.xml$/i.test(estado.selectedFile.name)) {
+    btnConvert.disabled = true;
+    try { await runImportXml(parseFloat(pointsInput.value) || 100); } finally { btnConvert.disabled = !estado.selectedFile; }
+    return;
+  }
   const ptsVal = parseFloat(pointsInput.value);
   if (isNaN(ptsVal) || ptsVal <= 0) {
     pointsError.style.display = 'block';

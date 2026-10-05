@@ -245,14 +245,15 @@ print("Rutas (main.py + rutas_*.py): el middleware cubre TODAS")
 # Si agregas un endpoint, súmalo aquí A PROPÓSITO (y la prueba de abajo exige
 # que también rechace sin token y con Host/Origin ajeno).
 RUTAS_ESPERADAS = {
-    ("GET", "/"), ("GET", "/openapi.json"), ("GET", "/docs"), ("GET", "/docs/oauth2-redirect"), ("GET", "/redoc"),
+    ("GET", "/"),   # sin /docs, /redoc ni /openapi.json (1.10): ya no existen
     ("GET", "/api/salud"), ("GET", "/api/actualizacion"), ("GET", "/api/acerca"),
     ("POST", "/api/check_special_cases"), ("POST", "/api/parse"), ("POST", "/api/normalize_with_ai"),
-    ("POST", "/api/parse_stream"), ("POST", "/api/normalize_with_ai_stream"),
+    ("POST", "/api/parse_stream"), ("POST", "/api/normalize_with_ai_stream"), ("POST", "/api/importar_xml"),
     ("POST", "/api/generate_xml"),
     ("GET", "/api/history"), ("GET", "/api/history/{record_id}/download"),
     ("GET", "/api/history/{record_id}/editor"), ("DELETE", "/api/history/{record_id}"),
-    ("POST", "/api/retroalimentacion"), ("POST", "/api/mejorar_enunciado"),
+    ("POST", "/api/retroalimentacion"), ("POST", "/api/mejorar_enunciado"), ("POST", "/api/sugerir_respuesta"),
+    ("GET", "/api/original/{original_id}/pagina/{pagina}"),
     ("GET", "/api/api-key"), ("POST", "/api/api-key"), ("DELETE", "/api/api-key"),
 }
 MONTAJES_ESPERADOS = {"/static", "/css", "/js", "/img", "/fonts", "/legal"}
@@ -272,7 +273,7 @@ ok(_montajes == MONTAJES_ESPERADOS, "los montajes estáticos son los mismos")
 
 _CON_TOKEN_SIN_PELIGRO = {"/api/acerca"}  # los demás GET/DELETE harían red o borrarían datos
 for _metodo, _ruta in sorted(_rutas):
-    _url = _ruta.replace("{record_id}", "1")
+    _url = _ruta.replace("{record_id}", "1").replace("{original_id}", "a" * 32).replace("{pagina}", "1")
     _x = f"{_metodo} {_ruta}"
     _pide = lambda **kw: c.request(_metodo, _url, content=b"" if _metodo in ("POST", "DELETE") else None, **kw)  # noqa: E731
     # Host ajeno y Origin ajeno: se rechazan en TODA ruta (con o sin token).

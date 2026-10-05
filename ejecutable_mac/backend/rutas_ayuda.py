@@ -3,6 +3,7 @@ rutas_ayuda.py — ayudas de IA del editor, de UNA pregunta cada una.
 
   POST /api/retroalimentacion   «Escribir con IA»
   POST /api/mejorar_enunciado   «Mejorar redacción»
+  POST /api/sugerir_respuesta   «Sugerir respuesta» (IA asistida, 2.0)
 
 Tienen su propio cupo (_CUPOS_IA_PUNTUAL en estado_servidor.py): no esperan
 detrás de una conversión larga.
@@ -39,3 +40,10 @@ class EnunciadoBody(BaseModel):
 @router.post("/api/mejorar_enunciado")
 def api_mejorar_enunciado(body: EnunciadoBody):
     return _con_cupo_puntual(ayuda_ia.mejorar_enunciado, body.pregunta)
+
+
+# IA asistida: cuando la clave falta, la IA PROPONE una respuesta (con su motivo).
+# El editor la muestra marcada y solo la aplica si el docente la acepta.
+@router.post("/api/sugerir_respuesta")
+def api_sugerir_respuesta(body: RetroalimentacionBody):
+    return _con_cupo_puntual(ayuda_ia.sugerir_respuesta, body.pregunta, body.respuesta)

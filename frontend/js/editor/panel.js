@@ -3,9 +3,12 @@
  * y navegación entre ellas.
  */
 import { collectEditorData } from './tarjetas.js';
+import { estado } from '../estado.js';
 import { abrirTarjeta, actualizarEstado } from './plegado.js';
 import { crearIconos, esc_html, scrollBehavior } from '../util.js';
-import { questionIssues } from '../validacion.js';
+import { faltaRespuesta, questionIssues } from '../validacion.js';
+import { detectarProblemas } from './calidad.js';
+import { refreshFilterChips } from './filtros.js';
 import { chipsVisibles, chipsHtml, motivoRevisarPrimero, necesitaRevisarPrimero, requiereRevision } from './procedencia.js';
 
 // ── Panel de revisión (mapa del examen) ────────────────────────────────
@@ -41,7 +44,7 @@ export function scrollToEditorCard(card, { enfocar = false } = {}) {
 function _actualizarProcedencia(card, q) {
   const data = q ? q.data : null;
   const chips = chipsVisibles(data, q && q.type);
-  const html = chipsHtml(chips);
+  const html = chipsHtml(chips, { original: !!estado.originalId });
   let fila = card.querySelector(':scope > .card-procedencia');
   if (html && !fila) {
     fila = document.createElement('div');
@@ -62,6 +65,33 @@ function _actualizarProcedencia(card, q) {
   if (requiereRevision(data)) card.dataset.review = '1'; else delete card.dataset.review;
 }
 
+// Avisos de calidad de una tarjeta: una nota ámbar bajo su cabecera (no bloquea nada).
+function _actualizarCalidad(card, lista) {
+  const texto = lista.join(' · ');
+  if (lista.length) {
+    card.dataset.calidad = texto;
+    // La marca «para revisar» del mapa y de la fila plegada la comparten con los avisos de siempre.
+    card.dataset.review = '1';
+    if (!card.dataset.motivo) card.dataset.motivo = lista[0];
+  } else {
+    delete card.dataset.calidad;
+  }
+  let box = card.querySelector(':scope > .card-calidad');
+  if (!lista.length) { box?.remove(); return; }
+  if (!box) {
+    box = document.createElement('div');
+    box.className = 'card-calidad';
+    box.setAttribute('role', 'note');
+    (card.querySelector(':scope > .card-issues') || card.querySelector(':scope > .card-procedencia') || card.querySelector(':scope > .card-head'))
+      .insertAdjacentElement('afterend', box);
+  }
+  if (box.dataset.texto !== texto) {
+    box.dataset.texto = texto;
+    box.innerHTML = lista.map(t => `<span><i data-lucide="triangle-alert" aria-hidden="true"></i>${esc_html(t)}</span>`).join('');
+    crearIconos(box);
+  }
+}
+
 // Marca cada tarjeta (borde rojo + qué le falta) y devuelve cuántas
 // quedan incompletas. collectEditorData recorre las tarjetas en el mismo
 // orden del DOM, así que el índice de cada pregunta es el de su tarjeta.
@@ -71,11 +101,18 @@ export function refreshQuestionIssues() {
   // Sin imágenes: la validación no las usa y copiarlas (base64, varios MB)
   // en cada pausa al escribir hacía lenta la revisión con muchas imágenes.
   const { questions, answer_key } = collectEditorData({ conImagenes: false });
+  // Avisos de calidad (duplicadas, opciones repetidas…): reglas fijas, sin IA (calidad.js).
+  const problemas = detectarProblemas(questions, answer_key, { conImagen: cards.map(c => !!c.querySelector('.q-image')) });
   let incomplete = 0;
   cards.forEach((card, i) => {
     const q = questions[i];
     const issues = q ? questionIssues(q, answer_key[q.num]) : [];
-    if (q) { _actualizarProcedencia(card, q); actualizarEstado(card); }
+    if (q) _actualizarProcedencia(card, q);
+    // Un aviso de calidad cuenta como «para revisar» (cuadrito ámbar, «Revisar», atajo R).
+    _actualizarCalidad(card, problemas[i] || []);
+    // «Sugerir respuesta con IA» solo cuando a la pregunta le falta la respuesta.
+    card.classList.toggle('sin-respuesta', faltaRespuesta(issues));
+    if (q) actualizarEstado(card);
     const texto = issues.join(' · ');
     card.classList.toggle('is-incomplete', issues.length > 0);
     if (card.dataset.issues !== texto) card.dataset.issues = texto;
@@ -150,6 +187,15 @@ export function buildReviewRail() {
   // El contador del filtro «Revisar primero» baja cuando el docente edita una
   // respuesta dudosa. Solo se cambia el número: la lista no se vuelve a filtrar
   // para que la pregunta que se está editando no desaparezca bajo el cursor.
+  // «Posibles problemas»: aparece y desaparece con los avisos de calidad. Si cambia la presencia del
+  // chip hay que rehacer la barra; si no, solo su número (la lista no se vuelve a filtrar al escribir).
+  const nProblemas = document.querySelectorAll('#editor-questions-container .editor-card[data-calidad]').length;
+  const chipProblemas = document.querySelector('#filter-chips-bar .filter-chip[data-filter="problemas"]');
+  if (!!chipProblemas !== nProblemas > 0) refreshFilterChips();
+  else if (chipProblemas) {
+    const num = chipProblemas.querySelector('.count');
+    if (num && num.textContent !== `(${nProblemas})`) num.textContent = `(${nProblemas})`;
+  }
   const chipRevisar = document.querySelector('#filter-chips-bar .filter-chip[data-filter="revisar"] .count');
   if (chipRevisar) {
     const n = document.querySelectorAll('#editor-questions-container .editor-card[data-revisar="1"]').length;

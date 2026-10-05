@@ -13,6 +13,10 @@ import { construirClozeDesdeSegmentos, huecoDeEstructura, indicesUtilizables, pa
 import { claveDeOpcionMultiple, letrasCorrectasPorIndice } from './editor/respuesta-indices.js';
 import * as proc from './editor/procedencia.js';
 import { MAX_ABIERTAS, abiertasPorDefecto, recortar } from './editor/plegado-logica.js';
+import { detectarProblemas, normalizar, similitud } from './editor/calidad.js';
+import { faltaRespuesta } from './validacion.js';
+import { describirSugerencia } from './editor/sugerencias-logica.js';
+import { ZOOMS, paginaDe, recuadroValido, urlOriginal, vecino, zoomVecino } from './ui/original-logica.js';
 import { duracionValida, estimarDuracion, onProgressQueue, onProgressStage, stopProgress } from './progreso.js';
 import { avisosDelXml, crearIconos, detalleDeError, esc_html, findClozeBrackets, humanizeSkipReason, splitAnswers, splitOptions } from './util.js';
 
@@ -635,6 +639,160 @@ prueba('chips visibles: solo la página y lo que se sale de lo normal', () => {
 prueba('chips visibles: no cambian lo que chipsDeProcedencia sabe (el detalle completo sigue ahí)', () => {
   igual(textos(proc.chipsDeProcedencia({ page: 3, origen_respuesta: 'documento', confianza: 'alta' }, 'multichoice')),
     ['Pág. 3', 'Clave del documento', 'Confianza alta']);
+});
+
+// ── Revisión con el original (ui/original-logica.js) ─────────────────────────
+prueba('original: la dirección de la imagen lleva página, vista, recuadro y zoom', () => {
+  const rec = [0.1, 0.2, 0.6, 0.3];
+  igual(urlOriginal('abc', 3, { vista: 'recorte', recuadro: rec, zoom: 1 }), '/api/original/abc/pagina/3?vista=recorte&recuadro=0.1%2C0.2%2C0.6%2C0.3');
+  igual(urlOriginal('abc', 3, { vista: 'pagina', recuadro: rec, zoom: 2 }), '/api/original/abc/pagina/3?vista=pagina&recuadro=0.1%2C0.2%2C0.6%2C0.3&zoom=2');
+  // sin recuadro válido solo hay página completa, aunque se pida el recorte
+  igual(urlOriginal('abc', 1, { vista: 'recorte', recuadro: null }), '/api/original/abc/pagina/1?vista=pagina');
+  igual(urlOriginal('abc', 1, { vista: 'recorte', recuadro: [0.5, 0.5, 0.5, 0.5] }), '/api/original/abc/pagina/1?vista=pagina');
+});
+prueba('original: el id se escapa en la dirección', () => {
+  igual(urlOriginal('a/b?c', 1).startsWith('/api/original/a%2Fb%3Fc/pagina/1'), true);
+});
+prueba('original: recuadro y página válidos', () => {
+  igual(recuadroValido([0, 0, 1, 1]), true);
+  igual([null, [], [0, 0, 1], [0, 0, 2, 1], [0.6, 0, 0.1, 1], ['a', 0, 1, 1]].map(recuadroValido), [false, false, false, false, false, false]);
+  igual([paginaDe({ page: 4 }), paginaDe({ page: 0 }), paginaDe({ page: 2.5 }), paginaDe({}), paginaDe(null)], [4, null, null, null, null]);
+});
+prueba('original: zoom entre los niveles, sin salirse', () => {
+  igual(ZOOMS, [1, 1.5, 2, 3]);
+  igual([zoomVecino(1, 1), zoomVecino(1, -1), zoomVecino(3, 1), zoomVecino(2, -1), zoomVecino(7, 1)], [1.5, 1, 3, 1.5, 1.5]);
+});
+prueba('original: pasar a la contigua y a la siguiente «para revisar»', () => {
+  const marcas = [false, true, false, false, true, false];
+  igual([vecino(marcas, 0, 1), vecino(marcas, 5, 1), vecino(marcas, 0, -1)], [1, -1, -1]);
+  igual([vecino(marcas, 0, 1, true), vecino(marcas, 1, 1, true), vecino(marcas, 4, 1, true), vecino(marcas, 4, -1, true), vecino(marcas, 5, -1, true), vecino(marcas, 1, -1, true)], [1, 4, -1, 1, 4, -1]);
+  igual(vecino([], 0, 1), -1);
+});
+prueba('original: el chip «Pág. N» es botón solo si hay original en esta sesión', () => {
+  const chips = proc.chipsDeProcedencia({ page: 3, origen_respuesta: 'ia' }, 'multichoice');
+  const sin = proc.chipsHtml(chips);
+  const con = proc.chipsHtml(chips, { original: true });
+  igual(sin.includes('<button'), false);
+  igual(con.split('<button').length - 1, 1);
+  igual(con.includes('data-accion="verOriginal"') && con.includes('ver esta pregunta en el documento original'), true);
+  // el de origen sigue siendo informativo
+  igual(con.includes('role="img"'), true);
+});
+
+// ── IA asistida: avisos de calidad sin IA (editor/calidad.js) y sugerencias ────
+const pmc = (num, stem, opciones, correct) => ({ num, type: 'multichoice', data: { stem, options: Object.fromEntries(opciones.map((o, i) => [String.fromCharCode(65 + i), o])) }, _c: correct });
+const clavesDe = (qs) => Object.fromEntries(qs.map(q => [q.num, { type: q.type, correct_idx: q._c || [] }]));
+
+prueba('calidad: normalizar y similitud ignoran tildes, mayúsculas y signos', () => {
+  igual(normalizar('¿Cuál es el RÍO más largo?'), 'cual es el rio mas largo');
+  igual(similitud('El río Amazonas', 'el rio amazonas!'), 1);
+  igual(similitud('uno dos', 'tres cuatro'), 0);
+});
+prueba('calidad: dos preguntas casi iguales se avisan en las dos, con el número de la otra', () => {
+  const qs = [
+    pmc(1, '¿Cuál es el planeta más grande del sistema solar?', ['Marte', 'Júpiter', 'Venus'], [1]),
+    pmc(2, '¿Qué gas respiramos?', ['Oxígeno', 'Helio'], [0]),
+    pmc(3, 'Cual es el planeta mas grande del sistema solar', ['Júpiter', 'Marte', 'Venus'], [0]),
+  ];
+  const r = detectarProblemas(qs, clavesDe(qs));
+  igual(r[0], ['Parece repetida con la pregunta 3']);
+  igual(r[2], ['Parece repetida con la pregunta 1']);
+  igual(r[1], []);
+});
+prueba('calidad: preguntas distintas o de otro tipo no se marcan como repetidas', () => {
+  const a = pmc(1, '¿Cuánto es 2 + 2?', ['3', '4'], [1]);
+  const b = { num: 2, type: 'truefalse', data: { stem: '¿Cuánto es 2 + 2?' } };
+  const c = pmc(3, '¿Cuánto es 3 + 3?', ['5', '6'], [1]);
+  igual(detectarProblemas([a, b, c], clavesDe([a, b, c])), [[], [], []]);
+});
+prueba('calidad: enunciados cortos y genéricos se comparan también por sus opciones', () => {
+  const a = pmc(1, 'Elige la correcta', ['rojo', 'azul'], [0]);
+  const b = pmc(2, 'Elige la correcta', ['perro', 'gato'], [0]);
+  igual(detectarProblemas([a, b], clavesDe([a, b])), [[], []]);
+  const c = pmc(3, 'Elige la correcta', ['rojo', 'azul'], [1]);
+  igual(detectarProblemas([a, c], clavesDe([a, c])).map(x => x.length), [1, 1]);
+});
+prueba('calidad: los operadores y signos distinguen opciones y preguntas (programación y matemáticas)', () => {
+  const ops = pmc(1, '¿Qué operador hace una O bit a bit?', ['x | y', 'x || y', 'x & y'], [0]);
+  igual(detectarProblemas([ops], clavesDe([ops]))[0], []);
+  const sim = pmc(2, '¿Qué desigualdad describe «x es mayor o igual que 5»?', ['x ≠ 5', 'x ≤ 5', 'x ≥ 5'], [2]);
+  igual(detectarProblemas([sim], clavesDe([sim]))[0], []);
+  const comillas = pmc(3, '¿Cuál va entre comillas?', ['"Hola"', "'Hola'", '«Hola»'], [2]);
+  igual(detectarProblemas([comillas], clavesDe([comillas]))[0], []);
+  const a = pmc(4, 'Elige la salida del programa', ['x | y', 'z'], [0]);
+  const b = pmc(5, 'Elige la salida del programa', ['x || y', 'z'], [0]);
+  igual(detectarProblemas([a, b], clavesDe([a, b])), [[], []]);
+});
+prueba('calidad: mismo enunciado y distintas opciones NO son duplicadas; con imagen tampoco se comparan', () => {
+  const a = pmc(1, 'Observa el siguiente programa. ¿Cuál es su resultado?', ['Error', 'None', 'False', 'True'], [0]);
+  const b = pmc(2, 'Observa el siguiente programa. ¿Cuál es su resultado?', ['16', '10', '12', '24'], [0]);
+  igual(detectarProblemas([a, b], clavesDe([a, b])), [[], []]);
+  const c = pmc(3, 'Observa el siguiente programa. ¿Cuál es su resultado?', ['Error', 'None', 'False', 'True'], [1]);
+  igual(detectarProblemas([a, c], clavesDe([a, c])).map(x => x.length), [1, 1]);
+  igual(detectarProblemas([a, c], clavesDe([a, c]), { conImagen: [true, false] }), [[], []]);
+});
+prueba('calidad: opciones repetidas, opción correcta repetida como incorrecta y todas marcadas', () => {
+  const rep = pmc(1, '¿Cuál?', ['Sí', 'No', 'sí'], [0]);
+  const r = detectarProblemas([rep], clavesDe([rep]))[0];
+  igual(r.some(t => t.startsWith('Las opciones A y C dicen lo mismo')), true);
+  igual(r.some(t => t.includes('es correcta pero C dice lo mismo')), true);
+  const todas = pmc(2, '¿Cuáles?', ['uno', 'dos'], [0, 1]);
+  igual(detectarProblemas([todas], clavesDe([todas]))[0], ['Todas las opciones están marcadas como correctas']);
+});
+prueba('calidad: «todas las anteriores» y «A y B» dependen del orden, que Moodle mezcla', () => {
+  const t = pmc(1, '¿Cuáles son frutas?', ['Manzana', 'Pera', 'Todas las anteriores'], [2]);
+  igual(detectarProblemas([t], clavesDe([t]))[0].length, 1);
+  igual(detectarProblemas([t], clavesDe([t]))[0][0].includes('Moodle mezcla el orden'), true);
+  const l = pmc(2, '¿Cuáles?', ['uno', 'dos', 'A y B'], [2]);
+  igual(detectarProblemas([l], clavesDe([l]))[0].length, 1);
+  const e = pmc(3, 'Según la opción B, ¿qué pasa?', ['x', 'y', 'z'], [0]);
+  igual(detectarProblemas([e], clavesDe([e]))[0][0].includes('letra'), true);
+  const ok1 = pmc(4, '¿Cuál es el planeta rojo?', ['Marte', 'Venus'], [0]);
+  igual(detectarProblemas([ok1], clavesDe([ok1])), [[]]);
+});
+prueba('calidad: emparejamiento y completar con elementos repetidos', () => {
+  const m = { num: 1, type: 'matching', data: { stem: 'x', col_a: { 1: 'uno', 2: 'dos' }, col_b: { a: 'igual', b: 'Igual' } } };
+  igual(detectarProblemas([m], {})[0].length, 1);
+  const c = { num: 1, type: 'cloze', data: { text: 'Es [A: x / x]' } };
+  igual(detectarProblemas([c], { 1: { huecos: [{ options: ['x', 'x'] }] } })[0], ['El espacio 1 tiene opciones repetidas']);
+  igual(detectarProblemas([], {}), []);
+  igual(detectarProblemas(null), []);
+});
+prueba('IA asistida: «Sugerir respuesta» solo cuando FALTA la respuesta', () => {
+  igual(faltaRespuesta(['Falta marcar la respuesta correcta']), true);
+  igual(faltaRespuesta(['Falta la respuesta']), true);
+  igual(faltaRespuesta(['Falta elegir Verdadero o Falso']), true);
+  igual(faltaRespuesta(['Falta marcar la respuesta correcta del espacio 2']), true);
+  igual(faltaRespuesta(['Falta el enunciado', 'Hay una opción vacía']), false);
+  igual(faltaRespuesta(['La respuesta debe ser un número']), false);
+  igual(faltaRespuesta([]), false);
+  igual(faltaRespuesta(null), false);
+});
+prueba('IA asistida: lo aceptado queda «sugerida» y con confianza baja; lo editado, «docente»', () => {
+  const d1 = { confianza: 'media', page: 2 };
+  proc.marcarSiCambio(d1, true, true);
+  igual([d1.origen_respuesta, d1.confianza, d1.page], ['sugerida', 'baja', 2]);
+  const d2 = { confianza: 'alta' };
+  proc.marcarSiCambio(d2, true, false);
+  igual([d2.origen_respuesta, d2.confianza], ['docente', 'alta']);
+  const d3 = { confianza: 'alta' };
+  proc.marcarSiCambio(d3, false, true);
+  igual(d3.origen_respuesta, undefined);
+});
+prueba('IA asistida: lo sugerido sale en «Revisar primero» y con su etiqueta', () => {
+  igual(proc.necesitaRevisarPrimero({ origen_respuesta: 'sugerida', confianza: 'baja' }), true);
+  igual(proc.necesitaRevisarPrimero({ origen_respuesta: 'docente', confianza: 'baja' }), false);
+  igual(textos(proc.chipsVisibles({ origen_respuesta: 'sugerida', confianza: 'baja' }, 'multichoice')), ['Sugerida por IA — verifica', 'Confianza baja']);
+  igual(proc.motivoRevisarPrimero({ origen_respuesta: 'sugerida', confianza: 'baja' }), 'respuesta interpretada por la IA con confianza baja');
+  igual(proc.coincideConFiltro('problemas', { tipo: 'x', problemas: true }), true);
+  igual(proc.coincideConFiltro('problemas', { tipo: 'x', problemas: false }), false);
+});
+prueba('IA asistida: la propuesta se lee en palabras', () => {
+  const q = { data: { options: { A: 'Marte', B: 'Júpiter' }, col_a: { 1: 'Perú' }, col_b: { a: 'Lima' } } };
+  igual(describirSugerencia('multichoice', { letras: ['B'] }, q), 'B. Júpiter');
+  igual(describirSugerencia('matching', { pares: { 1: 'a' } }, q), 'Perú → Lima');
+  igual(describirSugerencia('cloze', { huecos: { A: 1 } }, q), 'Espacio A: opción 2');
+  igual(describirSugerencia('truefalse', { respuesta: 'Falso' }, q), 'Falso');
 });
 
 // ── Cómo se muestra (solo en pruebas.html; en Node no hay lista y no hace nada) ──

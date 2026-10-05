@@ -146,7 +146,10 @@ async def api_generate_xml(req: GenerateXmlRequest):
         xml_content, stats, grades, aviso_historial = await run_in_threadpool(_generate_xml_sync, req, parsed_answer_key)
 
         # ── 9. Return as downloadable file ──────────────────────────────
-        output_filename = f"{Path(req.filename).stem}.xml"
+        # Un XML de Moodle importado y vuelto a generar no debe llamarse igual que el original
+        # (se pisaría al guardarlo en la misma carpeta).
+        _origen = Path(req.filename)
+        output_filename = f"{_origen.stem}_editado.xml" if _origen.suffix.lower() == ".xml" else f"{_origen.stem}.xml"
         stats_header = json.dumps({
             "multichoice": stats.multichoice,
             "truefalse":   stats.truefalse,

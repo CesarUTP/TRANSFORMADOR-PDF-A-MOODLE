@@ -146,8 +146,8 @@ ok("{1:MULTICHOICE_S:=x + 1~x - 1}" in qt, "el hueco queda intacto")
 qs, ak = cloze('Elige [A: a<b / a&b / "c"] y [B: 50~60 / x/y / p\\q].\n  fin', 'A. a<b; B. x/y')
 xml, _ = build_xml(qs, ak)
 qt = etree.fromstring(xml.encode("utf-8")).find("question/questiontext/text").text
-ok("=a&lt;b~a&amp;b~\\\"c\\\"" in qt, "dentro del hueco: < & se escapan y la comilla sigue como \\\"")
-ok("50\\~60" in qt and "=x\\/y" in qt and "p\\\\q" in qt, "dentro del hueco: \\~ \\/ y \\\\ siguen igual")
+ok('=a&lt;b~a&amp;b~"c"' in qt, "dentro del hueco: < & se escapan y la comilla queda tal cual (Moodle no quita la barra)")
+ok("50&#126;60" in qt and "=x/y" in qt and "p&#92;q" in qt, "dentro del hueco: ~ y \\ van como entidad (&#126; y &#92;) y «/» sin escapar")
 ok(qt.endswith("<br>&nbsp;&nbsp;fin</p>"), "la sangría después de un hueco también")
 ok(convert_cloze_to_moodle("a\n b [A: x / y]", 1, {1: {"answer": "A. x"}}) == "a\n b {1:MULTICHOICE_S:=x~y}", "por defecto convert_cloze_to_moodle no cambia su salida")
 

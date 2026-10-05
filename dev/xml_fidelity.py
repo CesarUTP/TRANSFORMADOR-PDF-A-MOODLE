@@ -142,26 +142,30 @@ def _txt(node, path):
     return html.unescape((el.text or "").strip()) if el is not None else ""
 
 
-_CLOZE = re.compile(r"\{(\d+):(MULTICHOICE_S|MULTIRESPONSE_S):((?:[^{}\\]|\\.)*)\}")
+_CLOZE = re.compile(r"\{(\d+):(MULTICHOICE_S|MULTIRESPONSE_S):((?:[^}\\]|\\.)*)\}")
 
 
 def read_cloze(text: str) -> list:
-    """[(tipo, [(texto, es_correcta)])] por hueco, con la semántica de Moodle."""
+    """[(tipo, [(texto, es_correcta)])] por hueco, leído como lo hace Moodle
+    (verificado en un Moodle real y en question/type/multianswer/questiontype.php,
+    Moodle 4.5): `text` es el HTML TAL COMO está guardado (sin desescapar). Una
+    opción termina en «~» o «}» que no lleve «\\» delante ni siga a un «&» o
+    «&amp;»; de la opción Moodle quita ÚNICAMENTE «\\}» y «\\#» y aplica
+    html_entity_decode. Cualquier otra barra se queda y se ve en el desplegable.
+    (Hasta la 1.9 esto desescapaba cualquier «\\x»: era NUESTRA lectura de Moodle,
+    no la de Moodle, y por eso no vio el defecto.)"""
     slots = []
     for m in _CLOZE.finditer(text):
-        opts, cur, esc = [], "", False
+        opts, cur = [], ""
         for ch in m.group(3) + "~":
-            if esc:
-                cur += ch
-                esc = False
-            elif ch == "\\":
-                esc = True
-            elif ch == "~":
+            if ch == "~" and not (cur.endswith("\\") or cur.endswith("&") or cur.endswith("&amp;")):
                 opts.append(cur)
                 cur = ""
             else:
                 cur += ch
-        slots.append((m.group(2), [_cloze_option(o) for o in opts]))
+        slots.append((m.group(2), [_cloze_option(html.unescape(o.replace("\\}", "}").replace("\\#", "#"))
+                                                if not o.startswith("=") else "=" + html.unescape(o[1:].replace("\\}", "}").replace("\\#", "#")))
+                                   for o in opts]))
     return slots
 
 
@@ -195,7 +199,7 @@ def read_xml(xml: str) -> dict:
         elif typ == "matching":
             e["pairs"] = [(_txt(s, "text"), _txt(s, "answer/text")) for s in qn.findall("subquestion")]
         elif typ == "cloze":
-            e["slots"] = read_cloze(html.unescape(qn.find("questiontext/text").text))
+            e["slots"] = read_cloze(qn.find("questiontext/text").text)
         elif typ in ("shortanswer", "numerical"):
             e["answers"] = [(_txt(a, "text"), float(a.get("fraction"))) for a in qn.findall("answer")]
         res[num] = e

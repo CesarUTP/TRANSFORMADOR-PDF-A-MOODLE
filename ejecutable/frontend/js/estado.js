@@ -13,6 +13,8 @@ export const estado = {
   downloadFilename: '',
   /** Última respuesta del backend: preguntas y clave. */
   currentParseResult: null,
+  /** PDF de esta sesión que el servidor conserva en memoria (null: Historial, Word, TXT o ya no está). */
+  originalId: null,
   /** Nombre, categoría y puntaje total del examen en curso. */
   currentUploadMetadata: null,
   /** A qué paso vuelve el botón de la pantalla de error. */

@@ -7,6 +7,11 @@ ayuda_ia.py — Botones de IA del editor, para UNA pregunta a la vez:
                          enunciado, sin cambiar su contenido. El código
                          comprueba que números, fórmulas y líneas de código
                          siguen iguales; si no, no se aplica.
+  «Sugerir respuesta»    (2.0) cuando la clave falta, la IA PROPONE una
+                         respuesta con su motivo. El código la valida contra
+                         las opciones de la pregunta (una letra que no existe,
+                         una pareja repetida o un hueco sin opción se descartan)
+                         y el docente decide: nunca se aplica sola.
 
 El docente la pide, la revisa y puede deshacerla. Llamadas pequeñas con
 salida de texto plano: con JSON, la IA escribía «\\frac» sin escapar y
@@ -25,7 +30,7 @@ from typing import Any, Dict, List
 from fastapi import HTTPException
 
 import ia_reintentos
-from ia_prompts import PROMPT_RETRO, PROMPT_REDACCION  # noqa: F401 — los textos viven en ia_prompts.py
+from ia_prompts import PROMPT_RETRO, PROMPT_REDACCION, PROMPT_SUGERIR  # noqa: F401 — los textos viven en ia_prompts.py
 from ia_proveedor import ParteIA, SolicitudIA, parte_imagen_b64, parte_texto
 
 MAX_CARACTERES = 600
@@ -35,6 +40,7 @@ _TIMEOUT = 60
 # cortada (o vacía). Holgura amplia: lo que se escribe de verdad es corto.
 _TOKENS_RETRO = 4096
 _TOKENS_REDACCION = 8192
+_TOKENS_SUGERIR = 4096
 _TIPOS = {"multichoice", "truefalse", "matching", "cloze", "essay", "shortanswer", "numerical"}
 _MIME = {"image/png", "image/jpeg"}
 
@@ -396,3 +402,144 @@ def mejorar_enunciado(q: Dict[str, Any]) -> Dict[str, Any]:
             "La IA cambió " + ", ".join(motivos) + " del enunciado, así que no se aplicó. "
             "Puedes intentarlo otra vez o corregirlo a mano."))
     return {"enunciado": nuevo, "cambio": nuevo.strip() != original.strip()}
+
+
+# ── «Sugerir respuesta» (IA asistida, 2.0) ───────────────────────────────
+
+_RESPUESTA = re.compile(r"^\s*RESPUESTA\s*:\s*(.*?)\s*$", re.I | re.M)
+_MOTIVO = re.compile(r"^\s*MOTIVO\s*:\s*(.*?)\s*$", re.I | re.M)
+_NUMERO_SOLO = re.compile(r"^[-+]?\d+(?:[.,]\d+)?(?:[eE][-+]?\d+)?$")
+_VERDADERO = {"verdadero", "cierto", "true", "v", "si", "sí"}
+_FALSO = {"falso", "false", "f", "no"}
+MAX_MOTIVO = 240
+
+
+def _huecos_de(q: Dict[str, Any], respuesta: Any):
+    """Los huecos de «Completar» con sus opciones como lista (la estructura de
+    la clave manda sobre partir el texto: una opción puede llevar « / »)."""
+    from modelo import Clave, huecos_de_cloze
+    clave = Clave.desde_dict(respuesta) if isinstance(respuesta, dict) else Clave()
+    return huecos_de_cloze(str((q.get("data") or {}).get("text") or ""), "", clave.huecos)
+
+
+def _texto_sugerir(q: Dict[str, Any], respuesta: Any) -> str:
+    """La pregunta para la IA SIN la respuesta que haya ahora (podría estar mal o vacía)."""
+    tipo = q.get("type")
+    data = q.get("data") or {}
+    lineas = [f"PREGUNTA ({_TIPO_ES.get(tipo, tipo)})"]
+    if tipo == "cloze":
+        lineas.append("Texto con espacios [A], [B]…: " + re.sub(r"\[([A-Za-z]):[^\]]*\]", r"[\1]", _s(data.get("text"))))
+        for h in _huecos_de(q, respuesta)[:20]:
+            lineas.append(f"Hueco {h.letra.upper()}:")
+            lineas += [f"  {i}) {_s(o, 300)}" for i, o in enumerate(h.opciones[:12], start=1)]
+        return "\n".join(lineas)
+    lineas.append("Enunciado: " + _s(data.get("stem")))
+    if tipo == "multichoice":
+        opciones = data.get("options") or {}
+        if isinstance(opciones, dict):
+            lineas += [f"  {_s(l, 3)}) {_s(t, 500)}" for l, t in list(opciones.items())[:12]]
+    elif tipo == "matching":
+        col_a, col_b = data.get("col_a") or {}, data.get("col_b") or {}
+        if isinstance(col_a, dict) and isinstance(col_b, dict):
+            lineas.append("Columna A:")
+            lineas += [f"  {_s(k, 4)}. {_s(v, 300)}" for k, v in list(col_a.items())[:20]]
+            lineas.append("Columna B:")
+            lineas += [f"  {_s(k, 4)}. {_s(v, 300)}" for k, v in list(col_b.items())[:20]]
+    return "\n".join(lineas)
+
+
+def _motivo(texto: str) -> str:
+    m = _MOTIVO.search(texto)
+    return re.sub(r"\s+", " ", m.group(1)).strip()[:MAX_MOTIVO] if m else ""
+
+
+def interpretar_sugerencia(texto: str, q: Dict[str, Any], respuesta: Any = None) -> Dict[str, Any]:
+    """Texto de la IA → {"tipo", "sugerencia", "motivo"}, validado contra la pregunta.
+
+    «NO_SE» es una respuesta legítima (HTTP 422 con el motivo). Todo lo demás que no
+    encaje con las opciones de la pregunta es un ValueError: se reintenta como una
+    respuesta mal formada y, si persiste, el docente ve un error, nunca una respuesta
+    inventada por el código."""
+    tipo = q.get("type")
+    data = q.get("data") or {}
+    m = _RESPUESTA.search(texto)
+    if not m or not m.group(1).strip():
+        raise ValueError("sin línea RESPUESTA")
+    bruto = m.group(1).strip().strip("`\"“”«»").strip()
+    motivo = _motivo(texto)
+    if re.fullmatch(r"NO[_ ]?SE|NO SÉ", bruto, re.I):
+        raise HTTPException(status_code=422, detail=(
+            "La IA no pudo decidir la respuesta con seguridad" + (f": {motivo}" if motivo else ".") + " Márcala tú."))
+
+    if tipo == "multichoice":
+        opciones = data.get("options") or {}
+        validas = {str(k).upper(): k for k in opciones} if isinstance(opciones, dict) else {}
+        letras = []
+        for tok in re.findall(r"[A-Za-z]+", bruto):
+            if tok.upper() in validas and validas[tok.upper()] not in letras:
+                letras.append(validas[tok.upper()])
+            elif tok.lower() not in ("y", "e", "o", "la", "las", "opcion", "opción", "opciones", "respuesta"):
+                raise ValueError(f"letra fuera de las opciones: {tok}")
+        if not letras:
+            raise ValueError("ninguna letra válida")
+        return {"tipo": tipo, "sugerencia": {"letras": letras}, "motivo": motivo}
+
+    if tipo == "truefalse":
+        v = bruto.strip(" .").lower()
+        if v in _VERDADERO:
+            return {"tipo": tipo, "sugerencia": {"respuesta": "Verdadero"}, "motivo": motivo}
+        if v in _FALSO:
+            return {"tipo": tipo, "sugerencia": {"respuesta": "Falso"}, "motivo": motivo}
+        raise ValueError("ni verdadero ni falso")
+
+    if tipo == "numerical":
+        n = bruto.replace(" ", "")
+        if not _NUMERO_SOLO.match(n):
+            raise ValueError("no es un número")
+        return {"tipo": tipo, "sugerencia": {"respuesta": n.replace(",", ".")}, "motivo": motivo}
+
+    if tipo == "shortanswer":
+        texto_resp = re.sub(r"\s+", " ", bruto).strip()
+        if not texto_resp or len(texto_resp) > 200:
+            raise ValueError("respuesta corta vacía o demasiado larga")
+        return {"tipo": tipo, "sugerencia": {"respuesta": texto_resp}, "motivo": motivo}
+
+    if tipo == "matching":
+        col_a, col_b = data.get("col_a") or {}, data.get("col_b") or {}
+        izq = {str(k): k for k in col_a} if isinstance(col_a, dict) else {}
+        der = {str(k).lower(): str(k).lower() for k in col_b} if isinstance(col_b, dict) else {}
+        pares: Dict[str, str] = {}
+        for n, letra in re.findall(r"(\d+)\s*[-=:→>]+\s*([A-Za-z])\b", bruto):
+            if n not in izq or letra.lower() not in der or n in pares or letra.lower() in pares.values():
+                raise ValueError("pareja inválida o repetida")
+            pares[n] = letra.lower()
+        if not izq or set(pares) != set(izq):
+            raise ValueError("faltan parejas")
+        return {"tipo": tipo, "sugerencia": {"pares": {k: pares[k] for k in sorted(pares, key=int)}}, "motivo": motivo}
+
+    if tipo == "cloze":
+        huecos = {h.letra.upper(): h for h in _huecos_de(q, respuesta)}
+        elegidos: Dict[str, int] = {}
+        for letra, pos in re.findall(r"([A-Za-z])\s*[=:]\s*(\d+)", bruto):
+            h = huecos.get(letra.upper())
+            if h is None or letra.upper() in elegidos or not 1 <= int(pos) <= len(h.opciones):
+                raise ValueError("hueco u opción inválidos")
+            elegidos[letra.upper()] = int(pos) - 1
+        if not huecos or set(elegidos) != set(huecos):
+            raise ValueError("faltan huecos")
+        return {"tipo": tipo, "sugerencia": {"huecos": elegidos}, "motivo": motivo}
+
+    raise HTTPException(status_code=422, detail="Este tipo de pregunta no tiene una respuesta que sugerir.")
+
+
+def sugerir_respuesta(q: Dict[str, Any], respuesta: Any = None) -> Dict[str, Any]:
+    """«Sugerir respuesta»: la IA propone la respuesta de una pregunta SIN clave."""
+    _comprobar(q)
+    if q.get("type") == "essay":
+        raise HTTPException(status_code=422, detail="Un ensayo se califica a mano: no tiene respuesta correcta que sugerir.")
+
+    def leer(resultado):
+        _comprobar_fin(resultado)
+        return interpretar_sugerencia(resultado.text or "", q, respuesta)
+
+    return _llamar(PROMPT_SUGERIR, _texto_sugerir(q, respuesta), _imagenes(q), leer, 0.0, _TOKENS_SUGERIR)

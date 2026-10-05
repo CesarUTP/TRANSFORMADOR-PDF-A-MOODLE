@@ -2,6 +2,7 @@
  * carga.js — subir el examen y pedir la conversión al backend
  * (incluye la lectura del progreso en vivo, que llega por NDJSON).
  */
+import { apiFetch } from './api.js';
 import { guardarBorradorAhora } from './borrador.js';
 import { btnConvert, categoryInput, dropZone, fileIconEl, fileInput, fileNameEl, filePreview, fileSizeEl } from './dom.js';
 import { reiniciarPanelPuntos } from './editor/puntos-ui.js';
@@ -35,7 +36,10 @@ export function showFilePreview(file) {
   fileNameEl.textContent = file.name;
   fileSizeEl.textContent = formatBytes(file.size);
   const nombre = file.name.toLowerCase();
-  fileIconEl.setAttribute('data-lucide', nombre.endsWith('.pdf') || nombre.endsWith('.docx') ? 'file-text' : 'file');
+  fileIconEl.setAttribute('data-lucide', nombre.endsWith('.pdf') || nombre.endsWith('.docx') ? 'file-text' : nombre.endsWith('.xml') ? 'file-code-2' : 'file');
+  // Un XML de Moodle no pasa por la IA: se abre directo en el editor.
+  const nota = document.getElementById('xml-nota');
+  if (nota) nota.style.display = nombre.endsWith('.xml') ? 'block' : 'none';
   crearIconos(filePreview);
   filePreview.style.display = 'flex';
   _setConvertEnabled(true);
@@ -57,6 +61,8 @@ function _marcarZona(file) {
 
 export function clearFile() {
   estado.selectedFile = null;
+  const nota = document.getElementById('xml-nota');
+  if (nota) nota.style.display = 'none';
   fileInput.value = '';
   filePreview.style.display = 'none';
   _setConvertEnabled(false);
@@ -67,18 +73,25 @@ export function clearFile() {
 // — misma forma de respuesta) directo al editor, guardando los metadatos
 // de la subida para el paso de generar el XML más adelante.
 function goToEditorWithParsedData(parsedData, ptsVal) {
+  const importado = !!parsedData.importado;
+  // La categoría de un XML importado viene en el propio XML.
+  if (importado && parsedData.categoria) categoryInput.value = parsedData.categoria;
   estado.currentUploadMetadata = {
     // macOS entrega los nombres en forma descompuesta (NFD): "Panamá" como
     // "Panama" + tilde suelta. Se normaliza para guardarlo y mostrarlo igual.
     filename: estado.selectedFile.name.normalize('NFC'),
     category: categoryInput.value.trim() || 'mis-preguntas',
-    total_points: ptsVal
+    total_points: importado && parsedData.puntos_total ? parsedData.puntos_total : ptsVal
   };
   // Puntaje inicial por pregunta: mismo reparto por peso de tipo que
   // usaba el backend hasta ahora, pero ya visible y editable en el
   // editor — el docente que no toque nada obtiene el mismo resultado
   // de siempre, sin pasos extra.
-  autoDistributePoints(parsedData.questions, ptsVal, 'byType');
+  // El PDF de esta sesión (el servidor lo conserva en memoria): habilita «Revisión con el original».
+  estado.originalId = parsedData.original_id || null;
+  // Un XML importado trae los puntos de cada pregunta: se respetan (solo se reparten si faltan).
+  const tienePuntos = importado && parsedData.questions.every(q => Number(q.points) > 0);
+  if (!tienePuntos) autoDistributePoints(parsedData.questions, ptsVal, 'byType');
   reiniciarPanelPuntos();
   showPanel('editor', { enfocar: false });
   renderEditor(parsedData, { nuevo: true });
@@ -195,6 +208,31 @@ export function runConversion(ptsVal, kind = 'text') {
   return runStreamingConversion('/api/parse_stream', kind, ptsVal);
 }
 
+// Importar un Moodle XML existente (2.0): sin IA, sin cuota y casi instantáneo, así que no usa
+// la pantalla de progreso. El resultado entra al editor como cualquier conversión.
+export async function runImportXml(ptsVal) {
+  const formData = new FormData();
+  formData.append('file', estado.selectedFile);
+  let datos = null;
+  try {
+    const res = await apiFetch('/api/importar_xml', { method: 'POST', body: formData });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showError(detalleDeError(json.detail, friendlyHttpError(res.status)), 'upload', 'No se pudo abrir el XML');
+      return;
+    }
+    datos = json;
+  } catch (err) {
+    showError('No se pudo conectar con la aplicación. Ciérrala y vuelve a abrirla; si sigue igual, reinicia el equipo.', 'upload', 'Sin conexión con la aplicación');
+    return;
+  }
+  try {
+    goToEditorWithParsedData(datos, ptsVal);
+  } catch (err) {
+    showError(`Se leyó el XML pero no se pudo mostrar la revisión (${err && err.message ? err.message : 'error desconocido'}).`, 'upload', 'No se pudo mostrar la revisión');
+  }
+}
+
 // Alternativa in-app al flujo externo de "copia este prompt y pégalo en
 // tu IA": renderiza el documento completo y deja que Gemini lo lea
 // visualmente (ver /api/normalize_with_ai) — tarda más que una
@@ -206,13 +244,13 @@ export function runNormalizeWithAI(ptsVal) {
 
 export function handleFileSelected(file) {
   const ext = file.name.split('.').pop().toLowerCase();
-  if (!['pdf', 'docx', 'txt'].includes(ext)) {
+  if (!['pdf', 'docx', 'txt', 'xml'].includes(ext)) {
     // Aviso en la misma zona de carga, sin sacar al docente del paso 1.
     fileInput.value = '';
     // Un .doc (Word antiguo) no es un .docx: se explica cómo convertirlo.
     _dropError(ext === 'doc'
       ? `“${file.name}” es de una versión antigua de Word. Ábrelo en Word y guárdalo como .docx.`
-      : `“${file.name}” no es un PDF, Word ni TXT. Elige un archivo .pdf, .docx o .txt.`);
+      : `“${file.name}” no es un PDF, Word, TXT ni XML de Moodle. Elige un archivo .pdf, .docx, .txt o .xml.`);
     return;
   }
   showFilePreview(file);

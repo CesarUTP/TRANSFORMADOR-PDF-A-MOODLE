@@ -164,7 +164,7 @@ for nombre in ("s_sep_opcion_multiple", "s_sep_completar"):
         textos = re.findall(r"<questiontext[^>]*>\s*<text><!\[CDATA\[(.*?)\]\]></text>", xml_n, re.S)
         bien = True
         for q, t in zip(qs, textos):
-            got = xf.read_cloze(t.replace("&amp;", "&"))
+            got = xf.read_cloze(t)
             esperado = [[(o, i in b["correct"]) for i, o in enumerate(b["options"])] for b in q["blanks"]]
             bien &= [[x for x in s[1]] for s in got] == esperado
         ok(bien, f"{nombre}: cada hueco del XML tiene las opciones y correctas del examen (con ~ }} # / \\ escapados)")
@@ -183,7 +183,7 @@ xml_v, _ = build_xml(copy.deepcopy(q_viejo), copy.deepcopy(k_viejo))
 r = xf.read_xml(xml_v)
 ok([t for t, f in r[1]["answers"] if f > 0] == ["Quito"] and [t for t, f in r[2]["answers"] if f > 0] == ["dos", "cuatro"],
    "XML de un historial viejo: respuestas por letra y por texto")
-ok(":=este~oeste}" in xml_v and ":=oeste~este}" in xml_v and ":=km\\/h~kg}" in xml_v, "XML de un historial viejo: Completar por texto")
+ok(":=este~oeste}" in xml_v and ":=oeste~este}" in xml_v and ":=km/h~kg}" in xml_v, "XML de un historial viejo: Completar por texto")
 
 # Un historial viejo reabierto: lo que guardó rutas_xml es JSON con claves de texto.
 guardado = json.dumps({"questions": q_viejo, "answer_key": k_viejo}, ensure_ascii=False)
@@ -217,7 +217,7 @@ hs = huecos_de_cloze("Es [A: uno / dos / tres]", "A. tres", [HuecoClave("A", ["u
 ok(hs[0].opciones == ["uno", "dos", "tres"] and hs[0].resolver() == ([2], []), "cloze: enunciado editado aparte: se ignora la estructura vieja")
 ok(huecos_de_cloze("Es [A: 10 / 2 / 5]", "A. 10 / 2")[0].opciones == ["10", "2", "5"], "sin estructura, «10 / 2» se parte (por eso viaja la lista)")
 xml_cz = convert_cloze_to_moodle("Es [A: 10 / 2 / 5]", 1, {1: {"answer": "A. 10 / 2", "huecos": [{"letra": "A", "options": ["10 / 2", "5"], "correct_idx": [0]}]}})
-ok(xml_cz == "Es {1:MULTICHOICE_S:=10 \\/ 2~5}", f"convert_cloze_to_moodle usa la estructura ({xml_cz})")
+ok(xml_cz == "Es {1:MULTICHOICE_S:=10 / 2~5}", f"convert_cloze_to_moodle usa la estructura y deja «/» tal cual ({xml_cz})")
 
 # ── 4. mark_resolver: la respuesta por marcas también escribe los índices ─────
 print("mark_resolver escribe correct_idx")

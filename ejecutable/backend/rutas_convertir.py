@@ -6,6 +6,7 @@ rutas_convertir.py — del archivo del docente a las preguntas revisables.
   POST /api/normalize_with_ai          lectura del documento como imágenes
   POST /api/parse_stream               igual que /api/parse, con progreso NDJSON
   POST /api/normalize_with_ai_stream   igual que normalize_with_ai, con progreso
+  POST /api/importar_xml               importa un Moodle XML ya existente al editor (sin IA)
 
 Los cupos, la cancelación y el flujo NDJSON viven en estado_servidor.py.
 """
@@ -18,6 +19,7 @@ from fastapi.concurrency import run_in_threadpool
 
 from extractor import pdf_has_embedded_images
 from extractor_docx import docx_tiene_imagenes
+from importar_xml import importar_xml
 from pipeline import parse_document, normalize_document_with_ai
 from estado_servidor import _con_cupo, _nombre_nfc, _ndjson_progress_stream
 
@@ -94,3 +96,11 @@ async def api_normalize_with_ai_stream(file: UploadFile = File(...)):
     """Igual que /api/normalize_with_ai, pero informando el avance."""
     raw_bytes = await file.read()
     return _ndjson_progress_stream(normalize_document_with_ai, raw_bytes, _nombre_nfc(file.filename) or "upload")
+
+
+@router.post("/api/importar_xml")
+async def api_importar_xml(file: UploadFile = File(...)):
+    """Abre un Moodle XML existente en el editor. No usa IA ni gasta cuota: lee el XML
+    (ver importar_xml.py) y devuelve lo mismo que /api/parse."""
+    raw_bytes = await file.read()
+    return await run_in_threadpool(importar_xml, raw_bytes, _nombre_nfc(file.filename) or "importado.xml")

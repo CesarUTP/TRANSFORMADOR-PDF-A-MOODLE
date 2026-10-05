@@ -61,7 +61,8 @@ como siempre (answer_matching.resolver_correctas_*).
 Campos informativos (None por defecto, no se serializan mientras sean None; no
 cambian ni bloquean ninguna respuesta ni el XML). Los llena pipeline.py:
     origen_respuesta  "documento" | "marca" | "ia" (confianza.py); el editor
-                      añade "docente" cuando el profesor edita la respuesta.
+                      añade "docente" cuando el profesor edita la respuesta y
+                      "sugerida" cuando acepta la que propuso la IA (2.0).
                       Ausente en essay y en preguntas sin respuesta.
     confianza         "alta" | "media" | "baja" (confianza.py; no es lo mismo
                       que low_confidence, que sigue siendo la señal de la IA)
@@ -88,7 +89,7 @@ from answer_matching import (
 
 SIN_RESPUESTA = "SIN_RESPUESTA"
 
-ORIGENES = ("documento", "marca", "ia", "docente")
+ORIGENES = ("documento", "marca", "ia", "docente", "sugerida")
 CONFIANZAS = ("alta", "media", "baja")
 
 

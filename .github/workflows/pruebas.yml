@@ -77,6 +77,18 @@ jobs:
       - name: Base de datos y arranque (1.8)
         if: ${{ !cancelled() }}
         run: python dev/test_datos_arranque.py
+      - name: XML que Moodle acepta (fracciones y escapes de Completar, 1.10)
+        if: ${{ !cancelled() }}
+        run: python dev/test_compat_moodle.py
+      - name: Revisión con el original (2.0)
+        if: ${{ !cancelled() }}
+        run: python dev/test_original.py
+      - name: IA asistida - sugerir respuesta (2.0)
+        if: ${{ !cancelled() }}
+        run: python dev/test_ia_asistida.py
+      - name: Importar un Moodle XML (2.0)
+        if: ${{ !cancelled() }}
+        run: python dev/test_importar_xml.py
       # Solo una vez (no en los 3 sistemas: compara archivos, no depende
       # del SO). Antes nadie se enteraba de que ejecutable/ o
       # ejecutable_mac/ quedaron desfasados de backend/frontend hasta

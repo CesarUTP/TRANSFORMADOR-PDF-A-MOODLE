@@ -59,7 +59,7 @@ def opts(*items):
 
 
 def cloze_de(xml):
-    return read_cloze(re.search(r"<questiontext.*?CDATA\[(.*?)\]\]>", xml, re.S).group(1).replace("&amp;", "&"))
+    return read_cloze(re.search(r"<questiontext.*?CDATA\[(.*?)\]\]>", xml, re.S).group(1))
 
 
 @caso("clave numérica de posición resuelve cuando las opciones no tienen letra propia")

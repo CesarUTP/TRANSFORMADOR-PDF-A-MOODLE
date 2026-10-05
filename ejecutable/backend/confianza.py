@@ -38,6 +38,10 @@ Confianza:
         que coincide con varias opciones por igual.
   · «alta» si el origen es «documento» o «marca» y no hay señal de duda.
   · «media» si el origen es «ia» y no hay señal de duda.
+  · Documento ESCANEADO (PDF sin capa de texto, contexto["escaneado"]): el código
+    no puede comprobar ninguna marca y la IA tiende a «corregir» la clave en vez
+    de leer la marca en rojo (dev/eval_results/RESULTADOS.md, x10), así que toda
+    respuesta de origen «ia» es «baja». El docente la compara con el original.
 
 `low_confidence` NO se toca: sigue siendo la señal propia de la IA que ya
 usaban el validador y el editor; aquí solo se LEE como una de las señales.
@@ -87,7 +91,7 @@ def evaluar(pregunta: Dict[str, Any], clave: Optional[Dict[str, Any]] = None,
 
     pregunta  {"num", "type", "data": {...}} (la forma interna de siempre)
     clave     answer_key[num] ({"type", "answer", "from_key"?…}) o None
-    contexto  {"rescatada": bool, "desde_documento": bool}; todo opcional
+    contexto  {"rescatada": bool, "desde_documento": bool, "escaneado": bool}; todo opcional
     """
     contexto = contexto or {}
     if not isinstance(pregunta, dict) or pregunta.get("type") not in TIPOS_CON_RESPUESTA or "error" in pregunta:
@@ -107,14 +111,15 @@ def evaluar(pregunta: Dict[str, Any], clave: Optional[Dict[str, Any]] = None,
         origen = ORIGEN_IA
 
     duda = (bool(data.get("color_review_hint")) or bool(data.get("low_confidence"))
-            or bool(contexto.get("rescatada")) or _ambigua(pregunta, clave))
+            or bool(contexto.get("rescatada")) or _ambigua(pregunta, clave)
+            or (bool(contexto.get("escaneado")) and origen == ORIGEN_IA))
     if duda:
         return origen, CONFIANZA_BAJA
     return origen, (CONFIANZA_MEDIA if origen == ORIGEN_IA else CONFIANZA_ALTA)
 
 
 def etiquetar(preguntas, answer_key: Dict[Any, Dict[str, Any]],
-              rescatadas=(), desde_documento=()) -> int:
+              rescatadas=(), desde_documento=(), escaneado: bool = False) -> int:
     """Escribe origen_respuesta y confianza en el `data` de cada pregunta que
     los tenga (los quita si ya no corresponden). `rescatadas` y
     `desde_documento` son conjuntos de números de pregunta. Devuelve cuántas
@@ -128,7 +133,8 @@ def etiquetar(preguntas, answer_key: Dict[Any, Dict[str, Any]],
         num = q.get("num")
         origen, confianza = evaluar(
             q, (answer_key or {}).get(num),
-            {"rescatada": num in rescatadas, "desde_documento": num in desde_documento},
+            {"rescatada": num in rescatadas, "desde_documento": num in desde_documento,
+             "escaneado": escaneado},
         )
         if origen is None:
             data.pop("origen_respuesta", None)

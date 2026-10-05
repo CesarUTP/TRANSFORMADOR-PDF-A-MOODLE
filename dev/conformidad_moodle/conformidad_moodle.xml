@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+  <question type="category">
+    <category><text>$course$/PRUEBA-conformidad (borrar)</text></category>
+  </question>
+  <question type="multichoice">
+    <name><text>P01</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P01 · ¿Cuál es la capital de Panamá?</p>]]></text>
+    </questiontext>
+    <generalfeedback format="html">
+      <text><![CDATA[<p>La capital es Ciudad de Panamá.</p>]]></text>
+    </generalfeedback>
+    <defaultgrade>2.0</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <shuffleanswers>1</shuffleanswers>
+    <single>true</single>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0">
+      <text><![CDATA[Colón]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="100">
+      <text><![CDATA[Ciudad de Panamá]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="0">
+      <text><![CDATA[David]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="0">
+      <text><![CDATA[Santiago]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+  </question>
+  <question type="multichoice">
+    <name><text>P02</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P02 · Marca TODOS los lenguajes compilados.</p>]]></text>
+    </questiontext>
+    <defaultgrade>2.0</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <shuffleanswers>1</shuffleanswers>
+    <single>false</single>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="33.33333">
+      <text><![CDATA[C]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="-33.33333">
+      <text><![CDATA[Python]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="33.33333">
+      <text><![CDATA[Rust]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="-33.33333">
+      <text><![CDATA[JavaScript]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="33.33333">
+      <text><![CDATA[Go]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="-33.33333">
+      <text><![CDATA[Ruby]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+  </question>
+  <question type="multichoice">
+    <name><text>P03</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P03 · Marca las opciones 1 a 12 (12 correctas, 13 incorrectas).</p>]]></text>
+    </questiontext>
+    <defaultgrade>2.0</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <shuffleanswers>1</shuffleanswers>
+    <single>false</single>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="10.0">
+      <text><![CDATA[Opción 1]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="10.0">
+      <text><![CDATA[Opción 2]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="10.0">
+      <text><![CDATA[Opción 3]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="10.0">
+      <text><![CDATA[Opción 4]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="10.0">
+      <text><![CDATA[Opción 5]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="10.0">
+      <text><![CDATA[Opción 6]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="10.0">
+      <text><![CDATA[Opción 7]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="10.0">
+      <text><![CDATA[Opción 8]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="5.0">
+      <text><![CDATA[Opción 9]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="5.0">
+      <text><![CDATA[Opción 10]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="5.0">
+      <text><![CDATA[Opción 11]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="5.0">
+      <text><![CDATA[Opción 12]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="-10.0">
+      <text><![CDATA[Opción 13]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-10.0">
+      <text><![CDATA[Opción 14]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-10.0">
+      <text><![CDATA[Opción 15]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-10.0">
+      <text><![CDATA[Opción 16]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-10.0">
+      <text><![CDATA[Opción 17]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-10.0">
+      <text><![CDATA[Opción 18]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-10.0">
+      <text><![CDATA[Opción 19]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-5.0">
+      <text><![CDATA[Opción 20]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-5.0">
+      <text><![CDATA[Opción 21]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-5.0">
+      <text><![CDATA[Opción 22]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-5.0">
+      <text><![CDATA[Opción 23]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-5.0">
+      <text><![CDATA[Opción 24]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="-5.0">
+      <text><![CDATA[Opción 25]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+  </question>
+  <question type="truefalse">
+    <name><text>P04</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P04 · El agua hierve a 100 °C a nivel del mar.</p>]]></text>
+    </questiontext>
+    <defaultgrade>2.0</defaultgrade>
+    <answer fraction="100">
+      <text>true</text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="0">
+      <text>false</text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+  </question>
+  <question type="matching">
+    <name><text>P05</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P05 · Relaciona cada país con su capital.</p>]]></text>
+    </questiontext>
+    <defaultgrade>2.0</defaultgrade>
+    <shuffleanswers>true</shuffleanswers>
+    <subquestion format="html">
+      <text><![CDATA[Perú]]></text>
+      <answer><text><![CDATA[Lima]]></text></answer>
+    </subquestion>
+    <subquestion format="html">
+      <text><![CDATA[Chile]]></text>
+      <answer><text><![CDATA[Santiago]]></text></answer>
+    </subquestion>
+    <subquestion format="html">
+      <text><![CDATA[Colombia]]></text>
+      <answer><text><![CDATA[Bogotá]]></text></answer>
+    </subquestion>
+    <subquestion format="html">
+      <text><![CDATA[Ecuador]]></text>
+      <answer><text><![CDATA[Quito]]></text></answer>
+    </subquestion>
+  </question>
+  <question type="cloze">
+    <name><text>P06</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P06 · Elige {3:MULTICHOICE_S:=TCP/IP~UDP~10 / 2} y luego {2:MULTICHOICE_S:dijo "hola"~{llave\}~=a&#126;b~c\#d~e\}f~g&#92;h~R&amp;D~x &lt; y}. Mide 2,5 puntos.</p>]]></text>
+    </questiontext>
+    <defaultgrade>5.0</defaultgrade>
+  </question>
+  <question type="shortanswer">
+    <name><text>P07</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P07 · ¿Cómo se llama el proceso por el que las plantas fabrican su alimento?</p>]]></text>
+    </questiontext>
+    <defaultgrade>2.0</defaultgrade>
+    <usecase>0</usecase>
+    <answer fraction="100">
+      <text><![CDATA[Fotosíntesis]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="100">
+      <text><![CDATA[Fotosintesis]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+  </question>
+  <question type="numerical">
+    <name><text>P08</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P08 · ¿Cuánto es 15 × 4?</p>]]></text>
+    </questiontext>
+    <defaultgrade>2.0</defaultgrade>
+    <answer fraction="100">
+      <text>60</text>
+      <tolerance>0</tolerance>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+  </question>
+  <question type="essay">
+    <name><text>P09</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P09 · Explica con tus palabras las causas de la Primera Guerra Mundial.</p>]]></text>
+    </questiontext>
+    <defaultgrade>2.0</defaultgrade>
+    <answer fraction="0">
+      <text></text>
+    </answer>
+  </question>
+  <question type="multichoice">
+    <name><text>P10</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P10 · Imagen y fórmula: la figura es un cuadrado rojo. Si x = 3, ¿cuánto es \(x^2 + 1\)? (a &lt; b)</p><p><img src="@@PLUGINFILE@@/cuadrado_rojo.png" alt="Imagen de P10"></p>]]></text>
+      <file name="cuadrado_rojo.png" path="/" encoding="base64">iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAIAAABvFaqvAAAAH0lEQVR4nGO4oKBAFcQwatCoQaMGjRo0atCoQQNvEAA9qGQfthy7NgAAAABJRU5ErkJggg==</file>
+    </questiontext>
+    <generalfeedback format="html">
+      <text><![CDATA[<p>Es \(3^2 + 1 = 10\).</p>]]></text>
+    </generalfeedback>
+    <defaultgrade>2.0</defaultgrade>
+    <penalty>0.3333333</penalty>
+    <shuffleanswers>1</shuffleanswers>
+    <single>true</single>
+    <answernumbering>abc</answernumbering>
+    <answer fraction="0">
+      <text><![CDATA[6]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="100">
+      <text><![CDATA[10]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="0">
+      <text><![CDATA[9]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+    <answer fraction="0">
+      <text><![CDATA[12]]></text>
+      <feedback><text><![CDATA[Incorrecto.]]></text></feedback>
+    </answer>
+  </question>
+</quiz>

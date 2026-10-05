@@ -59,9 +59,9 @@
   "validas": 5
  },
  "s_sep_completar": {
-  "bytes": 1316,
+  "bytes": 1323,
   "omitidas": [],
-  "sha256": "9d5e5f35f8cb01c46998ec56597bf2fd6b2d5e50128ecbb5eb3699d547c39d85",
+  "sha256": "b3a91e5d11e0b173affb8300cf26b0e4f98739aecc03fd842ae70d67485e7f96",
   "validas": 4
  },
  "s_sep_opcion_multiple": {
@@ -123,9 +123,9 @@
   "validas": 50
  },
  "x08": {
-  "bytes": 26349,
+  "bytes": 26347,
   "omitidas": [],
-  "sha256": "ea4ae23aa1ae01e364682c1d76addd328614d93148213effa6e796fc095e9af3",
+  "sha256": "5a822ec5b148344b925ac56fdb1ec1aee17b4feaec865c0ba212b9a2f1298edb",
   "validas": 36
  },
  "x09": {

@@ -73,7 +73,7 @@ export function guardarBorradorAhora() {
     const cards = document.querySelectorAll('#editor-questions-container .editor-card');
     const parse = cards.length ? collectEditorData() : { questions: [], answer_key: {} };
     const prev = estado.currentParseResult || {};
-    ['skipped_questions', 'completeness_notice', 'color_marks_notice'].forEach(k => {
+    ['skipped_questions', 'completeness_notice', 'color_marks_notice', 'escaneado', 'importado', 'original_id'].forEach(k => {
       if (prev[k]) parse[k] = prev[k];
     });
     // Las imágenes se separan del texto (ver CLAVE_IMG).
@@ -140,6 +140,8 @@ export function borrarBorrador() {
 /** Abre el editor con unos datos ya parseados (borrador o historial). */
 export function abrirEnEditor(meta, parse) {
   estado.currentUploadMetadata = meta;
+  // Un borrador de esta misma sesión aún tiene su original en el servidor; el Historial, no.
+  estado.originalId = (parse && parse.original_id) || null;
   estado.selectedFile = null;
   estado.downloadBlob = null;
   showPanel('editor', { enfocar: false });

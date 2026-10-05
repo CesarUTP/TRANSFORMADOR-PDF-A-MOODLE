@@ -64,6 +64,11 @@ def compute_grades(
 _CONTROL_INVALIDO = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff]")
 
 
+# Escapes de una opción de «Completar» (ver escape_cloze_syntax dentro de _cloze_a_moodle).
+_DELIMITADOR_CLOZE = re.compile(r"[\\~#}]")
+_ESCAPE_CLOZE = {"\\": "&#92;", "~": "&#126;", "#": "\\#", "}": "\\}"}
+
+
 def _sin_control(text: str) -> str:
     return _CONTROL_INVALIDO.sub("", text)
 
@@ -213,17 +218,28 @@ def _cloze_a_moodle(cloze_text: str, q_num: int, raw_key_ans: str,
     entera. Sin ella se parte el texto como siempre."""
 
     def escape_cloze_syntax(s: str) -> str:
-        """Escape Moodle's own Cloze delimiter characters (~ # { } and the
-        backslash itself) so a literal occurrence in an option's text isn't
-        misread as a syntax separator — e.g. an option like "50~60" would
-        otherwise be parsed as two separate options."""
-        return (s.replace('\\', '\\\\')
-                 .replace('~', '\\~')
-                 .replace('#', '\\#')
-                 .replace('/', '\\/')
-                 .replace('"', '\\"')
-                 .replace('{', '\\{')
-                 .replace('}', '\\}'))
+        """Texto de UNA opción listo para ir dentro de {n:MULTICHOICE_S:…}.
+
+        Verificado en un Moodle real y en question/type/multianswer/
+        questiontype.php (Moodle 4.5): una opción termina en «~», «#» o «}» que
+        no lleve «\\» delante, y Moodle des-escapa ÚNICAMENTE «\\}» y «\\#» (más
+        html_entity_decode del texto). Por eso:
+          «}» → «\\}»   «#» → «\\#»   (los únicos escapes con barra que Moodle quita)
+          «~» → «&#126;»   «\\» → «&#92;»  (con barra se verían: «\\~», «\\\\»)
+          «/», «"» y «{» NO se tocan (escaparlos dejaba una barra visible: «TCP\\/IP»).
+        Una opción que termina en «&» (o «&amp;») hace que Moodle no reconozca el
+        «~» o «}» que sigue: ese «&» final se escribe «&#38;».
+        En HTML el texto va además escapado (&, <, >): se hace aquí, opción por
+        opción, y el hueco ya armado no se vuelve a escapar."""
+        # Moodle aplica html_entity_decode a la opción: un «&» del texto va siempre
+        # como «&amp;» (en HTML, además, «<» y «>»).
+        s = html.escape(_sin_control(s), quote=False) if como_html else s.replace("&", "&amp;")
+        s = _DELIMITADOR_CLOZE.sub(lambda m: _ESCAPE_CLOZE[m.group(0)], s)
+        if s.endswith("&amp;"):
+            s = s[:-5] + "&#38;"
+        elif s.endswith("&"):
+            s = s[:-1] + "&#38;"
+        return s
 
     # Respuestas por hueco ("A. respuesta A; B. respuesta B"). Un hueco puede
     # tener MÁS DE UNA respuesta correcta, unidas con " | " (así marca el
@@ -306,7 +322,9 @@ def _cloze_a_moodle(cloze_text: str, q_num: int, raw_key_ans: str,
         hueco = replacement if replacement is not None else cloze_text[h.inicio:h.fin]
         if como_html:
             out.append(_html_fuera_de_huecos(cloze_text[last:h.inicio], last == 0))
-            out.append(html.escape(_sin_control(hueco), quote=False))
+            # Un hueco armado ya lleva sus opciones escapadas (escape_cloze_syntax);
+            # el corchete original que se deja tal cual sí se escapa aquí.
+            out.append(hueco if replacement is not None else html.escape(_sin_control(hueco), quote=False))
         else:
             out.append(cloze_text[last:h.inicio])
             out.append(hueco)
@@ -352,6 +370,47 @@ def _questiontext(html_text: str, p: Pregunta, name: str) -> List[str]:
         lines.append(f'      <text>{cdata("<p>" + texto_html(feedback) + "</p>")}</text>')
         lines.append('    </generalfeedback>')
     return lines
+
+# Porcentajes que el importador de Moodle acepta en una respuesta (y sus
+# negativos). Verificado en un Moodle real: cualquier otro valor se rechaza con
+# «Las calificaciones … no coinciden con las opciones de calificación» y, con
+# «Detenerse en error = Sí» (lo normal), NO se importa ninguna pregunta del archivo.
+# 100/n solo está en la lista para n de 1 a 10 y 20.
+_REPARTO_EXACTO = tuple(range(1, 11)) + (20,)
+
+
+def _repartir_fraccion(n: int) -> List[float]:
+    """Porcentajes (positivos, suman 100) para `n` respuestas que se reparten el
+    100 %, todos válidos para Moodle. Para n de 1 a 10 y 20 es 100/n, igual que
+    siempre. Para n de 11 a 19 no hay 100/n válido: se reparte con 10 % y 5 %
+    (a×10 + b×5 = 100, con a = 20-n y b = 2n-20), los de 10 % primero. Con más de
+    20 ninguna combinación suma 100 con valores válidos: se usa 5 % en cada una
+    (el archivo se importa; la suma pasa de 100 y Moodle la limita)."""
+    if n in _REPARTO_EXACTO:
+        return [round(100.0 / n, 5)] * n
+    if 11 <= n <= 19:
+        return [10.0] * (20 - n) + [5.0] * (2 * n - 20)
+    return [5.0] * n
+
+
+def _avisar_reparto_fracciones(stats: QuestionStats, num: int, correctas: int, incorrectas: int,
+                               es_unica: bool) -> None:
+    """Avisa (sin bloquear) cuando el reparto del 100 % entre las opciones de una
+    pregunta de varias respuestas no puede ser 100/n (ver _repartir_fraccion)."""
+    if es_unica:
+        return
+    for cantidad, que in ((correctas, "correctas"), (incorrectas, "incorrectas")):
+        if cantidad in _REPARTO_EXACTO or cantidad <= 0:
+            continue
+        if cantidad <= 19:
+            aviso = (f"La pregunta {num} (opción múltiple) tiene {cantidad} opciones {que}: Moodle solo acepta "
+                     f"ciertos porcentajes, así que el 100 % se reparte entre 10 % y 5 % en vez de partes iguales.")
+        else:
+            aviso = (f"La pregunta {num} (opción múltiple) tiene {cantidad} opciones {que}: son más de las 20 que Moodle "
+                     f"permite repartir, así que cada una vale 5 %. Considera dividir la pregunta.")
+        stats.avisos.append(aviso)
+        logger.warning(aviso)
+
 
 def _avisar_puntos_cloze(stats: QuestionStats, num: int, raw_text: str, grade_val: float) -> None:
     """Avisa (sin bloquear) cuando una pregunta de «Completar» valdrá en
@@ -500,7 +559,7 @@ def build_xml(
             # total si los fraction positivos de las correctas suman 100 —
             # se reparte parejo entre ellas (2 correctas -> 50% c/u, etc.),
             # igual que ya hacemos para "varias respuestas" en Cloze.
-            correct_fraction = round(100.0 / len(correct_letters), 5) if not is_single else 100
+            positivas = [100] if is_single else _repartir_fraccion(len(correct_letters))
 
             # "Selecciona todas las que correspondan" (is_single=False): las
             # incorrectas necesitan una fracción NEGATIVA, no 0 — con 0, un
@@ -514,13 +573,15 @@ def build_xml(
             # estudiante solo puede marcar una opción a la vez, así que 0%
             # en las demás ya es el comportamiento estándar y correcto.
             incorrect_count = len(options) - len(correct_letters)
-            incorrect_fraction = round(-100.0 / incorrect_count, 5) if (not is_single and incorrect_count) else 0
+            negativas = [-x for x in _repartir_fraccion(incorrect_count)] if (not is_single and incorrect_count) else []
+            _avisar_reparto_fracciones(stats, num, len(correct_letters), incorrect_count, is_single)
 
             # Iterar dinámicamente sobre las opciones encontradas (no limitado a
             # A-D): una pregunta con opción E o más ya no se descarta en silencio.
+            siguiente_pos, siguiente_neg = iter(positivas), iter(negativas)
             for letter in sorted(options.keys()):
                 is_correct = letter in correct_letters
-                fraction = correct_fraction if is_correct else incorrect_fraction
+                fraction = next(siguiente_pos) if is_correct else next(siguiente_neg, 0)
                 feedback = FEEDBACK_CORRECT if is_correct else FEEDBACK_INCORRECT
                 xml_parts.append(f'    <answer fraction="{fraction}">')
                 xml_parts.append(f'      <text>{cdata(esc(options[letter]))}</text>')

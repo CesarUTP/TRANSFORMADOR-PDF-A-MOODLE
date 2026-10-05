@@ -1,9 +1,9 @@
 /**
  * filtros.js — filtro por tipo de pregunta y «Revisar primero».
  */
-import { buildReviewRail } from './panel.js';
+import { buildReviewRail, refreshQuestionIssues } from './panel.js';
 import { _closeCollapsiblePanel, togglePanel } from './paneles.js';
-import { FILTRO_REVISAR, coincideConFiltro } from './procedencia.js';
+import { FILTRO_PROBLEMAS, FILTRO_REVISAR, coincideConFiltro } from './procedencia.js';
 import { QUESTION_TYPE_DEFS, QUESTION_TYPE_LABEL_MAP, autoGrowTextarea } from './tarjetas.js';
 import { crearIconos } from '../util.js';
 
@@ -17,18 +17,24 @@ export function refreshFilterChips() {
   const activeChip = bar.querySelector('.filter-chip[aria-pressed="true"]');
   let activeFilter = activeChip ? activeChip.dataset.filter : 'all';
 
+  // Los avisos de calidad (data-calidad) se calculan al revisar las preguntas: antes de contarlos.
+  refreshQuestionIssues();
   const cards = document.querySelectorAll('.editor-card');
   const typeCounts = Object.fromEntries(QUESTION_TYPE_DEFS.map(t => [t.key, 0]));
-  let porRevisar = 0;
+  let porRevisar = 0, conProblemas = 0;
   cards.forEach(card => {
     const t = card.dataset.qtype;
     if (t in typeCounts) typeCounts[t]++;
     if (card.dataset.revisar === '1') porRevisar++;
+    if (card.dataset.calidad) conProblemas++;
   });
 
   // Si el tipo filtrado ya no tiene preguntas (se borró la última), no
   // tiene sentido dejar ese filtro activo.
-  if (activeFilter === FILTRO_REVISAR ? porRevisar === 0 : (activeFilter !== 'all' && typeCounts[activeFilter] === 0)) activeFilter = 'all';
+  const sinCoincidencias = activeFilter === FILTRO_REVISAR ? porRevisar === 0
+    : activeFilter === FILTRO_PROBLEMAS ? conProblemas === 0
+    : (activeFilter !== 'all' && typeCounts[activeFilter] === 0);
+  if (sinCoincidencias) activeFilter = 'all';
 
   const chip = (type, label, count, icono = '') =>
     `<button type="button" class="filter-chip" data-filter="${type}" aria-pressed="${activeFilter === type}" data-accion="selectFilter" data-arg="${type}">${icono}${label} <span class="count">(${count})</span></button>`;
@@ -36,6 +42,8 @@ export function refreshFilterChips() {
   // «Revisar primero»: respuestas con confianza baja o propuestas por la IA
   // que el docente aún no ha tocado. Solo aparece si hay alguna.
   if (porRevisar > 0) html += chip(FILTRO_REVISAR, 'Revisar primero', porRevisar, '<i data-lucide="shield-alert" aria-hidden="true"></i>');
+  // «Posibles problemas»: duplicadas, opciones repetidas… (calidad.js). Solo aparece si hay alguna.
+  if (conProblemas > 0) html += chip(FILTRO_PROBLEMAS, 'Posibles problemas', conProblemas, '<i data-lucide="triangle-alert" aria-hidden="true"></i>');
   Object.entries(typeCounts).forEach(([type, count]) => {
     if (count > 0) html += chip(type, QUESTION_TYPE_LABEL_MAP[type], count);
   });
@@ -73,7 +81,7 @@ function filterQuestionsByType(type) {
     });
   }
   document.querySelectorAll('.editor-card').forEach(card => {
-    const show = coincideConFiltro(type, { tipo: card.dataset.qtype, revisar: card.dataset.revisar === '1' });
+    const show = coincideConFiltro(type, { tipo: card.dataset.qtype, revisar: card.dataset.revisar === '1', problemas: !!card.dataset.calidad });
     const wasHidden = card.style.display === 'none';
     card.style.display = show ? '' : 'none';
     if (show && wasHidden) card.querySelectorAll('textarea').forEach(autoGrowTextarea);

@@ -717,3 +717,16 @@ body.editor-active .review-rail { display: flex; }
 @media (prefers-reduced-motion: reduce) {
   #editor-questions-container.entrando > .editor-card { animation: none; }
 }
+
+/* ── IA ASISTIDA (2.0) ────────────────────────────────────────────────────
+   «Sugerir respuesta con IA»: solo si a la pregunta le FALTA la respuesta. */
+.q-sugerir { display: none; align-items: center; gap: 8px 12px; flex-wrap: wrap; margin-top: 12px; }
+.editor-card.sin-respuesta .q-sugerir { display: flex; }
+.q-sugerir .card-note { margin: 0; }
+.q-ia-respuesta { margin-top: 10px; }
+.q-ia-respuesta .card-note { margin-top: 6px; }
+/* Avisos de calidad: ámbar y sin borde izquierdo; el ícono y el texto lo dicen (nunca solo el color). */
+.card-calidad { display: flex; flex-direction: column; gap: 4px; margin: -4px 0 12px; font-size: var(--text-sm); font-weight: 600; color: var(--color-warning); }
+.card-calidad span { display: flex; align-items: flex-start; gap: 6px; }
+.card-calidad svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
+.editor-card:not([data-abierta]) .card-calidad { margin: 8px 0 0 28px; }

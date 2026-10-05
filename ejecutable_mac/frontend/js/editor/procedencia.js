@@ -5,7 +5,7 @@
  * pruebas.js la corren en Node y en el navegador. El backend escribe, dentro
  * del `data` de cada pregunta, campos OPCIONALES:
  *
- *   origen_respuesta  "documento" | "marca" | "ia" | "docente"
+ *   origen_respuesta  "documento" | "marca" | "ia" | "docente" | "sugerida"
  *   confianza         "alta" | "media" | "baja"
  *   page              página del original (entero, desde 1)
  *   recuadro          [x0, y0, x1, y1] de la pregunta en esa página (para la 2.0:
@@ -17,11 +17,13 @@
  */
 import { esc_html } from '../util.js';
 
-export const ORIGENES = ['documento', 'marca', 'ia', 'docente'];
+export const ORIGENES = ['documento', 'marca', 'ia', 'docente', 'sugerida'];
 export const CONFIANZAS = ['alta', 'media', 'baja'];
 
 /** Nombre del filtro «Revisar primero» (se suma a los tipos de pregunta). */
 export const FILTRO_REVISAR = 'revisar';
+/** Filtro «Posibles problemas»: preguntas con un aviso de calidad (calidad.js). */
+export const FILTRO_PROBLEMAS = 'problemas';
 
 const ORIGEN = {
   documento: {
@@ -35,6 +37,10 @@ const ORIGEN = {
   ia: {
     texto: 'Interpretada por la IA — revisar', icono: 'sparkles', tono: 'aviso',
     tip: 'El documento no marca la respuesta: la propuso la IA. Confírmala con tu documento antes de generar el XML.',
+  },
+  sugerida: {
+    texto: 'Sugerida por IA — verifica', icono: 'wand-sparkles', tono: 'aviso',
+    tip: 'La clave no traía esta respuesta: la propuso la IA y tú la aceptaste. Verifícala con tu documento antes de generar el XML.',
   },
   docente: {
     texto: 'Editada por ti', icono: 'user-pen', tono: 'docente',
@@ -106,15 +112,25 @@ export function chipsDeProcedencia(data, tipo) {
 export function chipsVisibles(data, tipo) {
   return chipsDeProcedencia(data, tipo).filter(c =>
     c.clave === 'pagina'
-    || (c.clave === 'origen' && (c.valor === 'ia' || c.valor === 'docente'))
+    || (c.clave === 'origen' && (c.valor === 'ia' || c.valor === 'docente' || c.valor === 'sugerida'))
     || (c.clave === 'confianza' && c.valor !== 'alta'));
 }
 
-/** HTML de la fila de chips ('' si no hay ninguna). Los íconos los dibuja crearIconos(). */
-export function chipsHtml(chips) {
-  return chips.map(c =>
-    `<span class="proc-chip proc-${esc_html(c.tono)} proc-${esc_html(c.clave)}" role="img" title="${esc_html(c.tip)}" aria-label="${esc_html(c.aria)}">`
-    + `<i data-lucide="${esc_html(c.icono)}" aria-hidden="true"></i><span aria-hidden="true">${esc_html(c.texto)}</span></span>`).join('');
+/**
+ * HTML de la fila de chips ('' si no hay ninguna). Los íconos los dibuja crearIconos().
+ * Con `original` (hay un PDF en esta sesión) el chip de la página es un BOTÓN que
+ * abre la «Revisión con el original»; sin él (Historial, Word, TXT) es solo informativo.
+ */
+export function chipsHtml(chips, { original = false } = {}) {
+  return chips.map(c => {
+    const icono = `<i data-lucide="${esc_html(c.icono)}" aria-hidden="true"></i><span aria-hidden="true">${esc_html(c.texto)}</span>`;
+    const clases = `proc-chip proc-${esc_html(c.tono)} proc-${esc_html(c.clave)}`;
+    if (original && c.clave === 'pagina') {
+      return `<button type="button" class="${clases} proc-boton" data-accion="verOriginal" data-este`
+        + ` title="Ver esta pregunta en el documento original" aria-label="${esc_html(c.texto)}: ver esta pregunta en el documento original">${icono}</button>`;
+    }
+    return `<span class="${clases}" role="img" title="${esc_html(c.tip)}" aria-label="${esc_html(c.aria)}">${icono}</span>`;
+  }).join('');
 }
 
 /**
@@ -156,10 +172,21 @@ export function respuestaCambio(firmaInicial, firmaActual) {
 /**
  * Pone el origen «docente» en `data` si la respuesta cambió; si no, no toca nada
  * (un simple foco o clic nunca marca). Devuelve `data` (se modifica en su sitio).
- * `confianza`, `page` y `recuadro` se dejan EXACTAMENTE como estaban.
+ * `confianza`, `page` y `recuadro` se dejan EXACTAMENTE como estaban, salvo cuando la
+ * respuesta es la que propuso la IA y el docente aceptó (`sugerida`): origen «sugerida»
+ * y confianza baja.
  */
-export function marcarSiCambio(data, cambio) {
-  if (cambio && data && typeof data === 'object') data.origen_respuesta = 'docente';
+export function marcarSiCambio(data, cambio, sugerida = false) {
+  if (cambio && data && typeof data === 'object') {
+    if (sugerida) {
+      // La respuesta es exactamente la que propuso la IA y el docente aceptó: queda dicho
+      // (y con confianza baja: la IA no la leyó del documento, la propuso).
+      data.origen_respuesta = 'sugerida';
+      data.confianza = 'baja';
+    } else {
+      data.origen_respuesta = 'docente';
+    }
+  }
   return data;
 }
 
@@ -167,13 +194,13 @@ export function marcarSiCambio(data, cambio) {
 /** Respuesta poco segura o propuesta por la IA, y que el docente aún no tocó. */
 export function necesitaRevisarPrimero(data) {
   if (!data || data.origen_respuesta === 'docente') return false;
-  return data.confianza === 'baja' || data.origen_respuesta === 'ia';
+  return data.confianza === 'baja' || data.origen_respuesta === 'ia' || data.origen_respuesta === 'sugerida';
 }
 
 /** Por qué conviene revisarla primero (texto corto para el mapa del examen), o ''. */
 export function motivoRevisarPrimero(data) {
   if (!necesitaRevisarPrimero(data)) return '';
-  const ia = data.origen_respuesta === 'ia', baja = data.confianza === 'baja';
+  const ia = data.origen_respuesta === 'ia' || data.origen_respuesta === 'sugerida', baja = data.confianza === 'baja';
   if (ia && baja) return 'respuesta interpretada por la IA con confianza baja';
   return ia ? 'respuesta interpretada por la IA' : 'confianza baja en la respuesta';
 }
@@ -202,9 +229,10 @@ export function mostrarAvisoMarcaLegado(data) {
 }
 
 /** ¿Una tarjeta entra en el filtro activo? (`all`, un tipo, o «revisar»). */
-export function coincideConFiltro(filtro, { tipo, revisar }) {
+export function coincideConFiltro(filtro, { tipo, revisar, problemas = false }) {
   if (filtro === 'all') return true;
   if (filtro === FILTRO_REVISAR) return !!revisar;
+  if (filtro === FILTRO_PROBLEMAS) return !!problemas;
   return tipo === filtro;
 }
 

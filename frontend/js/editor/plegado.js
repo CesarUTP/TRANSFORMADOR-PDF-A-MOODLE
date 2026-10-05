@@ -91,7 +91,7 @@ function _valor(card, sel) {
   return el ? String(el.value ?? '').trim() : '';
 }
 
-export function resumenDe(card) {
+export function resumenDe(card, { largoEnunciado = 140, largoRespuesta = 70 } = {}) {
   const tipo = card.dataset.qtype;
   let enunciado = _valor(card, '.q-stem');
   let respuesta = '';
@@ -125,7 +125,7 @@ export function resumenDe(card) {
       falta = huecos.some(h => !h.correct_idx.length);
     }
   }
-  return { enunciado: recortar(enunciado), respuesta: recortar(respuesta, 70), falta };
+  return { enunciado: recortar(enunciado, largoEnunciado), respuesta: recortar(respuesta, largoRespuesta), falta };
 }
 
 /** Escribe el resumen en la cabecera de la tarjeta (con textContent: nada se interpreta como HTML). */

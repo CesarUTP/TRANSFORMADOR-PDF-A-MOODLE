@@ -103,8 +103,8 @@
       </div>
 
       <!-- Drop Zone -->
-      <div id="drop-zone" role="button" tabindex="0" aria-label="Elegir el examen: arrastra un archivo PDF, Word o TXT, o pulsa para buscarlo" aria-describedby="drop-error">
-        <input type="file" id="file-input" accept=".pdf,.docx,.txt" style="display:none;"/>
+      <div id="drop-zone" role="button" tabindex="0" aria-label="Elegir el examen: arrastra un archivo PDF, Word, TXT o un XML de Moodle, o pulsa para buscarlo" aria-describedby="drop-error">
+        <input type="file" id="file-input" accept=".pdf,.docx,.txt,.xml" style="display:none;"/>
         <!-- Con un archivo elegido la zona se pinta de verde y cambia su
              texto (clase .has-file, ver carga.js). -->
         <div class="drop-icon-wrapper">
@@ -117,6 +117,7 @@
           <span class="file-ext">.PDF</span>
           <span class="file-ext">.DOCX</span>
           <span class="file-ext">.TXT</span>
+          <span class="file-ext" title="Un XML de Moodle que ya tengas: se abre en el editor para corregirlo">.XML</span>
         </div>
       </div>
       <!-- Formato no soportado: aviso en el mismo lugar, sin sacar al
@@ -180,7 +181,8 @@
         Procesar y convertir examen
       </button>
       <!-- Por qué el botón está deshabilitado (antes no se decía). -->
-      <p id="convert-hint" class="field-hint" style="text-align:center;margin-top:8px;">Primero elige un archivo PDF, Word o TXT.</p>
+      <p id="xml-nota" class="field-hint" style="display:none;text-align:center;margin-top:8px;">Es un XML de Moodle: se abre en el editor tal como está, sin IA y sin gastar cuota. Los puntos salen del propio XML.</p>
+      <p id="convert-hint" class="field-hint" style="text-align:center;margin-top:8px;">Primero elige un archivo PDF, Word, TXT o un XML de Moodle.</p>
 
       <!-- Privacy Banner -->
       <div style="margin-top:16px;text-align:center;font-size:var(--text-sm);color:var(--color-text-subtle);display:flex;align-items:center;justify-content:center;gap:6px;">
@@ -404,7 +406,8 @@
             <section class="guia-sec">
               <h3>Qué acepta</h3>
               <ul class="guia-lista">
-                <li><strong>Pruebas, parciales y quices</strong> con preguntas de opción múltiple, verdadero/falso, emparejamiento, completar, ensayo, respuesta corta o numérica. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas.</li>
+                <li><strong>Pruebas, parciales y quices</strong> en PDF, Word o TXT, con preguntas de opción múltiple, verdadero/falso, emparejamiento, completar, ensayo, respuesta corta o numérica. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas.</li>
+                <li><strong>Un XML de Moodle que ya tengas</strong> (uno de esta aplicación o exportado de tu banco de preguntas): se abre en el editor para corregirlo y volver a generarlo. No usa IA. Las preguntas que el editor no entiende (calculadas, arrastrar y soltar…) quedan entre las «no incluidas», con su motivo.</li>
                 <li><strong>Imágenes y fórmulas.</strong> Las imágenes llegan a Moodle dentro de su pregunta; en la revisión puedes quitarlas, moverlas o agregar las tuyas («Agregar imagen» o soltando el archivo sobre la pregunta). Las fórmulas se escriben en LaTeX, entre <code class="inline">\(</code> y <code class="inline">\)</code>, con vista previa.</li>
                 <li><strong>Retroalimentación opcional.</strong> Si el examen trae la justificación, se copia sola; si no, escríbela, pídesela a la IA con «Escribir con IA» o déjala vacía. «Mejorar redacción» corrige ortografía y claridad sin cambiar datos, código ni fórmulas. Ves la propuesta y solo se aplica si pulsas «Aceptar».</li>
                 <li><strong>PDF escaneados.</strong> Si el PDF es una foto o un escaneo, el sistema lo avisa y ofrece <strong>Leer el PDF con IA</strong>, que lee las páginas como imagen (hasta 15). En ese caso verifica cada respuesta contra el original.</li>
@@ -418,13 +421,13 @@
                 <li><strong>Clave de respuestas</strong> al final del documento, con la letra («1. c») o el texto de la opción.</li>
                 <li><strong>Marcas en el propio examen:</strong> texto en color, resaltado, subrayado, negrita, o un ✓ / asterisco junto a la opción. En un PDF digital se leen directamente del archivo, no las adivina la IA.</li>
                 <li><strong>Cuadros con X,</strong> donde cada fila se une con la columna marcada (se convierten en emparejamiento).</li>
-                <li><strong>Sin respuesta marcada:</strong> el sistema no la inventa; la pregunta queda señalada para que la completes.</li>
+                <li><strong>Sin respuesta marcada:</strong> el sistema no la inventa; la pregunta queda señalada para que la completes. Si quieres, pídele una propuesta a la IA con <strong>Sugerir respuesta con IA</strong>: la ves con su motivo y solo se aplica si la aceptas; queda marcada «Sugerida por IA».</li>
               </ul>
             </section>
 
             <section class="guia-sec">
               <h3>Privacidad</h3>
-              <p>Tu archivo se procesa en tu equipo. Al servicio de IA solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas en imágenes o PDF escaneados). Más detalle en «Acerca de».</p>
+              <p>Tu archivo se procesa en tu equipo. Al servicio de IA solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas en imágenes o PDF escaneados). El PDF que subes se conserva solo en la memoria de la aplicación mientras está abierta, para mostrártelo al revisar; no se guarda en el Historial ni en ningún archivo. Más detalle en «Acerca de».</p>
             </section>
           </div>
         </div>
@@ -435,6 +438,17 @@
             <section class="guia-sec">
               <h3>Cómo se recorre</h3>
               <p>Cada pregunta es una fila con su número, tipo, enunciado y la respuesta que lleva. Las que piden revisión se abren solas (hasta tres); abre cualquier otra con un clic en su fila. <em>Abrir todas</em> / <em>Plegar todas</em> las cambia de una vez. Plegar solo oculta: el XML sale igual.</p>
+            </section>
+
+            <section class="guia-sec">
+              <h3>Revisar con el original</h3>
+              <p>Si tu examen es un PDF, el chip <strong>Pág. N</strong> de cada pregunta es un botón: abre el <strong>recorte de la página</strong> donde está la pregunta, resaltado, y junto a él la respuesta que propone la app con su origen y su confianza (aquí sí ves siempre «Clave del documento» y «Confianza alta»).</p>
+              <ul class="guia-lista">
+                <li>Cambia entre <em>Recorte</em> y <em>Página completa</em>, y acércalo con el zoom. Si no se pudo ubicar la pregunta en la página (dos columnas, escaneado, página girada), se muestra la página completa.</li>
+                <li>Pasa a la pregunta <em>Anterior</em> o <em>Siguiente</em> (<kbd>←</kbd> <kbd>→</kbd>), o a la anterior o siguiente <em>para revisar</em> (<kbd>Mayús</kbd> + <kbd>←</kbd> <kbd>→</kbd>), sin cerrar. <kbd>Esc</kbd> cierra y te deja en la última pregunta que miraste.</li>
+                <li>El original solo está <strong>mientras la aplicación está abierta</strong>: no se guarda en el Historial. Al reabrir una conversión desde el Historial, o con Word o TXT, «Pág. N» solo informa.</li>
+                <li><strong>PDF escaneado</strong> (sin texto): la IA lee las marcas de la imagen y puede reemplazarlas por lo que ella cree correcto, así que todas sus respuestas salen con confianza baja y un aviso arriba. Compara cada una con el original.</li>
+              </ul>
             </section>
 
             <section class="guia-sec">
@@ -455,6 +469,7 @@
                 <li><span class="proc-chip proc-neutral"><i data-lucide="file-text"></i><span>Pág. 3</span></span><span>Página del documento original donde está la pregunta.</span></li>
                 <li><span class="proc-chip proc-aviso"><i data-lucide="sparkles"></i><span>Interpretada por la IA — revisar</span></span><span>El documento no marca la respuesta: la propuso la IA. Confírmala con tu documento.</span></li>
                 <li><span class="proc-chip proc-aviso"><i data-lucide="shield-alert"></i><span>Confianza baja</span></span><span>La lectura fue poco segura (imagen borrosa o marca dudosa). «Confianza media» es una duda menor.</span></li>
+                <li><span class="proc-chip proc-aviso"><i data-lucide="wand-sparkles"></i><span>Sugerida por IA — verifica</span></span><span>La clave no traía la respuesta: la propuso la IA y tú la aceptaste. Si luego la cambias, pasa a «Editada por ti».</span></li>
                 <li><span class="proc-chip proc-docente"><i data-lucide="user-pen"></i><span>Editada por ti</span></span><span>Cambiaste la respuesta correcta; ya no depende del documento ni de la IA.</span></li>
                 <li><span class="type-badge flag-review"><i data-lucide="palette"></i> revisar marca</span><span>El documento tiene marcas en esa página, pero no se pudieron leer con certeza.</span></li>
                 <li><span class="type-badge flag-review"><i data-lucide="table-2"></i> convertida de tabla</span><span>Un cuadro del documento se convirtió en emparejamiento.</span></li>
@@ -464,7 +479,9 @@
             <section class="guia-sec">
               <h3>Herramientas</h3>
               <ul class="guia-lista">
-                <li><strong>Mostrar:</strong> deja ver solo un tipo de pregunta o <em>Revisar primero</em> (respuestas propuestas por la IA o con confianza baja que aún no tocaste). Las preguntas ocultas igual se incluyen en el XML.</li>
+                <li><strong>Mostrar:</strong> deja ver solo un tipo de pregunta, <em>Revisar primero</em> (respuestas propuestas por la IA o con confianza baja que aún no tocaste) o <em>Posibles problemas</em>. Las preguntas ocultas igual se incluyen en el XML.</li>
+                <li><strong>Posibles problemas:</strong> avisos que la app detecta sin IA: preguntas repetidas o casi repetidas, opciones iguales, una opción que depende de las demás («todas las anteriores», «A y B») —Moodle <em>mezcla</em> el orden de las opciones y dejaría de tener sentido— y emparejamientos o espacios con elementos repetidos. Son avisos: no bloquean nada.</li>
+                <li><strong>Sugerir respuesta con IA:</strong> aparece solo en las preguntas a las que les falta la respuesta. La IA propone una (con su motivo), tú decides: <em>Aceptar</em> o <em>Descartar</em>, y puedes <em>Deshacer</em>. Gasta tu cuota de Gemini.</li>
                 <li><strong>Puntos:</strong> muestra cuánto suman frente al total del examen (en ámbar si no coinciden). Al abrirlo puedes repartirlos <em>Igual para todas</em> o <em>Según el tipo</em>, con pesos: un tipo con peso 2 vale el doble que uno con peso 1. El reparto siempre suma exacto el total.</li>
                 <li><strong>Preguntas que no se pudieron incluir:</strong> aparecen arriba en una sola línea; ábrela con <em>Ver motivos</em>. Si a una solo le falta la respuesta, usa <em>Añadir con lo ya extraído</em> y márcala tú.</li>
                 <li><strong>Añadir pregunta:</strong> al final de la lista, si faltó alguna del documento, de cualquiera de los 7 tipos.</li>
@@ -478,6 +495,7 @@
                 <div><dt><kbd>J</kbd></dt><dd>Siguiente pregunta</dd></div>
                 <div><dt><kbd>K</kbd></dt><dd>Pregunta anterior</dd></div>
                 <div><dt><kbd>Intro</kbd></dt><dd>Abrir o plegar la pregunta enfocada</dd></div>
+                <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Dentro de «Pág. N»: pregunta anterior o siguiente (con <kbd>Mayús</kbd>, la anterior o siguiente para revisar)</dd></div>
                 <div><dt><kbd>I</kbd></dt><dd>Siguiente pregunta incompleta</dd></div>
                 <div><dt><kbd>R</kbd></dt><dd>Siguiente pregunta para revisar</dd></div>
                 <div><dt><kbd>?</kbd></dt><dd>Abrir esta guía en «Revisión»</dd></div>
@@ -806,6 +824,56 @@ Ahora convierte el examen adjunto a este formato.</pre>
     </div>
   </div>
 
+  <!-- ════════════════ REVISIÓN CON EL ORIGINAL ════════════════
+       Se abre desde el chip «Pág. N» de cada pregunta. El recorte lo dibuja el
+       servidor bajo demanda (el PDF vive solo en memoria mientras la app está
+       abierta). Lógica en ui/original.js. -->
+  <div id="modal-original" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="orig-titulo">
+    <div class="modal-box modal-original">
+      <div class="modal-header">
+        <h2 class="modal-title" id="orig-titulo" aria-live="polite">Pregunta</h2>
+        <span class="orig-posicion" id="orig-posicion" aria-hidden="true"></span>
+        <button type="button" id="orig-cerrar" class="btn btn-icon" aria-label="Cerrar la revisión con el original" title="Cerrar (Esc)">
+          <i data-lucide="x" class="ico-18"></i>
+        </button>
+      </div>
+      <div class="orig-barra">
+        <div class="orig-vistas" role="group" aria-label="Qué mostrar del original">
+          <button type="button" id="orig-vista-recorte" class="orig-vista" aria-pressed="true">Recorte</button>
+          <button type="button" id="orig-vista-pagina" class="orig-vista" aria-pressed="false">Página completa</button>
+        </div>
+        <div class="orig-zoom" role="group" aria-label="Zoom">
+          <button type="button" id="orig-zoom-menos" class="btn btn-icon" aria-label="Alejar" title="Alejar"><i data-lucide="zoom-out" class="ico-16"></i></button>
+          <span id="orig-zoom-etiqueta" class="orig-zoom-valor" aria-live="polite">100 %</span>
+          <button type="button" id="orig-zoom-mas" class="btn btn-icon" aria-label="Acercar" title="Acercar"><i data-lucide="zoom-in" class="ico-16"></i></button>
+        </div>
+      </div>
+      <div class="modal-body orig-cuerpo">
+        <div id="orig-visor" class="orig-visor" tabindex="0" role="region" aria-label="Documento original">
+          <p id="orig-estado" class="orig-estado" role="status"></p>
+          <img id="orig-imagen" alt="" hidden>
+        </div>
+        <p id="orig-nota" class="orig-nota" hidden>No se pudo ubicar esta pregunta dentro de la página (dos columnas, escaneado o página girada): se muestra la página completa. Búscala en ella.</p>
+        <div class="orig-propuesta">
+          <p class="orig-etiqueta">Respuesta que propone la app</p>
+          <p id="orig-enunciado" class="orig-enunciado"></p>
+          <p id="orig-respuesta" class="orig-respuesta"></p>
+          <div id="orig-chips" class="card-procedencia" role="group" aria-label="De dónde sale la respuesta"></div>
+        </div>
+      </div>
+      <div class="orig-pie">
+        <div class="orig-nav" role="group" aria-label="Cambiar de pregunta">
+          <button type="button" id="orig-ant" class="btn btn-ghost btn-sm" title="Pregunta anterior (←)"><i data-lucide="chevron-left" class="ico-16"></i> Anterior</button>
+          <button type="button" id="orig-sig" class="btn btn-ghost btn-sm" title="Pregunta siguiente (→)">Siguiente <i data-lucide="chevron-right" class="ico-16"></i></button>
+        </div>
+        <div class="orig-nav" role="group" aria-label="Cambiar a otra pregunta para revisar">
+          <button type="button" id="orig-ant-rev" class="btn btn-ghost btn-sm" title="Anterior para revisar (Mayús + ←)"><i data-lucide="eye" class="ico-16"></i> Anterior para revisar</button>
+          <button type="button" id="orig-sig-rev" class="btn btn-ghost btn-sm" title="Siguiente para revisar (Mayús + →)">Siguiente para revisar <i data-lucide="eye" class="ico-16"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ════════════════ API DE GEMINI (bienvenida y ajustes) ════════════════
        La primera vez que se abre la app, sin clave guardada, aparece
        como paso obligatorio (sin botón de cerrar). Después se abre desde
@@ -864,6 +932,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <li><strong>Tu clave de la API de Gemini</strong>, cifrada; solo se puede descifrar en este equipo y con tu usuario: <code id="acerca-ruta-clave">—</code></li>
             <li><strong>Registro de errores</strong>, sin el contenido de tus exámenes: <code id="acerca-ruta-registro">—</code></li>
             <li><strong>La revisión que tengas a medias</strong>, para retomarla si cierras la app, en el almacenamiento de la propia ventana.</li>
+            <li><strong>El PDF que subes, solo en la memoria</strong> de la aplicación mientras está abierta (para mostrártelo junto a cada pregunta). No se escribe en el disco ni en el Historial, y se olvida al cerrar la app.</li>
           </ul>
           <h4 class="acerca-sub">Lo que sale de tu equipo</h4>
           <ul class="acerca-lista">

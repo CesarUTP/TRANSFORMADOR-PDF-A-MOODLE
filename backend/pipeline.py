@@ -25,6 +25,7 @@ from credenciales import get_api_key  # noqa: F401
 import confianza
 import ia_proveedor
 import origen_pdf
+import originales
 from extractor import (
     MAX_IMAGE_PAGES,
     DocumentoDemasiadoGrande,
@@ -64,9 +65,8 @@ COLOR_MARKS_NOTICE = "Hay marcas de color que no se pudieron leer. Revisa las pr
 # marcas en rojo contrafácticas): devolvió lo que él cree correcto en 8,7 de 9
 # preguntas en vez de lo que el docente marcó. El aviso lo dice sin rodeos.
 SCANNED_MARKS_NOTICE = (
-    "Documento escaneado: si las respuestas están marcadas por color u otra marca, la IA las lee "
-    "de la imagen y puede reemplazarlas por lo que ella cree correcto. Revisa TODAS las respuestas "
-    "antes de aprobar."
+    "Escaneado: verifica cada respuesta contra el original. Si las respuestas están marcadas por color "
+    "u otra marca, la IA las lee de la imagen y puede reemplazarlas por lo que ella cree correcto."
 )
 
 # Nombre de la marca en el aviso: cualquier color es simplemente "color".
@@ -249,8 +249,24 @@ def _aviso_paginas(total: int, enviadas: int, hay_texto: bool) -> Optional[str]:
             f"Divide el examen en partes de hasta {enviadas} páginas y conviértelas por separado.")
 
 
+def _adjuntar_original(resultado: Dict[str, Any], raw_bytes: bytes, filename: str) -> Dict[str, Any]:
+    """«Revisión con el original»: si el documento es un PDF, el servidor lo conserva
+    en memoria (ver originales.py) y la respuesta lleva su `original_id`. Nada del
+    examen original va al Historial. Word y TXT no tienen original que mostrar."""
+    if Path(filename).suffix.lower() == ".pdf":
+        ident = originales.guardar(raw_bytes)
+        if ident:
+            resultado["original_id"] = ident
+    return resultado
+
+
 def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback = None,
                    ia_cache: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    return _adjuntar_original(_parse_document(raw_bytes, filename, progress, ia_cache), raw_bytes, filename)
+
+
+def _parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback = None,
+                    ia_cache: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Flujo de /api/parse: texto (+ imágenes de páginas con imagen incrustada).
 
     ia_cache: diccionario opcional donde se guarda lo que respondió la IA. Si
@@ -404,6 +420,11 @@ def parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback =
 
 def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: ProgressCallback = None,
                                ia_cache: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    return _adjuntar_original(_normalize_document_with_ai(raw_bytes, filename, progress, ia_cache), raw_bytes, filename)
+
+
+def _normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: ProgressCallback = None,
+                                ia_cache: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Flujo de /api/normalize_with_ai: renderiza el documento COMPLETO como
     imágenes y deja que Gemini lo lea visualmente, sin depender de que el
@@ -478,6 +499,7 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
             filename, payload,
             estimated_question_count, colored_pages_text, color_marks_notice,
             colored_page_numbers, marks, aviso_paginas=aviso_paginas, pdf_bytes=raw_bytes,
+            escaneado=not full_text.strip(),
         )
 
     if ia_cache is not None and "texto" in ia_cache:
@@ -496,7 +518,7 @@ def normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progre
     return finalize_parse_response(
         filename, full_text, reformatted_text, was_reformatted,
         estimated_question_count, colored_pages_text, color_marks_notice, marks,
-        aviso_paginas=aviso_paginas, pdf_bytes=raw_bytes,
+        aviso_paginas=aviso_paginas, pdf_bytes=raw_bytes, escaneado=not full_text.strip(),
     )
 
 
@@ -524,6 +546,7 @@ def finalize_parse_response(
     marks=None,
     aviso_paginas: Optional[str] = None,
     pdf_bytes: Optional[bytes] = None,
+    escaneado: bool = False,
 ) -> Dict[str, Any]:
     """
     Cola común de ambos flujos: ya con el texto reformateado por Gemini, de
@@ -572,7 +595,7 @@ def finalize_parse_response(
     return _finalize_common(
         filename, questions, effective_answer_key, was_reformatted,
         estimated_question_count, colored_pages_text, color_marks_notice, marks,
-        aviso_paginas=aviso_paginas, desde_documento=desde_documento,
+        aviso_paginas=aviso_paginas, desde_documento=desde_documento, escaneado=escaneado,
     )
 
 
@@ -720,6 +743,7 @@ def _finalize_structured(
     imagenes_preguntas=None,
     aviso_paginas: Optional[str] = None,
     pdf_bytes: Optional[bytes] = None,
+    escaneado: bool = False,
 ) -> Dict[str, Any]:
     """Modo JSON: la salida del modelo ya viene estructurada; el adaptador
     la deja en la misma forma que produce parser.py en el modo texto."""
@@ -746,7 +770,7 @@ def _finalize_structured(
         filename, questions, answer_key, True,
         estimated_question_count, colored_pages_text, color_marks_notice, marks,
         imagenes_preguntas, aviso_paginas=aviso_paginas,
-        rescatadas=rescatadas, desde_documento=desde_documento,
+        rescatadas=rescatadas, desde_documento=desde_documento, escaneado=escaneado,
     )
 
 
@@ -763,6 +787,7 @@ def _finalize_common(
     aviso_paginas: Optional[str] = None,
     rescatadas=(),
     desde_documento=(),
+    escaneado: bool = False,
 ) -> Dict[str, Any]:
     """Cola compartida por ambos modos: marcas resueltas en código, modo
     tolerante, avisos y recorte de la clave a las preguntas válidas."""
@@ -808,7 +833,7 @@ def _finalize_common(
     # De dónde salió cada respuesta y cuánta confianza da (solo informativo;
     # ver confianza.py). Va después de las marcas y de «revisar marca», que son
     # sus entradas.
-    confianza.etiquetar(valid_questions, effective_answer_key, rescatadas, desde_documento)
+    confianza.etiquetar(valid_questions, effective_answer_key, rescatadas, desde_documento, escaneado=escaneado)
     n_uncertain = sum(1 for q in valid_questions if q["data"].get("color_review_hint"))
     from_marks = [q for q in valid_questions if q["data"].get("answer_from_marks")]
     color_marks_notice = _marks_notice(
@@ -858,4 +883,5 @@ def _finalize_common(
         "skipped_questions": skipped_questions,
         "completeness_notice": completeness_notice,
         "color_marks_notice": color_marks_notice,
+        "escaneado": bool(escaneado),
     }

@@ -78,3 +78,12 @@ export function questionIssues(q, key) {
   }
   return issues;
 }
+
+/**
+ * ¿Entre lo que le falta a la pregunta está LA RESPUESTA (no el enunciado ni las
+ * opciones)? Es cuando la clave del documento no la traía: ahí se ofrece
+ * «Sugerir respuesta con IA». Una respuesta que existe pero no es un número no cuenta.
+ */
+export function faltaRespuesta(issues) {
+  return (issues || []).some(m => /^Falta (?:marcar la respuesta|elegir Verdadero|la respuesta)/.test(m));
+}

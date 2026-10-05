@@ -46,11 +46,15 @@ import rutas_ayuda
 import rutas_clave
 import rutas_convertir
 import rutas_historial
+import rutas_original
 import rutas_xml
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="PDF → Moodle XML", version=APP_VERSION)
+# Sin /docs, /redoc ni /openapi.json: son páginas de desarrollo que listan toda
+# la API y no las usa nadie; una app de escritorio no debe publicarlas.
+app = FastAPI(title="PDF → Moodle XML", version=APP_VERSION,
+              docs_url=None, redoc_url=None, openapi_url=None)
 
 # Sin CORS: la interfaz se sirve desde este mismo servidor, así que ninguna
 # otra página necesita (ni debe poder) leer sus respuestas. Host, Origin,
@@ -101,7 +105,8 @@ app.include_router(rutas_clave.router)       # /api/salud, /api/actualizacion, /
 app.include_router(rutas_convertir.router)   # /api/check_special_cases, /api/parse*, /api/normalize_with_ai*
 app.include_router(rutas_xml.router)         # /api/generate_xml
 app.include_router(rutas_historial.router)   # /api/history*
-app.include_router(rutas_ayuda.router)       # /api/retroalimentacion, /api/mejorar_enunciado
+app.include_router(rutas_ayuda.router)       # /api/retroalimentacion, /api/mejorar_enunciado, /api/sugerir_respuesta
+app.include_router(rutas_original.router)    # /api/original/{id}/pagina/{n}
 
 # ── Serve frontend static files ─────────────────────────────────────────────
 # Works both in development (relative path) and inside a PyInstaller bundle.

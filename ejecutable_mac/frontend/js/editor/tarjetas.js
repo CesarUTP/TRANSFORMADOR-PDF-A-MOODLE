@@ -32,12 +32,16 @@ export function syncParseResultFromDOM() {
   const prevSkipped = estado.currentParseResult ? estado.currentParseResult.skipped_questions : undefined;
   const prevNotice = estado.currentParseResult ? estado.currentParseResult.completeness_notice : undefined;
   const prevColorNotice = estado.currentParseResult ? estado.currentParseResult.color_marks_notice : undefined;
+  const prevEscaneado = estado.currentParseResult ? estado.currentParseResult.escaneado : undefined;
+  const prevImportado = estado.currentParseResult ? estado.currentParseResult.importado : undefined;
   estado.currentParseResult = existingCards.length > 0
     ? collectEditorData()
     : { questions: [], answer_key: {} };
   if (prevSkipped) estado.currentParseResult.skipped_questions = prevSkipped;
   if (prevNotice) estado.currentParseResult.completeness_notice = prevNotice;
   if (prevColorNotice) estado.currentParseResult.color_marks_notice = prevColorNotice;
+  if (prevEscaneado) estado.currentParseResult.escaneado = prevEscaneado;
+  if (prevImportado) estado.currentParseResult.importado = prevImportado;
 }
 
 // Borrar una pregunta ya no es definitivo: el aviso ofrece "Deshacer"
@@ -427,11 +431,20 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
   // Aviso informativo (no de advertencia) de dónde salieron las
   // respuestas cuando el documento las marca. Neutro: el violeta es de
   // "Completar" y no se reutiliza para otro significado.
-  const colorNoticeHtml = data.color_marks_notice
+  // Documento escaneado (PDF sin capa de texto): el código no puede comprobar ninguna
+  // marca, así que todas las respuestas de la IA van con confianza baja y este
+  // letrero lo dice. Reemplaza al aviso genérico de marcas (dice lo mismo, en general).
+  const escaneadoHtml = data.escaneado
+    ? `<div class="callout is-warning"><i data-lucide="scan-line"></i><p><strong>Escaneado: verifica cada respuesta contra el original.</strong> La IA lee las marcas de la imagen y puede reemplazarlas por lo que ella cree correcto; por eso todas sus respuestas salen con confianza baja. ${estado.originalId ? 'Abre el original desde «Pág. N» en cada pregunta.' : ''}</p></div>` : '';
+  const colorNoticeHtml = data.color_marks_notice && !data.escaneado
     ? `<div class="callout"><i data-lucide="highlighter"></i><p>${esc_html(data.color_marks_notice)}</p></div>` : '';
 
-  const noticesHtml = (skippedHtml || completenessHtml || colorNoticeHtml)
-    ? `<div class="editor-notices">${skippedHtml}${completenessHtml}${colorNoticeHtml}</div>` : '';
+  // XML de Moodle abierto en el editor: las respuestas son las del archivo; ninguna IA interpretó nada.
+  const importadoHtml = data.importado
+    ? `<div class="callout"><i data-lucide="file-code-2"></i><p><strong>Abierto desde un XML de Moodle.</strong> Las respuestas son las del archivo (ninguna IA las interpretó). Corrige lo que quieras y vuelve a generar el XML.</p></div>` : '';
+
+  const noticesHtml = (skippedHtml || completenessHtml || colorNoticeHtml || escaneadoHtml || importadoHtml)
+    ? `<div class="editor-notices">${importadoHtml}${escaneadoHtml}${skippedHtml}${completenessHtml}${colorNoticeHtml}</div>` : '';
 
   // Barra de herramientas: dos botones plegados. Sus paneles se abren
   // debajo, de a uno.
@@ -613,7 +626,7 @@ function _cardHtml(q, i, keyInfo) {
     mostrarAvisoMarcaLegado(q.data) && _flagBadge('flag-neutral', 'highlighter', 'respuesta por marca', 'La respuesta se tomó directamente de la marca del documento (color, resaltado, subrayado, negrita o X en un cuadro), leída del PDF sin que la IA la interprete.'),
     q.data.rescatada && _flagBadge('flag-review', 'list-plus', 'rescatada', 'La IA no había incluido esta pregunta; se agregó con lo que se pudo extraer del documento. Revisa su enunciado, su tipo y su respuesta.'),
   ].filter(Boolean).join('');
-  const chips = chipsHtml(chipsVisibles(q.data, q.type));
+  const chips = chipsHtml(chipsVisibles(q.data, q.type), { original: !!estado.originalId });
 
   // num y type ya vienen saneados (_sanearDatos); se escapan igual, por si
   // algún día se llama a esta función con datos sin pasar por ahí.
@@ -745,7 +758,22 @@ function _cardHtml(q, i, keyInfo) {
 
   // En «Completar» el enunciado es el constructor de espacios: las
   // imágenes van debajo de él.
-  return html + (q.type === 'cloze' ? imagenesHtml(q, i, N) : '') + _retroalimentacionHtml(q, i, N) + `</article>`;
+  return html + (q.type === 'cloze' ? imagenesHtml(q, i, N) : '') + _sugerirHtml(q, N) + _retroalimentacionHtml(q, i, N) + `</article>`;
+}
+
+// «Sugerir respuesta con IA» (2.0): solo se ve cuando a la pregunta le FALTA la respuesta
+// (la clave del documento no la traía; ver refreshQuestionIssues y editor.css). Un ensayo
+// no tiene respuesta que sugerir.
+function _sugerirHtml(q, N) {
+  if (q.type === 'essay') return '';
+  return `<div class="q-sugerir">
+    <button type="button" class="btn btn-ghost btn-sm q-sugerir-btn" data-accion="sugerirRespuesta" data-este
+      aria-label="Sugerir con IA la respuesta de la pregunta ${N}"
+      title="Con IA (usa tu API de Gemini): propone una respuesta; solo se aplica si la aceptas y queda marcada como sugerida">
+      <i data-lucide="wand-sparkles" style="width:14px;height:14px;"></i> <span>Sugerir respuesta con IA</span>
+    </button>
+    <span class="card-note">Falta la respuesta correcta: el documento no la traía.</span>
+  </div>`;
 }
 
 // Retroalimentación OPCIONAL: la ve el estudiante después de responder.
@@ -1160,7 +1188,8 @@ export function collectEditorData({ conImagenes = true, firmas = null } = {}) {
     partesFirma.respuesta = (ak[qNum] || {}).answer;
     const firma = firmaRespuesta(newQ.type, partesFirma);
     if (firmas) firmas.push(firma);
-    marcarSiCambio(newQ.data, respuestaCambio(_firmaInicial.get(card), firma));
+    // «sugerida»: la respuesta es EXACTAMENTE la que propuso la IA y el docente aceptó (sugerencias.js).
+    marcarSiCambio(newQ.data, respuestaCambio(_firmaInicial.get(card), firma), card.dataset.firmaSugerida === firma);
 
     // Imágenes que siguen en la tarjeta (el docente puede quitarlas) y
     // retroalimentación opcional (vacía = sin retroalimentación).

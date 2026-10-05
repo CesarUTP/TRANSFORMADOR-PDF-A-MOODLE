@@ -110,6 +110,10 @@ PRUEBAS = (
     "test_ia_servidor.py",
     "test_ia_proveedor.py",
     "test_datos_arranque.py",
+    "test_compat_moodle.py",
+    "test_original.py",
+    "test_ia_asistida.py",
+    "test_importar_xml.py",
 )
 
 
