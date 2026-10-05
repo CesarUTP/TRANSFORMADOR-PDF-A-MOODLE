@@ -1,5 +1,5 @@
 AVISOS DE TERCEROS — Conversor a Moodle XML
-Generado el 2026-10-03 con Python 3.14.6 (darwin).
+Generado el 2026-10-04 con Python 3.14.6 (darwin).
 
 Esta aplicación incluye software de terceros. Cada componente se distribuye
 bajo su propia licencia, cuyo texto se reproduce a continuación.
