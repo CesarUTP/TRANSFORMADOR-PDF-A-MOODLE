@@ -48,6 +48,7 @@ from reportlab.pdfgen import canvas  # noqa: E402
 import xml_fidelity as xf  # noqa: E402  (apaga el logging)
 import exams  # noqa: E402
 import confianza  # noqa: E402
+import ia_gemini  # noqa: E402
 import main  # noqa: E402
 import originales  # noqa: E402
 import pipeline  # noqa: E402
@@ -179,8 +180,9 @@ print("4. De punta a punta: el original va a memoria, nunca al historial")
 # ══════════════════════════════════════════════════════════════════════════
 _extract = pipeline.extract_structured
 _modo = pipeline.NORMALIZER_MODE
-_claves = (pipeline.get_api_key,)
-pipeline.get_api_key = lambda: "clave-falsa"
+_claves = (pipeline.get_api_key, ia_gemini.get_api_key)
+# Sin clave real (en el CI no hay ninguna): _comprobar_entrada pregunta al proveedor si está listo.
+pipeline.get_api_key = ia_gemini.get_api_key = lambda: "clave-falsa"
 pipeline.NORMALIZER_MODE = "json"
 payload = xf.perfect_model(exams.BASE_MIXED)
 pipeline.extract_structured = lambda *a, **k: copy.deepcopy(payload)
@@ -231,7 +233,7 @@ try:
 finally:
     pipeline.extract_structured = _extract
     pipeline.NORMALIZER_MODE = _modo
-    pipeline.get_api_key, = _claves
+    pipeline.get_api_key, ia_gemini.get_api_key = _claves
     originales.olvidar_todo()
 
 print()
