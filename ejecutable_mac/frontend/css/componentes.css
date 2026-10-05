@@ -849,27 +849,44 @@ code.inline {
 }
 
 /* ── GUÍA (ventana de ayuda) ──────────────────────────────────────────────
-   Es un texto para leer, no un tablero: secciones con título y listas, sin
-   una caja por cada párrafo. */
-.guia { display: flex; flex-direction: column; gap: 26px; }
+   Cada tema es UN contenedor (sin cajas dentro de cajas): título arriba y
+   el contenido debajo, a todo el ancho del contenedor. */
+.guia { display: flex; flex-direction: column; gap: 14px; }
+.guia-sec {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+}
 .guia-sec h3 {
   font-family: var(--font-heading); font-size: var(--text-lg); font-weight: 800;
-  color: var(--color-text); letter-spacing: -0.2px; margin: 0 0 8px;
+  color: var(--color-accent); letter-spacing: -0.2px; margin: 0 0 10px;
 }
-.guia-sec > p { font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); margin: 0 0 8px; max-width: 68ch; }
+.guia-sec > p { font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); margin: 0 0 10px; max-width: none; }
+.guia-sec > p:last-child { margin-bottom: 0; }
 .guia-sec strong { color: var(--color-text); font-weight: 700; }
 .guia-lista, .guia-leyenda, .guia-etiquetas { list-style: none; display: flex; flex-direction: column; gap: 10px; padding: 0; margin: 0; }
-.guia-lista li { position: relative; padding-left: 16px; font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); max-width: 68ch; }
-.guia-lista li::before { content: ""; position: absolute; left: 2px; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--color-text-subtle); }
-.guia-leyenda li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); }
+.guia-lista li { position: relative; padding-left: 16px; font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); }
+.guia-lista li::before { content: ""; position: absolute; left: 2px; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--color-accent); }
+.guia-leyenda li { display: flex; gap: 12px; align-items: flex-start; font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); }
 .guia-sw { width: 22px; height: 22px; border-radius: var(--radius-sm); flex-shrink: 0; margin-top: 1px; }
 .sw-actual { background: var(--color-accent); outline: 2px solid var(--color-accent); outline-offset: 1px; }
 .sw-error { border: 1.5px solid var(--color-error); background: var(--color-error-bg); }
 .sw-aviso { border: 1.5px dashed var(--color-warning); }
-.guia-etiquetas li { display: grid; grid-template-columns: minmax(150px, 230px) 1fr; gap: 6px 14px; align-items: start; font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); }
-.guia-etiquetas li > :first-child { justify-self: start; }
-.guia-nota { font-size: var(--text-sm); color: var(--color-text-subtle); margin: 8px 0 0; }
-@media (max-width: 560px) { .guia-etiquetas li { grid-template-columns: 1fr; } }
+.guia-etiquetas li { display: grid; grid-template-columns: minmax(150px, 235px) 1fr; gap: 6px 16px; align-items: start; font-size: 13.5px; line-height: 1.65; color: var(--color-text-muted); }
+.guia-etiquetas li > :first-child { justify-self: start; max-width: 100%; }
+.guia-nota { font-size: var(--text-sm); color: var(--color-text-subtle); margin: 10px 0 0; }
+/* Atajos: la tecla va en su columna (que cabe «Ctrl/⌘+Z») y la descripción
+   en la otra; antes la columna era de 44px y las teclas largas se montaban. */
+.guia .shortcuts-list { gap: 8px; }
+.guia .shortcuts-list > div { grid-template-columns: 124px 1fr; gap: 10px; align-items: baseline; }
+.guia .shortcuts-list dt { white-space: nowrap; }
+.guia .shortcuts-list dd { font-size: 13.5px; line-height: 1.5; color: var(--color-text-muted); }
+@media (max-width: 560px) {
+  .guia-sec { padding: 14px 14px; }
+  .guia-etiquetas li { grid-template-columns: 1fr; }
+  .guia .shortcuts-list > div { grid-template-columns: 1fr; gap: 2px; }
+}
 
 /* Piezas de las demás pestañas de la Guía (antes eran estilos en línea). */
 .fila-icono { display: flex; gap: 10px; align-items: flex-start; }
