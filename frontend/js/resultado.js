@@ -8,6 +8,7 @@ import { selectFilter } from './editor/filtros.js';
 import { buildReviewRail, refreshQuestionIssues, scrollToEditorCard } from './editor/panel.js';
 import { QUESTION_TYPE_DEFS, collectEditorData, propuestasPendientes } from './editor/tarjetas.js';
 import { estado } from './estado.js';
+import { mostrarExito } from './materias.js';
 import { showPanel } from './navegacion.js';
 import { stopProgress } from './progreso.js';
 import { showToast } from './ui/toast.js';
@@ -171,7 +172,10 @@ export async function generateXml() {
     category: estado.currentUploadMetadata.category,
     total_points: estado.currentUploadMetadata.total_points,
     questions,
-    answer_key
+    answer_key,
+    // Mis materias (el servidor ignora una materia que ya no existe).
+    materia_id: estado.currentUploadMetadata.materia_id ?? null,
+    actividad: estado.currentUploadMetadata.actividad ?? null,
   };
 
   // Se guarda el borrador antes de salir del editor: si algo falla aquí,
@@ -226,7 +230,8 @@ export async function generateXml() {
     const blob = await res.blob();
     estado.downloadBlob = blob;
     estado.downloadFilename = filename;
-    estado.exportable = { filename: payload.filename, total_points: payload.total_points, questions, answer_key };
+    estado.exportable = { filename: payload.filename, total_points: payload.total_points, questions, answer_key, materia_id: payload.materia_id, actividad: payload.actividad };
+    estado.historialId = Number.isInteger(stats.historial_id) ? stats.historial_id : null;
   } catch (err) {
     stopProgress(false);
     showError('No se pudo conectar con la aplicación para generar el archivo. Tu revisión está intacta: vuelve e inténtalo de nuevo. (Detalle: ' + err.message + ')', 'editor');
@@ -250,6 +255,7 @@ export async function generateXml() {
     const dlLabel = document.getElementById('btn-download-label');
     if (dlLabel) dlLabel.textContent = 'Descargar Moodle XML';
     showPanel('success');
+    mostrarExito(stats.historial_id, payload.materia_id);
     if (historialGuardado) {
       // Ya quedó en el Historial (desde donde se puede reabrir): el
       // borrador local deja de hacer falta.

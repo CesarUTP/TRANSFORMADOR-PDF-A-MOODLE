@@ -61,7 +61,7 @@ flowchart LR
 - **Marcas leídas del PDF, no adivinadas**: color, resaltado, subrayado, negrita, ✓ y cuadros con X — resueltas **en código**, no por la IA.
 - **PDF escaneados**: "Leer el PDF con IA" lee las páginas como imagen (hasta 15); como el código no puede comprobar ninguna marca, todas sus respuestas salen con confianza baja y un aviso («Escaneado: verifica cada respuesta contra el original»).
 - **Importar un Moodle XML** existente (uno de la app o exportado de tu banco de preguntas) al editor, sin IA: se corrige y se vuelve a generar. Lo que no se puede editar (calculadas, arrastrar y soltar…) queda entre las «no incluidas», con su motivo ([`backend/importar_xml.py`](backend/importar_xml.py)).
-- **Exportar el examen en PDF** (2.1): junto al XML, un botón genera el examen impreso —con docente, materia, actividad, grupo y fecha que el docente escribe— y su **clave de respuestas** en páginas aparte (o solo uno de los dos). Es un documento de apoyo: sale de las mismas preguntas y la misma clave que el XML, así que no puede discrepar de él; la clave pone letra Y texto de cada respuesta porque Moodle mezcla las opciones. Las fórmulas `\( … \)` se escriben como texto (x², ½, √, α) y lo que no se entiende queda en LaTeX con un aviso ([`backend/exportar_pdf.py`](backend/exportar_pdf.py), [`backend/latex_texto.py`](backend/latex_texto.py); ReportLab y la fuente DejaVu Sans, que viaja en `backend/fuentes/`). Desde la 2.2 se eligen los márgenes (como los de Word) y las opciones de selección múltiple y la Columna B de los emparejamientos se **mezclan** (la clave del documento suele ir 1-a, 2-b, 3-c…, y en papel eso delata las respuestas); la clave usa siempre las letras impresas. También se elige el tipo de letra (DejaVu Sans, Arial —Liberation Sans— o Times New Roman —Liberation Serif—) y el tamaño de los títulos y encabezados por un lado y de las preguntas por otro.
+- **Exportar el examen en PDF** (2.1): junto al XML, un botón genera el examen impreso —con docente, materia, actividad, grupo y fecha que el docente escribe— y su **clave de respuestas** en páginas aparte (o solo uno de los dos). Es un documento de apoyo: sale de las mismas preguntas y la misma clave que el XML, así que no puede discrepar de él; la clave pone letra Y texto de cada respuesta porque Moodle mezcla las opciones. Las fórmulas `\( … \)` se escriben como texto (x², ½, √, α) y lo que no se entiende queda en LaTeX con un aviso ([`backend/exportar_pdf.py`](backend/exportar_pdf.py), [`backend/latex_texto.py`](backend/latex_texto.py); ReportLab y la fuente DejaVu Sans, que viaja en `backend/fuentes/`). Desde la 2.2 se eligen los márgenes (como los de Word) y las opciones de selección múltiple y la Columna B de los emparejamientos se **mezclan** (la clave del documento suele ir 1-a, 2-b, 3-c…, y en papel eso delata las respuestas); la clave usa siempre las letras impresas. El diálogo trae **vista previa** de la página, **perfiles de encabezado** guardados con nombre (institución, logos, docente y formato) y se abre también desde cada examen del **Historial**; se puede ocultar el valor de cada pregunta (queda el de cada parte) y elegir cuántos renglones lleva cada ensayo. También se elige el tipo de letra (DejaVu Sans, Arial —Liberation Sans— o Times New Roman —Liberation Serif—) y el tamaño de los títulos y encabezados por un lado y de las preguntas por otro.
 - **Rechaza lo que no es un examen**: si suben una presentación, un manual o un artículo, lo dice claro en vez de inventar preguntas.
 
 </td>
@@ -78,7 +78,9 @@ flowchart LR
 - **Atajos de teclado**: <kbd>J</kbd>/<kbd>K</kbd> siguiente/anterior, <kbd>I</kbd> siguiente incompleta, <kbd>R</kbd> siguiente para revisar, <kbd>?</kbd> abre la guía.
 - **Constructor visual de Cloze**: sin escribir corchetes a mano.
 - **Progreso en vivo**: avance real de la subida del archivo, por qué pregunta va la IA y cuánto falta (se puede cancelar).
-- **Historial local** con **buscador** (nombre, categoría o fecha): cada XML se vuelve a descargar o se **reabre** en el editor para corregirlo.
+- **Recorridos guiados** (2.3): un **profe 3D flotante** en la esquina (un busto minimalista y sobrio, con aspecto de docente universitario, armado con [three.js](https://threejs.org) —MIT— sin ningún modelo ni imagen descargados: respira, parpadea, te sigue con la mirada y **saca la mano para saludar**; sin WebGL queda un ícono) ofrece, con un globo («¿No sabes por dónde empezar? ¡Déjame ayudarte!»), el recorrido de la pantalla en que estás —cargar, revisión, pantalla final, Mis materias, Mi perfil y el diálogo del PDF—; al hacer clic resalta, paso a paso, sus partes y explica para qué sirven, con [driver.js](https://driverjs.com) (MIT, copiado en `frontend/js/vendor/driver/`, sin red). La primera vez se ofrece el de bienvenida; los pasos cuyo elemento no está en pantalla se saltan ([`ui/asistente.js`](frontend/js/ui/asistente.js), [`ui/profe-3d.js`](frontend/js/ui/profe-3d.js), [`ui/tour.js`](frontend/js/ui/tour.js), [`tour-logica.js`](frontend/js/ui/tour-logica.js)).
+- **Mi perfil** (2.3): el ícono de la esquina (con tus iniciales) abre tus datos —cómo sales en el encabezado («Facilitador: Ing. Ana Pérez»)— y tus **perfiles de encabezado** (institución, facultad, departamento, logos, indicaciones y formato de impresión, con vista previa de cómo sale). Se pueden crear, editar, duplicar, renombrar y borrar; uno se marca como **predeterminado**. Al exportar un PDF el diálogo empieza con todo puesto: la materia (su perfil, docente y grupo) manda sobre tu perfil predeterminado y tus datos, y estos sobre lo último que escribiste. Renombrar o borrar un perfil actualiza las materias que lo usaban ([`backend/rutas_perfil.py`](backend/rutas_perfil.py), [`frontend/js/perfil.js`](frontend/js/perfil.js)).
+- **Mis materias** (2.3): el Historial es una biblioteca organizada por materia. La materia (y la actividad, ej. «Parcial 1») se elige en el paso 1, al cargar el examen, y se puede cambiar al terminar. Cada materia es un espacio con todos sus exámenes —reabrir la revisión, descargar el XML, exportar el PDF, mover, renombrar la actividad o borrar— y **«Nuevo examen en esta materia»** vuelve al paso 1 con ella elegida. Cada materia puede traer valores por defecto para el PDF (perfil de encabezado, docente, grupo) y el diálogo de exportar los usa. «Sin materia» y «Todos los exámenes» (la lista de siempre, con **buscador**; en cada lista, «Elegir todos» y borrar o mover lo elegido de una vez) completan la pantalla; un **asistente** propone la materia de los exámenes viejos según su categoría y su nombre (el docente decide qué se mueve). Cuando el Historial se llena (300 exámenes o 400 MB) se borran primero los exámenes **sin materia**; la app avisa al acercarse al límite y muestra el espacio usado. No se separa por período ([`backend/rutas_materias.py`](backend/rutas_materias.py), [`frontend/js/biblioteca.js`](frontend/js/biblioteca.js)).
 - **API de Gemini propia**: la primera vez, un paso de bienvenida explica cómo obtener la clave gratis en Google AI Studio, la comprueba con Google y la guarda **cifrada** en el equipo (Mac y Windows). Se cambia o se quita desde *Acerca de → API de Gemini*.
 - **Word (.docx)**: además de PDF y TXT. Las marcas (color, resaltado, subrayado, negrita), las tablas y la numeración automática se leen del documento, y las ecuaciones de Word se convierten a LaTeX ([`backend/extractor_docx.py`](backend/extractor_docx.py)).
 - **Imágenes en Moodle**: la imagen de cada pregunta (de un PDF o un Word) se asigna a su pregunta en código y va incrustada en el XML (`<file encoding="base64">` + `@@PLUGINFILE@@`); cuando la imagen queda entre dos preguntas decide el enunciado («el siguiente código» frente a «el código»), y las preguntas encadenadas sobre la misma imagen («¿Cuántos errores tiene el código?» / «Escribe cuáles son») la reciben las dos (`comparte_imagen_anterior` de la IA). En la revisión se puede quitar, mover a otra pregunta (flechas o arrastrar y soltar) o agregar una propia ([`backend/imagenes.py`](backend/imagenes.py), [`frontend/js/editor/imagenes.js`](frontend/js/editor/imagenes.js)).
@@ -204,7 +206,7 @@ Conversor a Moodle XML/
 │   ├── latex_texto.py    ← Fórmulas \( … \) → texto Unicode, para el PDF
 │   ├── validator.py      ← Validación contra el spec Moodle XML
 │   ├── xml_builder.py    ← Generación del XML Moodle
-│   ├── database.py       ← Historial de conversiones (SQLite)
+│   ├── database.py       ← Historial de conversiones y materias (SQLite)
 │   ├── models.py         ← Modelos Pydantic
 │   ├── requirements.txt  ← Dependencias Python
 │   └── venv/             ← Entorno virtual (no versionado)
@@ -224,7 +226,11 @@ Conversor a Moodle XML/
 │       ├── progreso.js   ← Pantalla de carga y tiempo estimado
 │       ├── puntos.js     ← Reparto del puntaje (lógica pura, con pruebas)
 │       ├── validacion.js ← Qué le falta a una pregunta (con pruebas)
-│       ├── resultado.js, historial.js, navegacion.js
+│       ├── resultado.js, navegacion.js
+│       ├── historial.js  ← Lo que se hace con un examen guardado (reabrir, XML, PDF, borrar)
+│       ├── biblioteca.js ← «Mis materias»: pantalla con las materias y sus exámenes
+│       ├── materias.js, materias-logica.js ← Lista de materias, selector, crear/editar; lógica pura con pruebas
+│       ├── perfil.js, perfil-logica.js ← «Mi perfil»: tus datos y tus perfiles de encabezado; lógica pura con pruebas
 │       ├── editor/       ← tarjetas · panel · filtros · paneles · cloze · puntos-ui
 │       └── ui/           ← tema · toast (con Deshacer) · modales (foco atrapado) · confirmar · clave
 │
@@ -386,13 +392,23 @@ Las preguntas **cloze** usan corchetes en el cuerpo, con letras correlativas si 
 | `POST` | `/api/retroalimentacion` | «Escribir con IA»: retroalimentación de UNA pregunta (texto plano) |
 | `POST` | `/api/mejorar_enunciado` | «Mejorar redacción»: enunciado corregido; se rechaza si la IA cambió números, fórmulas o código |
 | `POST` | `/api/sugerir_respuesta` | «Sugerir respuesta con IA»: propone la respuesta de UNA pregunta sin clave; el código la valida contra la pregunta (`NO_SE` es una respuesta válida) |
+| `POST` | `/api/vista_previa_pdf` | Lo mismo que `/api/exportar_pdf`, pero devuelve una página (`?pagina=N`) como PNG |
+| `GET` `PUT` `DELETE` | `/api/perfiles_pdf[/{nombre}]` | Perfiles de encabezado del PDF guardados con nombre (institución, logos, formato) |
 | `POST` | `/api/exportar_pdf` | Mismas preguntas y clave que `/api/generate_xml` más los datos de la portada; devuelve el PDF del examen y/o su clave (no se guarda en el Historial) |
 | `POST` | `/api/importar_xml` | Abre un Moodle XML existente en el editor (sin IA): devuelve lo mismo que `/api/parse` |
 | `GET` | `/api/original/{id}/pagina/{n}` | PNG de la página (o del recorte de la pregunta) del PDF de esta sesión; `?vista=recorte\|pagina&recuadro=x0,y0,x1,y1&zoom=1..3` |
-| `GET` | `/api/history` | Últimos 300 exámenes convertidos (solo metadatos; el buscador filtra sobre esta lista) |
+| `GET` | `/api/history` | Últimos 300 exámenes convertidos (solo metadatos, con su materia y actividad; el buscador filtra sobre esta lista) |
 | `GET` | `/api/history/{id}/download` | Vuelve a descargar el XML de una conversión anterior |
 | `GET` | `/api/history/{id}/editor` | Preguntas tal como quedaron en el editor, para *Reabrir* esa revisión |
 | `DELETE` | `/api/history/{id}` | Borra una entrada del historial |
+| `PATCH` | `/api/history/{id}` | Cambia la materia y/o la actividad de un examen |
+| `POST` | `/api/history/borrar` | Borra varios exámenes a la vez (los elegidos en «Mis materias») |
+| `POST` | `/api/history/mover` | Pasa varios exámenes a una materia (o a «sin materia») |
+| `GET` | `/api/history/uso` | Cuánto del Historial está usado y cuántos exámenes no tienen materia (lo primero que se borra) |
+| `GET` `PUT` | `/api/yo` | Tus datos (nombre, cómo te llamas en el encabezado) y tu perfil de encabezado predeterminado |
+| `POST` | `/api/perfiles_pdf/{nombre}/renombrar` | Cambia el nombre de un perfil (y de lo que apuntaba a él) |
+| `GET` `POST` | `/api/materias` | Lista las materias (con cuántos exámenes tiene cada una) / crea una (nombre, color, perfil de encabezado, docente, grupo) |
+| `PATCH` `DELETE` | `/api/materias/{id}` | Cambia una materia (también archivarla) / la borra; sus exámenes NO se borran: pasan a «sin materia» |
 | `GET` | `/api/acerca` | Versión y rutas donde se guardan historial, clave y registro (para «Acerca de») |
 | `GET` | `/api/actualizacion` | Si hay una versión nueva (`?forzar=true` vuelve a consultar) |
 | `GET` | `/api/api-key` | Si hay clave de la API de Gemini guardada (solo sus 4 últimos caracteres, nunca la clave) |

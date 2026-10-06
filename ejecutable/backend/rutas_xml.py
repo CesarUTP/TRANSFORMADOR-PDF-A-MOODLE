@@ -9,7 +9,7 @@ import json
 import logging
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from fastapi.concurrency import run_in_threadpool
@@ -41,6 +41,9 @@ class GenerateXmlRequest(BaseModel):
     total_points: float = Field(gt=0, le=100_000, allow_inf_nan=False)
     questions: List[Dict[str, Any]]
     answer_key: Dict[str, Any]
+    # Mis materias: a qué materia pertenece el examen (None = «Sin materia») y cómo se llama la actividad.
+    materia_id: Optional[int] = None
+    actividad: Optional[str] = Field(None, max_length=320)
 
 def validar_para_exportar(questions: List[Dict[str, Any]], parsed_answer_key: Dict[int, Any]) -> None:
     """Lo que debe cumplir lo que llega del editor antes de generar el XML o el PDF (2.1: el PDF
@@ -130,15 +133,19 @@ def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any
     # una tabla ausente; aquí se cubre lo demás (disco lleno, base bloqueada,
     # permisos).
     aviso_historial = None
+    historial_id = None
     try:
-        save_conversion(req.filename, req.category, req.total_points, xml_content, editor_json)
+        historial_id = save_conversion(
+            req.filename, req.category, req.total_points, xml_content, editor_json,
+            req.materia_id, " ".join((req.actividad or "").split())[:160] or None,
+        )
     except (sqlite3.Error, OSError) as exc:
         logger.exception("No se pudo guardar '%s' en el historial", req.filename)
         aviso_historial = (
             "El XML se generó bien, pero no se pudo guardar en el Historial de esta aplicación "
             f"({type(exc).__name__}). Descárgalo ahora: no podrás reabrirlo desde el Historial."
         )
-    return xml_content, stats, grades, aviso_historial
+    return xml_content, stats, grades, aviso_historial, historial_id
 
 
 @router.post("/api/generate_xml")
@@ -151,7 +158,7 @@ async def api_generate_xml(req: GenerateXmlRequest):
 
     req.filename = _nombre_nfc(req.filename)
     try:
-        xml_content, stats, grades, aviso_historial = await run_in_threadpool(_generate_xml_sync, req, parsed_answer_key)
+        xml_content, stats, grades, aviso_historial, historial_id = await run_in_threadpool(_generate_xml_sync, req, parsed_answer_key)
 
         # ── 9. Return as downloadable file ──────────────────────────────
         # Un XML de Moodle importado y vuelto a generar no debe llamarse igual que el original
@@ -171,6 +178,8 @@ async def api_generate_xml(req: GenerateXmlRequest):
             # Avisos del constructor (texto) y estado del guardado en el Historial.
             "avisos": _avisos_para_cabecera(getattr(stats, "avisos", None)),
             "historial_guardado": aviso_historial is None,
+            # El examen guardado (para cambiarle la materia desde la pantalla final).
+            "historial_id": historial_id,
             "aviso_historial": aviso_historial,
             "grades": {
                 "multichoice": grades.get("multichoice", 1.0),

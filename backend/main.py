@@ -10,6 +10,8 @@ Los endpoints están por tema (cada uno es un APIRouter sin prefijo):
   rutas_xml.py         /api/generate_xml
   rutas_pdf.py         /api/exportar_pdf
   rutas_historial.py   /api/history*
+  rutas_materias.py    /api/materias*
+  rutas_perfil.py      /api/yo
   rutas_ayuda.py       /api/retroalimentacion, /api/mejorar_enunciado
   rutas_clave.py       /api/salud, /api/actualizacion, /api/acerca, /api/api-key
 
@@ -47,7 +49,9 @@ import rutas_ayuda
 import rutas_clave
 import rutas_convertir
 import rutas_historial
+import rutas_materias
 import rutas_original
+import rutas_perfil
 import rutas_pdf
 import rutas_xml
 
@@ -108,6 +112,9 @@ app.include_router(rutas_convertir.router)   # /api/check_special_cases, /api/pa
 app.include_router(rutas_xml.router)         # /api/generate_xml
 app.include_router(rutas_pdf.router)         # /api/exportar_pdf
 app.include_router(rutas_historial.router)   # /api/history*
+app.include_router(rutas_materias.router)    # /api/materias*
+app.include_router(rutas_perfil.router)      # /api/yo
+app.include_router(rutas_materias.router)    # /api/materias*
 app.include_router(rutas_ayuda.router)       # /api/retroalimentacion, /api/mejorar_enunciado, /api/sugerir_respuesta
 app.include_router(rutas_original.router)    # /api/original/{id}/pagina/{n}
 

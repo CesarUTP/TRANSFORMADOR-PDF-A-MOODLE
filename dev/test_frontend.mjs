@@ -93,5 +93,27 @@ try {
   rmSync(tmp, { recursive: true, force: true });
 }
 
+// ── 3. Los recorridos guiados apuntan a elementos que existen ─────────
+// Un paso cuyo elemento se renombró dejaría de mostrarse sin avisar (tour.js salta lo que no encuentra).
+// Aquí se comprueba que cada #id, .clase y [atributo] de un paso aparece en index.html o en los módulos.
+console.log('Recorridos guiados (frontend/js/ui/tour-logica.js):');
+{
+  const { TOURS } = await import(pathToFileURL(join(JS, 'ui', 'tour-logica.js')).href);
+  const fuentes = [readFileSync(join(RAIZ, 'frontend', 'index.html'), 'utf8'), ...archivos.map((f) => readFileSync(f, 'utf8'))].join('\n');
+  const hay = (token) => fuentes.includes(token);
+  for (const [nombre, t] of Object.entries(TOURS)) {
+    let bien = true;
+    for (const [i, p] of t.pasos.entries()) {
+      if (!p.titulo || !p.texto) { bien = false; falla(`${nombre} paso ${i + 1}: sin título o sin texto`); }
+      if (p.el === null) continue;
+      for (const m of String(p.el).matchAll(/#([\w-]+)|\.([\w-]+)|\[data-accion="([\w]+)"\]/g)) {
+        const token = m[1] ? `id="${m[1]}"` : m[2] ? m[2] : `data-accion="${m[3]}"`;
+        if (!hay(token)) { bien = false; falla(`${nombre} paso ${i + 1}: «${p.el}» no existe (falta ${token})`); }
+      }
+    }
+    if (bien) ok(`${nombre}: ${t.pasos.length} pasos`);
+  }
+}
+
 console.log(fallas === 0 ? '\nTODO OK' : `\n${fallas} FALLA(S)`);
 process.exit(fallas === 0 ? 0 : 1);

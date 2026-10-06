@@ -78,6 +78,12 @@ def main(salida: Path) -> None:
     lucide = frontend / "js" / "vendor" / "LICENSE-lucide.txt"
     if lucide.is_file():
         seccion("Lucide 1.44.0 (íconos)", "ISC", [("LICENSE", lucide.read_text(encoding="utf-8").strip())])
+    driver = frontend / "js" / "vendor" / "driver" / "LICENSE-driver.txt"
+    if driver.is_file():
+        seccion("driver.js 1.9.0 (recorridos guiados)", "MIT", [("LICENSE", driver.read_text(encoding="utf-8").strip())])
+    three = frontend / "js" / "vendor" / "three" / "LICENSE-three.txt"
+    if three.is_file():
+        seccion("three.js 0.186.1 (el profe 3D del asistente)", "MIT", [("LICENSE", three.read_text(encoding="utf-8").strip())])
     katex = frontend / "js" / "vendor" / "katex" / "LICENSE-katex.txt"
     if katex.is_file():
         seccion("KaTeX 0.16.47 (fórmulas)", "MIT", [("LICENSE", katex.read_text(encoding="utf-8").strip())])

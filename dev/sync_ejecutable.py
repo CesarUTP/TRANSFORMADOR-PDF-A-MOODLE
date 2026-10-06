@@ -119,6 +119,7 @@ PRUEBAS = (
     "test_ia_asistida.py",
     "test_importar_xml.py",
     "test_exportar_pdf.py",
+    "test_materias.py",
 )
 
 

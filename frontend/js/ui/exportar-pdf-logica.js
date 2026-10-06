@@ -14,17 +14,24 @@ export const PAPELES = ['carta', 'legal', 'a4'];
 export const MARGENES = ['normal', 'estrechos', 'moderados', 'anchos'];
 export const FUENTES = ['dejavu', 'arial', 'times'];
 /** Tamaños (pt) que acepta el servidor y los de siempre. */
+export const RENGLONES_MIN = 2;
+export const RENGLONES_MAX = 24;
 export const TAM_MIN = 7;
 export const TAM_MAX = 20;
 export const ROTULOS = ['facilitador', 'docente', 'profesor'];
+/** Cómo se llama cada opción (para los resúmenes). */
+export const ROTULOS_NOMBRES = { facilitador: 'FACILITADOR', docente: 'DOCENTE', profesor: 'PROFESOR' };
+export const PAPELES_NOMBRES = { carta: 'Carta', legal: 'Legal', a4: 'A4' };
+export const MARGENES_NOMBRES = { normal: 'normales', estrechos: 'estrechos', moderados: 'moderados', anchos: 'anchos' };
+export const FUENTES_NOMBRES = { dejavu: 'DejaVu Sans', arial: 'Arial', times: 'Times New Roman' };
 export const ACTIVIDADES = ['Parcial', 'Quiz', 'Prueba corta', 'Examen final', 'Taller', 'Evaluación diagnóstica'];
 
 /** Lo que se recuerda entre exámenes (no la fecha: cambia cada vez). */
-const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas', 'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar'];
+const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas', 'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'renglones_ensayo'];
 
 const VACIOS = {
   institucion: '', facultad: '', departamento: '', rotulo_docente: 'facilitador', logo_izquierdo: '', logo_derecho: '', materia: '', docente: '', actividad: '', grupo: '', fecha: '', instrucciones: '',
-  contenido: 'examen_y_clave', papel: 'carta', margenes: 'moderados', fuente_titulos: 'dejavu', tam_titulos: 11, fuente_preguntas: 'dejavu', tam_preguntas: 10, campos_estudiante: true, partes: true, mezclar: true,
+  contenido: 'examen_y_clave', papel: 'carta', margenes: 'moderados', fuente_titulos: 'dejavu', tam_titulos: 11, fuente_preguntas: 'dejavu', tam_preguntas: 10, campos_estudiante: true, partes: true, mezclar: true, puntos_por_pregunta: true, renglones_ensayo: 6,
 };
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -34,6 +41,33 @@ export function tamanoValido(v) {
   const n = typeof v === 'string' ? Number(v.trim().replace(',', '.')) : v;
   if (typeof n !== 'number' || !Number.isFinite(n) || n < TAM_MIN || n > TAM_MAX) return null;
   return Math.round(n * 2) / 2;
+}
+
+/** Un entero entre `min` y `max` (acepta «8» o 8); null si no sirve. */
+export function enteroEn(v, min, max) {
+  const n = typeof v === 'string' ? Number(v.trim()) : v;
+  return typeof n === 'number' && Number.isInteger(n) && n >= min && n <= max ? n : null;
+}
+
+/** Lo que guarda un perfil de encabezado: el encabezado y el formato, NO lo propio de cada examen. */
+export const PERFIL_CAMPOS = ['institucion', 'facultad', 'departamento', 'docente', 'rotulo_docente', 'instrucciones',
+  'logo_izquierdo', 'logo_derecho', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas',
+  'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'renglones_ensayo'];
+
+/** Los datos de un perfil (validados campo por campo; lo que falte toma su valor de siempre). */
+export function datosDePerfil(datos) {
+  const v = valoresIniciales(datos);
+  return Object.fromEntries(PERFIL_CAMPOS.map(k => [k, v[k]]));
+}
+
+/** Los datos del diálogo con un perfil aplicado: materia, actividad, grupo, fecha y «qué incluir» no cambian. */
+export function aplicarPerfil(actuales, perfil) {
+  return { ...actuales, ...datosDePerfil(perfil) };
+}
+
+/** El nombre de un perfil: una línea, sin «/» ni «\», de 1 a 60 caracteres; '' si no sirve. */
+export function nombrePerfil(n) {
+  return String(n == null ? '' : n).replace(/[\\/]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 60);
 }
 
 /** ¿Es una imagen en base64 (sin el «data:…» delante) de un tamaño razonable? */
@@ -95,6 +129,9 @@ export function valoresIniciales(guardado) {
   if (typeof guardado.campos_estudiante === 'boolean') out.campos_estudiante = guardado.campos_estudiante;
   if (typeof guardado.partes === 'boolean') out.partes = guardado.partes;
   if (typeof guardado.mezclar === 'boolean') out.mezclar = guardado.mezclar;
+  if (typeof guardado.puntos_por_pregunta === 'boolean') out.puntos_por_pregunta = guardado.puntos_por_pregunta;
+  const r = enteroEn(guardado.renglones_ensayo, RENGLONES_MIN, RENGLONES_MAX);
+  if (r !== null) out.renglones_ensayo = r;
   return out;
 }
 

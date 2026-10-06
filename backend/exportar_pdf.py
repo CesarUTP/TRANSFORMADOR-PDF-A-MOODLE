@@ -81,6 +81,7 @@ FUENTES = {
     "times": ("LiberationSerif", ["LiberationSerif-Regular.ttf", "LiberationSerif-Bold.ttf", "LiberationSerif-Italic.ttf", "LiberationSerif-BoldItalic.ttf"]),
 }
 TAM_MIN, TAM_MAX = 7.0, 20.0
+RENGLONES_MIN, RENGLONES_MAX = 2, 24
 _GRIS = colors.HexColor("#555555")
 _GRIS_CLARO = colors.HexColor("#b8b8b8")
 _FONDO = colors.HexColor("#f2f2f2")
@@ -104,6 +105,8 @@ class DatosExamen:
     margenes: str = "moderados"              # MARGENES
     campos_estudiante: bool = True           # cuadro de Nombre / Cédula / Grupo / Fecha y Calificación
     rotulo_docente: str = "facilitador"      # ROTULOS
+    puntos_por_pregunta: bool = True         # False: el examen no dice cuánto vale cada pregunta (solo cada parte y el total)
+    renglones_ensayo: int = 6                # renglones de cada respuesta de desarrollo
     mezclar: bool = True                     # mezclar las opciones y la Columna B: que la clave no forme un patrón
     fuente_titulos: str = "dejavu"           # FUENTES: títulos, encabezados e indicaciones
     tam_titulos: float = 11.0                # tamaño (pt) del encabezado; lo demás de ese grupo es proporcional
@@ -464,6 +467,7 @@ class _Constructor:
         self.fp = FUENTES.get(datos.fuente_preguntas, FUENTES["dejavu"])[0]
         self.H = min(TAM_MAX, max(TAM_MIN, float(datos.tam_titulos))) if datos.tam_titulos == datos.tam_titulos else 11.0
         self.Q = min(TAM_MAX, max(TAM_MIN, float(datos.tam_preguntas))) if datos.tam_preguntas == datos.tam_preguntas else 10.0
+        self.renglones = min(RENGLONES_MAX, max(RENGLONES_MIN, int(datos.renglones_ensayo)))
         self.est = _estilos(self.sangria, self.fe, self.fp, self.H, self.Q)
         self.est['opcion_folleto'] = ParagraphStyle('opcion_folleto', parent=self.est['base'], leftIndent=18, bulletIndent=0,
                                                     bulletFontName=self.fp + '-B', spaceAfter=2)
@@ -480,8 +484,13 @@ class _Constructor:
 
     def _enunciado(self, n: int, texto: str, puntos: float) -> Paragraph:
         cuerpo = self.txt.marcado(texto)
-        return Paragraph(f"{cuerpo} <font size='{self.Q * 0.8:.1f}' color='#555555'>({_pts(puntos)})</font>",
-                         self.est["enunciado"], bulletText=f"{n}.")
+        return Paragraph(f"{cuerpo}{self._pts_de(puntos)}", self.est["enunciado"], bulletText=f"{n}.")
+
+    def _pts_de(self, puntos: float) -> str:
+        """« (2 pts)» al final del enunciado, o nada si el docente pidió ocultar el valor de cada pregunta."""
+        if not self.datos.puntos_por_pregunta:
+            return ""
+        return f" <font size='{self.Q * 0.8:.1f}' color='#555555'>({_pts(puntos)})</font>"
 
     def _imagenes(self, p: Pregunta, n: int) -> list:
         out = []
@@ -586,7 +595,7 @@ class _Constructor:
 
         if isinstance(p, PreguntaEssay):
             return KeepTogether([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n) + [
-                Indenter(left=self.sangria), Spacer(1, 4), _Renglones(6), Indenter(left=-self.sangria)])
+                Indenter(left=self.sangria), Spacer(1, 4), _Renglones(self.renglones), Indenter(left=-self.sangria)])
 
         # respuesta corta y numérica: una línea
         return KeepTogether([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n) + [
@@ -651,7 +660,7 @@ class _Constructor:
             trozos.append(f"<b>({k})</b>\u00a0{raya}")
             ultimo = h.fin
         trozos.append(self.txt.marcado(texto[ultimo:]))
-        enunciado = Paragraph("".join(trozos) + f" <font size='{self.Q * 0.8:.1f}' color='#555555'>({_pts(puntos)})</font>",
+        enunciado = Paragraph("".join(trozos) + self._pts_de(puntos),
                               self.est["enunciado"], bulletText=f"{n}.")
         filas = []
         for k_hueco, h in enumerate(huecos, 1):
@@ -760,7 +769,7 @@ class _Constructor:
                 if (p.feedback or "").strip():
                     texto += f" <i>Orientación:</i> {self.txt.marcado(p.feedback.strip())}"
                 return [self._p(texto, "pequeno"), Spacer(1, 4)]
-            return [self._p(f"<b>{n}.</b>", "pequeno"), _Renglones(8), Spacer(1, 4)]
+            return [self._p(f"<b>{n}.</b>", "pequeno"), _Renglones(self.renglones), Spacer(1, 4)]
         return [self._p(f"<b>{n}.</b>", "pequeno")]
 
     def _burbujas(self, n: int, p: Pregunta, llena: bool) -> _Burbujas:

@@ -7,7 +7,7 @@
   <title>Conversor a Moodle XML</title>
   <link rel="icon" type="image/png" href="img/icono.png">
   <meta name="description"
-    content="Plataforma de ingeniería de evaluación académica para convertir pruebas, quices y exámenes (PDF, Word o TXT) al formato Moodle XML con validación estructural e IA." />
+    content="Herramienta de escritorio para docentes: convierte pruebas, quices y exámenes (PDF, Word o TXT) a Moodle XML con revisión y validación, los exporta en PDF listo para imprimir con su clave, y los organiza por materia." />
 
   <!-- Tipografías incluidas en la app (css/fuentes.css) -->
   <link rel="stylesheet" href="css/fuentes.css">
@@ -17,6 +17,9 @@
   <script src="js/vendor/lucide.min.js"></script>
   <!-- KaTeX 0.16.47 (MIT, ver js/vendor/katex/LICENSE-katex.txt): vista previa
        de las fórmulas LaTeX en el editor. Moodle las muestra con MathJax. -->
+  <!-- driver.js 1.9.0 (MIT, ver js/vendor/driver/LICENSE-driver.txt): los recorridos guiados («Recorrido»). -->
+  <link rel="stylesheet" href="js/vendor/driver/driver.css">
+  <script src="js/vendor/driver/driver.js.iife.js"></script>
   <link rel="stylesheet" href="js/vendor/katex/katex.min.css">
   <script src="js/vendor/katex/katex.min.js"></script>
 
@@ -35,15 +38,15 @@
         <img src="img/icono.png" class="logo-img" alt="" width="44" height="44">
         <div style="min-width:0;">
           <h1 class="brand-title">Conversor a Moodle XML</h1>
-          <p class="brand-sub">De un examen en PDF, Word o TXT a un XML listo para Moodle.</p>
+          <p class="brand-sub">Exámenes a Moodle XML y PDF, ordenados por materia.</p>
         </div>
       </div>
 
       <!-- Action Navigation -->
       <nav class="header-nav" aria-label="Navegación principal">
-        <button type="button" id="btn-history" class="btn-icon-text" aria-label="Abrir historial de conversiones" title="Historial">
-          <i data-lucide="clock" class="ico-16"></i>
-          <span>Historial</span>
+        <button type="button" id="btn-materias" class="btn-icon-text" aria-label="Abrir Mis materias: tus exámenes convertidos, ordenados por materia" title="Mis materias">
+          <i data-lucide="library" class="ico-16"></i>
+          <span>Mis materias</span>
         </button>
         <button type="button" id="btn-help" class="btn-icon-text" aria-label="Abrir guía de uso" title="Guía">
           <i data-lucide="book-open" class="ico-16"></i>
@@ -58,6 +61,11 @@
         <button type="button" id="theme-toggle-btn" class="btn-icon-text" aria-label="Cambiar a tema claro" title="Cambiar a tema claro" style="padding:8px 10px;">
           <i data-lucide="sun" id="icon-sun" class="ico-16"></i>
           <i data-lucide="moon" id="icon-moon" style="width:16px;height:16px;display:none;"></i>
+        </button>
+        <!-- Mi perfil: tus datos y tus perfiles de encabezado. Con nombre guardado muestra tus iniciales. -->
+        <button type="button" id="btn-perfil" class="btn-avatar" aria-label="Mi perfil: tus datos y tus perfiles de encabezado" title="Mi perfil">
+          <i data-lucide="user-round" id="avatar-icono" class="ico-18"></i>
+          <span id="avatar-iniciales" hidden aria-hidden="true"></span>
         </button>
       </nav>
     </div>
@@ -87,7 +95,6 @@
     <!-- ── PANEL 1: UPLOAD & CONFIGURATION ── -->
     <section id="panel-upload" class="animate-fadeIn" aria-labelledby="upload-heading">
       <h2 id="upload-heading" class="screen-title sr-only" tabindex="-1">Paso 1: carga tu examen</h2>
-
       <!-- Revisión sin terminar (se guarda sola en este equipo). Se
            rellena en borrador.js al abrir la app. -->
       <div id="draft-banner" role="region" aria-label="Revisión sin terminar">
@@ -173,6 +180,26 @@
 
         <p id="points-error" class="field-error" role="alert" style="display:none;">Escribe un número mayor a 0.</p>
 
+        <!-- Mis materias: dónde queda guardado el examen. Opcional; el selector se llena en materias.js. -->
+        <div class="config-grid config-materia">
+          <div class="form-group">
+            <label class="field-label" for="materia-select">
+              <i data-lucide="library" style="width:14px;height:14px;color:var(--color-accent);"></i>
+              Materia <span class="opcional">(opcional)</span>
+            </label>
+            <select id="materia-select" class="form-input" aria-describedby="materia-pista"><option value="">Sin materia</option></select>
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="actividad-input">
+              <i data-lucide="clipboard-list" style="width:14px;height:14px;color:var(--color-accent);"></i>
+              Actividad <span class="opcional">(opcional)</span>
+            </label>
+            <input id="actividad-input" class="form-input" type="text" maxlength="160" autocomplete="off" list="actividades-lista" placeholder="ej: Parcial 1" />
+            <datalist id="actividades-lista"></datalist>
+          </div>
+        </div>
+        <p id="materia-pista" class="field-hint">Con materia, el examen queda en <button type="button" class="text-link" data-accion="abrirBiblioteca">Mis materias</button> y no se borra solo cuando el Historial se llena.</p>
+
       </div>
 
       <!-- Action Button -->
@@ -225,7 +252,9 @@
     <!-- ── PANEL 3: INTERACTIVE QUESTION EDITOR ── -->
     <section id="panel-editor"  class="animate-fadeIn" aria-labelledby="editor-title" style="display:none;">
       <div class="editor-head">
-        <h2 id="editor-title" class="screen-title" tabindex="-1">Revisa las preguntas</h2>
+        <div class="editor-head-fila">
+          <h2 id="editor-title" class="screen-title" tabindex="-1">Revisa las preguntas</h2>
+        </div>
         <p class="screen-sub" id="editor-sub">Compara cada pregunta con tu documento: la transcripción puede traer errores o respuestas faltantes. Corrige lo que haga falta y genera el XML cuando esté listo. <button type="button" class="text-link" data-accion="openHelp" data-arg="review">¿Cómo reviso?</button></p>
       </div>
 
@@ -244,7 +273,7 @@
             <h2 id="success-title" class="screen-title" tabindex="-1">Tu XML está listo</h2>
             <p id="success-subtitle" style="font-size:var(--text-md);color:var(--color-text-muted);margin-top:2px;overflow-wrap:anywhere;"></p>
           </div>
-        </div>
+          </div>
 
         <!-- Acciones arriba de todo: Descargar ya no queda bajo el pliegue
              cuando hay preguntas omitidas. -->
@@ -263,6 +292,15 @@
           </button>
         </div>
         <p class="success-next">Siguiente paso: impórtalo en Moodle, en <em>Banco de preguntas → Importar</em>. <button type="button" class="text-link" data-accion="openHelp" data-arg="moodle">Ver cómo, paso a paso</button><br>Para tenerlo en papel o guardar la clave, usa <strong>Exportar examen en PDF</strong>: es un documento de apoyo, lo que se importa a Moodle sigue siendo el XML.</p>
+
+        <!-- Mis materias: en cuál quedó guardado (se puede cambiar) y, si el Historial se llena, el aviso. -->
+        <div id="exito-materia" class="exito-materia" hidden>
+          <i data-lucide="library" aria-hidden="true"></i>
+          <label for="exito-materia-sel">Guardado en</label>
+          <select id="exito-materia-sel" class="form-input"></select>
+          <button type="button" class="text-link" data-accion="abrirBiblioteca">Ver Mis materias</button>
+        </div>
+        <div id="exito-uso" class="callout is-warning" role="status" hidden style="margin-bottom:20px;"></div>
 
         <!-- Preguntas omitidas: se rellena en updateSuccessStats(). -->
         <div id="success-skipped-notice" class="callout is-warning" style="display:none;margin-bottom:20px;"></div>
@@ -358,6 +396,28 @@
     </div>
   </aside>
 
+
+  <!-- ════════════════ ASISTENTE FLOTANTE ════════════════
+       El profe 3D de la esquina (three.js, ui/profe-3d.js): ofrece el recorrido guiado de la pantalla en que estás y, al hacer clic,
+       lo empieza (ui/asistente.js, ui/profe-3d.js, ui/tour.js). -->
+  <div id="asistente" class="asistente" hidden>
+    <div id="asistente-burbuja" class="asistente-burbuja" role="status" hidden>
+      <button type="button" id="asistente-cerrar" class="asistente-cerrar" aria-label="Cerrar el mensaje" title="Cerrar">
+        <i data-lucide="x" class="ico-14"></i>
+      </button>
+      <p class="asistente-titulo" id="asistente-titulo"></p>
+      <p class="asistente-texto" id="asistente-texto"></p>
+      <div class="asistente-botones">
+        <button type="button" id="asistente-si" class="btn btn-primary btn-sm">Sí, enséñame</button>
+        <button type="button" id="asistente-silencio" class="btn btn-quiet btn-sm">No me ofrezcas más</button>
+      </div>
+    </div>
+    <button type="button" id="asistente-boton" class="asistente-boton" aria-label="Ayuda: te explico esta pantalla paso a paso" title="¿Necesitas ayuda? Te explico esta pantalla">
+      <canvas id="asistente-canvas" aria-hidden="true"></canvas>
+      <i data-lucide="graduation-cap" class="asistente-respaldo" aria-hidden="true"></i>
+    </button>
+  </div>
+
   <!-- Toast: una sola región viva, cortés. Puede llevar una acción
        ("Deshacer"); mientras el mouse o el foco están encima, no se va. -->
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -384,6 +444,10 @@
           <i data-lucide="list-checks" class="ico-15"></i>
           Revisión
         </button>
+        <button type="button" class="modal-tab" role="tab" id="tab-extras" aria-controls="modal-panel-extras" aria-selected="false" tabindex="-1" data-tab="extras">
+          <i data-lucide="library" class="ico-15"></i>
+          PDF y materias
+        </button>
         <button type="button" class="modal-tab" role="tab" id="tab-format" aria-controls="modal-panel-format" aria-selected="false" tabindex="-1" data-tab="format">
           <i data-lucide="file-code" class="ico-15"></i>
           Formato
@@ -403,8 +467,23 @@
         <div class="tab-panel active" id="modal-panel-about" role="tabpanel" aria-labelledby="tab-about" tabindex="0">
           <div class="guia">
             <section class="guia-sec">
-              <h3>Qué hace</h3>
-              <p>Toma tu examen tal como ya lo tienes (PDF, Word o TXT), lo interpreta con ayuda de IA y genera el archivo <strong>Moodle XML</strong> listo para importar en <em>Banco de preguntas → Importar</em>. Tú revisas cada pregunta antes de descargar. No inventa preguntas ni respuestas: solo transcribe lo que ya está en el documento.</p>
+              <h3>Qué es</h3>
+              <p class="guia-nota"><i data-lucide="circle-help" class="ico-14" style="vertical-align:-2px;"></i> ¿Primera vez? El <strong>profe</strong> de la esquina inferior izquierda te explica cada pantalla paso a paso: haz clic en él (o espera a que te ofrezca ayuda) y te muestra para qué sirve cada parte. Puedes repetirlo cuando quieras.</p>
+              <p>Una herramienta de escritorio para docentes que lleva tus exámenes de punta a punta: los lee desde el PDF, Word o TXT que ya tienes, los pasa a <strong>Moodle XML</strong> para importarlos en <em>Banco de preguntas → Importar</em>, los puede <strong>imprimir en PDF con su clave</strong> y los guarda <strong>ordenados por materia</strong> para volver a ellos cuando quieras. Tú revisas cada pregunta antes de descargar. No inventa preguntas ni respuestas: solo transcribe lo que ya está en el documento.</p>
+            </section>
+
+            <section class="guia-sec">
+              <h3>Qué puedes hacer</h3>
+              <ul class="guia-lista">
+                <li><strong>Convertir a Moodle XML</strong> pruebas, parciales y quices de los 7 tipos de pregunta, con imágenes, fórmulas y retroalimentación, validados contra lo que Moodle acepta.</li>
+                <li><strong>Revisar contra el original.</strong> En un PDF, cada pregunta se compara con el recorte de su página, con la respuesta que propone la app, su origen y su confianza. Lo dudoso se marca para que lo veas primero.</li>
+                <li><strong>Apoyarte en la IA sin que decida por ti.</strong> Sugerir una respuesta que falta, escribir la retroalimentación, mejorar la redacción y avisar de preguntas repetidas: siempre lo ves antes y solo se aplica si lo aceptas.</li>
+                <li><strong>Corregir un XML que ya tienes.</strong> Abre un Moodle XML (de esta aplicación o de tu banco de preguntas) en el mismo editor, sin IA, y vuelve a generarlo.</li>
+                <li><strong>Imprimir el examen en PDF.</strong> Con tu institución, logos y datos; con su clave, o como folleto de preguntas más hoja de respuestas y clave. Las opciones se mezclan para que la clave no delate las respuestas.</li>
+                <li><strong>Ordenar todo por materia</strong> en <em>Mis materias</em>: cada materia es un espacio con todos sus exámenes, que puedes reabrir, descargar en XML, exportar en PDF o duplicar como punto de partida de uno nuevo.</li>
+                <li><strong>Escribir tus datos una sola vez</strong> en <em>Mi perfil</em>: tu nombre y tus perfiles de encabezado (institución, logos, formato) se aplican solos en cada PDF.</li>
+                <li><strong>Trabajar en privado.</strong> Todo vive en tu equipo: sin cuenta, sin cookies y sin enviar tus archivos a ningún servidor propio. A la IA solo va el texto necesario para ordenar las preguntas.</li>
+              </ul>
             </section>
 
             <section class="guia-sec">
@@ -450,7 +529,7 @@
               <ul class="guia-lista">
                 <li>Cambia entre <em>Recorte</em> y <em>Página completa</em>, y acércalo con el zoom. Si no se pudo ubicar la pregunta en la página (dos columnas, escaneado, página girada), se muestra la página completa.</li>
                 <li>Pasa a la pregunta <em>Anterior</em> o <em>Siguiente</em> (<kbd>←</kbd> <kbd>→</kbd>), o a la anterior o siguiente <em>para revisar</em> (<kbd>Mayús</kbd> + <kbd>←</kbd> <kbd>→</kbd>), sin cerrar. <kbd>Esc</kbd> cierra y te deja en la última pregunta que miraste.</li>
-                <li>El original solo está <strong>mientras la aplicación está abierta</strong>: no se guarda en el Historial. Al reabrir una conversión desde el Historial, o con Word o TXT, «Pág. N» solo informa.</li>
+                <li>El original solo está <strong>mientras la aplicación está abierta</strong>: no se guarda en el Historial. Al reabrir un examen desde Mis materias, o con Word o TXT, «Pág. N» solo informa.</li>
                 <li><strong>PDF escaneado</strong> (sin texto): la IA lee las marcas de la imagen y puede reemplazarlas por lo que ella cree correcto, así que todas sus respuestas salen con confianza baja y un aviso arriba. Compara cada una con el original.</li>
               </ul>
             </section>
@@ -514,8 +593,49 @@
                 <li><strong>Deshacer:</strong> al borrar una pregunta o aplicar un reparto de puntos aparece un aviso abajo con el botón <em>Deshacer</em> (dura unos segundos; si pasas el mouse encima, espera).</li>
                 <li><strong>Tu revisión se guarda sola</strong> en este equipo. Si la ventana se cierra, al volver a abrir la app aparece <em>Retomar revisión</em>.</li>
                 <li><strong>Volver a la revisión:</strong> desde la pantalla final puedes regresar a corregir algo y generar el XML de nuevo. <strong>Descartar</strong> pide confirmación antes de borrar la revisión completa.</li>
-                <li><strong>Historial:</strong> cada XML generado queda guardado. Búscalo por nombre, categoría o fecha, y usa <em>Reabrir</em> para volver a su revisión.</li>
+                <li><strong>Reabrir un examen:</strong> cada XML generado queda guardado en <em>Mis materias</em>; desde ahí vuelves a su revisión cuando quieras (ver «PDF y materias»).</li>
               </ul>
+            </section>
+          </div>
+        </div>
+
+        <!-- Tab: PDF, materias y perfil -->
+        <div class="tab-panel" id="modal-panel-extras" role="tabpanel" aria-labelledby="tab-extras" tabindex="0">
+          <div class="guia">
+            <section class="guia-sec">
+              <h3>Exportar el examen en PDF</h3>
+              <p>Con el XML generado, el botón <strong>Exportar examen en PDF</strong> (también el botón <em>PDF</em> de cada examen en Mis materias) abre un diálogo con una <strong>vista previa</strong> de la página, que se rehace al cambiar cualquier dato. Es un documento de apoyo para papel y archivo: sale de las mismas preguntas y la misma clave que el XML, y lo que se importa a Moodle sigue siendo el XML.</p>
+              <ul class="guia-lista">
+                <li><strong>Qué incluir:</strong> el examen y su clave (la clave va en páginas aparte), solo el examen, solo la clave, o <em>folleto + hoja de respuestas + clave</em>: un folleto de preguntas sin espacios para escribir, una hoja para que el estudiante conteste y la clave, que es esa misma hoja ya llena.</li>
+                <li><strong>Encabezado:</strong> institución, facultad, departamento, hasta dos logos, materia, actividad, grupo, fecha, nombre del docente e indicaciones generales, con el cuadro de nombre, cédula, grupo y fecha.</li>
+                <li><strong>Partes:</strong> las preguntas se agrupan por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con su indicación para el estudiante y su valor.</li>
+                <li><strong>Opciones mezcladas:</strong> en los documentos la clave suele ir en orden (1-a, 2-b, 3-c…) y en papel eso delata las respuestas. La app baraja las opciones y la Columna B de los emparejamientos; la clave usa siempre las letras impresas.</li>
+                <li><strong>Formato:</strong> papel Carta, Legal o A4; márgenes como los de Word; tipo de letra (DejaVu Sans, Arial o Times New Roman) y tamaño por separado para los títulos y para las preguntas; renglones por ensayo; mostrar o no el valor de cada pregunta.</li>
+                <li><strong>La clave</strong> imprime la letra Y el texto de cada respuesta, porque Moodle mezcla las opciones.</li>
+              </ul>
+            </section>
+
+            <section class="guia-sec">
+              <h3>Mis materias</h3>
+              <p>El botón <strong>Mis materias</strong> de la cabecera es tu biblioteca: cada materia es un espacio con todos sus exámenes.</p>
+              <ul class="guia-lista">
+                <li><strong>Elige la materia al cargar el examen</strong> (paso 1), con una actividad opcional como «Parcial 1». Puedes cambiarla al terminar, en la pantalla final.</li>
+                <li><strong>Dentro de una materia:</strong> busca, <em>Reabrir</em> la revisión, descarga el XML, exporta el PDF, y con <em>Organizar</em> cambia su materia o su actividad, o bórralo. <strong>Nuevo examen en esta materia</strong> vuelve al paso 1 con ella elegida.</li>
+                <li><strong>Valores por defecto:</strong> cada materia puede traer su perfil de encabezado, su docente y su grupo; el diálogo del PDF los usa al exportar.</li>
+                <li><strong>Sin materia y Todos los exámenes</strong> completan la pantalla. Con <em>Elegir todos</em> puedes mover o borrar muchos de una vez. Un <strong>asistente</strong> propone la materia de los exámenes viejos según su categoría y su nombre; tú decides qué se mueve.</li>
+                <li><strong>Espacio:</strong> se guardan hasta 300 exámenes (400 MB). Al llenarse se borran primero los que <em>no tienen materia</em>, los más antiguos antes; la app avisa al acercarse y muestra cuánto espacio usas. Borrar o archivar una materia no borra sus exámenes.</li>
+              </ul>
+            </section>
+
+            <section class="guia-sec">
+              <h3>Mi perfil</h3>
+              <p>El círculo de arriba a la derecha (con tus iniciales) guarda lo que escribirías en cada PDF.</p>
+              <ul class="guia-lista">
+                <li><strong>Mis datos:</strong> tu nombre y cómo te llamas en el encabezado (Facilitador, Docente o Profesor).</li>
+                <li><strong>Perfiles de encabezado:</strong> institución, logos, indicaciones generales y formato de impresión, con vista previa. Crea uno por cada institución donde das clase, duplícalo, renómbralo y marca el que más uses como <em>predeterminado</em>.</li>
+                <li><strong>Qué manda:</strong> al exportar, el diálogo empieza con lo de la materia (su perfil, docente y grupo); si no, con tu perfil predeterminado y tus datos; si no, con lo último que escribiste. Siempre puedes cambiarlo en ese examen.</li>
+              </ul>
+              <p class="guia-nota">Todo se guarda solo en este equipo.</p>
             </section>
           </div>
         </div>
@@ -785,26 +905,276 @@ Ahora convierte el examen adjunto a este formato.</pre>
     </div>
   </div>
 
-  <!-- ════════════════════════════ HISTORY MODAL ════════════════════════════ -->
-  <div id="modal-history" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="history-title">
-    <div class="modal-box">
+  <!-- ════════════════ MI PERFIL ════════════════
+       Los datos del docente y los perfiles de encabezado, en una pantalla propia como «Mis materias». Lógica en perfil.js. -->
+  <div id="vista-perfil" class="vista-materias vista-perfil" role="dialog" aria-modal="true" aria-labelledby="vp-titulo">
+    <div class="vm-barra">
+      <nav class="vm-migas" aria-label="Dónde estás">
+        <span class="vm-miga" aria-current="page"><i data-lucide="user-round" class="ico-16"></i><span>Mi perfil</span></span>
+      </nav>
+      <div class="vm-barra-der">
+        <button type="button" id="btn-vp-cerrar" class="btn btn-ghost btn-sm" aria-label="Cerrar Mi perfil y volver">
+          <i data-lucide="x" class="ico-16"></i> Cerrar
+        </button>
+      </div>
+    </div>
+    <div class="vm-cuerpo" id="vp-cuerpo" tabindex="-1">
+      <header class="vm-cab">
+        <span class="vp-avatar" id="vp-avatar" aria-hidden="true"></span>
+        <div class="vm-cab-texto">
+          <h2 id="vp-titulo" class="vm-titulo">Mi perfil</h2>
+          <p class="vm-sub">Tus datos y tus encabezados. Se usan al exportar un examen en PDF, para no escribirlos cada vez. Todo queda guardado solo en este equipo.</p>
+        </div>
+      </header>
+
+      <section class="vp-seccion" aria-labelledby="vp-datos-titulo">
+        <h3 class="vp-seccion-titulo" id="vp-datos-titulo">Mis datos</h3>
+        <form id="vp-form" class="vp-datos" novalidate>
+          <div class="form-group">
+            <label class="field-label" for="vp-nombre">Mi nombre en los exámenes</label>
+            <input type="text" id="vp-nombre" class="form-input" maxlength="160" autocomplete="name" placeholder="Ej.: Ing. Ana Pérez">
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="vp-rotulo">Me llamo en el encabezado</label>
+            <select id="vp-rotulo" class="form-input">
+              <option value="facilitador">Facilitador</option>
+              <option value="docente">Docente</option>
+              <option value="profesor">Profesor</option>
+            </select>
+          </div>
+          <button type="submit" id="btn-vp-guardar" class="btn btn-primary">Guardar</button>
+        </form>
+        <p class="field-hint" id="vp-datos-pista">Sale así en el encabezado: <strong id="vp-ejemplo">FACILITADOR: …</strong>. Una materia puede traer otro nombre (por ejemplo, si das la materia con alguien más).</p>
+      </section>
+
+      <section class="vp-seccion" aria-labelledby="vp-perfiles-titulo">
+        <div class="vp-seccion-cab">
+          <div>
+            <h3 class="vp-seccion-titulo" id="vp-perfiles-titulo">Perfiles de encabezado</h3>
+            <p class="vm-sub">La institución, los logos, las indicaciones y el formato de impresión. Si das clase en varios sitios, crea uno por cada uno y marca el que uses casi siempre como predeterminado.</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" data-accion="nuevoPerfilEnc"><i data-lucide="plus" class="ico-14"></i> Nuevo perfil</button>
+        </div>
+        <ul class="vp-perfiles" id="vp-perfiles"></ul>
+      </section>
+    </div>
+  </div>
+
+  <!-- Crear o editar un perfil de encabezado, con vista previa de cómo sale -->
+  <div id="modal-perfil-enc" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pe-titulo">
+    <div class="modal-box modal-md" id="pe-caja">
       <div class="modal-header">
-        <h2 class="modal-title" id="history-title">
-          <i data-lucide="clock" style="width:20px;height:20px;color:var(--color-accent);"></i>
-          Historial de exámenes convertidos
+        <h2 class="modal-title" id="pe-titulo">
+          <i data-lucide="file-text" style="width:20px;height:20px;color:var(--color-accent);"></i>
+          <span id="pe-titulo-texto">Nuevo perfil de encabezado</span>
         </h2>
-        <button type="button" id="btn-close-history" class="btn btn-icon" aria-label="Cerrar el historial" title="Cerrar">
+        <button type="button" id="btn-pe-cerrar" class="btn btn-icon" aria-label="Cerrar" title="Cerrar">
           <i data-lucide="x" class="ico-18"></i>
         </button>
       </div>
-      <!-- Buscador: filtra al instante por nombre, categoría o fecha. -->
-      <div class="history-search" id="history-search-wrap" hidden>
-        <i data-lucide="search" aria-hidden="true"></i>
-        <input type="search" id="history-search" class="form-input" placeholder="Buscar por nombre, categoría o fecha" aria-label="Buscar en el historial" aria-describedby="history-count" autocomplete="off" />
-        <span id="history-count" class="history-count" aria-live="polite"></span>
+      <form id="pe-form" class="pdf-form" novalidate>
+        <div class="pdf-dos">
+          <div class="modal-body pdf-cuerpo">
+            <div class="form-group">
+              <label class="field-label" for="pe-nombre">Nombre del perfil</label>
+              <input type="text" id="pe-nombre" class="form-input" maxlength="60" autocomplete="off" placeholder="Ej.: UTP Panamá" required>
+            </div>
+            <fieldset class="pdf-grupo">
+              <legend class="field-label">Encabezado de la institución</legend>
+              <div class="form-group">
+                <label class="field-label" for="pe-institucion">Institución</label>
+                <input type="text" id="pe-institucion" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Universidad Tecnológica de Panamá">
+              </div>
+              <div class="config-grid">
+                <div class="form-group">
+                  <label class="field-label" for="pe-facultad">Facultad</label>
+                  <input type="text" id="pe-facultad" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Facultad de Ingeniería de Sistemas">
+                </div>
+                <div class="form-group">
+                  <label class="field-label" for="pe-departamento">Departamento</label>
+                  <input type="text" id="pe-departamento" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Ingeniería de Software">
+                </div>
+              </div>
+              <div class="pdf-subgrupo">
+                <span class="field-label">Logos <span class="opcional">(opcional)</span></span>
+                <div class="pdf-logos">
+                  <div class="pdf-logo" id="pe-logo-izq-caja">
+                    <div class="pdf-logo-vista"><img id="pe-logo-izq-vista" alt="Logo izquierdo"></div>
+                    <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo izquierdo<input type="file" id="pe-logo-izq-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+                    <button type="button" id="pe-logo-izq-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
+                  </div>
+                  <div class="pdf-logo" id="pe-logo-der-caja">
+                    <div class="pdf-logo-vista"><img id="pe-logo-der-vista" alt="Logo derecho"></div>
+                    <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo derecho<input type="file" id="pe-logo-der-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+                    <button type="button" id="pe-logo-der-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
+                  </div>
+                </div>
+                <p class="field-hint pdf-pista">Elige uno o los dos: salen a los lados del título. La imagen se reduce y se guarda solo en este equipo.</p>
+              </div>
+              <div class="form-group">
+                <label class="field-label" for="pe-instrucciones">Indicaciones generales <span class="opcional">(una por línea)</span></label>
+                <textarea id="pe-instrucciones" class="form-input" rows="3" maxlength="1500" placeholder="Toda respuesta dejada a lápiz no tiene derecho a reclamo.&#10;No se permite ningún dispositivo electrónico."></textarea>
+              </div>
+            </fieldset>
+
+            <details class="pdf-seccion" id="pe-sec-formato">
+              <summary><span>Formato de impresión</span><small id="pe-resumen-formato"></small></summary>
+              <div class="pdf-seccion-cuerpo">
+                <div class="config-grid">
+                  <div class="form-group">
+                    <label class="field-label" for="pe-papel">Papel</label>
+                    <select id="pe-papel" class="form-input"><option value="carta">Carta</option><option value="legal">Legal</option><option value="a4">A4</option></select>
+                  </div>
+                  <div class="form-group">
+                    <label class="field-label" for="pe-margenes">Márgenes</label>
+                    <select id="pe-margenes" class="form-input">
+                      <option value="normal">Normal (2,5 cm · lados 3 cm)</option>
+                      <option value="estrechos">Estrechos (1,27 cm)</option>
+                      <option value="moderados">Moderados (2,54 cm · lados 1,91 cm)</option>
+                      <option value="anchos">Anchos (2,54 cm · lados 5,08 cm)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="field-label" for="pe-renglones">Renglones por ensayo</label>
+                    <input type="number" id="pe-renglones" class="form-input" min="2" max="24" step="1" value="6">
+                  </div>
+                </div>
+                <div class="pdf-subgrupo">
+                  <span class="field-label">Tipo de letra y tamaño</span>
+                  <div class="pdf-letra">
+                    <label class="pdf-letra-rotulo" for="pe-fuente-titulos">Títulos, encabezados e indicaciones</label>
+                    <select id="pe-fuente-titulos" class="form-input"><option value="dejavu">DejaVu Sans (predeterminada)</option><option value="arial">Arial (Liberation Sans)</option><option value="times">Times New Roman (Liberation Serif)</option></select>
+                    <input type="number" id="pe-tam-titulos" class="form-input" min="7" max="20" step="0.5" value="11" aria-label="Tamaño de los títulos, en puntos">
+                    <label class="pdf-letra-rotulo" for="pe-fuente-preguntas">Preguntas, opciones y clave</label>
+                    <select id="pe-fuente-preguntas" class="form-input"><option value="dejavu">DejaVu Sans (predeterminada)</option><option value="arial">Arial (Liberation Sans)</option><option value="times">Times New Roman (Liberation Serif)</option></select>
+                    <input type="number" id="pe-tam-preguntas" class="form-input" min="7" max="20" step="0.5" value="10" aria-label="Tamaño de las preguntas, en puntos">
+                  </div>
+                </div>
+                <label class="pdf-opcion"><input type="checkbox" id="pe-mezclar"> <span><strong>Mezclar el orden de las opciones</strong><small>Para que la clave no forme un patrón (1-a, 2-b, 3-c).</small></span></label>
+                <label class="pdf-opcion"><input type="checkbox" id="pe-partes"> <span><strong>Dividir el examen en partes</strong><small>Agrupa las preguntas por tipo, con su indicación y su valor.</small></span></label>
+                <label class="pdf-opcion"><input type="checkbox" id="pe-puntos"> <span><strong>Mostrar cuánto vale cada pregunta</strong></span></label>
+                <label class="pdf-opcion"><input type="checkbox" id="pe-campos"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>
+              </div>
+            </details>
+
+            <label class="pdf-opcion"><input type="checkbox" id="pe-predeterminado"> <span><strong>Usar este perfil por defecto</strong><small>Al exportar un examen, el diálogo del PDF empieza con este encabezado. Una materia puede tener otro.</small></span></label>
+            <p class="field-error" id="pe-error" role="alert" hidden></p>
+          </div>
+
+          <aside class="pdf-vista" id="pe-vista" hidden aria-label="Vista previa del encabezado">
+            <div class="pdf-vista-barra"><span>Así sale, con un examen de ejemplo</span></div>
+            <div class="pdf-vista-marco">
+              <img id="pe-vista-img" alt="Vista previa de la primera página" hidden>
+              <p id="pe-vista-estado" class="pdf-vista-estado" role="status"></p>
+            </div>
+          </aside>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btn-pe-vista" class="btn btn-ghost" aria-pressed="false" aria-controls="pe-vista"><i data-lucide="eye" class="ico-16"></i> Vista previa</button>
+          <button type="submit" id="btn-pe-guardar" class="btn btn-primary">Guardar perfil</button>
+          <button type="button" id="btn-pe-cancelar" class="btn btn-ghost">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════════════ MIS MATERIAS ════════════════
+       Una pantalla propia (no una ventana pequeña): las materias como espacios, y dentro de cada una sus
+       exámenes. Usa el mismo mecanismo de los modales (foco, Escape, fondo inerte). Lógica en biblioteca.js. -->
+  <div id="vista-materias" class="vista-materias" role="dialog" aria-modal="true" aria-labelledby="vm-titulo">
+    <div class="vm-barra">
+      <nav class="vm-migas" aria-label="Dónde estás">
+        <button type="button" class="vm-miga" id="vm-miga-raiz" data-accion="bibliotecaRaiz">
+          <i data-lucide="library" class="ico-16"></i>
+          <span>Mis materias</span>
+        </button>
+        <span id="vm-miga-resto" hidden><span aria-hidden="true" class="vm-sep">›</span> <strong id="vm-miga-actual"></strong></span>
+      </nav>
+      <div class="vm-barra-der">
+        <button type="button" id="btn-vm-cerrar" class="btn btn-ghost btn-sm" aria-label="Cerrar Mis materias y volver">
+          <i data-lucide="x" class="ico-16"></i> Cerrar
+        </button>
       </div>
-      <div class="modal-body" id="history-list" style="padding:8px 16px 16px;">
-        <!-- Dynamically rendered -->
+    </div>
+    <div class="vm-cuerpo" id="vm-cuerpo" tabindex="-1"></div>
+  </div>
+
+  <!-- Crear o editar una materia -->
+  <div id="modal-materia" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="mat-titulo">
+    <div class="modal-box modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title" id="mat-titulo">
+          <i data-lucide="library" style="width:20px;height:20px;color:var(--color-accent);"></i>
+          <span id="mat-titulo-texto">Nueva materia</span>
+        </h2>
+        <button type="button" id="btn-mat-cerrar" class="btn btn-icon" aria-label="Cerrar" title="Cerrar">
+          <i data-lucide="x" class="ico-18"></i>
+        </button>
+      </div>
+      <form id="mat-form" novalidate>
+        <div class="modal-body mat-cuerpo">
+          <div class="form-group">
+            <label class="field-label" for="mat-nombre">Nombre de la materia</label>
+            <input type="text" id="mat-nombre" class="form-input" maxlength="80" autocomplete="off" placeholder="Ej.: Historia de Panamá" required>
+          </div>
+          <fieldset class="mat-colores">
+            <legend class="field-label">Color</legend>
+            <div id="mat-colores" class="mat-colores-fila"></div>
+          </fieldset>
+          <details class="pdf-seccion" id="mat-defectos">
+            <summary><span>Valores por defecto para el PDF</span><small id="mat-resumen-defectos"></small></summary>
+            <div class="pdf-seccion-cuerpo">
+              <p class="field-hint" style="margin:0 0 10px;">Al exportar un examen de esta materia en PDF, el diálogo ya trae estos datos.</p>
+              <div class="form-group">
+                <label class="field-label" for="mat-perfil">Perfil de encabezado</label>
+                <select id="mat-perfil" class="form-input"><option value="">Ninguno</option></select>
+              </div>
+              <div class="config-grid" style="margin-top:12px;">
+                <div class="form-group">
+                  <label class="field-label" for="mat-docente">Docente</label>
+                  <input type="text" id="mat-docente" class="form-input" maxlength="160" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label class="field-label" for="mat-grupo">Grupo o curso</label>
+                  <input type="text" id="mat-grupo" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: 1IL-131">
+                </div>
+              </div>
+            </div>
+          </details>
+          <p id="mat-error" class="field-error" role="alert" hidden></p>
+        </div>
+        <div class="modal-footer mat-pie">
+          <button type="button" id="btn-mat-archivar" class="btn btn-quiet btn-sm" hidden></button>
+          <button type="button" id="btn-mat-borrar" class="btn btn-quiet btn-danger-text btn-sm" hidden>Borrar materia</button>
+          <span class="mat-pie-espacio"></span>
+          <button type="button" id="btn-mat-cancelar" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" id="btn-mat-guardar" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Asistente para ordenar los exámenes que no tienen materia -->
+  <div id="modal-asistente" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="asi-titulo">
+    <div class="modal-box modal-md">
+      <div class="modal-header">
+        <h2 class="modal-title" id="asi-titulo">
+          <i data-lucide="wand-sparkles" style="width:20px;height:20px;color:var(--color-accent);"></i>
+          Ordenar los exámenes sin materia
+        </h2>
+        <button type="button" id="btn-asi-cerrar" class="btn btn-icon" aria-label="Cerrar" title="Cerrar">
+          <i data-lucide="x" class="ico-18"></i>
+        </button>
+      </div>
+      <div class="modal-body asi-cuerpo">
+        <p class="asi-intro" id="asi-intro"></p>
+        <ul id="asi-lista" class="asi-lista"></ul>
+        <p id="asi-sin-pista" class="field-hint" hidden></p>
+        <p id="asi-error" class="field-error" role="alert" hidden></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-asi-cancelar" class="btn btn-ghost">Ahora no</button>
+        <button type="button" id="btn-asi-aplicar" class="btn btn-primary">Mover lo marcado</button>
       </div>
     </div>
   </div>
@@ -884,137 +1254,195 @@ Ahora convierte el examen adjunto a este formato.</pre>
   </div>
 
   <!-- ════════════════ EXPORTAR EL EXAMEN EN PDF ════════════════
-       Pide los datos de la portada y descarga el examen impreso con su clave
-       (backend/exportar_pdf.py). Lógica en ui/exportar-pdf.js. -->
+       Los datos de la portada, el formato y una vista previa; se abre desde la pantalla final y desde cada
+       examen del Historial (backend/exportar_pdf.py). Lógica en ui/exportar-pdf.js. -->
   <div id="modal-pdf" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pdf-titulo">
-    <div class="modal-box modal-md">
+    <div class="modal-box modal-md" id="pdf-caja">
       <div class="modal-header">
         <h2 class="modal-title" id="pdf-titulo">
           <i data-lucide="file-text" style="width:20px;height:20px;color:var(--color-accent);"></i>
           Exportar examen en PDF
         </h2>
-        <button type="button" id="btn-pdf-cerrar" class="btn btn-icon" aria-label="Cerrar" title="Cerrar">
+<button type="button" id="btn-pdf-cerrar" class="btn btn-icon" aria-label="Cerrar" title="Cerrar">
           <i data-lucide="x" class="ico-18"></i>
         </button>
       </div>
       <form id="pdf-form" class="pdf-form" novalidate>
+        <div class="pdf-dos">
         <div class="modal-body pdf-cuerpo">
-          <p class="pdf-intro">El mismo examen que acabas de generar, con el encabezado de tu institución, listo para el papel. Todos los datos son opcionales y se recuerdan para el próximo examen.</p>
-          <div class="config-grid">
-            <div class="form-group">
-              <label class="field-label" for="pdf-institucion">Institución</label>
-              <input type="text" id="pdf-institucion" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Universidad Tecnológica de Panamá">
+          <p class="pdf-intro" id="pdf-examen-nombre"></p>
+
+          <!-- Perfiles: el encabezado y el formato con nombre, para no escribirlos cada vez. -->
+          <div class="pdf-perfil">
+            <label class="field-label" for="pdf-perfil">Perfil de encabezado</label>
+            <div class="pdf-perfil-fila">
+              <select id="pdf-perfil" class="form-input"><option value="">Sin perfil</option></select>
+              <button type="button" id="btn-pdf-perfil-guardar" class="btn btn-ghost btn-sm" title="Guarda el encabezado y el formato de abajo con un nombre"><i data-lucide="save" class="ico-14"></i> Guardar perfil</button>
+              <button type="button" id="btn-pdf-perfil-borrar" class="btn btn-quiet btn-danger-text btn-sm" hidden>Borrar</button>
             </div>
-            <div class="form-group">
-              <label class="field-label" for="pdf-facultad">Facultad</label>
-              <input type="text" id="pdf-facultad" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Facultad de Ingeniería de Sistemas">
+            <div class="pdf-perfil-nuevo" id="pdf-perfil-nuevo" hidden>
+              <input type="text" id="pdf-perfil-nombre" class="form-input" maxlength="60" autocomplete="off" placeholder="Nombre del perfil, ej.: UTP Panamá" aria-label="Nombre del perfil">
+              <button type="button" id="btn-pdf-perfil-ok" class="btn btn-primary btn-sm">Guardar</button>
+              <button type="button" id="btn-pdf-perfil-cancelar" class="btn btn-ghost btn-sm">Cancelar</button>
             </div>
-            <div class="form-group">
-              <label class="field-label" for="pdf-departamento">Departamento</label>
-              <input type="text" id="pdf-departamento" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Ingeniería de Software">
-            </div>
-            <div class="form-group">
-              <label class="field-label" for="pdf-materia">Materia</label>
-              <input type="text" id="pdf-materia" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Diseño de Interfaces">
-            </div>
-            <div class="form-group">
-              <label class="field-label" for="pdf-actividad">Tipo de actividad</label>
-              <input type="text" id="pdf-actividad" class="form-input" maxlength="160" autocomplete="off" list="pdf-actividades" placeholder="Ej.: Parcial N.2">
-              <datalist id="pdf-actividades"></datalist>
-            </div>
-            <div class="form-group">
-              <label class="field-label" for="pdf-grupo">Grupo o curso</label>
-              <input type="text" id="pdf-grupo" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: 1IL-131">
-            </div>
-            <div class="form-group">
-              <label class="field-label" for="pdf-docente">Docente</label>
-              <input type="text" id="pdf-docente" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Ing. Ana Pérez">
-            </div>
-            <div class="form-group">
-              <label class="field-label" for="pdf-fecha">Fecha del examen</label>
-              <input type="date" id="pdf-fecha" class="form-input">
-            </div>
+            <p class="field-hint pdf-pista" id="pdf-perfil-pista">Un perfil guarda el encabezado (institución, logos, indicaciones) y el formato. La materia, la actividad, el grupo y la fecha son de cada examen. Si el nombre ya existe, se reemplaza. Tu nombre y los perfiles se administran en <strong>Mi perfil</strong> (el ícono de arriba a la derecha).</p>
           </div>
-          <fieldset class="pdf-grupo">
-            <legend class="field-label">Logos <span class="opcional">(opcional)</span></legend>
-            <div class="pdf-logos">
-              <div class="pdf-logo" id="pdf-logo-izq-caja">
-                <div class="pdf-logo-vista"><img id="pdf-logo-izq-vista" alt="Logo izquierdo"></div>
-                <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo izquierdo<input type="file" id="pdf-logo-izq-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
-                <button type="button" id="pdf-logo-izq-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
+
+          <fieldset class="pdf-grupo" id="pdf-datos-examen">
+            <legend class="field-label">Datos de este examen</legend>
+            <div class="config-grid">
+              <div class="form-group">
+                <label class="field-label" for="pdf-materia-sel">Materia</label>
+                <select id="pdf-materia-sel" class="form-input"><option value="">Otra: escribirla</option></select>
+                <input type="text" id="pdf-materia" class="form-input pdf-materia-texto" maxlength="160" autocomplete="off" placeholder="Ej.: Diseño de Interfaces" aria-label="Nombre de la materia">
               </div>
-              <div class="pdf-logo" id="pdf-logo-der-caja">
-                <div class="pdf-logo-vista"><img id="pdf-logo-der-vista" alt="Logo derecho"></div>
-                <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo derecho<input type="file" id="pdf-logo-der-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
-                <button type="button" id="pdf-logo-der-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
+              <div class="form-group">
+                <label class="field-label" for="pdf-actividad">Tipo de actividad</label>
+                <input type="text" id="pdf-actividad" class="form-input" maxlength="160" autocomplete="off" list="pdf-actividades" placeholder="Ej.: Parcial N.2">
+                <datalist id="pdf-actividades"></datalist>
+              </div>
+              <div class="form-group">
+                <label class="field-label" for="pdf-grupo">Grupo o curso</label>
+                <input type="text" id="pdf-grupo" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: 1IL-131">
+              </div>
+              <div class="form-group">
+                <label class="field-label" for="pdf-fecha">Fecha del examen</label>
+                <input type="date" id="pdf-fecha" class="form-input">
               </div>
             </div>
-            <p class="field-hint pdf-pista">Elige uno o los dos: salen a los lados del título. La imagen se reduce y se guarda solo en este equipo para el próximo examen.</p>
           </fieldset>
-          <div class="form-group">
-            <label class="field-label" for="pdf-instrucciones">Indicaciones generales <span class="opcional">(una por línea)</span></label>
-            <textarea id="pdf-instrucciones" class="form-input" rows="3" maxlength="1500" placeholder="Toda respuesta dejada a lápiz no tiene derecho a reclamo.&#10;No se permite ningún dispositivo electrónico."></textarea>
-          </div>
-          <fieldset class="pdf-grupo">
+
+          <fieldset class="pdf-grupo" id="pdf-grupo-incluir">
             <legend class="field-label">Qué incluir</legend>
             <label class="pdf-opcion"><input type="radio" name="contenido" value="examen_y_clave"> <span><strong>El examen y su clave</strong><small>La clave va en páginas aparte, al final. Imprime solo las primeras para los estudiantes.</small></span></label>
             <label class="pdf-opcion"><input type="radio" name="contenido" value="solo_examen"> <span><strong>Solo el examen</strong><small>Sin respuestas: listo para entregar.</small></span></label>
             <label class="pdf-opcion"><input type="radio" name="contenido" value="folleto_hoja_clave"> <span><strong>Folleto, hoja de respuestas y clave</strong><small>Para repartir: un folleto de preguntas sin espacios para escribir, una hoja de respuestas para llenar (con nombre y calificación) y la clave, que es esa misma hoja ya llena. Cada parte empieza en su propia página.</small></span></label>
             <label class="pdf-opcion"><input type="radio" name="contenido" value="solo_clave"> <span><strong>Solo la clave</strong><small>Cada respuesta con su letra y su texto, porque Moodle mezcla las opciones.</small></span></label>
           </fieldset>
-          <div class="config-grid">
-            <div class="form-group">
-              <label class="field-label" for="pdf-papel">Papel</label>
-              <select id="pdf-papel" name="papel" class="form-input">
-                <option value="carta">Carta</option>
-                <option value="legal">Legal</option>
-                <option value="a4">A4</option>
-              </select>
+
+          <details class="pdf-seccion" id="pdf-sec-encabezado">
+            <summary><span>Encabezado de la institución</span><small id="pdf-resumen-encabezado"></small></summary>
+            <div class="pdf-seccion-cuerpo">
+              <div class="config-grid">
+                <div class="form-group">
+                  <label class="field-label" for="pdf-institucion">Institución</label>
+                  <input type="text" id="pdf-institucion" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Universidad Tecnológica de Panamá">
+                </div>
+                <div class="form-group">
+                  <label class="field-label" for="pdf-facultad">Facultad</label>
+                  <input type="text" id="pdf-facultad" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Facultad de Ingeniería de Sistemas">
+                </div>
+                <div class="form-group">
+                  <label class="field-label" for="pdf-departamento">Departamento</label>
+                  <input type="text" id="pdf-departamento" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Ingeniería de Software">
+                </div>
+                <div class="form-group">
+                  <label class="field-label" for="pdf-docente">Docente</label>
+                  <input type="text" id="pdf-docente" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Ing. Ana Pérez">
+                </div>
+              </div>
+              <div class="pdf-subgrupo">
+                <span class="field-label">Logos <span class="opcional">(opcional)</span></span>
+                <div class="pdf-logos">
+                  <div class="pdf-logo" id="pdf-logo-izq-caja">
+                    <div class="pdf-logo-vista"><img id="pdf-logo-izq-vista" alt="Logo izquierdo"></div>
+                    <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo izquierdo<input type="file" id="pdf-logo-izq-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+                    <button type="button" id="pdf-logo-izq-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
+                  </div>
+                  <div class="pdf-logo" id="pdf-logo-der-caja">
+                    <div class="pdf-logo-vista"><img id="pdf-logo-der-vista" alt="Logo derecho"></div>
+                    <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo derecho<input type="file" id="pdf-logo-der-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+                    <button type="button" id="pdf-logo-der-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
+                  </div>
+                </div>
+                <p class="field-hint pdf-pista">Elige uno o los dos: salen a los lados del título. La imagen se reduce y se guarda solo en este equipo.</p>
+              </div>
+              <div class="form-group">
+                <label class="field-label" for="pdf-instrucciones">Indicaciones generales <span class="opcional">(una por línea)</span></label>
+                <textarea id="pdf-instrucciones" class="form-input" rows="3" maxlength="1500" placeholder="Toda respuesta dejada a lápiz no tiene derecho a reclamo.&#10;No se permite ningún dispositivo electrónico."></textarea>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="field-label" for="pdf-margenes">Márgenes</label>
-              <select id="pdf-margenes" name="margenes" class="form-input">
-                <option value="normal">Normal (2,5 cm · lados 3 cm)</option>
-                <option value="estrechos">Estrechos (1,27 cm)</option>
-                <option value="moderados">Moderados (2,54 cm · lados 1,91 cm)</option>
-                <option value="anchos">Anchos (2,54 cm · lados 5,08 cm)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="field-label" for="pdf-rotulo">El docente se llama</label>
-              <select id="pdf-rotulo" name="rotulo_docente" class="form-input">
-                <option value="facilitador">Facilitador</option>
-                <option value="docente">Docente</option>
-                <option value="profesor">Profesor</option>
-              </select>
-            </div>
-          </div>
-          <fieldset class="pdf-grupo">
-            <legend class="field-label">Tipo de letra y tamaño</legend>
-            <div class="pdf-letra">
-              <label class="pdf-letra-rotulo" for="pdf-fuente-titulos">Títulos, encabezados e indicaciones</label>
-              <select id="pdf-fuente-titulos" name="fuente_titulos" class="form-input">
+          </details>
+
+          <details class="pdf-seccion" id="pdf-sec-formato">
+            <summary><span>Formato</span><small id="pdf-resumen-formato"></small></summary>
+            <div class="pdf-seccion-cuerpo">
+              <div class="config-grid">
+                <div class="form-group">
+                  <label class="field-label" for="pdf-papel">Papel</label>
+                  <select id="pdf-papel" name="papel" class="form-input">
+                    <option value="carta">Carta</option>
+                    <option value="legal">Legal</option>
+                    <option value="a4">A4</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="field-label" for="pdf-margenes">Márgenes</label>
+                  <select id="pdf-margenes" name="margenes" class="form-input">
+                    <option value="normal">Normal (2,5 cm · lados 3 cm)</option>
+                    <option value="estrechos">Estrechos (1,27 cm)</option>
+                    <option value="moderados">Moderados (2,54 cm · lados 1,91 cm)</option>
+                    <option value="anchos">Anchos (2,54 cm · lados 5,08 cm)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="field-label" for="pdf-rotulo">El docente se llama</label>
+                  <select id="pdf-rotulo" name="rotulo_docente" class="form-input">
+                    <option value="facilitador">Facilitador</option>
+                    <option value="docente">Docente</option>
+                    <option value="profesor">Profesor</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="field-label" for="pdf-renglones">Renglones por ensayo</label>
+                  <input type="number" id="pdf-renglones" name="renglones_ensayo" class="form-input" min="2" max="24" step="1" value="6">
+                </div>
+              </div>
+              <div class="pdf-subgrupo">
+                <span class="field-label">Tipo de letra y tamaño</span>
+                <div class="pdf-letra">
+                  <label class="pdf-letra-rotulo" for="pdf-fuente-titulos">Títulos, encabezados e indicaciones</label>
+                  <select id="pdf-fuente-titulos" name="fuente_titulos" class="form-input">
                 <option value="dejavu">DejaVu Sans (predeterminada)</option>
                 <option value="arial">Arial (Liberation Sans)</option>
                 <option value="times">Times New Roman (Liberation Serif)</option>
-              </select>
-              <input type="number" id="pdf-tam-titulos" name="tam_titulos" class="form-input" min="7" max="20" step="0.5" value="11" aria-label="Tamaño de los títulos, en puntos">
-              <label class="pdf-letra-rotulo" for="pdf-fuente-preguntas">Preguntas, opciones y clave</label>
-              <select id="pdf-fuente-preguntas" name="fuente_preguntas" class="form-input">
+                  </select>
+                  <input type="number" id="pdf-tam-titulos" name="tam_titulos" class="form-input" min="7" max="20" step="0.5" value="11" aria-label="Tamaño de los títulos, en puntos">
+                  <label class="pdf-letra-rotulo" for="pdf-fuente-preguntas">Preguntas, opciones y clave</label>
+                  <select id="pdf-fuente-preguntas" name="fuente_preguntas" class="form-input">
                 <option value="dejavu">DejaVu Sans (predeterminada)</option>
                 <option value="arial">Arial (Liberation Sans)</option>
                 <option value="times">Times New Roman (Liberation Serif)</option>
-              </select>
-              <input type="number" id="pdf-tam-preguntas" name="tam_preguntas" class="form-input" min="7" max="20" step="0.5" value="10" aria-label="Tamaño de las preguntas, en puntos">
+                  </select>
+                  <input type="number" id="pdf-tam-preguntas" name="tam_preguntas" class="form-input" min="7" max="20" step="0.5" value="10" aria-label="Tamaño de las preguntas, en puntos">
+                </div>
+                <p class="field-hint pdf-pista">Tamaño en puntos (de 7 a 20). Lo demás de cada grupo se ajusta en proporción: con 12 en los títulos y 10 en las preguntas, los encabezados y los títulos de las partes pasan a 12 pt y las preguntas se quedan en 10 pt.</p>
+              </div>
+              <label class="pdf-opcion"><input type="checkbox" name="mezclar"> <span><strong>Mezclar el orden de las opciones</strong><small>Baraja las opciones de selección múltiple y la Columna B de los emparejamientos para que la clave no forme un patrón (por ejemplo 1-a, 2-b, 3-c). Las preguntas con «todas las anteriores» o «A y B» conservan su orden. La clave usa las letras impresas.</small></span></label>
+              <label class="pdf-opcion"><input type="checkbox" name="partes"> <span><strong>Dividir el examen en partes</strong><small>Agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con la indicación para el estudiante y el valor de cada parte. Las preguntas del mismo tipo quedan juntas.</small></span></label>
+              <label class="pdf-opcion"><input type="checkbox" name="puntos_por_pregunta"> <span><strong>Mostrar cuánto vale cada pregunta</strong><small>Si lo desmarcas, el examen solo dice el valor de cada parte y el total; la clave sí conserva el valor de cada pregunta.</small></span></label>
+              <label class="pdf-opcion"><input type="checkbox" name="campos_estudiante"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>
             </div>
-            <p class="field-hint pdf-pista">Tamaño en puntos (de 7 a 20). Lo demás de cada grupo se ajusta en proporción: con 12 en los títulos y 10 en las preguntas, los encabezados y los títulos de las partes pasan a 12 pt y las preguntas se quedan en 10 pt.</p>
-          </fieldset>
-          <label class="pdf-opcion"><input type="checkbox" name="mezclar"> <span><strong>Mezclar el orden de las opciones</strong><small>Baraja las opciones de selección múltiple y la Columna B de los emparejamientos para que la clave no forme un patrón (por ejemplo 1-a, 2-b, 3-c). Las preguntas con «todas las anteriores» o «A y B» conservan su orden. La clave usa las letras impresas.</small></span></label>
-          <label class="pdf-opcion"><input type="checkbox" name="partes"> <span><strong>Dividir el examen en partes</strong><small>Agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con la indicación para el estudiante y el valor de cada parte. Las preguntas del mismo tipo quedan juntas.</small></span></label>
-          <label class="pdf-opcion"><input type="checkbox" name="campos_estudiante"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>
+          </details>
+
           <p class="field-error" id="pdf-error" role="alert" hidden></p>
         </div>
+
+        <!-- Vista previa: la página tal como saldrá, con los datos de arriba. -->
+        <aside class="pdf-vista" id="pdf-vista" hidden aria-label="Vista previa del PDF">
+          <div class="pdf-vista-barra">
+            <button type="button" id="btn-pdf-vista-ant" class="btn btn-icon" aria-label="Página anterior" title="Página anterior"><i data-lucide="chevron-left" class="ico-16"></i></button>
+            <span id="pdf-vista-pagina" aria-live="polite">Página 1</span>
+            <button type="button" id="btn-pdf-vista-sig" class="btn btn-icon" aria-label="Página siguiente" title="Página siguiente"><i data-lucide="chevron-right" class="ico-16"></i></button>
+          </div>
+          <div class="pdf-vista-marco">
+            <img id="pdf-vista-img" alt="Vista previa de la página" hidden>
+            <p id="pdf-vista-estado" class="pdf-vista-estado" role="status"></p>
+          </div>
+        </aside>
+        </div>
         <div class="modal-footer">
+          <button type="button" id="btn-pdf-vista" class="btn btn-ghost" aria-pressed="false" aria-controls="pdf-vista"><i data-lucide="eye" class="ico-16"></i> Vista previa</button>
           <button type="submit" id="btn-pdf-exportar" class="btn btn-primary"><span id="btn-pdf-exportar-etiqueta">Exportar PDF</span></button>
           <button type="button" id="btn-pdf-cancelar" class="btn btn-ghost">Cancelar</button>
         </div>
@@ -1062,6 +1490,21 @@ Ahora convierte el examen adjunto a este formato.</pre>
           </div>
         </section>
 
+        <section class="acerca-card" aria-labelledby="acerca-h-ofrece">
+          <h3 id="acerca-h-ofrece" class="acerca-h"><i data-lucide="sparkles"></i> Qué ofrece</h3>
+          <p class="acerca-texto">Más que un conversor: una herramienta para llevar tus exámenes de principio a fin, en tu propio equipo.</p>
+          <ul class="acerca-lista">
+            <li><strong>Moodle XML listo para importar,</strong> de pruebas en PDF, Word o TXT, con los 7 tipos de pregunta, imágenes, fórmulas y retroalimentación, validado contra lo que Moodle acepta.</li>
+            <li><strong>Revisión con el original:</strong> cada pregunta junto al recorte de su página, con el origen y la confianza de la respuesta. Nada se decide solo.</li>
+            <li><strong>IA como ayuda, no como juez:</strong> sugerir respuestas faltantes, escribir retroalimentación, mejorar la redacción y detectar preguntas repetidas; siempre visible y editable.</li>
+            <li><strong>Edición de un XML que ya tienes,</strong> sin IA.</li>
+            <li><strong>Examen en PDF para imprimir,</strong> con su clave o como folleto, hoja de respuestas y clave; con tus logos, opciones mezcladas, partes, márgenes y tipo de letra a elección, y vista previa.</li>
+            <li><strong>Mis materias:</strong> tus exámenes ordenados por materia, para reabrirlos, descargarlos o reutilizarlos.</li>
+            <li><strong>Mi perfil:</strong> tu nombre y tus encabezados guardados, para no escribirlos en cada examen.</li>
+            <li><strong>Privada y sin cuenta:</strong> sin cookies, sin analítica y con tus datos en tu equipo.</li>
+          </ul>
+        </section>
+
         <section class="acerca-card" aria-labelledby="acerca-h-api">
           <h3 id="acerca-h-api" class="acerca-h"><i data-lucide="key-round"></i> API de Gemini</h3>
           <p id="acerca-api-estado" class="acerca-texto">Comprobando…</p>
@@ -1076,7 +1519,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <h3 id="acerca-h-privacidad" class="acerca-h"><i data-lucide="shield-check"></i> Privacidad y datos</h3>
           <h4 class="acerca-sub">Lo que se guarda en tu equipo</h4>
           <ul class="acerca-lista">
-            <li><strong>Historial de conversiones</strong> (los exámenes convertidos y sus respuestas), para descargarlos o reabrirlos: <code id="acerca-ruta-historial">—</code></li>
+            <li><strong>Mis materias, tus datos y el historial de conversiones</strong> (tus materias, tu nombre, tus perfiles de encabezado con sus logos y los exámenes convertidos con sus respuestas), para descargarlos, reabrirlos o exportarlos: <code id="acerca-ruta-historial">—</code></li>
             <li><strong>Tu clave de la API de Gemini</strong>, cifrada; solo se puede descifrar en este equipo y con tu usuario: <code id="acerca-ruta-clave">—</code></li>
             <li><strong>Registro de errores</strong>, sin el contenido de tus exámenes: <code id="acerca-ruta-registro">—</code></li>
             <li><strong>La revisión que tengas a medias</strong>, para retomarla si cierras la app, en el almacenamiento de la propia ventana.</li>
@@ -1092,7 +1535,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <p><strong>Con el plan gratuito de la API de Gemini, Google puede usar lo que envías para mejorar sus productos</strong>, y personas de Google pueden revisarlo. Con el plan de pago (facturación activada en tu cuenta de Google) no lo usa para eso. Si tus exámenes son confidenciales, considera el plan de pago. <button type="button" class="text-link" data-url="https://ai.google.dev/gemini-api/terms">Términos de la API de Gemini</button></p>
           </div>
           <h4 class="acerca-sub">Cookies</h4>
-          <p class="acerca-texto">La app <strong>no usa cookies</strong>, ni analítica, publicidad o seguimiento de ningún tipo, y no necesita cuenta. Todo lo que guarda la ventana (la revisión a medias y los tiempos de conversiones anteriores, para estimar la espera) se queda en tu equipo.</p>
+          <p class="acerca-texto">La app <strong>no usa cookies</strong>, ni analítica, publicidad o seguimiento de ningún tipo, y no necesita cuenta. Todo lo que guarda la ventana (la revisión a medias, tu última materia, lo último que escribiste al exportar el PDF y los tiempos de conversiones anteriores, para estimar la espera) se queda en tu equipo.</p>
         </section>
 
         <section class="acerca-card" aria-labelledby="acerca-h-legal">
@@ -1115,10 +1558,13 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <li>Uvicorn, Starlette, lxml, pywebview — BSD</li>
             <li>requests, python-multipart — Apache 2.0</li>
             <li>PDFium (vía pypdfium2) — BSD / Apache 2.0</li>
+            <li>ReportLab (PDF del examen) — BSD</li>
             <li>cryptography — Apache 2.0 o BSD</li>
             <li>Íconos Lucide — ISC</li>
             <li>KaTeX (vista previa de fórmulas) — MIT</li>
+            <li>driver.js (recorridos guiados) y three.js (el profe 3D) — MIT</li>
             <li>Fuentes Outfit, Hanken Grotesk y JetBrains Mono — SIL Open Font License 1.1</li>
+            <li>Fuentes del PDF: DejaVu Sans (licencia libre de DejaVu/Bitstream Vera) y Liberation Sans y Serif (SIL OFL 1.1)</li>
             <li>PyInstaller (cargador de arranque) — GPL 2.0 con excepción</li>
           </ul>
           <details class="acerca-detalles" id="acerca-licencias">

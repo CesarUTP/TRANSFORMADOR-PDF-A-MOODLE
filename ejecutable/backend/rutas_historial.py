@@ -5,6 +5,10 @@ rutas_historial.py — el Historial de conversiones guardadas en este equipo.
   GET    /api/history/{record_id}/download
   GET    /api/history/{record_id}/editor
   DELETE /api/history/{record_id}
+  PATCH  /api/history/{record_id}   cambia su materia y/o su actividad (Mis materias)
+  POST   /api/history/borrar        borra varios exámenes a la vez
+  POST   /api/history/mover         pasa varios exámenes a una materia (o a «sin materia»)
+  GET    /api/history/uso           cuánto del Historial está usado y cuánto no tiene materia
 """
 
 import json
@@ -12,10 +16,16 @@ import logging
 import sqlite3
 from pathlib import Path
 
+from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
+from pydantic import BaseModel, Field
 
-from database import get_history_list, get_xml_content, delete_history_item, get_editor_data
+from database import (
+    LIMITE_CAMPO_MATERIA, delete_history_item, delete_history_items, get_editor_data, get_history_list, get_uso, get_xml_content,
+    move_history_items, update_history_item,
+)
 from estado_servidor import ERROR_LOG_PATH, _content_disposition
 
 logger = logging.getLogger(__name__)
@@ -83,6 +93,8 @@ def api_history_editor(record_id: int):
         "filename": record["filename"],
         "category": record["category"],
         "total_points": record["total_points"],
+        "materia_id": record.get("materia_id"),
+        "actividad": record.get("actividad"),
         "questions": data.get("questions", []),
         "answer_key": data.get("answer_key", {}),
     }
@@ -92,3 +104,54 @@ def api_delete_history(record_id: int):
     if not _historial(delete_history_item, record_id):
         raise HTTPException(status_code=404, detail="Registro no encontrado")
     return {"deleted": True}
+
+
+class CambiosDeExamen(BaseModel):
+    """Solo cambia lo que viene en la petición; materia_id null lo deja «sin materia»."""
+    materia_id: Optional[int] = None
+    actividad: Optional[str] = Field(None, max_length=LIMITE_CAMPO_MATERIA * 2)
+
+
+@router.patch("/api/history/{record_id}")
+def api_cambiar_examen(record_id: int, body: CambiosDeExamen):
+    enviados = body.model_fields_set
+    if not enviados & {"materia_id", "actividad"}:
+        raise HTTPException(status_code=422, detail="No hay nada que cambiar.")
+    kwargs = {}
+    if "materia_id" in enviados:
+        kwargs["materia_id"] = body.materia_id
+    if "actividad" in enviados:
+        kwargs["actividad"] = " ".join((body.actividad or "").split())[:LIMITE_CAMPO_MATERIA] or None
+    res = _historial(lambda: update_history_item(record_id, **kwargs))
+    if res is None:
+        raise HTTPException(status_code=404, detail="Registro no encontrado")
+    if res is False:
+        raise HTTPException(status_code=404, detail="Esa materia ya no existe.")
+    return {"updated": True}
+
+
+class MoverExamenes(BaseModel):
+    ids: List[int] = Field(min_length=1, max_length=1000)
+    materia_id: Optional[int] = None
+
+
+@router.post("/api/history/mover")
+def api_mover_examenes(body: MoverExamenes):
+    movidos = _historial(move_history_items, list(dict.fromkeys(body.ids)), body.materia_id)
+    if movidos is None:
+        raise HTTPException(status_code=404, detail="Esa materia ya no existe.")
+    return {"movidos": movidos}
+
+
+class BorrarExamenes(BaseModel):
+    ids: List[int] = Field(min_length=1, max_length=1000)
+
+
+@router.post("/api/history/borrar")
+def api_borrar_examenes(body: BorrarExamenes):
+    return {"borrados": _historial(delete_history_items, list(dict.fromkeys(body.ids)))}
+
+
+@router.get("/api/history/uso")
+def api_uso_historial():
+    return _historial(get_uso)

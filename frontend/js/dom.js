@@ -11,6 +11,7 @@ export const modalTabs = document.querySelectorAll('.modal-tab');
 export const modalPanels = {
   about: document.getElementById('modal-panel-about'),
   review: document.getElementById('modal-panel-review'),
+  extras: document.getElementById('modal-panel-extras'),
   format: document.getElementById('modal-panel-format'),
   prompt: document.getElementById('modal-panel-prompt'),
   moodle: document.getElementById('modal-panel-moodle'),
@@ -62,6 +63,3 @@ export const toastEl = document.getElementById('toast');
 
 // Disclaimer: PDF con imágenes incrustadas (caso especial no 100% fiable)
 export const modalDisclaimer = document.getElementById('modal-disclaimer');
-
-// History Logic
-export const modalHistory = document.getElementById('modal-history');

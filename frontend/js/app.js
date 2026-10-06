@@ -10,7 +10,7 @@
 import './api.js';
 import { borrarBorrador, guardarBorrador, guardarBorradorAhora, mostrarAvisoBorrador, retomarBorrador } from './borrador.js';
 import { cancelConversion, clearFile, handleFileSelected, runConversion, runImportXml, runNormalizeWithAI } from './carga.js';
-import { aiPromptText, btnConvert, btnCopyPrompt, btnRemoveFile, copyIcon, copyLabel, dropZone, fileInput, modalDisclaimer, modalHelp, modalHistory, modalTabs, pointsError, pointsInput } from './dom.js';
+import { aiPromptText, btnConvert, btnCopyPrompt, btnRemoveFile, copyIcon, copyLabel, dropZone, fileInput, modalDisclaimer, modalHelp, modalTabs, pointsError, pointsInput } from './dom.js';
 import { clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti } from './editor/cloze.js';
 import { refreshFilterChips, selectFilter, toggleFilterMenu } from './editor/filtros.js';
 import { sugerirRespuesta } from './editor/sugerencias.js';
@@ -21,7 +21,12 @@ import { applyPointsDistribution, setPointsToolMode, togglePointsToolMenu, updat
 import { agregarImagen, iniciarArrastreImagenes, imagenElegida, moverImagenA, moverImagenAnterior, moverImagenSiguiente, quitarImagen } from './editor/imagenes.js';
 import { actualizarFormulas, addMatchingPairRow, addNewQuestion, changeQuestionType, deleteQuestionCard, generarRetroalimentacion, mejorarEnunciado, recoverSkippedQuestion, removeMatchingPairRow } from './editor/tarjetas.js';
 import { estado, suscribir } from './estado.js';
-import { closeHistory, confirmDeleteHistory, downloadHistoryDesdeBoton, loadHistoryList, openHistory, renderHistoryList, reopenHistory, startDeleteHistory } from './historial.js';
+import { abrirAsistente, abrirBiblioteca, abrirMateria, abrirSinMateria, abrirTodos, bibliotecaRaiz, borrarElegidos, borrarExamenDeLista, descargarExamen, editarMateria, elegirTodos, escapeEnBiblioteca, guardarOrganizar, iniciarBiblioteca, marcarExamen, moverElegidos, nuevaMateria, nuevoExamenEnMateria, organizarExamen, quitarSeleccion, reabrirExamen } from './biblioteca.js';
+import { exportarPdfHistorial } from './historial.js';
+import { iniciarMaterias } from './materias.js';
+import { iniciarAsistente } from './ui/asistente.js';
+import { hayTourActivo, iniciarTour } from './ui/tour.js';
+import { borrarPerfilEnc, duplicarPerfilEnc, editarPerfilEnc, iniciarPerfil, nuevoPerfilEnc, predeterminadoPerfilEnc } from './perfil.js';
 import { confirmDiscardReview, resetAll, showPanel } from './navegacion.js';
 import { generateXml, saveFileToUser } from './resultado.js';
 import { abrirAcerca } from './ui/acerca.js';
@@ -52,7 +57,7 @@ suscribir(() => {
 // ACCIONES[nombre] con: data-arg (texto), data-arg-n (número), data-este (el
 // propio elemento) o nada. Solo las funciones de esta lista: un atributo
 // inyectado no puede llamar a otra cosa.
-const ACCIONES = { abrirExportarPdf, sugerirRespuesta, verOriginal, alternarTarjeta, alternarTodas, addMatchingPairRow, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, changeQuestionType, closeHistory, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDeleteHistory, confirmDiscardReview, deleteQuestionCard, downloadHistoryDesdeBoton, generarRetroalimentacion, generateXml, jumpToNextFlagged, loadHistoryList, openHelp, renderHistoryList, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, reopenHistory, resetAll, selectFilter, setPointsToolMode, startDeleteHistory, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
+const ACCIONES = { iniciarTour, borrarPerfilEnc, duplicarPerfilEnc, editarPerfilEnc, nuevoPerfilEnc, predeterminadoPerfilEnc, borrarElegidos, elegirTodos, abrirAsistente, abrirBiblioteca, abrirMateria, abrirSinMateria, abrirTodos, bibliotecaRaiz, borrarExamenDeLista, descargarExamen, editarMateria, guardarOrganizar, marcarExamen, moverElegidos, nuevaMateria, nuevoExamenEnMateria, organizarExamen, quitarSeleccion, reabrirExamen, abrirExportarPdf, exportarPdfHistorial, sugerirRespuesta, verOriginal, alternarTarjeta, alternarTodas, addMatchingPairRow, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, changeQuestionType, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDiscardReview, deleteQuestionCard, generarRetroalimentacion, generateXml, jumpToNextFlagged, openHelp, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, resetAll, selectFilter, setPointsToolMode, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
 
 function _ejecutarAccion(el, nombre) {
   if (!Object.hasOwn(ACCIONES, nombre)) return;
@@ -108,15 +113,17 @@ document.getElementById('btn-close-modal').addEventListener('click', closeHelp);
 modalHelp.addEventListener('click', e => { if (e.target === modalHelp) closeHelp(); });
 
 // Escape cierra el modal de más arriba (el que tiene el foco), sea cual
-// sea: Guía, Historial, aviso de imágenes o confirmación.
+// sea: Guía, Mis materias, aviso de imágenes o confirmación.
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
+  if (hayTourActivo()) return;   // Escape cierra el recorrido (lo hace driver.js), no la ventana de debajo
   const activo = modalActivo();
   if (!activo) return;
   e.preventDefault();
   // El modal de bienvenida (sin clave) no se puede saltar.
   if (activo.id === 'modal-apikey' && claveObligatoria()) return;
   if (activo.id === 'modal-confirm') cerrarConfirmacion();
+  else if (activo.id === 'vista-materias') escapeEnBiblioteca();   // dentro de una materia sube un nivel
   else cerrarModal(activo);
 });
 
@@ -182,7 +189,7 @@ document.addEventListener('click', e => {
 // revisar, ? abre la Guía en esa pestaña. Solo cuando no se está
 // escribiendo en un campo ni hay un modal abierto.
 document.addEventListener('keydown', e => {
-  if (!document.body.classList.contains('editor-active') || modalActivo()) return;
+  if (!document.body.classList.contains('editor-active') || modalActivo() || hayTourActivo()) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const t = e.target;
   if (t.closest && t.closest('input, textarea, select, [contenteditable="true"]')) return;
@@ -298,10 +305,13 @@ btnConvert.addEventListener('click', async () => {
   await runConversion(ptsVal);
 });
 
-document.getElementById('btn-history').addEventListener('click', openHistory);
-document.getElementById('btn-close-history').addEventListener('click', closeHistory);
-
-modalHistory.addEventListener('click', e => { if (e.target === modalHistory) closeHistory(); });
+// Mis materias (la biblioteca) y el selector de materia del paso 1.
+iniciarMaterias();
+iniciarBiblioteca();
+// Mi perfil: tus datos y tus perfiles de encabezado (el ícono de la cabecera).
+iniciarPerfil();
+// El profe de la esquina: ofrece el recorrido guiado de cada pantalla (ui/asistente.js).
+iniciarAsistente();
 
 document.getElementById('btn-cancel-progress').addEventListener('click', cancelConversion);
 

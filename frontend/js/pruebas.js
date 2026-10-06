@@ -16,7 +16,10 @@ import { MAX_ABIERTAS, abiertasPorDefecto, recortar } from './editor/plegado-log
 import { detectarProblemas, normalizar, similitud } from './editor/calidad.js';
 import { faltaRespuesta } from './validacion.js';
 import { describirSugerencia } from './editor/sugerencias-logica.js';
-import { LIMITE_CAMPO, tamanoValido, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, valoresIniciales } from './ui/exportar-pdf-logica.js';
+import { LIMITE_CAMPO, PERFIL_CAMPOS, aplicarPerfil, datosDePerfil, enteroEn, nombrePerfil, tamanoValido, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, valoresIniciales } from './ui/exportar-pdf-logica.js';
+import { COLORES, activas, archivadas, avisoDeLimite, examenesDe, existeNombre, fechaCorta, filtrarExamenes, formatoBytes, nombreSugerido, normalizar as normalizarMateria, ordenarMaterias, planDelAsistente, sugerirMaterias, textoUso, variableDeColor } from './materias-logica.js';
+import { CLAVE_VISTOS, TOURS, debeOfrecer, leerVistos, marcarVisto, nombreDeTour, pasosVisibles } from './ui/tour-logica.js';
+import { ejemploExamen, iniciales, materiasQueUsan, nombreCopia, nombreOcupado, ordenarPerfiles, resumenEncabezado, resumenFormato } from './perfil-logica.js';
 import { ZOOMS, paginaDe, recuadroValido, urlOriginal, vecino, zoomVecino } from './ui/original-logica.js';
 import { duracionValida, estimarDuracion, onProgressQueue, onProgressStage, stopProgress } from './progreso.js';
 import { avisosDelXml, crearIconos, detalleDeError, esc_html, findClozeBrackets, humanizeSkipReason, splitAnswers, splitOptions } from './util.js';
@@ -873,6 +876,214 @@ prueba('Exportar PDF: tipo de letra y tamaños', () => {
   const d = valoresIniciales(null);
   igual([d.fuente_titulos, d.tam_titulos, d.fuente_preguntas, d.tam_preguntas], ['dejavu', 11, 'dejavu', 10]);
   igual(datosParaEnviar({ tam_titulos: '12', tam_preguntas: '10' }).tam_titulos, 12);
+});
+
+prueba('Exportar PDF: puntos por pregunta y renglones del ensayo', () => {
+  const d = valoresIniciales(null);
+  igual([d.puntos_por_pregunta, d.renglones_ensayo], [true, 6]);
+  igual(valoresIniciales({ puntos_por_pregunta: false, renglones_ensayo: '10' }).renglones_ensayo, 10);
+  igual(valoresIniciales({ puntos_por_pregunta: false }).puntos_por_pregunta, false);
+  igual(valoresIniciales({ renglones_ensayo: 99 }).renglones_ensayo, 6);
+  igual(valoresIniciales({ renglones_ensayo: 3.5 }).renglones_ensayo, 6);
+  igual(enteroEn('8', 2, 24), 8);
+  igual(enteroEn('', 2, 24), null);
+  igual(enteroEn(1, 2, 24), null);
+});
+prueba('Exportar PDF: perfiles de encabezado', () => {
+  igual(nombrePerfil('  UTP   Panamá '), 'UTP Panamá');
+  igual(nombrePerfil('a/b\\c'), 'a-b-c');
+  igual(nombrePerfil('x'.repeat(100)).length, 60);
+  igual(nombrePerfil(null), '');
+  igual(nombrePerfil('   '), '');
+  const p = datosDePerfil({ institucion: ' UTP ', margenes: 'anchos', materia: 'NO', fecha: 'NO', contenido: 'solo_clave', logo_izquierdo: 'AAAA' });
+  igual(Object.keys(p), PERFIL_CAMPOS);
+  igual([p.institucion, p.margenes, p.logo_izquierdo, 'materia' in p, 'contenido' in p], ['UTP', 'anchos', 'AAAA', false, false]);
+  const actuales = { ...valoresIniciales(null), materia: 'Física', actividad: 'Parcial 1', grupo: '3A', fecha: '12 de octubre de 2026', contenido: 'solo_clave', institucion: 'Otra' };
+  const m = aplicarPerfil(actuales, { institucion: 'UTP', papel: 'legal' });
+  igual([m.institucion, m.papel, m.materia, m.actividad, m.grupo, m.fecha, m.contenido], ['UTP', 'legal', 'Física', 'Parcial 1', '3A', '12 de octubre de 2026', 'solo_clave']);
+});
+
+// ── Mis materias (2.3) ─────────────────────────────────────────────────────
+prueba('Mis materias: nombres sin mayúsculas ni tildes y sin repetir', () => {
+  igual(normalizarMateria('  Cálculo   II '), 'calculo ii');
+  const ms = [{ id: 1, nombre: 'Cálculo' }, { id: 2, nombre: 'Física' }];
+  igual(existeNombre(ms, 'CALCULO'), true);
+  igual(existeNombre(ms, 'calculo', 1), false, 'la que se edita no cuenta');
+  igual(existeNombre(ms, '   '), false);
+  igual(existeNombre(ms, 'Historia'), false);
+});
+
+prueba('Mis materias: colores y orden', () => {
+  igual(variableDeColor('rosa'), '--color-es');
+  igual(variableDeColor('no-existe'), COLORES[0].variable);
+  const ms = [{ id: 1, nombre: 'Zoología', archivada: false }, { id: 2, nombre: 'Álgebra', archivada: true }, { id: 3, nombre: 'Ética', archivada: false }, { id: 4, nombre: 'Biología', archivada: false }];
+  igual(ordenarMaterias(ms).map(m => m.nombre), ['Biología', 'Ética', 'Zoología', 'Álgebra'], 'las archivadas al final; con tildes en su sitio');
+  igual(activas(ms).length, 3);
+  igual(archivadas(ms).map(m => m.id), [2]);
+});
+
+prueba('Mis materias: exámenes de una materia, sin materia y todos; búsqueda', () => {
+  const ex = [
+    { id: 1, filename: 'a.pdf', category: 'Hist', materia_id: 7, actividad: 'Parcial 1', fecha: '3 oct 2026' },
+    { id: 2, filename: 'b.pdf', category: 'Cálculo', materia_id: null },
+    { id: 3, filename: 'c.docx', category: 'x', materia_id: 7, actividad: 'Quiz' },
+  ];
+  igual(examenesDe(ex, 7).map(e => e.id), [1, 3]);
+  igual(examenesDe(ex, null).map(e => e.id), [2]);
+  igual(examenesDe(ex, 'todos').length, 3);
+  igual(filtrarExamenes(ex, 'calculo').map(e => e.id), [2], 'sin tildes');
+  igual(filtrarExamenes(ex, 'parcial').map(e => e.id), [1], 'por actividad');
+  igual(filtrarExamenes(ex, 'oct 2026').map(e => e.id), [1], 'por fecha');
+  igual(filtrarExamenes(ex, 'historia', id => (id === 7 ? 'Historia' : '')).map(e => e.id), [1, 3], 'por nombre de la materia');
+  igual(filtrarExamenes(ex, '').length, 3);
+});
+
+prueba('Mis materias: tamaños y fechas', () => {
+  igual(formatoBytes(500), '500 B');
+  igual(formatoBytes(2048), '2 KB');
+  igual(formatoBytes(5 * 1024 * 1024), '5.0 MB');
+  igual(formatoBytes(120 * 1024 * 1024), '120 MB');
+  const ahora = Date.parse('2026-10-10T12:00:00Z');
+  igual(fechaCorta('2026-10-10 08:00:00', ahora), 'hoy');
+  igual(fechaCorta('2026-10-09 08:00:00', ahora), 'ayer');
+  igual(fechaCorta('2026-10-01 08:00:00', ahora), 'hace 9 días');
+  igual(fechaCorta('2026-07-01 08:00:00', ahora), 'hace 3 meses');
+  igual(fechaCorta('2024-07-01 08:00:00', ahora), 'hace 2 años');
+  igual(fechaCorta('basura', ahora), '');
+  igual(fechaCorta('', ahora), '');
+});
+
+prueba('Mis materias: el aviso de que el Historial se llena', () => {
+  igual(avisoDeLimite(null), null);
+  igual(avisoDeLimite({ cerca_del_limite: false }), null);
+  const base = { cerca_del_limite: true, examenes: 270, bytes: 50 * 1024 * 1024, maximo_examenes: 300, porcentaje: 90, sin_materia: 40 };
+  const a = avisoDeLimite(base);
+  igual(a.nivel, 'aviso');
+  igual(a.titulo, 'El Historial se está llenando');
+  igual(a.texto.includes('sin materia (hoy 40)'), true, 'dice cuántos son lo primero que se borra');
+  const lleno = avisoDeLimite({ ...base, examenes: 300, porcentaje: 100, sin_materia: 0 });
+  igual(lleno.nivel, 'lleno');
+  igual(lleno.texto.includes('Todos tus exámenes tienen materia'), true, 'si no hay sin materia, lo dice');
+  igual(textoUso({ examenes: 1, bytes: 2048, porcentaje: 0.3 }), '1 examen · 2 KB · 0 % del espacio');
+});
+
+prueba('Mis materias: la materia que sugiere la categoría o el archivo', () => {
+  const sug = (category, filename = 'x.pdf') => nombreSugerido({ category, filename });
+  igual(sug('Parcial-Historia-2026'), 'Historia');
+  igual(sug('Quiz 2 - Cálculo II - 2026-1'), 'Cálculo II');
+  igual(sug('PARCIAL DE FÍSICA'), 'Física', 'todo en mayúsculas se escribe normal');
+  igual(sug('historia de panamá'), 'Historia de Panamá', 'las palabras de relleno quedan en minúscula');
+  igual(sug('mis-preguntas', 'Examen Final Programación Web.docx'), 'Programación Web', 'sin categoría útil, usa el archivo');
+  igual(sug('Parcial-1', 'Redes_Quiz3.pdf'), 'Redes', 'si la categoría solo dice qué es, usa el archivo');
+  igual(sug('mis-preguntas', 'examen.pdf'), null, 'sin pista');
+  igual(sug('', 'parcial 2.pdf'), null);
+  igual(sug('Ab'), null, 'demasiado corto para ser una materia');
+});
+
+prueba('Mis materias: el asistente agrupa por materia y reconoce las que ya existen', () => {
+  const ms = [{ id: 10, nombre: 'Historia de Panamá' }, { id: 11, nombre: 'Cálculo' }];
+  const sin = [
+    { id: 1, category: 'Parcial-Historia-2026', filename: 'a.pdf' },
+    { id: 2, category: 'Quiz Historia', filename: 'b.pdf' },
+    { id: 3, category: 'Examen Calculo 1', filename: 'c.pdf' },
+    { id: 4, category: 'Parcial Redes', filename: 'd.pdf' },
+    { id: 5, category: 'mis-preguntas', filename: 'examen.pdf' },
+  ];
+  const { grupos, sinPista } = sugerirMaterias(sin, ms);
+  igual(sinPista, [5]);
+  igual(grupos.map(g => [g.nombre, g.materiaId, g.ids]), [['Historia de Panamá', 10, [1, 2]], ['Cálculo', 11, [3]], ['Redes', null, [4]]], '«Historia» es la existente «Historia de Panamá»; «Calculo» es «Cálculo»; Redes es nueva');
+  const marcados = [{ marcado: true, nombre: 'Historia de Panamá' }, { marcado: false, nombre: 'Cálculo' }, { marcado: true, nombre: 'Redes y Comunicaciones' }];
+  igual(planDelAsistente(grupos, marcados), [
+    { nombre: 'Historia de Panamá', materiaId: 10, ids: [1, 2] },
+    { nombre: 'Redes y Comunicaciones', materiaId: null, ids: [4] },
+  ], 'lo desmarcado no se mueve; un nombre cambiado a mano es otra materia');
+  const cambiado = planDelAsistente(grupos, [{ marcado: true, nombre: 'Panamá' }, { marcado: false, nombre: 'x' }, { marcado: false, nombre: 'y' }]);
+  igual(cambiado, [{ nombre: 'Panamá', materiaId: null, ids: [1, 2] }]);
+  igual(sugerirMaterias([], ms), { grupos: [], sinPista: [] });
+});
+
+// ── Mi perfil (2.3) ────────────────────────────────────────────────────────
+prueba('Mi perfil: las iniciales del avatar ignoran los tratamientos', () => {
+  igual(iniciales('Ing. Ana Pérez'), 'AP');
+  igual(iniciales('Dra. María de los Ángeles Ruiz'), 'MD');
+  igual(iniciales('ana'), 'A');
+  igual(iniciales('  Prof.  '), '', 'solo un tratamiento: sin iniciales');
+  igual(iniciales(''), '');
+  igual(iniciales(null), '');
+  igual(iniciales('Álvaro Ñúñez'), 'ÁÑ', 'con tildes y eñes');
+  igual(iniciales('123 456'), '');
+});
+
+prueba('Mi perfil: resúmenes de un perfil', () => {
+  igual(resumenEncabezado({ institucion: 'UTP', facultad: ' ', departamento: 'Software' }), 'UTP · Software');
+  igual(resumenEncabezado({}), 'Sin institución');
+  igual(resumenFormato({ papel: 'legal', margenes: 'anchos', fuente_preguntas: 'times', tam_preguntas: 12 }), 'Legal · márgenes anchos · Times New Roman 12 pt');
+  igual(resumenFormato({}), 'Carta · márgenes moderados · DejaVu Sans 10 pt');
+});
+
+prueba('Mi perfil: orden, copias y nombres repetidos', () => {
+  const ps = [{ nombre: 'Zeta' }, { nombre: 'Álamo' }, { nombre: 'Medio' }];
+  igual(ordenarPerfiles(ps, 'Medio').map(p => p.nombre), ['Medio', 'Álamo', 'Zeta'], 'el predeterminado primero');
+  igual(ordenarPerfiles(ps, null).map(p => p.nombre), ['Álamo', 'Medio', 'Zeta']);
+  igual(nombreCopia('UTP', ['UTP']), 'UTP (copia)');
+  igual(nombreCopia('UTP', ['UTP', 'utp (copia)']), 'UTP (copia 2)');
+  igual(nombreCopia('x'.repeat(60), ['x'.repeat(60)]).length <= 60, true, 'cabe en 60 caracteres');
+  igual(nombreOcupado('utp', ['UTP', 'Otro']), true);
+  igual(nombreOcupado('UTP', ['UTP'], 'UTP'), false, 'el que se edita no cuenta');
+  igual(nombreOcupado('', ['UTP']), false);
+  igual(materiasQueUsan([{ id: 1, perfil: 'UTP' }, { id: 2, perfil: null }, { id: 3, perfil: 'UTP' }], 'UTP').map(m => m.id), [1, 3]);
+});
+
+prueba('Mi perfil: el examen de ejemplo es un examen válido', () => {
+  const e = ejemploExamen();
+  igual(e.questions.length, 2);
+  igual(Object.keys(e.answer_key).length, e.questions.length);
+  igual(e.questions.every(q => q.points > 0 && q.data.stem), true);
+  igual(e.questions.reduce((a, q) => a + q.points, 0), e.total_points);
+});
+
+// ── Recorridos guiados ─────────────────────────────────────────────────────
+prueba('Recorridos: cada uno tiene pasos completos y lados válidos', () => {
+  igual(Object.keys(TOURS).sort(), ['biblioteca', 'bibliotecaLista', 'cargar', 'final', 'pdf', 'perfil', 'revision']);
+  for (const [nombre, t] of Object.entries(TOURS)) {
+    igual(t.pasos.length >= 4, true, `${nombre}: muy corto`);
+    for (const p of t.pasos) {
+      igual(!!p.titulo && !!p.texto, true, `${nombre}: paso sin título o texto`);
+      igual([undefined, 'top', 'bottom', 'left', 'right'].includes(p.lado), true, `${nombre}: lado inválido`);
+      igual(p.el === null || typeof p.el === 'string', true, `${nombre}: elemento inválido`);
+    }
+  }
+});
+
+prueba('Recorridos: se saltan los pasos cuyo elemento no está en pantalla', () => {
+  const pasos = [{ el: null }, { el: '#a' }, { el: '#b' }, { el: '.c' }];
+  igual(pasosVisibles(pasos, s => s === '#b').map(p => p.el), [null, '#b']);
+  igual(pasosVisibles(pasos, () => false).length, 1, 'el de presentación siempre queda');
+  igual(pasosVisibles([], () => true), []);
+});
+
+prueba('Recorridos: «Mis materias» elige el de la raíz o el de una lista', () => {
+  igual(nombreDeTour('biblioteca', { hayLista: false }), 'biblioteca');
+  igual(nombreDeTour('biblioteca', { hayLista: true }), 'bibliotecaLista');
+  igual(nombreDeTour('revision', { hayLista: true }), 'revision');
+  igual(nombreDeTour('no-existe'), null);
+  igual(nombreDeTour('__proto__'), null);
+});
+
+prueba('Recorridos: lo visto se recuerda y la bienvenida se ofrece una sola vez', () => {
+  igual(CLAVE_VISTOS, 'conversor.tours');
+  const vacio = leerVistos(null);
+  igual(vacio, { vistos: [], descartado: false });
+  igual(debeOfrecer(vacio), true);
+  const visto = marcarVisto(vacio, 'cargar');
+  igual(visto.vistos, ['cargar']);
+  igual(debeOfrecer(visto), false);
+  igual(marcarVisto(visto, 'cargar').vistos, ['cargar'], 'no se repite');
+  igual(debeOfrecer({ vistos: [], descartado: true }), false, 'descartada');
+  igual(debeOfrecer(marcarVisto(vacio, 'pdf')), true, 'otro recorrido no cuenta como la bienvenida');
+  igual(leerVistos('basura'), vacio);
+  igual(leerVistos('[1,2]'), vacio);
+  igual(leerVistos('{"vistos":["a",3,"b"],"descartado":"si"}'), { vistos: ['a', 'b'], descartado: false });
 });
 
 // ── Cómo se muestra (solo en pruebas.html; en Node no hay lista y no hace nada) ──

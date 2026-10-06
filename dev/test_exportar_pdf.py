@@ -465,6 +465,28 @@ with pdfplumber.open(io.BytesIO(rfa.pdf)) as d:
     ws2 = [w for pg in d.pages for w in pg.extract_words() if w["text"] in ("FACILITADOR:", "CALIFICACIÓN:")]
 ok(len(ws2) >= 2, "el facilitador y la calificación siguen en el encabezado con tamaños grandes")
 
+print("   Puntos por pregunta y renglones del ensayo")
+pp = [mc(1, "PTS-MC", ["a", "b"], [0])[0], {"num": 2, "type": "truefalse", "data": {"stem": "PTS-TF"}}]
+pk = {1: {"type": "multichoice", "answer": "A"}, 2: {"type": "truefalse", "answer": "Verdadero"}}
+pp[0]["points"], pp[1]["points"] = 3, 2
+visibles = plano(texto_de(pdf_de(pp, pk, contenido="solo_examen").pdf))
+ok("PTS-MC (3 pts)" in visibles and "PTS-TF (2 pts)" in visibles, "por defecto cada pregunta dice cuánto vale")
+ocultos = plano(texto_de(pdf_de(pp, pk, contenido="examen_y_clave", puntos_por_pregunta=False).pdf))
+ex_, cl_ = ocultos.split("CLAVE DE RESPUESTAS", 1)[0], ocultos.split("CLAVE DE RESPUESTAS", 1)[-1]
+ok("(3 pts)" not in ex_ and "(2 pts)" not in ex_ and "VALOR: 3 PTS" in ex_ and "VALOR: 2 PTS" in ex_, "sin puntos por pregunta, el examen solo trae el valor de cada parte")
+ok("CALIFICACIÓN: ________/5" in ex_.replace("  ", " "), "…y el total en la calificación")
+ok("(3 pts)" in cl_ and "(2 pts)" in cl_, "la clave sí conserva el valor de cada pregunta (es para el docente)")
+fo = plano(texto_de(pdf_de(pp, pk, contenido="folleto_hoja_clave", puntos_por_pregunta=False).pdf).split("HOJA DE RESPUESTAS")[0])
+ok("(3 pts)" not in fo, "también el folleto")
+ens = [{"num": 1, "type": "essay", "data": {"stem": "RENG-ENSAYO"}}]
+def rayas(n_):
+    with pdfplumber.open(io.BytesIO(pdf_de(ens, {1: {"type": "essay", "answer": ""}}, contenido="solo_examen", renglones_ensayo=n_, campos_estudiante=False).pdf)) as d_:
+        return sum(1 for ln in d_.pages[0].lines if abs(ln["x1"] - ln["x0"]) > 200)
+ok(rayas(6) == 6 and rayas(3) == 3 and rayas(12) == 12, f"los renglones del ensayo son los que se piden ({rayas(3)}, {rayas(6)}, {rayas(12)})")
+with pdfplumber.open(io.BytesIO(pdf_de(ens, {1: {"type": "essay", "answer": ""}}, contenido="folleto_hoja_clave", renglones_ensayo=4, campos_estudiante=False).pdf)) as d_:
+    ok(sum(1 for pg in d_.pages for ln in pg.lines if abs(ln["x1"] - ln["x0"]) > 200 and pg.page_number == 2) == 4, "la hoja de respuestas usa el mismo número de renglones")
+ok(len(pdf_de(ens, {1: {"type": "essay", "answer": ""}}, renglones_ensayo=500).pdf) > 500, "un número absurdo se acota en vez de romper")
+
 print("5. Imágenes, fórmulas y texto raro")
 # ══════════════════════════════════════════════════════════════════════════
 import base64  # noqa: E402
@@ -566,6 +588,8 @@ ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"contenido": "otra co
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"fuente_titulos": "comic"}}, headers=H).status_code == 422, "tipo de letra desconocido: 422")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"tam_preguntas": 5}}, headers=H).status_code == 422 and cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"tam_titulos": 40}}, headers=H).status_code == 422, "tamaños fuera de 7 a 20 pt: 422")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"fuente_titulos": "times", "tam_titulos": 12.5, "fuente_preguntas": "arial", "tam_preguntas": 10}}, headers=H).status_code == 200, "tipo de letra y tamaños válidos: 200")
+ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"renglones_ensayo": 1}}, headers=H).status_code == 422 and cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"renglones_ensayo": 99}}, headers=H).status_code == 422, "renglones fuera de 2 a 24: 422")
+ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"puntos_por_pregunta": False, "renglones_ensayo": 10}}, headers=H).status_code == 200, "sin puntos por pregunta y 10 renglones: 200")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"margenes": "enormes"}}, headers=H).status_code == 422, "márgenes desconocidos: 422")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"margenes": "estrechos"}}, headers=H).status_code == 200, "márgenes «estrechos»: 200")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"papel": "folio"}}, headers=H).status_code == 422, "papel desconocido: 422")
@@ -580,6 +604,43 @@ ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"rotulo_docente": "je
 con_logo = cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"logo_izquierdo": logo_a, "docente": "Ana"}}, headers=H)
 ok(con_logo.status_code == 200 and json.loads(con_logo.headers["x-pdf-info"])["avisos"] == [], "la ruta acepta un logo en base64")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"logo_derecho": "A" * 2_000_001}}, headers=H).status_code == 422, "un logo demasiado grande: 422")
+print("   Vista previa y perfiles de encabezado")
+vp = cli.post("/api/vista_previa_pdf", json=cuerpo, headers=H)
+img_ = Image.open(io.BytesIO(vp.content))
+ok(vp.status_code == 200 and vp.headers["content-type"] == "image/png" and img_.size[0] > 600 and img_.size[1] > img_.size[0], f"vista previa: una página como PNG ({img_.size})")
+n_pag = int(vp.headers["x-pdf-paginas"])
+ok(n_pag == json.loads(cli.post("/api/exportar_pdf", json=cuerpo, headers=H).headers["x-pdf-info"])["paginas"], f"…y dice cuántas páginas tiene el PDF ({n_pag})")
+ult = cli.post("/api/vista_previa_pdf?pagina=999", json=cuerpo, headers=H)
+ok(ult.status_code == 200 and ult.content != vp.content, "una página que no existe devuelve la última")
+ok(cli.post("/api/vista_previa_pdf?pagina=0", json=cuerpo, headers=H).status_code == 422, "página 0: 422")
+ok(cli.post("/api/vista_previa_pdf", json=cuerpo).status_code == 401, "vista previa sin token: 401")
+ok(cli.post("/api/vista_previa_pdf", json=malo, headers=H).status_code == 422, "la vista previa valida igual que el PDF")
+v1 = cli.post("/api/vista_previa_pdf", json={**cuerpo, "datos": {"institucion": "Universidad X", "tam_titulos": 16}}, headers=H)
+ok(v1.content != vp.content, "cambiar un dato cambia la vista previa")
+
+ok(cli.get("/api/perfiles_pdf", headers=H).json() == [], "al principio no hay perfiles")
+perfil = {"institucion": "UTP", "facultad": "Sistemas", "docente": "Ana", "logo_izquierdo": logo_demo, "papel": "legal", "margenes": "anchos",
+          "fuente_titulos": "arial", "tam_titulos": 12, "tam_preguntas": 10, "mezclar": False, "renglones_ensayo": 8}
+ok(cli.put("/api/perfiles_pdf/UTP%20Panam%C3%A1", json=perfil, headers=H).status_code == 200, "guardar un perfil con nombre (con tilde y espacio)")
+lista_ = cli.get("/api/perfiles_pdf", headers=H).json()
+ok(len(lista_) == 1 and lista_[0]["nombre"] == "UTP Panamá" and lista_[0]["datos"]["margenes"] == "anchos" and lista_[0]["datos"]["logo_izquierdo"] == logo_demo
+   and lista_[0]["datos"]["mezclar"] is False and lista_[0]["datos"]["renglones_ensayo"] == 8, "se lee con todo lo guardado (logo incluido)")
+cli.put("/api/perfiles_pdf/UTP%20Panam%C3%A1", json={**perfil, "institucion": "UTP 2"}, headers=H)
+ok(len(cli.get("/api/perfiles_pdf", headers=H).json()) == 1 and cli.get("/api/perfiles_pdf", headers=H).json()[0]["datos"]["institucion"] == "UTP 2", "guardar con el mismo nombre lo reemplaza")
+cli.put("/api/perfiles_pdf/Colegio%20X", json={"institucion": "Colegio X"}, headers=H)
+ok([x["nombre"] for x in cli.get("/api/perfiles_pdf", headers=H).json()] == ["Colegio X", "UTP Panamá"], "varios perfiles, por orden alfabético; los datos que faltan toman su valor de siempre")
+ok(cli.put("/api/perfiles_pdf/%20", json=perfil, headers=H).status_code == 422 and cli.put("/api/perfiles_pdf/" + "x" * 61, json=perfil, headers=H).status_code == 422, "nombre vacío o demasiado largo: 422")
+ok(cli.put("/api/perfiles_pdf/malo", json={**perfil, "margenes": "enormes"}, headers=H).status_code == 422 and cli.put("/api/perfiles_pdf/malo", json={**perfil, "papel": "folio"}, headers=H).status_code == 422, "opciones no válidas: 422")
+ok(cli.put("/api/perfiles_pdf/malo", json={**perfil, "logo_derecho": "A" * 400_001}, headers=H).status_code == 422, "un logo demasiado grande: 422")
+ok(cli.put("/api/perfiles_pdf/UTP", json=perfil).status_code == 401 and cli.get("/api/perfiles_pdf").status_code == 401 and cli.delete("/api/perfiles_pdf/UTP").status_code == 401, "sin token: 401")
+database.save_perfil("Dañado", "esto no es json")
+ok([x["nombre"] for x in cli.get("/api/perfiles_pdf", headers=H).json()] == ["Colegio X", "UTP Panamá"], "un perfil dañado no impide ver los demás")
+ok(cli.delete("/api/perfiles_pdf/Colegio%20X", headers=H).status_code == 200 and cli.delete("/api/perfiles_pdf/Colegio%20X", headers=H).status_code == 404, "borrar un perfil (y 404 si ya no está)")
+for k_ in range(database.MAX_PERFILES):
+    database.save_perfil(f"P{k_:02d}", "{}")
+ok(cli.put("/api/perfiles_pdf/uno-mas", json=perfil, headers=H).status_code == 422, f"hay un tope de {database.MAX_PERFILES} perfiles")
+ok(cli.put("/api/perfiles_pdf/P00", json=perfil, headers=H).status_code == 200, "…pero uno existente se puede seguir actualizando")
+
 ok(len(cli.get("/api/history", headers=H).json()) == 0, "exportar el PDF no guarda nada en el Historial")
 
 print()

@@ -1,6 +1,6 @@
 /**
  * modales.js — cómo se abre y se cierra cualquier ventana modal (Guía,
- * Historial, aviso de imágenes, confirmación), más la Guía en sí.
+ * Mis materias, aviso de imágenes, confirmación), más la Guía en sí.
  *
  * Todo modal pasa por abrirModal()/cerrarModal(), que se ocupan de lo que
  * antes faltaba: el foco entra al modal, no se escapa a la página de atrás
@@ -44,6 +44,7 @@ export function abrirModal(el, { foco = null, onClose = null } = {}) {
   el.classList.add('open');
   crearIconos(el);
   requestAnimationFrame(() => (foco || _primerEnfocable(el))?.focus({ preventScroll: true }));
+  document.dispatchEvent(new Event('modalcambio'));
 }
 
 export function cerrarModal(el) {
@@ -55,6 +56,7 @@ export function cerrarModal(el) {
   else _fijarFondoInerte(false);
   if (opener && document.contains(opener)) opener.focus({ preventScroll: true });
   if (onClose) onClose();
+  document.dispatchEvent(new Event('modalcambio'));
 }
 
 /** El modal de más arriba (para Escape). */

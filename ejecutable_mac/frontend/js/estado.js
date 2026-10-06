@@ -17,7 +17,11 @@ export const estado = {
   currentParseResult: null,
   /** PDF de esta sesión que el servidor conserva en memoria (null: Historial, Word, TXT o ya no está). */
   originalId: null,
-  /** Nombre, categoría y puntaje total del examen en curso. */
+  /** El panel que se está mostrando: upload, progress, editor, success o error. */
+  panel: 'upload',
+  /** El examen recién guardado en el Historial (para cambiarle la materia desde la pantalla final). */
+  historialId: null,
+  /** Nombre, categoría, puntaje total, materia y actividad del examen en curso. */
   currentUploadMetadata: null,
   /** A qué paso vuelve el botón de la pantalla de error. */
   errorReturnPanel: 'upload',

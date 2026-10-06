@@ -5,6 +5,7 @@ import { borrarBorrador } from './borrador.js';
 import { clearFile } from './carga.js';
 import { panelEditor, panelError, panelProgress, panelSuccess, panelUpload } from './dom.js';
 import { estado } from './estado.js';
+import { reiniciarPaso1 } from './materias.js';
 import { confirmar } from './ui/confirmar.js';
 
 // Stepper Manager
@@ -35,6 +36,7 @@ export function showPanel(name, { enfocar = true } = {}) {
   Object.entries(PANELES).forEach(([key, p]) => {
     p.el().style.display = key === name ? 'block' : 'none';
   });
+  estado.panel = name;
   document.body.classList.toggle('editor-active', name === 'editor');
   const rail = document.getElementById('review-rail');
   rail?.classList.remove('grid-open');
@@ -46,6 +48,7 @@ export function showPanel(name, { enfocar = true } = {}) {
 
   window.scrollTo({ top: 0, behavior: 'auto' });
   if (enfocar) document.getElementById(PANELES[name].titulo)?.focus({ preventScroll: true });
+  document.dispatchEvent(new Event('panelcambio'));
 }
 
 export function resetAll() {
@@ -54,7 +57,9 @@ export function resetAll() {
   estado.downloadFilename = '';
   estado.exportable = null;
   estado.originalId = null;
+  estado.historialId = null;
   estado.errorReturnPanel = 'upload';
+  reiniciarPaso1();
   showPanel('upload');
 }
 

@@ -11,6 +11,7 @@ import { estado } from './estado.js';
 import { showPanel } from './navegacion.js';
 import { onProgressCount, onProgressQueue, onProgressStage, onUploadDone, onUploadProgress, startProgress, stopProgress } from './progreso.js';
 import { autoDistributePoints } from './puntos.js';
+import { leerPaso1 } from './materias.js';
 import { subir } from './subida.js';
 import { crearIconos, detalleDeError, formatBytes, friendlyHttpError } from './util.js';
 
@@ -81,7 +82,9 @@ function goToEditorWithParsedData(parsedData, ptsVal) {
     // "Panama" + tilde suelta. Se normaliza para guardarlo y mostrarlo igual.
     filename: estado.selectedFile.name.normalize('NFC'),
     category: categoryInput.value.trim() || 'mis-preguntas',
-    total_points: importado && parsedData.puntos_total ? parsedData.puntos_total : ptsVal
+    total_points: importado && parsedData.puntos_total ? parsedData.puntos_total : ptsVal,
+    // Mis materias: dónde se guarda el examen (se elige en el paso 1; se puede cambiar al terminar).
+    ...leerPaso1(),
   };
   // Puntaje inicial por pregunta: mismo reparto por peso de tipo que
   // usaba el backend hasta ahora, pero ya visible y editable en el

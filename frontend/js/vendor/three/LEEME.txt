@@ -1,0 +1,6 @@
+three-profe.js — three.js 0.186.1 (MIT, ver LICENSE-three.txt), reducido a lo que usa el profe 3D (ui/profe-3d.js).
+
+Cómo se generó (solo hace falta repetirlo para cambiar de versión o añadir clases):
+  npm install three@0.186.1 esbuild
+  (guardar entrada.js.txt como entrada.js: es la lista de clases que se exportan)
+  npx esbuild entrada.js --bundle --format=esm --minify --legal-comments=none --outfile=three-profe.js
