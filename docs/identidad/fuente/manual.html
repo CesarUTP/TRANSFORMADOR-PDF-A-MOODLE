@@ -12,7 +12,7 @@ body { font-family: 'Hanken Grotesk', system-ui, sans-serif; color: var(--tinta)
 .p { width: 297mm; height: 210mm; position: relative; overflow: hidden; break-after: page; page-break-after: always; padding: 20mm 22mm 18mm; background: #fff; counter-increment: pag; }
 .p.marino { background: var(--marino); color: #fff; }
 .p.gris { background: var(--fondo); }
-h1, h2, h3, .t { font-family: 'Outfit', sans-serif; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+h1, h2, h3, .t { font-family: 'Outfit', sans-serif; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
 h2 { font-size: 27pt; margin-bottom: 4mm; }
 h3 { font-size: 13pt; margin-bottom: 1.5mm; letter-spacing: -0.01em; }
 .ey { font-size: 8.5pt; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--azul); margin-bottom: 3mm; }
@@ -54,14 +54,14 @@ b.ok { color: #047d58; } b.no { color: #d31b44; }
 .mu-nombre { padding: 1.6mm 2.5mm 2.4mm; font-size: 8pt; font-weight: 700; }
 .grupo { margin-bottom: 7mm; } .grupo > .t { font-size: 11pt; margin-bottom: 3mm; }
 /* Logo en cajas */
-.caja { border: 1px solid var(--borde); border-radius: 14px; background: #fff; display: flex; align-items: center; justify-content: center; }
+.caja { padding: 3mm; border: 1px solid var(--borde); border-radius: 14px; background: #fff; display: flex; align-items: center; justify-content: center; }
 .nota { font-size: 8.8pt; color: var(--pizarra); line-height: 1.45; }
 .cruz { position: absolute; top: 3mm; right: 3mm; width: 7mm; height: 7mm; border-radius: 50%; background: #d31b44; color: #fff; font-weight: 800; font-size: 11pt; display: flex; align-items: center; justify-content: center; line-height: 1; }
 .btn { display: inline-block; padding: 3mm 6mm; border-radius: 14px; font-weight: 800; font-size: 10pt; } .b1 { background: var(--azul); color: #fff; } .b2 { background: #fff; border: 1px solid var(--borde); color: var(--tinta); } .b3 { color: var(--pizarra); }
 .tipo { display: inline-block; padding: 1.2mm 3.4mm; border-radius: 99px; font-size: 8.6pt; font-weight: 800; margin: 0 1.5mm 1.8mm 0; }
 .campo { border: 1px solid var(--borde); background: #fff; border-radius: 14px; padding: 3mm 4mm; font-size: 10pt; color: var(--pizarra); }
 .paso { display: inline-flex; align-items: center; gap: 2mm; font-weight: 700; font-size: 9.5pt; color: var(--pizarra); } .paso i { font-style: normal; display: inline-flex; width: 6.5mm; height: 6.5mm; border-radius: 50%; border: 1.5px solid var(--borde); align-items: center; justify-content: center; font-size: 8.5pt; } .paso.on { color: var(--azul); } .paso.on i { background: var(--azul); border-color: var(--azul); color: #fff; }
-.si, .no2 { border-radius: 12px; padding: 2.6mm 5mm; font-size: 10pt; margin-bottom: 2.2mm; } .si { background: #ecfdf5; border-left: 3px solid #047d58; } .no2 { background: #fff1f2; border-left: 3px solid #d31b44; }
+.si, .no2 { border-radius: 12px; padding: 2.6mm 5mm; font-size: 10pt; margin-bottom: 2.2mm; } .si { background: #ecfdf5; border: 1px solid #a7e3cd; } .no2 { background: #fff1f2; border: 1px solid #f5b3c1; }
 .si small, .no2 small { display: block; font-size: 7.5pt; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1mm; } .si small { color: #047d58; } .no2 small { color: #d31b44; }
 </style>
 </head>
@@ -108,7 +108,7 @@ b.ok { color: #047d58; } b.no { color: #d31b44; }
     </div>
     <div>
       <div class="card" style="margin-bottom:5mm;"><h3>El nombre</h3><p><i>Cátedra</i> viene del griego <i>kathedra</i>, «asiento»: el lugar desde donde se enseña. Es una palabra académica, cercana y fácil de decir en cualquier país de habla hispana. Hasta la versión 2.3 la aplicación se llamaba <i>Conversor a Moodle XML</i>; el cambio refleja que hoy hace mucho más que convertir.</p></div>
-      <div class="card"><h3>La promesa</h3><p style="font-family:'Outfit';font-weight:800;font-size:15pt;color:var(--tinta);line-height:1.25;">Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.</p><p style="margin-top:2mm;">Esta es la descripción oficial de la marca. Se usa completa en la cabecera de la aplicación, en la presentación del repositorio y en los textos de bienvenida.</p></div>
+      <div class="card"><h3>La promesa</h3><p style="font-family:'Outfit';font-weight:800;font-size:15pt;color:var(--tinta);line-height:1.3;">Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.</p><p style="margin-top:2mm;">Esta es la descripción oficial de la marca. Se usa completa en la cabecera de la aplicación, en la presentación del repositorio y en los textos de bienvenida.</p></div>
     </div>
   </div>
   <h3 style="margin-top:6mm;">Lo que hace</h3>
@@ -397,11 +397,11 @@ b.ok { color: #047d58; } b.no { color: #d31b44; }
       <li><b>En español, con tilde.</b> Sin anglicismos innecesarios. «Cátedra» siempre lleva tilde.</li></ul>
     </div>
     <div>
-      <div class="si"><small>Así sí</small>«Te damos la bienvenida a Cátedra.»</div>
-      <div class="si"><small>Así sí</small>«No se pudo leer esa imagen. Prueba con otra.»</div>
-      <div class="si"><small>Así sí</small>«Tu examen está listo.»</div>
-      <div class="no2"><small>Así no</small>«¡¡Increíble!! Nuestra revolucionaria IA convirtió tu examen por arte de magia.»</div>
-      <div class="no2"><small>Así no</small>«Error 422: unprocessable entity.»</div>
+      <div class="si"><small>✓ Así sí</small>«Te damos la bienvenida a Cátedra.»</div>
+      <div class="si"><small>✓ Así sí</small>«No se pudo leer esa imagen. Prueba con otra.»</div>
+      <div class="si"><small>✓ Así sí</small>«Tu examen está listo.»</div>
+      <div class="no2"><small>✕ Así no</small>«¡¡Increíble!! Nuestra revolucionaria IA convirtió tu examen por arte de magia.»</div>
+      <div class="no2"><small>✕ Así no</small>«Error 422: unprocessable entity.»</div>
     </div>
   </div>
   <h3 style="margin-top:4mm;">Vocabulario</h3>

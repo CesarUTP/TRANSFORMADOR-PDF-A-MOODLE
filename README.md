@@ -32,20 +32,52 @@
 <div align="center">
 
 ```mermaid
-flowchart LR
-    A["📄 PDF / TXT"] --> B["🔍 Extracción<br/>texto · color · tablas"]
-    B --> C["🤖 Gemini<br/>ordena la estructura"]
-    C --> D["🎯 Marcas resueltas<br/>en código"]
-    D --> E["✅ Validador"]
-    E --> F["✏️ Editor de revisión"]
-    F --> G["📦 Moodle XML"]
+flowchart TB
+    subgraph ENTRADA["1 · Entrada"]
+        A1["📄 PDF · Word · TXT<br/>(o un PDF escaneado)"]
+        A2["🗂️ Moodle XML<br/>que ya tienes"]
+    end
+    subgraph LECTURA["2 · Lectura en tu equipo"]
+        B["🔍 Extracción<br/>texto · color · tablas · imágenes"]
+        B2["🎯 Marcas resueltas en código<br/>color · subrayado · ✓ · X"]
+    end
+    subgraph IA["3 · Orden con IA"]
+        C["🤖 Gemini<br/>ordena la estructura<br/>sin inventar respuestas"]
+        C2["🧩 Modelo de preguntas<br/>con origen y confianza<br/>de cada respuesta"]
+    end
+    D["✅ Validador<br/>(el mismo del XML)"]
+    subgraph REV["4 · Revisión: tú decides"]
+        E["✏️ Editor lado a lado<br/>con la página original"]
+        E2["💡 Ayudas con IA<br/>solo si las aceptas"]
+    end
+    subgraph SALIDA["5 · Exportar"]
+        G["📦 Moodle XML"]
+        H["🖨️ PDF con su clave<br/>o folleto + hoja + clave"]
+        I["🗃️ Varias versiones<br/>un ZIP, un PDF por versión"]
+    end
+    J[("📚 Mis materias<br/>en tu equipo")]
 
-    style A fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
-    style C fill:#f3e5f5,stroke:#8e75b2,color:#4a148c
-    style D fill:#fff3e0,stroke:#f57c00,color:#e65100
-    style F fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
-    style G fill:#fff8e1,stroke:#f98012,color:#e65100
+    A1 --> B --> B2 --> C --> C2 --> D --> E
+    A2 -->|"sin IA"| C2
+    E <--> E2
+    E --> G
+    E --> H
+    E --> I
+    E <-->|"guardar · reabrir"| J
+
+    classDef entrada fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    classDef ia fill:#f3e5f5,stroke:#8e75b2,color:#4a148c
+    classDef codigo fill:#fff3e0,stroke:#f57c00,color:#e65100
+    classDef revision fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    classDef salida fill:#fff8e1,stroke:#f9a825,color:#7a4a00
+    class A1,A2 entrada
+    class C,C2,E2 ia
+    class B,B2,D codigo
+    class E revision
+    class G,H,I,J salida
 ```
+
+<sub>La IA solo interviene en el paso 3 (y en las ayudas opcionales del paso 4); todo lo demás —marcas, validación, XML, PDF, versiones— lo hace código propio. Un PDF escaneado no tiene texto que leer: se envía como imagen y todas sus respuestas quedan con confianza baja para que las verifiques contra el original.</sub>
 
 </div>
 
