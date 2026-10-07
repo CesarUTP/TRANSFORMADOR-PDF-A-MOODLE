@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Cátedra — Manual de identidad visual</title>
+<style>
+/*FUENTES*/
+@page { size: 297mm 210mm; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --marino:#1e3a5f; --ambar:#fbbf24; --celeste:#7dd3fc; --azul:#0369a1; --tinta:#0f172a; --pizarra:#475569; --fondo:#f1f5f9; --borde:#cbd5e1; }
+body { font-family: 'Hanken Grotesk', system-ui, sans-serif; color: var(--tinta); font-size: 10.5pt; line-height: 1.55; -webkit-print-color-adjust: exact; print-color-adjust: exact; counter-reset: pag; }
+.p { width: 297mm; height: 210mm; position: relative; overflow: hidden; break-after: page; page-break-after: always; padding: 20mm 22mm 18mm; background: #fff; counter-increment: pag; }
+.p.marino { background: var(--marino); color: #fff; }
+.p.gris { background: var(--fondo); }
+h1, h2, h3, .t { font-family: 'Outfit', sans-serif; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+h2 { font-size: 27pt; margin-bottom: 4mm; }
+h3 { font-size: 13pt; margin-bottom: 1.5mm; letter-spacing: -0.01em; }
+.ey { font-size: 8.5pt; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--azul); margin-bottom: 3mm; }
+.marino .ey { color: var(--celeste); }
+.lead { font-size: 13pt; line-height: 1.5; color: var(--pizarra); max-width: 170mm; }
+.marino .lead { color: #cbd5e1; }
+p + p { margin-top: 2.5mm; }
+.pie { position: absolute; left: 22mm; right: 22mm; bottom: 9mm; display: flex; justify-content: space-between; font-size: 8pt; color: #64748b; letter-spacing: 0.03em; }
+.pie .n::after { content: counter(pag); font-weight: 800; }
+.marino .pie { color: #94a3b8; }
+.dos { display: grid; grid-template-columns: 1fr 1fr; gap: 12mm; }
+.tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8mm; }
+.cuatro { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6mm; }
+.cinco { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5mm; }
+.tres > *, .cuatro > *, .cinco > *, .dos > * { min-width: 0; }
+.card { overflow: hidden; background: #fff; border: 1px solid var(--borde); border-radius: 14px; padding: 6mm; }
+.gris .card { background: #fff; }
+.card h3 { font-size: 12pt; }
+.card p { font-size: 9.5pt; color: var(--pizarra); }
+.num { font-family: 'JetBrains Mono', monospace; font-size: 9pt; }
+.lg { display: block; }
+svg.lg { width: 100%; height: 100%; }
+.mono { font-family: 'JetBrains Mono', monospace; font-size: 9pt; }
+.chip { display: inline-block; padding: 1mm 3.2mm; border-radius: 99px; font-size: 8.5pt; font-weight: 800; background: #e0f2fe; color: #075985; margin: 0 1.5mm 1.5mm 0; }
+ul.l { list-style: none; } ul.l li { padding-left: 5mm; position: relative; margin-bottom: 1.8mm; } ul.l li::before { content: ''; position: absolute; left: 0; top: 2.3mm; width: 2.2mm; height: 2.2mm; border-radius: 50%; background: var(--ambar); }
+.marino ul.l li::before { background: var(--ambar); }
+table { border-collapse: collapse; width: 100%; font-size: 9.5pt; } td, th { text-align: left; padding: 2.2mm 3mm; border-bottom: 1px solid var(--borde); vertical-align: middle; } th { font-size: 8pt; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pizarra); }
+td.num { font-family: 'JetBrains Mono', monospace; font-size: 9pt; white-space: nowrap; }
+.ej { display: inline-block; padding: 1mm 3.5mm; border-radius: 6px; font-family: 'Outfit'; font-weight: 800; font-size: 12pt; }
+b.ok { color: #047d58; } b.no { color: #d31b44; }
+/* Muestras de color */
+.mu { background: #fff; border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; }
+.mu-color { height: 22mm; padding: 3mm 4mm; display: flex; align-items: flex-end; font-size: 10pt; }
+.angosta .mu-datos { font-size: 6.4pt; } .angosta .mu-datos i { width: 8mm; } .angosta .mu-datos span { white-space: nowrap; } .angosta .mu-color { height: 17mm; }
+.mu-c .mu-color { height: 15mm; font-family: 'JetBrains Mono', monospace; font-size: 7.5pt; align-items: flex-end; padding: 2mm 2.5mm; }
+.mu-datos { display: flex; flex-direction: column; padding: 2.5mm 4mm 0; gap: 0.6mm; font-family: 'JetBrains Mono', monospace; font-size: 7.6pt; }
+.mu-datos i { font-style: normal; color: #64748b; display: inline-block; width: 11mm; }
+.mu p { padding: 1.5mm 4mm 3mm; font-size: 8.3pt; color: var(--pizarra); line-height: 1.4; }
+.mu-nombre { padding: 1.6mm 2.5mm 2.4mm; font-size: 8pt; font-weight: 700; }
+.grupo { margin-bottom: 7mm; } .grupo > .t { font-size: 11pt; margin-bottom: 3mm; }
+/* Logo en cajas */
+.caja { border: 1px solid var(--borde); border-radius: 14px; background: #fff; display: flex; align-items: center; justify-content: center; }
+.nota { font-size: 8.8pt; color: var(--pizarra); line-height: 1.45; }
+.cruz { position: absolute; top: 3mm; right: 3mm; width: 7mm; height: 7mm; border-radius: 50%; background: #d31b44; color: #fff; font-weight: 800; font-size: 11pt; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.btn { display: inline-block; padding: 3mm 6mm; border-radius: 14px; font-weight: 800; font-size: 10pt; } .b1 { background: var(--azul); color: #fff; } .b2 { background: #fff; border: 1px solid var(--borde); color: var(--tinta); } .b3 { color: var(--pizarra); }
+.tipo { display: inline-block; padding: 1.2mm 3.4mm; border-radius: 99px; font-size: 8.6pt; font-weight: 800; margin: 0 1.5mm 1.8mm 0; }
+.campo { border: 1px solid var(--borde); background: #fff; border-radius: 14px; padding: 3mm 4mm; font-size: 10pt; color: var(--pizarra); }
+.paso { display: inline-flex; align-items: center; gap: 2mm; font-weight: 700; font-size: 9.5pt; color: var(--pizarra); } .paso i { font-style: normal; display: inline-flex; width: 6.5mm; height: 6.5mm; border-radius: 50%; border: 1.5px solid var(--borde); align-items: center; justify-content: center; font-size: 8.5pt; } .paso.on { color: var(--azul); } .paso.on i { background: var(--azul); border-color: var(--azul); color: #fff; }
+.si, .no2 { border-radius: 12px; padding: 2.6mm 5mm; font-size: 10pt; margin-bottom: 2.2mm; } .si { background: #ecfdf5; border-left: 3px solid #047d58; } .no2 { background: #fff1f2; border-left: 3px solid #d31b44; }
+.si small, .no2 small { display: block; font-size: 7.5pt; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1mm; } .si small { color: #047d58; } .no2 small { color: #d31b44; }
+</style>
+</head>
+<body>
+<!--SIMBOLOS-->
+
+<!-- 1. PORTADA -->
+<section class="p marino" style="display:flex;flex-direction:column;justify-content:space-between;">
+  <div style="display:flex;align-items:center;gap:7mm;"><div style="width:30mm;height:30mm;"><svg class="lg"><use href="#logo-principal"/></svg></div>
+    <div><div class="t" style="font-size:38pt;">Cátedra</div><div style="font-size:12pt;color:#cbd5e1;max-width:120mm;">Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.</div></div></div>
+  <div><div class="ey">Manual de identidad visual</div><h1 style="font-size:50pt;max-width:200mm;">Una marca sobria, cercana y hecha para enseñar.</h1></div>
+  <div style="display:flex;justify-content:space-between;font-size:9pt;color:#94a3b8;"><span>Versión 1.0 · octubre de 2026 · para Cátedra 2.6</span><span>Desarrollada por los ingenieros César González y Vicente Urriola</span></div>
+</section>
+
+<!-- 2. CONTENIDO -->
+<section class="p">
+  <div class="ey">Contenido</div><h2>Qué encontrarás aquí</h2>
+  <div class="dos" style="margin-top:8mm;">
+    <div>
+      <table><tr><td class="num">01</td><td><b>La marca</b> · qué es Cátedra, esencia y personalidad</td><td class="num">3</td></tr>
+      <tr><td class="num">02</td><td><b>El símbolo</b> · concepto y construcción</td><td class="num">6</td></tr>
+      <tr><td class="num">03</td><td><b>Uso del logo</b> · espacio, tamaño, versiones y errores</td><td class="num">8</td></tr>
+      <tr><td class="num">04</td><td><b>Color</b> · paleta, proporciones y contraste</td><td class="num">11</td></tr></table>
+    </div>
+    <div>
+      <table><tr><td class="num">05</td><td><b>Tipografía</b> · familias y jerarquía</td><td class="num">14</td></tr>
+      <tr><td class="num">06</td><td><b>La interfaz</b> · formas, componentes y el robot ayudante</td><td class="num">16</td></tr>
+      <tr><td class="num">07</td><td><b>Voz y tono</b> · cómo habla Cátedra</td><td class="num">18</td></tr>
+      <tr><td class="num">08</td><td><b>Aplicaciones y uso legal</b> · dónde vive la marca</td><td class="num">19</td></tr></table>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14mm;max-width:190mm;"><h3>Cómo usar este manual</h3><p>Es la referencia de quien diseña, escribe o publica algo de Cátedra: la aplicación, su sitio en GitHub, un documento o una presentación. Los archivos del logo están en la carpeta <span class="mono">assets/marca/</span> del repositorio y este documento se regenera con <span class="mono">dev/generar_manual_identidad.py</span>, de modo que los colores y las medidas de aquí son las que usa el código.</p></div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 3. QUÉ ES CÁTEDRA -->
+<section class="p">
+  <div class="ey">01 · La marca</div><h2>Qué es Cátedra</h2>
+  <div class="dos">
+    <div>
+      <p class="lead" style="margin-bottom:5mm;">Una aplicación de escritorio para docentes que lleva sus evaluaciones de punta a punta: las lee desde el documento que ya tienen, las prepara para Moodle y las lleva al papel.</p>
+      <p>Cátedra convierte exámenes en PDF, Word o TXT a <b>Moodle XML</b>, los revisa contra el original, los exporta en <b>PDF imprimible con su clave</b>, saca <b>varias versiones</b> de un mismo examen y los ordena por <b>materia</b>. La inteligencia artificial ayuda a ordenar las preguntas, pero <b>nunca decide sola</b>: todo queda a la vista y editable.</p>
+      <p>Funciona en Windows y macOS, en el propio equipo del docente, sin cuenta y sin cookies.</p>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:5mm;"><h3>El nombre</h3><p><i>Cátedra</i> viene del griego <i>kathedra</i>, «asiento»: el lugar desde donde se enseña. Es una palabra académica, cercana y fácil de decir en cualquier país de habla hispana. Hasta la versión 2.3 la aplicación se llamaba <i>Conversor a Moodle XML</i>; el cambio refleja que hoy hace mucho más que convertir.</p></div>
+      <div class="card"><h3>La promesa</h3><p style="font-family:'Outfit';font-weight:800;font-size:15pt;color:var(--tinta);line-height:1.25;">Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.</p><p style="margin-top:2mm;">Esta es la descripción oficial de la marca. Se usa completa en la cabecera de la aplicación, en la presentación del repositorio y en los textos de bienvenida.</p></div>
+    </div>
+  </div>
+  <h3 style="margin-top:6mm;">Lo que hace</h3>
+  <div class="cuatro" style="margin-top:2mm;">
+    <div class="card"><h3>Convierte</h3><p>Exámenes en PDF, Word o TXT a Moodle XML listo para importar.</p></div>
+    <div class="card"><h3>Revisa</h3><p>Cada pregunta junto a su página original, con el origen de la respuesta.</p></div>
+    <div class="card"><h3>Lleva al papel</h3><p>PDF con tu encabezado y su clave, y varias versiones de un examen.</p></div>
+    <div class="card"><h3>Ordena</h3><p>Una biblioteca por materia y tus datos guardados una sola vez.</p></div>
+  </div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 4. ESENCIA -->
+<section class="p gris">
+  <div class="ey">01 · La marca</div><h2>Esencia: lo que Cátedra defiende</h2>
+  <p class="lead" style="margin-bottom:7mm;">Propósito: que el docente dedique su tiempo a enseñar y no a transcribir exámenes, sin perder nunca el control de lo que entrega.</p>
+  <div class="cinco" style="grid-template-columns:repeat(5,1fr);">
+    <div class="card"><h3>Fiel al documento</h3><p>Nunca inventa preguntas ni respuestas. La clave o la marca del examen manda; sin marca, no se inventa.</p></div>
+    <div class="card"><h3>El docente decide</h3><p>Todo lo que hace la IA se ve y se puede editar. Solo se aplica si el docente lo acepta.</p></div>
+    <div class="card"><h3>Privada y local</h3><p>Los exámenes viven en el equipo del docente: sin cuenta, sin cookies, sin analítica.</p></div>
+    <div class="card"><h3>Clara para todos</h3><p>Sin tecnicismos. Un asistente propone recorridos guiados para quien no sabe por dónde empezar.</p></div>
+    <div class="card"><h3>De punta a punta</h3><p>Convierte, revisa, exporta, imprime y ordena: todo el ciclo de una evaluación en un solo lugar.</p></div>
+  </div>
+  <div class="card" style="margin-top:8mm;"><h3>De dónde salen estos valores</h3><p>No son un eslogan: son las reglas con que se construyó la aplicación. Cada valor tiene una consecuencia concreta en el producto, y la identidad visual debe transmitirlo: sobriedad (rigor), claridad (cercanía) y ausencia de efectos llamativos (confianza).</p></div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 5. PERSONALIDAD -->
+<section class="p">
+  <div class="ey">01 · La marca</div><h2>Personalidad y público</h2>
+  <div class="dos">
+    <div>
+      <h3>A quién le hablamos</h3>
+      <p>A docentes universitarios, con o sin conocimientos técnicos. Tienen exámenes ya escritos, poco tiempo y mucha responsabilidad sobre lo que evalúan. No quieren aprender una herramienta: quieren terminar su trabajo.</p>
+      <h3 style="margin-top:7mm;">Cómo es Cátedra</h3>
+      <div><span class="chip">Académica</span><span class="chip">Cercana</span><span class="chip">Sobria</span><span class="chip">Confiable</span><span class="chip">Cuidadosa</span><span class="chip">Clara</span></div>
+      <p style="margin-top:3mm;">Es el colega ordenado que ayuda sin hacer ruido: sabe de exámenes, explica sin condescender y no presume de nada.</p>
+    </div>
+    <div>
+      <h3>Lo que Cátedra no es</h3>
+      <ul class="l"><li><b>Infantil.</b> Es una herramienta para docentes universitarios: nada de colores estridentes ni mascotas caricaturescas.</li>
+      <li><b>Tecnicista.</b> No habla de «parseo», «payload» ni «endpoints»: habla de preguntas, respuestas y exámenes.</li>
+      <li><b>Mágica.</b> La IA es una ayuda, no un juez. Nunca se vende como un truco que lo resuelve todo.</li>
+      <li><b>Ostentosa.</b> Sin degradados de moda, sin brillos ni efectos: la información va primero.</li>
+      <li><b>Ajena a Moodle, pero independiente.</b> Trabaja con Moodle, pero no es de Moodle ni lo pretende.</li></ul>
+    </div>
+  </div>
+  <h3 style="margin-top:9mm;">Principios que guían el diseño</h3>
+  <div class="tres" style="margin-top:3mm;">
+    <div class="card"><h3>La información va primero</h3><p>Una pantalla de trabajo, no un anuncio: poco adorno, jerarquía clara y colores con un significado.</p></div>
+    <div class="card"><h3>Nada se decide a espaldas del docente</h3><p>Lo que propone la IA se marca, se explica y se puede deshacer.</p></div>
+    <div class="card"><h3>Fácil para quien empieza</h3><p>Textos sencillos, pasos numerados y un recorrido guiado por cada pantalla importante.</p></div>
+  </div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 6. EL SÍMBOLO -->
+<section class="p marino">
+  <div class="ey">02 · El símbolo</div><h2>Una C que guarda la evaluación</h2>
+  <div style="display:grid;grid-template-columns:85mm 1fr;gap:16mm;align-items:center;margin-top:4mm;">
+    <div style="width:85mm;height:85mm;"><svg class="lg"><use href="#logo-principal"/></svg></div>
+    <div>
+      <p class="lead" style="margin-bottom:5mm;">La inicial de Cátedra, abierta hacia la derecha como una página que se abre, contiene el texto de un examen.</p>
+      <ul class="l"><li><b>La C ámbar</b> es la marca: la inicial del nombre, redondeada y de trazo grueso para que se reconozca incluso muy pequeña.</li>
+      <li><b>Los tres renglones</b> son el texto de un examen que ya existe: es lo que Cátedra recibe, respeta y ordena.</li>
+      <li><b>Las tres viñetas</b> son las preguntas y sus opciones. Una es blanca, como la respuesta que el docente decide.</li>
+      <li><b>El azul marino</b> aporta seriedad académica; el ámbar, calidez.</li></ul>
+    </div>
+  </div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 7. CONSTRUCCIÓN -->
+<section class="p">
+  <div class="ey">02 · El símbolo</div><h2>Construcción</h2>
+  <div style="display:grid;grid-template-columns:100mm 1fr;gap:14mm;align-items:start;">
+    <div class="caja" style="width:100mm;height:100mm;padding:5mm;">
+      <svg viewBox="0 0 100 100" style="width:100%;height:100%;overflow:visible;"><defs><pattern id="cuad" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0 H0 V10" fill="none" stroke="#e2e8f0" stroke-width="0.4"/></pattern></defs>
+        <rect width="100" height="100" fill="url(#cuad)"/><use href="#logo-principal" width="100" height="100" opacity="0.92"/>
+        <circle cx="50" cy="50" r="29" fill="none" stroke="#38bdf8" stroke-width="0.5" stroke-dasharray="1.6 1.6"/>
+        <path d="M50 50 L70.5 29.5 M50 50 L70.5 70.5" stroke="#f43f5e" stroke-width="0.6"/><path d="M50 50 H21" stroke="#38bdf8" stroke-width="0.6"/>
+        <circle cx="50" cy="50" r="1.1" fill="#f43f5e"/><path d="M41 38 V62" stroke="#f43f5e" stroke-width="0.4" stroke-dasharray="1 1"/><path d="M48 38 V62" stroke="#f43f5e" stroke-width="0.4" stroke-dasharray="1 1"/>
+      </svg>
+    </div>
+    <div>
+      <p class="lead" style="margin-bottom:5mm;">Todo se mide sobre un lienzo cuadrado de 100 unidades. Con estas medidas el símbolo se redibuja sin pérdida.</p>
+      <table>
+        <tr><th>Elemento</th><th>Medida (unidades)</th></tr>
+        <tr><td>Fondo</td><td class="num">100 × 100 · esquinas redondeadas r 22</td></tr>
+        <tr><td>La C</td><td class="num">radio 29 · trazo 11 · extremos redondos</td></tr>
+        <tr><td>Abertura de la C</td><td class="num">90° hacia la derecha (±45°)</td></tr>
+        <tr><td>Centro de la C</td><td class="num">50, 50</td></tr>
+        <tr><td>Viñetas</td><td class="num">radio 2,7 · x 41 · y 41, 50 y 59</td></tr>
+        <tr><td>Renglones</td><td class="num">trazo 4,5 · desde x 48 hasta 64, 67 y 60</td></tr>
+      </table>
+      <p class="nota" style="margin-top:4mm;">En tamaños de 48 px o menos (íconos de la aplicación) las viñetas pasan a radio 3,4 y los renglones a trazo 5,6 para que no se pierdan. Es la única variación de medidas permitida.</p>
+    </div>
+  </div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 8. ÁREA DE SEGURIDAD Y TAMAÑO MÍNIMO -->
+<section class="p gris">
+  <div class="ey">03 · Uso del logo</div><h2>Espacio libre y tamaño mínimo</h2>
+  <div class="dos">
+    <div>
+      <h3>Área de seguridad</h3>
+      <p class="nota" style="margin-bottom:4mm;">Alrededor del símbolo se deja siempre un espacio libre igual a <b>X = ¼ del ancho del símbolo</b>. Ningún texto, borde o imagen entra en esa zona.</p>
+      <div class="caja" style="width:92mm;height:92mm;position:relative;"><div style="position:absolute;inset:0;border:1.5px dashed #0369a1;border-radius:14px;"></div>
+        <div style="width:46mm;height:46mm;"><svg class="lg"><use href="#logo-principal"/></svg></div>
+        <span class="mono" style="position:absolute;left:2.5mm;top:50%;color:#0369a1;">X</span><span class="mono" style="position:absolute;right:2.5mm;top:50%;color:#0369a1;">X</span><span class="mono" style="position:absolute;left:50%;top:2mm;color:#0369a1;">X</span><span class="mono" style="position:absolute;left:50%;bottom:2mm;color:#0369a1;">X</span></div>
+    </div>
+    <div>
+      <h3>Tamaño mínimo</h3>
+      <p class="nota" style="margin-bottom:4mm;">Por debajo de estas medidas el símbolo deja de leerse. En pantallas pequeñas se usa la versión de 48 px o menos (viñetas y renglones algo más gruesos).</p>
+      <div class="card" style="display:flex;align-items:flex-end;gap:7mm;padding:7mm;">
+        <div style="text-align:center;"><div style="width:16px;height:16px;margin:0 auto 2mm;"><svg class="lg"><use href="#logo-principal"/></svg></div><span class="mono">16 px</span></div>
+        <div style="text-align:center;"><div style="width:24px;height:24px;margin:0 auto 2mm;"><svg class="lg"><use href="#logo-principal"/></svg></div><span class="mono">24 px</span></div>
+        <div style="text-align:center;"><div style="width:32px;height:32px;margin:0 auto 2mm;"><svg class="lg"><use href="#logo-principal"/></svg></div><span class="mono">32 px</span></div>
+        <div style="text-align:center;"><div style="width:48px;height:48px;margin:0 auto 2mm;"><svg class="lg"><use href="#logo-principal"/></svg></div><span class="mono">48 px</span></div>
+        <div style="text-align:center;"><div style="width:10mm;height:10mm;margin:0 auto 2mm;"><svg class="lg"><use href="#logo-principal"/></svg></div><span class="mono">10 mm</span></div>
+      </div>
+      <ul class="l" style="margin-top:6mm;"><li><b>Pantalla:</b> mínimo 16 px de ancho.</li><li><b>Impresión:</b> mínimo 10 mm de ancho.</li><li><b>Íconos de la aplicación:</b> se entregan en 16, 24, 32, 48, 64, 128 y 256 px (Windows) y hasta 1024 px (macOS).</li></ul>
+    </div>
+  </div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 9. VERSIONES -->
+<section class="p">
+  <div class="ey">03 · Uso del logo</div><h2>Versiones del símbolo</h2>
+  <div class="cinco">
+    <div><div class="caja" style="height:42mm;padding:5mm;"><div style="width:100%;height:100%;"><svg class="lg"><use href="#logo-principal"/></svg></div></div><h3 style="margin-top:3mm;">Principal</h3><p class="nota">La versión de uso general. Íconos, instaladores y cabecera.</p></div>
+    <div><div class="caja" style="height:42mm;padding:5mm;background:#fff;"><div style="width:100%;height:100%;"><svg class="lg"><use href="#logo-claro"/></svg></div></div><h3 style="margin-top:3mm;">Clara</h3><p class="nota">Para documentos y fondos blancos donde el azul marino pesaría demasiado.</p></div>
+    <div><div class="caja" style="height:42mm;padding:5mm;"><div style="width:100%;height:100%;"><svg class="lg"><use href="#logo-monocromo"/></svg></div></div><h3 style="margin-top:3mm;">Monocromo</h3><p class="nota">Una sola tinta (blanca) sobre el azul marino: impresión en un color o grabado.</p></div>
+    <div><div class="caja" style="height:42mm;padding:5mm;background:#0369a1;border-color:#0369a1;"><div style="width:100%;height:100%;"><svg class="lg"><use href="#logo-glifo-blanco"/></svg></div></div><h3 style="margin-top:3mm;">Glifo blanco</h3><p class="nota">Sin fondo, sobre colores oscuros o fotografías sin ruido.</p></div>
+    <div><div class="caja" style="height:42mm;padding:5mm;"><div style="width:100%;height:100%;"><svg class="lg"><use href="#logo-glifo-azul"/></svg></div></div><h3 style="margin-top:3mm;">Glifo azul</h3><p class="nota">Sin fondo, sobre blanco o claros, en una sola tinta azul marino.</p></div>
+  </div>
+  <h3 style="margin-top:10mm;">Con el nombre</h3>
+  <div class="dos" style="margin-top:3mm;">
+    <div class="caja" style="height:30mm;gap:5mm;justify-content:flex-start;padding-left:9mm;"><div style="width:18mm;height:18mm;"><svg class="lg"><use href="#logo-principal"/></svg></div><div><div class="t" style="font-size:25pt;color:var(--marino);">Cátedra</div></div></div>
+    <div class="caja" style="height:30mm;gap:5mm;justify-content:flex-start;padding-left:9mm;background:var(--marino);border-color:var(--marino);"><div style="width:18mm;height:18mm;"><svg class="lg"><use href="#logo-principal"/></svg></div><div><div class="t" style="font-size:25pt;color:#fff;">Cátedra</div></div></div>
+  </div>
+  <p class="nota" style="margin-top:3mm;">El nombre se escribe en Outfit ExtraBold (800), siempre con tilde y en minúsculas salvo la inicial. Sobre claro va en azul marino; sobre oscuro, en blanco. Separación entre símbolo y nombre: ⅓ del ancho del símbolo.</p>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 10. USOS INCORRECTOS -->
+<section class="p gris">
+  <div class="ey">03 · Uso del logo</div><h2>Lo que no se hace</h2>
+  <div class="tres" style="gap:6mm 8mm;">
+    <div><div class="caja" style="height:36mm;position:relative;"><div style="width:22mm;height:22mm;transform:scale(1.7,0.8);"><svg class="lg"><use href="#logo-principal"/></svg></div><span class="cruz">✕</span></div><p class="nota" style="margin-top:2mm;"><b>No lo deformes.</b> Siempre en proporción 1 : 1.</p></div>
+    <div><div class="caja" style="height:36mm;position:relative;"><div style="width:22mm;height:22mm;transform:rotate(-18deg);"><svg class="lg"><use href="#logo-principal"/></svg></div><span class="cruz">✕</span></div><p class="nota" style="margin-top:2mm;"><b>No lo gires ni lo inclines.</b></p></div>
+    <div><div class="caja" style="height:36mm;position:relative;"><div style="width:22mm;height:22mm;filter:hue-rotate(150deg) saturate(1.5);"><svg class="lg"><use href="#logo-principal"/></svg></div><span class="cruz">✕</span></div><p class="nota" style="margin-top:2mm;"><b>No cambies los colores.</b> Solo las versiones de la página anterior.</p></div>
+    <div><div class="caja" style="height:36mm;position:relative;"><div style="width:22mm;height:22mm;filter:drop-shadow(1.5mm 2mm 1.2mm rgba(0,0,0,.55));"><svg class="lg"><use href="#logo-principal"/></svg></div><span class="cruz">✕</span></div><p class="nota" style="margin-top:2mm;"><b>Sin sombras, brillos ni degradados.</b> La marca es plana.</p></div>
+    <div><div class="caja" style="height:36mm;position:relative;background:repeating-linear-gradient(45deg,#fbbf24 0 4mm,#38bdf8 4mm 8mm,#f43f5e 8mm 12mm);border:0;"><div style="width:22mm;height:22mm;"><svg class="lg"><use href="#logo-principal"/></svg></div><span class="cruz">✕</span></div><p class="nota" style="margin-top:2mm;"><b>No lo pongas sobre fondos con ruido</b> o que le quiten contraste.</p></div>
+    <div><div class="caja" style="height:36mm;position:relative;"><div style="width:22mm;height:22mm;"><svg class="lg"><use href="#logo-incompleto"/></svg></div><span class="cruz">✕</span></div><p class="nota" style="margin-top:2mm;"><b>No quites ni reordenes elementos.</b> El símbolo va completo.</p></div>
+  </div>
+  <div class="card" style="margin-top:8mm;"><h3>Un recordatorio sobre Moodle</h3><p>El símbolo de Cátedra no incorpora el logotipo ni el nombre de Moodle, ni imita su estilo. «Moodle» se menciona solo de forma descriptiva (por ejemplo, «Moodle XML»), nunca como parte del nombre de Cátedra.</p></div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 11. COLOR: MARCA -->
+<section class="p">
+  <div class="ey">04 · Color</div><h2>Los colores de la marca</h2>
+  <p class="lead" style="margin-bottom:6mm;">Cuatro colores forman el símbolo. Son pocos a propósito: el azul marino da seriedad; el ámbar y el celeste, calidez y claridad.</p>
+  <div class="cuatro"><!--PALETA_MARCA--></div>
+  <h3 style="margin-top:8mm;">Proporción orientativa</h3>
+  <div style="display:flex;height:11mm;border-radius:10px;overflow:hidden;border:1px solid var(--borde);margin-top:2mm;">
+    <div style="flex:60;background:#f1f5f9;display:flex;align-items:center;padding-left:4mm;font-size:8.5pt;font-weight:700;">60 % neutros: blanco y fondo claro</div>
+    <div style="flex:25;background:#1e3a5f;color:#fff;display:flex;align-items:center;padding-left:4mm;font-size:8.5pt;font-weight:700;">25 % azul marino y azul</div>
+    <div style="flex:10;background:#7dd3fc;display:flex;align-items:center;padding-left:3mm;font-size:8pt;font-weight:700;">10 % celeste</div>
+    <div style="flex:5;background:#fbbf24;"></div>
+  </div>
+  <p class="nota" style="margin-top:2mm;">El ámbar es un acento: aparece en pequeñas dosis (la C del símbolo, un detalle, una cifra importante). Sobre fondo claro no se usa para texto.</p>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 12. COLOR: INTERFAZ -->
+<section class="p gris">
+  <div class="ey">04 · Color</div><h2>Los colores de la interfaz</h2>
+  <div class="grupo"><div class="t">Base de la aplicación (modo claro, el predeterminado)</div><div class="cinco angosta" style="grid-template-columns:repeat(7,1fr);gap:4mm;"><!--PALETA_INTERFAZ--></div></div>
+  <div class="dos" style="gap:10mm;">
+    <div class="grupo"><div class="t">Estados</div><div class="tres angosta" style="gap:3mm;"><!--PALETA_ESTADOS--></div></div>
+    <div class="grupo"><div class="t">Tipos de pregunta</div><div class="cuatro" style="grid-template-columns:repeat(4,1fr);gap:3mm;"><!--PALETA_TIPOS--></div><p class="nota" style="margin-top:2mm;">Cada tipo de pregunta conserva siempre su color, en la lista, el editor y los resúmenes.</p></div>
+  </div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 13. CONTRASTE -->
+<section class="p">
+  <div class="ey">04 · Color</div><h2>Contraste y accesibilidad</h2>
+  <div style="display:grid;grid-template-columns:1fr 85mm;gap:14mm;">
+    <div><p class="lead" style="margin-bottom:5mm;">El texto debe leerse bien para todas las personas. Estos son los contrastes de las combinaciones principales, calculados con la fórmula de las pautas WCAG 2.</p>
+      <table><tr><th></th><th>Combinación</th><th>Contraste</th><th>Nivel</th></tr><!--CONTRASTES--></table></div>
+    <div class="card"><h3>Reglas</h3><ul class="l" style="font-size:9.5pt;"><li>Texto normal: contraste de <b>4,5 : 1</b> como mínimo (nivel AA).</li><li>Texto grande (desde 18 pt o 14 pt en negrita): mínimo <b>3 : 1</b>.</li><li>El ámbar <b>no</b> se usa para texto sobre blanco: es un color de acento y de símbolo.</li><li>El color nunca es la única forma de transmitir algo: los estados llevan también un texto o un ícono.</li><li>La aplicación se abre siempre en modo claro y ofrece un modo oscuro con los mismos colores de marca.</li></ul></div>
+  </div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 14. TIPOGRAFÍA -->
+<section class="p gris">
+  <div class="ey">05 · Tipografía</div><h2>Tres familias, cada una con su trabajo</h2>
+  <div class="tres">
+    <div class="card"><div style="font-family:'Outfit';font-weight:800;font-size:60pt;line-height:1;color:var(--marino);">Aa</div><h3 style="margin-top:3mm;">Outfit</h3><p><b>Títulos, nombre de la marca y cifras.</b> Pesos 700 y 800. Geométrica y amable, de trazo firme.</p><p style="font-family:'Outfit';font-weight:800;font-size:13pt;color:var(--tinta);margin-top:3mm;line-height:1.2;">ABCDEFGHIJKLM<br>NÑOPQRSTUVWXYZ<br>abcdefghijklm<br>nñopqrstuvwxyz<br>ÁÉÍÓÚÜ ¿?¡! 0123456789</p></div>
+    <div class="card"><div style="font-family:'Hanken Grotesk';font-weight:600;font-size:60pt;line-height:1;color:var(--marino);">Aa</div><h3 style="margin-top:3mm;">Hanken Grotesk</h3><p><b>Texto corrido, botones y formularios.</b> Pesos 500, 700 y 800. Legible en tamaños pequeños.</p><p style="font-family:'Hanken Grotesk';font-weight:600;font-size:13pt;color:var(--tinta);margin-top:3mm;line-height:1.2;">ABCDEFGHIJKLM<br>NÑOPQRSTUVWXYZ<br>abcdefghijklm<br>nñopqrstuvwxyz<br>ÁÉÍÓÚÜ ¿?¡! 0123456789</p></div>
+    <div class="card"><div style="font-family:'JetBrains Mono';font-weight:500;font-size:54pt;line-height:1;color:var(--marino);">Aa</div><h3 style="margin-top:3mm;">JetBrains Mono</h3><p><b>Código, nombres de archivo y datos técnicos.</b> Peso 500. De uso limitado.</p><p style="font-family:'JetBrains Mono';font-weight:500;font-size:10.5pt;color:var(--tinta);margin-top:3mm;line-height:1.35;">ABCDEFGHIJKLM<br>abcdefghijklm<br>0123456789 {}</p></div>
+  </div>
+  <div class="card" style="margin-top:7mm;"><p>Las tres familias son libres (licencia <b>SIL OFL 1.1</b>) y viajan dentro de la aplicación, así que se ven igual sin conexión. Si no están disponibles, se usan las del sistema (<span class="mono">system-ui</span>), nunca una fuente decorativa.</p></div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 15. JERARQUÍA -->
+<section class="p">
+  <div class="ey">05 · Tipografía</div><h2>Jerarquía</h2>
+  <div class="dos" style="grid-template-columns:1fr 95mm;">
+    <div>
+      <table>
+        <tr><th>Nivel</th><th>Ejemplo</th><th>Familia · peso · tamaño</th></tr>
+        <tr><td>Titular</td><td style="font-family:'Outfit';font-weight:800;font-size:19pt;letter-spacing:-.3px;">Tu examen está listo</td><td class="num">Outfit 800 · 22 px</td></tr>
+        <tr><td>Título</td><td style="font-family:'Outfit';font-weight:800;font-size:15pt;">Versiones del examen</td><td class="num">Outfit 800 · 19 px</td></tr>
+        <tr><td>Destacado</td><td style="font-weight:700;font-size:12pt;">Elige cuántas versiones quieres</td><td class="num">Hanken 700 · 16 px</td></tr>
+        <tr><td>Texto</td><td style="font-weight:500;font-size:10.5pt;">Sortea preguntas de este examen para armar varios parciales.</td><td class="num">Hanken 500 · 14 px</td></tr>
+        <tr><td>Auxiliar</td><td style="font-weight:500;font-size:9.5pt;color:var(--pizarra);">Se guardan solo en este equipo.</td><td class="num">Hanken 500 · 12,5 px</td></tr>
+        <tr><td>Etiqueta</td><td style="font-weight:800;font-size:8.6pt;letter-spacing:.4px;text-transform:uppercase;color:var(--pizarra);">Categoría Moodle</td><td class="num">Hanken 800 · 11,5 px · MAYÚS</td></tr>
+        <tr><td>Código</td><td class="mono">Catedra_Setup.exe</td><td class="num">JetBrains Mono 500 · 13 px</td></tr>
+      </table>
+    </div>
+    <div class="card"><h3>Criterios</h3><ul class="l" style="font-size:9.5pt;"><li>Interlineado del texto: <b>1,6</b>. De los títulos: 1,2.</li><li>Los títulos llevan un ligero espaciado negativo (−0,3 a −0,5 px).</li><li>Solo las etiquetas van en mayúsculas, con espaciado positivo.</li><li>Alineación a la izquierda. No se justifica el texto en pantalla.</li><li>Nada de texto con degradado ni con contorno.</li><li>El nombre se escribe <b>Cátedra</b>, siempre con tilde (en nombres de archivo, <span class="mono">Catedra</span>).</li></ul></div>
+  </div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 16. LA INTERFAZ -->
+<section class="p gris">
+  <div class="ey">06 · La interfaz</div><h2>Formas, espacio y componentes</h2>
+  <div class="dos" style="grid-template-columns:1.2fr 1fr;">
+    <div>
+      <div class="card" style="margin-bottom:5mm;"><h3>Componentes</h3>
+        <div style="margin:3mm 0;"><span class="btn b1">Exportar PDF</span> &nbsp; <span class="btn b2">Volver a la revisión</span> &nbsp; <span class="btn b3">Cancelar</span></div>
+        <div class="campo" style="margin:3mm 0;max-width:110mm;">ej: Parcial 1</div>
+        <div><span class="tipo" style="background:rgba(2,132,199,.12);color:#0270a9;">Opción múltiple</span><span class="tipo" style="background:rgba(5,150,105,.12);color:#047854;">Verdadero/Falso</span><span class="tipo" style="background:rgba(217,119,6,.12);color:#a25904;">Emparejamiento</span><span class="tipo" style="background:rgba(109,40,217,.12);color:#6d28d9;">Completar</span><span class="tipo" style="background:rgba(190,24,93,.12);color:#be185d;">Ensayo</span><span class="tipo" style="background:rgba(15,118,110,.12);color:#0f766e;">Respuesta corta</span><span class="tipo" style="background:rgba(194,65,12,.12);color:#c2410c;">Numérica</span></div>
+        <div style="margin-top:3mm;"><span class="paso on"><i>1</i> Cargar y configurar</span> &nbsp;—&nbsp; <span class="paso"><i>2</i> Revisar preguntas</span> &nbsp;—&nbsp; <span class="paso"><i>3</i> Exportar</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:5mm;"><h3>Esquinas</h3><div style="display:flex;gap:4mm;align-items:flex-end;margin-top:2mm;"><div style="width:14mm;height:14mm;border:2px solid var(--azul);border-radius:8px;"></div><div style="width:14mm;height:14mm;border:2px solid var(--azul);border-radius:14px;"></div><div style="width:14mm;height:14mm;border:2px solid var(--azul);border-radius:20px;"></div><div style="width:14mm;height:14mm;border:2px solid var(--azul);border-radius:28px;"></div></div><p class="mono" style="margin-top:2mm;">8 · 14 · 20 · 28 px</p><p class="nota">8: detalles · 14: botones y campos · 20: tarjetas · 28: ventanas</p></div>
+      <div class="card"><h3>Espacio</h3><div style="display:flex;gap:3mm;align-items:flex-end;margin-top:2mm;"><div style="width:6px;height:6px;background:var(--azul);"></div><div style="width:10px;height:10px;background:var(--azul);"></div><div style="width:16px;height:16px;background:var(--azul);"></div><div style="width:24px;height:24px;background:var(--azul);"></div><div style="width:32px;height:32px;background:var(--azul);"></div></div><p class="mono" style="margin-top:2mm;">6 · 10 · 16 · 24 · 32 px</p></div>
+    </div>
+  </div>
+  <div class="tres" style="margin-top:6mm;">
+    <div class="card"><h3>Plana</h3><p>Fondos lisos. Sin degradados ni halos de color. Las sombras, cuando hay, son neutras y muy suaves.</p></div>
+    <div class="card"><h3>Un solo acento</h3><p>El azul de la acción principal. El ámbar queda para el símbolo y los detalles de marca.</p></div>
+    <div class="card"><h3>Claridad primero</h3><p>Es una herramienta de trabajo: la jerarquía y la previsibilidad pesan más que la expresión.</p></div>
+  </div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 17. EL ROBOT AYUDANTE -->
+<section class="p">
+  <div class="ey">06 · La interfaz</div><h2>El robot ayudante</h2>
+  <div style="display:grid;grid-template-columns:80mm 1fr;gap:14mm;align-items:center;">
+    <div style="width:80mm;height:80mm;"><svg class="lg"><use href="#robot"/></svg></div>
+    <div>
+      <p class="lead" style="margin-bottom:5mm;">Un robot redondo y amable que vive en la esquina inferior izquierda de la aplicación y ofrece un recorrido guiado de la pantalla en la que estás.</p>
+      <div class="dos" style="gap:8mm;">
+        <div><h3>Cómo es</h3><ul class="l" style="font-size:9.5pt;"><li>Cabeza esférica blanca con un visor azul marino.</li><li>Ojos felices en arco celeste y mejillas ámbar.</li><li>Antena con una bolita ámbar.</li><li>Cuerpo ovalado con una placa ámbar; el brazo derecho saluda.</li><li>Se arma en 3D con código: no usa ninguna imagen ni modelo.</li></ul></div>
+        <div><h3>Cómo se comporta</h3><ul class="l" style="font-size:9.5pt;"><li>Respira y parpadea.</li><li>Sigue el cursor con la mirada.</li><li>Saluda con la mano para que se note.</li><li>Dice: «¿No sabes por dónde empezar? ¡Déjame ayudarte!».</li><li>Con «reducir movimiento», se queda quieto.</li></ul></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:8mm;"><h3>Reglas</h3><p>Es un ayudante de la interfaz, <b>no es el logo</b>: no sustituye al símbolo ni aparece en documentos o instaladores. Se mantiene simple (un color por pieza, la paleta de la marca) y <b>no se le añaden detalles</b> sin una decisión expresa. Se llama «robot ayudante».</p></div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 18. VOZ Y TONO -->
+<section class="p gris">
+  <div class="ey">07 · Voz y tono</div><h2>Cómo habla Cátedra</h2>
+  <div class="dos">
+    <div>
+      <ul class="l"><li><b>Claro y directo.</b> Frases cortas, verbos de acción: «Sube tu examen», «Revisa las preguntas».</li>
+      <li><b>Cercano, sin perder el respeto.</b> Se habla de «tú». Nunca se regaña ni se infantiliza.</li>
+      <li><b>Sin tecnicismos.</b> Se dice «preguntas» y «respuestas», no «registros» ni «payloads».</li>
+      <li><b>Honesto con la IA.</b> Se dice cuándo interviene y que el docente decide. Nunca «mágico» ni «revolucionario».</li>
+      <li><b>Inclusivo.</b> Se prefiere una fórmula neutra («Te damos la bienvenida») a asumir un género.</li>
+      <li><b>En español, con tilde.</b> Sin anglicismos innecesarios. «Cátedra» siempre lleva tilde.</li></ul>
+    </div>
+    <div>
+      <div class="si"><small>Así sí</small>«Te damos la bienvenida a Cátedra.»</div>
+      <div class="si"><small>Así sí</small>«No se pudo leer esa imagen. Prueba con otra.»</div>
+      <div class="si"><small>Así sí</small>«Tu examen está listo.»</div>
+      <div class="no2"><small>Así no</small>«¡¡Increíble!! Nuestra revolucionaria IA convirtió tu examen por arte de magia.»</div>
+      <div class="no2"><small>Así no</small>«Error 422: unprocessable entity.»</div>
+    </div>
+  </div>
+  <h3 style="margin-top:4mm;">Vocabulario</h3>
+  <table style="margin-top:1mm;background:#fff;font-size:9pt;"><tr><th>Decimos</th><th>No decimos</th><th>Decimos</th><th>No decimos</th></tr>
+  <tr><td><b>examen, evaluación</b></td><td>documento a procesar</td><td><b>exportar</b></td><td>generar el artefacto</td></tr>
+  <tr><td><b>pregunta, respuesta</b></td><td>ítem, registro</td><td><b>materia</b></td><td>espacio de trabajo, workspace</td></tr>
+  <tr><td><b>revisar</b></td><td>validar el payload</td><td><b>docente</b> (o «tú»)</td><td>usuario final</td></tr></table>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 19. APLICACIONES -->
+<section class="p">
+  <div class="ey">08 · Aplicaciones</div><h2>Dónde vive la marca</h2>
+  <div class="card" style="margin-bottom:6mm;padding:0;overflow:hidden;">
+    <div style="background:#e2e8f0;padding:4mm 7mm;display:flex;align-items:center;gap:4mm;border-bottom:1px solid var(--borde);"><div style="width:11mm;height:11mm;"><svg class="lg"><use href="#logo-principal"/></svg></div><div><div class="t" style="font-size:15pt;line-height:1.1;">Cátedra</div><div style="font-size:8.5pt;color:var(--pizarra);">Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.</div></div><div style="margin-left:auto;font-size:9pt;font-weight:700;color:var(--pizarra);">Mis materias &nbsp;·&nbsp; Guía &nbsp;·&nbsp; Acerca de</div></div>
+    <div style="padding:4mm 7mm;background:#f1f5f9;"><span class="paso on"><i>1</i> Cargar y configurar</span> &nbsp;—&nbsp; <span class="paso"><i>2</i> Revisar preguntas</span> &nbsp;—&nbsp; <span class="paso"><i>3</i> Exportar</span></div>
+  </div>
+  <div class="dos" style="grid-template-columns:1fr 1.15fr;">
+    <div>
+      <h3>Íconos de la aplicación</h3>
+      <div style="display:flex;gap:6mm;align-items:flex-end;margin:3mm 0 5mm;"><div style="width:48px;height:48px;"><svg class="lg"><use href="#logo-principal"/></svg></div><div style="width:64px;height:64px;"><svg class="lg"><use href="#logo-principal"/></svg></div><div style="width:96px;height:96px;"><svg class="lg"><use href="#logo-principal"/></svg></div></div>
+      <p class="nota">Los archivos están en <span class="mono">assets/marca/</span> (SVG) y los íconos de los instaladores se generan con <span class="mono">dev/generar_iconos.py</span> (<span class="mono">.ico</span> para Windows, <span class="mono">.icns</span> para macOS, <span class="mono">.png</span> para la interfaz).</p>
+    </div>
+    <div>
+      <h3>Nombres de archivo</h3>
+      <table><tr><th>Dónde</th><th>Nombre</th></tr>
+      <tr><td>Instalador de macOS</td><td class="num">Catedra.dmg</td></tr>
+      <tr><td>Instalador de Windows</td><td class="num">Catedra_Setup.exe</td></tr>
+      <tr><td>Aplicación (Mac / Windows)</td><td class="num">Catedra.app · Catedra.exe</td></tr>
+      <tr><td>Nombre visible</td><td><b>Cátedra</b> (con tilde)</td></tr>
+      <tr><td>Releases en GitHub</td><td class="num">Cátedra vX.Y</td></tr></table>
+      <p class="nota" style="margin-top:3mm;">En los nombres de archivo no hay tilde, por compatibilidad. Dentro del sistema, la carpeta de datos del usuario conserva su nombre anterior para no perder el Historial de nadie: no es visible.</p>
+    </div>
+  </div>
+  <div class="pie"><span>Cátedra · Manual de identidad visual</span><span class="n"></span></div>
+</section>
+
+<!-- 20. LEGAL Y CIERRE -->
+<section class="p marino" style="display:flex;flex-direction:column;justify-content:space-between;">
+  <div><div class="ey">08 · Uso legal y créditos</div><h2>Independiente y abierta con lo que usa</h2></div>
+  <div class="dos" style="gap:14mm;">
+    <div><h3>Marcas de terceros</h3><p style="color:#cbd5e1;">Moodle es una marca registrada de Moodle Pty Ltd. Google y Gemini son marcas de Google LLC. Cátedra es independiente: no está afiliada, patrocinada ni respaldada por ellas. Se las menciona solo de forma descriptiva.</p>
+      <h3 style="margin-top:6mm;">Antes de usar «Cátedra» como marca registrada</h3><p style="color:#cbd5e1;">«Cátedra» es una palabra común del español. Antes de registrarla como marca o usarla en un contexto comercial conviene comprobar su disponibilidad en el registro de propiedad industrial del país correspondiente.</p></div>
+    <div><h3>Material de terceros</h3><p style="color:#cbd5e1;">Las tipografías Outfit, Hanken Grotesk y JetBrains Mono están bajo la licencia SIL OFL 1.1. El robot ayudante usa three.js y los recorridos usan driver.js, ambos con licencia MIT. La lista completa está en «Acerca de» dentro de la aplicación.</p>
+      <h3 style="margin-top:6mm;">Créditos</h3><p style="color:#cbd5e1;">Cátedra es obra de los ingenieros César González y Vicente Urriola. Este manual se regenera con <span class="mono">dev/generar_manual_identidad.py</span>.</p></div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:5mm;"><div style="width:16mm;height:16mm;"><svg class="lg"><use href="#logo-principal"/></svg></div><div class="t" style="font-size:20pt;">Cátedra</div></div><div style="font-size:9pt;color:#94a3b8;">Manual de identidad visual · versión 1.0 · octubre de 2026</div></div>
+  <div class="pie"><span></span><span class="n"></span></div>
+</section>
+
+</body>
+</html>
