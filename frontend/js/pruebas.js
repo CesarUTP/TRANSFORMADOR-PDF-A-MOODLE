@@ -262,11 +262,12 @@ prueba('findClozeBrackets da lo mismo que la versión anterior en 3 000 textos a
   }
 });
 
-prueba('findClozeBrackets con 100 000 «[A:» tarda menos de 200 ms', () => {
+prueba('findClozeBrackets con 100 000 «[A:» no es cuadrático (menos de 2 s)', () => {
+  // Una versión cuadrática tardaría decenas de segundos; el margen amplio evita falsos fallos en equipos lentos (el CI de Windows tardó 437 ms).
   const t0 = performance.now();
   findClozeBrackets('[A:'.repeat(100000));
   const ms = performance.now() - t0;
-  if (ms > 200) throw new Error(`tardó ${Math.round(ms)} ms`);
+  if (ms > 2000) throw new Error(`tardó ${Math.round(ms)} ms`);
 });
 
 // ── Duración estimada de la conversión ──────────────────────────────
