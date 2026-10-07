@@ -102,12 +102,23 @@ flowchart LR
 
 ## 🚀 Uso para el usuario final
 
+### Descargar
+
+Los instaladores están en la página de [**la última versión**](https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest):
+
+- **macOS:** `Catedra.dmg` — ábrelo y arrastra **Cátedra** a la carpeta Aplicaciones.
+- **Windows:** `Catedra_Setup.exe` — instalador con acceso directo y desinstalador (se sube a la versión cuando está compilado).
+
+La primera vez la app pide tu clave de la API de Gemini (gratis; explica cómo obtenerla). Si vienes del **Conversor a Moodle XML** (hasta la 2.3), tus exámenes, materias, perfil y clave se conservan.
+
+### Desde el código
+
 ```
 1️⃣  Descarga o clona el proyecto
 2️⃣  Doble clic en iniciar.command (macOS) o iniciar.bat (Windows)
 3️⃣  La primera vez instala todo solo (unos minutos); después abre directo
 4️⃣  La primera vez pega tu clave de la API de Gemini (gratis; la app explica cómo obtenerla)
-5️⃣  Sube el examen → revisa las preguntas → descarga el .xml
+5️⃣  Sube el examen → revisa las preguntas → exporta: el XML de Moodle, el PDF o varias versiones
 ```
 
 En Moodle: **Banco de preguntas → Importar**.
