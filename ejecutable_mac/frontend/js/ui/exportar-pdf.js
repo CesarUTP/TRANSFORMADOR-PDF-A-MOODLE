@@ -17,6 +17,7 @@ import { confirmar } from './confirmar.js';
 import { MENSAJE_LOGO_INVALIDO, logoArchivoValido, reducirLogo } from './logo-imagen.js';
 import { abrirModal, cerrarModal } from './modales.js';
 import { showToast } from './toast.js';
+import { crearPuntosPdf } from './puntos-pdf.js';
 import { crearVersiones } from './versiones.js';
 import {
   ACTIVIDADES, RENGLONES_MAX, RENGLONES_MIN, aplicarPerfil, avisosDelPdf, cuerpoPdf, datosDePerfil, enteroEn, fechaLegible,
@@ -43,7 +44,9 @@ let perfiles = [];
 const logos = { logo_izquierdo: '', logo_derecho: '' };
 const vista = { abierta: false, pagina: 1, paginas: 1, url: null, temporizador: null, controlador: null };
 /** Las versiones del examen (2.5): su sección, sus pestañas y sus puntos viven en versiones.js. */
-const versiones = crearVersiones({ alCambiar: () => cambioEnFormulario() });
+const versiones = crearVersiones({ alCambiar: () => cambioEnFormulario(), enteros: () => form.elements.puntos_enteros.checked });
+/** Los puntos enteros del PDF de un examen sin versiones (2.7): su panel y su copia de los puntos. */
+const puntosPdf = crearPuntosPdf({ alCambiar: () => cambioEnFormulario() });
 
 // ── Lo recordado ────────────────────────────────────────────────────────
 function leerGuardado() {
@@ -77,6 +80,7 @@ function llenarPerfil(v) {
   f.partes.checked = v.partes;
   f.mezclar.checked = v.mezclar;
   f.puntos_por_pregunta.checked = v.puntos_por_pregunta;
+  f.puntos_enteros.checked = v.puntos_enteros;
   Object.keys(LADOS).forEach(k => mostrarLogo(k, v[k]));
 }
 
@@ -90,7 +94,7 @@ function leer() {
     fuente_titulos: f.fuente_titulos.value, fuente_preguntas: f.fuente_preguntas.value,
     tam_titulos: f.tam_titulos.value, tam_preguntas: f.tam_preguntas.value,   // valoresIniciales() los valida (7–20 pt) al enviar
     renglones_ensayo: f.renglones_ensayo.value, campos_estudiante: f.campos_estudiante.checked, partes: f.partes.checked,
-    mezclar: f.mezclar.checked, puntos_por_pregunta: f.puntos_por_pregunta.checked,
+    mezclar: f.mezclar.checked, puntos_por_pregunta: f.puntos_por_pregunta.checked, puntos_enteros: f.puntos_enteros.checked,
   }, logos);
   return datos;
 }
@@ -110,6 +114,11 @@ function mostrarError(texto) {
   errorEl.textContent = texto || '';
   errorEl.hidden = !texto;
   form.classList.toggle('has-error', !!texto);
+}
+
+/** El cuerpo del PDF de un examen sin versiones: con «Puntos enteros», el examen con la copia entera de los puntos. */
+function cuerpoNormal(datos) {
+  return cuerpoPdf(datos.puntos_enteros ? puntosPdf.examenParaPdf() : examen, datos);
 }
 
 let generando = false;
@@ -147,7 +156,7 @@ function actualizarResumenes() {
   const nLogos = (d.logo_izquierdo ? 1 : 0) + (d.logo_derecho ? 1 : 0);
   $('pdf-resumen-encabezado').textContent = [nombres[0] || 'Sin institución', nLogos ? `${nLogos} logo${nLogos > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
   const preguntas = FUENTES[d.fuente_preguntas] || FUENTES.dejavu;
-  $('pdf-resumen-formato').textContent = `${PAPELES[d.papel] || 'Carta'} · márgenes ${MARGENES[d.margenes] || ''} · ${preguntas} ${tamanoValido(d.tam_preguntas) ?? '?'} pt`;
+  $('pdf-resumen-formato').textContent = `${PAPELES[d.papel] || 'Carta'} · márgenes ${MARGENES[d.margenes] || ''} · ${preguntas} ${tamanoValido(d.tam_preguntas) ?? '?'} pt${d.puntos_enteros ? ' · puntos enteros' : ''}`;
 }
 
 // ── Logos ───────────────────────────────────────────────────────────────
@@ -339,7 +348,7 @@ async function refrescarVista(pagina = vista.pagina) {
     const res = await apiFetch(`/api/vista_previa_pdf?pagina=${pagina}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(modo === 'version' ? versiones.cuerpoVista(datos) : cuerpoPdf(examen, datos)),
+      body: JSON.stringify(modo === 'version' ? versiones.cuerpoVista(datos) : cuerpoNormal(datos)),
       signal: ctl.signal,
     });
     if (!res.ok) {
@@ -366,9 +375,15 @@ async function refrescarVista(pagina = vista.pagina) {
   }
 }
 
+/** El panel «Puntos en el PDF»: solo con «Puntos enteros» y sin versiones (las versiones tienen sus propios puntos). */
+function actualizarPuntos() {
+  puntosPdf.pintar(!!examen && form.elements.puntos_enteros.checked && !versiones.activa());
+}
+
 /** Todo cambio del formulario: actualiza los resúmenes y la línea de abajo, y rehace la vista previa. */
 function cambioEnFormulario() {
   actualizarResumenes();
+  actualizarPuntos();
   actualizarPie();
   if (vista.abierta) {
     clearTimeout(vista.temporizador);
@@ -394,6 +409,7 @@ export function abrirExportarPdf(origen = null) {
   ocupado(false);
   cerrarNombreDePerfil();
   versiones.abrir(examen);
+  puntosPdf.abrir(examen);
   vista.abierta = true;
   vista.pagina = 1;
   soltarImagenDeVista();
@@ -403,6 +419,7 @@ export function abrirExportarPdf(origen = null) {
   elegirMateria(idMateria, { aplicar: false });
   if (examen.actividad) $('pdf-actividad').value = examen.actividad;
   actualizarResumenes();
+  actualizarPuntos();
   // Orden de prioridad: la materia (su perfil, docente y grupo) > mi perfil predeterminado y mis datos > lo recordado.
   cargarPerfiles('').then(() => {
     if (examen !== examenAbierto) return;
@@ -415,6 +432,7 @@ export function abrirExportarPdf(origen = null) {
     aplicarDocente();
     if (idMateria != null) elegirMateria(idMateria);
     actualizarResumenes();
+    actualizarPuntos();
     actualizarPie();
     refrescarVista(1);
   });
@@ -429,6 +447,7 @@ function alCerrar() {
   detenerVista();
   soltarImagenDeVista();
   versiones.cerrar();
+  puntosPdf.cerrar();
 }
 
 function cerrar() {
@@ -462,7 +481,7 @@ async function exportar(e) {
     const res = await apiFetch(conVersiones ? '/api/exportar_versiones' : '/api/exportar_pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(conVersiones ? versiones.cuerpoExportar(datos) : cuerpoPdf(examen, datos)),
+      body: JSON.stringify(conVersiones ? versiones.cuerpoExportar(datos) : cuerpoNormal(datos)),
     });
     if (!res.ok) {
       let msg = friendlyHttpError(res.status);
@@ -510,4 +529,7 @@ export function iniciarExportarPdf() {
   $('btn-pdf-cancelar').addEventListener('click', cerrar);
   $('btn-pdf-cerrar').addEventListener('click', cerrar);
   versiones.iniciar();
+  puntosPdf.iniciar();
+  // Activar o apagar «Puntos enteros» cambia los puntos que muestra cada versión.
+  form.elements.puntos_enteros.addEventListener('change', () => versiones.repintar());
 }

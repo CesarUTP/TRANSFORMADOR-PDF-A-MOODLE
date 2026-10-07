@@ -167,6 +167,12 @@ for nombre, versiones_malas in (
 ):
     ok(cli.post("/api/exportar_versiones", json={**cuerpo, "versiones": versiones_malas}, headers=H).status_code == 422, f"{nombre}: 422")
 ok(cli.post("/api/exportar_versiones", json={**cuerpo, "datos": {"contenido": "otra"}}, headers=H).status_code == 422, "opciones desconocidas: 422")
+# Puntos enteros (2.7): una versión con decimales se rechaza y dice cuál; con enteros pasa.
+dec = {**cuerpo, "datos": {**cuerpo["datos"], "puntos_enteros": True}, "versiones": [{**v0, "puntos": {str(n): 4.5 for n in reparto[0]}}]}
+r_dec = cli.post("/api/exportar_versiones", json=dec, headers=H)
+ok(r_dec.status_code == 422 and r_dec.json()["detail"].startswith("Versión A:") and "decimales" in r_dec.json()["detail"], f"versión con decimales + enteros: 422 que nombra la versión ({r_dec.status_code})")
+ent = {**dec, "versiones": [{**v0, "puntos": {str(n): 4 for n in reparto[0]}}]}
+ok(cli.post("/api/exportar_versiones", json=ent, headers=H).status_code == 200, "versión con puntos enteros + enteros: 200")
 malo = {**cuerpo, "questions": [{"num": 1, "type": "inventado", "data": {"stem": "a"}}], "answer_key": {"1": {"type": "essay", "answer": ""}},
         "versiones": [{"etiqueta": "A", "nums": [1], "total_points": 1}]}
 ok(cli.post("/api/exportar_versiones", json=malo, headers=H).status_code == 422, "el examen se valida como para el XML: 422")

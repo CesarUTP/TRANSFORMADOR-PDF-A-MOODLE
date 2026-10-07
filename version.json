@@ -1,5 +1,5 @@
 {
-  "version": "2.6",
+  "version": "2.7",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Versión 2.6: nuevo ayudante en la esquina: un robot 3D amable, con visor y ojos felices, que saluda y te explica cada pantalla en un recorrido guiado. Guía, recorridos y textos al día con el cambio."
+  "notas": "Versión 2.7: puntos enteros en el PDF. Al exportar, el examen y su clave usan solo números enteros (7 pts en vez de 6,67) con el mismo total, para calificar sin redondeos. El Moodle XML no cambia. Viene activada y se apaga en Formato."
 }

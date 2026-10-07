@@ -108,6 +108,7 @@ class DatosExamen:
     campos_estudiante: bool = True           # cuadro de Nombre / Cédula / Grupo / Fecha y Calificación
     rotulo_docente: str = "facilitador"      # ROTULOS
     puntos_por_pregunta: bool = True         # False: el examen no dice cuánto vale cada pregunta (solo cada parte y el total)
+    puntos_enteros: bool = False             # True: el PDF solo admite puntos enteros (si llega un decimal, se rechaza: nunca se redondea aquí)
     renglones_ensayo: int = 6                # renglones de cada respuesta de desarrollo
     mezclar: bool = True                     # mezclar las opciones y la Columna B: que la clave no forme un patrón
     fuente_titulos: str = "dejavu"           # FUENTES: títulos, encabezados e indicaciones
@@ -117,6 +118,26 @@ class DatosExamen:
     partes: bool = True                      # agrupar por tipo: «I PARTE: …» con su indicación y su valor
     logo_izquierdo: str = ""                 # imagen en base64 ("" = sin logo)
     logo_derecho: str = ""
+
+
+class PuntosNoEnteros(ValueError):
+    """Se pidió un PDF con puntos enteros y alguna pregunta trae decimales (se muestra al docente)."""
+
+
+def _decimal(x: float) -> bool:
+    return abs(x - round(x)) > 1e-6
+
+
+def revisar_puntos_enteros(preguntas: List[Pregunta], puntos: List[float]) -> None:
+    """Con `puntos_enteros`, el servidor NO redondea (el PDF dejaría de coincidir con lo que el docente vio):
+    avisa qué preguntas traen decimales y deja que la interfaz las reparta."""
+    malas = [(p.num, x) for p, x in zip(preguntas, puntos) if _decimal(x)]
+    if not malas:
+        return
+    detalle = ", ".join(f"{n} ({str(round(x, 2)).replace('.', ',')})" for n, x in malas[:5]) + ("…" if len(malas) > 5 else "")
+    raise PuntosNoEnteros(
+        f"Con «Puntos enteros» activado, {len(malas)} pregunta{'s' if len(malas) != 1 else ''} del PDF "
+        f"tiene{'n' if len(malas) != 1 else ''} puntos con decimales: {detalle}. Reparte los puntos en enteros o desactiva esa opción.")
 
 
 @dataclass
@@ -1157,6 +1178,8 @@ def generar_pdf(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[str,
         raise ValueError("No hay preguntas que exportar.")
     notas = compute_grades(questions, total_points)
     puntos = [p.puntos_validos if p.puntos_validos is not None else notas.get(p.tipo, 1.0) for p in preguntas]
+    if datos.puntos_enteros:
+        revisar_puntos_enteros(preguntas, puntos)
 
     # Si una pregunta no cabe en una página dentro de una tabla (algo enorme), se rehace sin tablas.
     for simple in (False, True):

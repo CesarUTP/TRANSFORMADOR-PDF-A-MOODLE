@@ -57,7 +57,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
 <section class="portada">
   <div style="display:flex;align-items:center;gap:6mm;"><div style="width:26mm;height:26mm;"><svg style="width:100%;height:100%;"><use href="#logo-principal"/></svg></div><div><div class="t" style="font-size:34pt;">Cátedra</div><div style="font-size:11.5pt;color:#cbd5e1;max-width:105mm;line-height:1.4;">Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.</div></div></div>
   <div><div class="ey" style="color:var(--celeste);">Manual de usuario</div><h1 class="t" style="font-size:44pt;line-height:1.08;">De tu examen a Moodle y al papel, paso a paso.</h1><p style="font-size:12pt;color:#cbd5e1;margin-top:6mm;max-width:130mm;">Todo lo que necesitas para convertir, revisar, imprimir y ordenar tus evaluaciones, sin conocimientos técnicos.</p></div>
-  <div style="display:flex;justify-content:space-between;font-size:9pt;color:#94a3b8;"><span>Para Cátedra 2.6 · octubre de 2026</span><span>Windows y macOS</span></div>
+  <div style="display:flex;justify-content:space-between;font-size:9pt;color:#94a3b8;"><span>Para Cátedra 2.7 · octubre de 2026</span><span>Windows y macOS</span></div>
 </section>
 
 <!-- CONTENIDO -->
@@ -300,7 +300,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <li>Mira la <b>vista previa</b> a la derecha: se actualiza al cambiar cualquier dato.</li>
     <li>Pulsa <span class="btn">Exportar PDF</span> y elige dónde guardarlo.</li>
   </ol>
-  <figure class="fig"><img src="{{IMG:09-pdf.png}}" alt="Pantalla de exportar el PDF con la vista previa"><figcaption><b>Exportar en PDF.</b> (1) Perfil de encabezado. (2) Datos de este examen. (3) Qué incluir. (4) Vista previa de la página.</figcaption></figure>
+  <figure class="fig"><img src="{{IMG:09-pdf.png}}" alt="Pantalla de exportar el PDF con la vista previa"><figcaption><b>Exportar en PDF.</b> (1) Perfil de encabezado. (2) Datos de este examen. (3) Qué incluir. (4) Vista previa de la página. (5) Puntos en el PDF (con «Puntos enteros» activado).</figcaption></figure>
 </section>
 
 <section>
@@ -318,7 +318,17 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <li><b>Mezclar el orden de las opciones:</b> en los documentos la clave suele ir en orden (1-a, 2-b, 3-c…) y en papel eso delata las respuestas. Cátedra baraja las opciones y la Columna B de los emparejamientos; la clave usa siempre las letras impresas.</li>
     <li><b>Dividir el examen en partes:</b> agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con su indicación y su valor.</li>
     <li><b>Mostrar cuánto vale cada pregunta</b> (o solo el valor de cada parte), cuadro de nombre y calificación, y <b>renglones por ensayo</b>.</li>
+    <li><b>Puntos enteros:</b> el PDF usa solo números enteros (7 pts en vez de 6,67), con el mismo total, para calificar sin redondeos. Está activada de fábrica; ve «Puntos enteros en el PDF» más abajo.</li>
   </ul>
+  <h4>Puntos enteros en el PDF</h4>
+  <p>En papel, un valor como 6,67 complica calificar y deja errores de redondeo. Con <b>Puntos enteros</b>, el PDF lleva <b>su propia copia</b> de los puntos, en enteros y con el mismo total. <b>El XML de Moodle no cambia</b>: allí los puntos siguen como en el editor y Moodle los suma solo.</p>
+  <ul>
+    <li><b>Cómo se reparten.</b> Si se puede, todas las preguntas de un mismo tipo valen lo mismo (por ejemplo 7, 3 y 10 en vez de 6,67, 3,33 y 10). Si no se puede, algunas del mismo tipo valen 1 punto más (las primeras) y la pantalla te lo dice.</li>
+    <li><b>Totales que sí cuadran.</b> Cuando no hay reparto en iguales (por ejemplo, 15 preguntas y 100 puntos), aparecen botones con totales cercanos que sí lo permiten, como «Usar 105 puntos». Elegirlos solo cambia el total del PDF.</li>
+    <li><b>Qué verás.</b> A la derecha, un resumen te dice cuánto suma el PDF y, si difiere de Moodle, un ejemplo («la pregunta 1 vale 1,82 en Moodle y 2 en el PDF; el total es el mismo»). Abre <b>Puntos de cada pregunta en el PDF</b> para ver cada valor y cambiar cualquiera con un número entero: lo que cambies manda y el total del PDF pasa a ser la suma de la lista.</li>
+    <li><b>Si prefieres medios puntos,</b> desmarca la opción (también puedes guardarla desmarcada en tu perfil de encabezado).</li>
+  </ul>
+  <div class="aviso importante"><span class="et">Importante</span><p>Con muchas preguntas, cada una vale cerca de 1 o 2 puntos y los enteros dan saltos grandes (de 1,82 a 2 es un 10 % más). Abre la lista una vez para revisar que el reparto te parezca justo.</p></div>
   <div class="aviso consejo"><span class="et">Consejo</span><p>Si das clase en varios lugares, crea un <b>perfil de encabezado</b> por cada uno en <span class="btn">Mi perfil</span> y elígelo aquí con un clic. Con <span class="btn">Guardar perfil</span> también puedes guardar desde esta misma pantalla lo que acabas de escribir.</p></div>
 </section>
 
@@ -343,7 +353,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <p>Después de sortear, cada versión tiene su <b>pestaña</b> a la derecha, con su vista previa (la misma que saldrá en el PDF) y cuánto suma.</p>
   <figure class="fig"><img src="{{IMG:12-versiones-revision.png}}" alt="Pestañas de las versiones y ajuste de puntos"><figcaption><b>Las versiones.</b> (1) Una pestaña por versión, con sus puntos. (2) El total que quieres. (3) <i>Ajustar todas</i>. (4) Puntos de cada pregunta.</figcaption></figure>
   <h4>Que los puntos cuadren</h4>
-  <p>Cada versión suma los puntos de <i>sus</i> preguntas, que casi nunca son los 100 que quieres. Escribe el <b>total de puntos</b> deseado y pulsa <span class="btn">Ajustar esta versión</span> o <span class="btn">Ajustar todas</span>; elige si se reparte <b>según el tipo</b> o <b>en partes iguales</b>. Si prefieres, abre <b>Puntos de cada pregunta</b> y cámbialos uno por uno. Cátedra <b>nunca cambia puntos por su cuenta</b> y, al exportar, te avisa si alguna versión no suma el total.</p>
+  <p>Cada versión suma los puntos de <i>sus</i> preguntas, que casi nunca son los 100 que quieres. Escribe el <b>total de puntos</b> deseado y pulsa <span class="btn">Ajustar esta versión</span> o <span class="btn">Ajustar todas</span>; elige si se reparte <b>según el tipo</b> o <b>en partes iguales</b>. Si prefieres, abre <b>Puntos de cada pregunta</b> y cámbialos uno por uno. Cátedra <b>nunca cambia puntos por su cuenta</b> y, al exportar, te avisa si alguna versión no suma el total. Con <b>Puntos enteros</b> activado, los puntos de cada versión salen en enteros y <i>Ajustar</i> también reparte en enteros.</p>
   <h4>Descargar</h4>
   <p>Pulsa <span class="btn">Exportar 4 versiones (ZIP)</span> (el número cambia según tus versiones). Recibes un archivo <span class="mono">.zip</span> con <b>un PDF por versión</b>, cada uno rotulado «VERSIÓN A», «VERSIÓN B»… también en su clave. Todas llevan lo mismo que hayas elegido en «Qué incluir». La clave de cada versión es siempre la de <b>sus propias preguntas</b>.</p>
   <div class="aviso consejo"><span class="et">Consejo</span><p>Puedes volver a pulsar <span class="btn">Sortear de nuevo</span> las veces que quieras hasta que te guste el resultado. Si cambiaste puntos a mano, Cátedra te pregunta antes de reemplazar las versiones.</p></div>

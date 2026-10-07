@@ -18,7 +18,8 @@ const $ = id => document.getElementById(id);
 const fmt = n => String(Math.round(Number(n) * 100) / 100).replace('.', ',');
 const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
-export function crearVersiones({ alCambiar }) {
+/** `enteros()`: ¿está activada «Puntos enteros»? (los puntos de cada versión salen en enteros, sin tocar los del examen). */
+export function crearVersiones({ alCambiar, enteros = () => false }) {
   let examen = null;
   let plan = null;
   let versiones = [];          // lo sorteado: [{ etiqueta, nums, semilla, puntos }]
@@ -29,7 +30,7 @@ export function crearVersiones({ alCambiar }) {
   const tipos = () => (examen ? resumenPorTipo(examen.questions) : []);
   const activa = () => !!examen && $('pdf-ver-activar').checked;
   const listas = () => activa() && versiones.length > 0 && !desfasado;
-  const opciones = datos => ({ partes: !datos || datos.partes !== false, barajarPreguntas: $('pdf-ver-barajar').checked });
+  const opciones = datos => ({ partes: !datos || datos.partes !== false, barajarPreguntas: $('pdf-ver-barajar').checked, enteros: enteros() });
   const objetivo = () => Number($('pdf-ver-objetivo').value);
 
   // ── El plan (lo que el docente pide) ────────────────────────────────────
@@ -115,12 +116,12 @@ export function crearVersiones({ alCambiar }) {
     barra.replaceChildren(...versiones.map((v, i) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'ver-tab' + (cuadra(v, examen.questions, objetivo()) ? '' : ' desajuste');
+      b.className = 'ver-tab' + (cuadra(v, examen.questions, objetivo(), enteros()) ? '' : ' desajuste');
       b.dataset.i = String(i);
       b.setAttribute('role', 'tab');
       b.setAttribute('aria-selected', String(i === actual));
       b.tabIndex = i === actual ? 0 : -1;
-      b.innerHTML = `Versión ${esc_html(v.etiqueta)}<small>${plural(v.nums.length, 'pregunta', 'preguntas')} · ${fmt(totalDeVersion(v, examen.questions))} pts</small>`;
+      b.innerHTML = `Versión ${esc_html(v.etiqueta)}<small>${plural(v.nums.length, 'pregunta', 'preguntas')} · ${fmt(totalDeVersion(v, examen.questions, enteros()))} pts</small>`;
       return b;
     }));
     pintarPanel();
@@ -133,7 +134,7 @@ export function crearVersiones({ alCambiar }) {
     $('pdf-ver-composicion').textContent = `Versión ${v.etiqueta}: ${plural(v.nums.length, 'pregunta', 'preguntas')} (${comp}).`
       + (preguntasRepetidas(versiones) > 0 && versiones.length > 1 ? ` ${plural(preguntasRepetidas(versiones), 'pregunta sale', 'preguntas salen')} en más de una versión.` : '');
     pintarSuma();
-    const puntos = puntosDeVersion(v, examen.questions);
+    const puntos = puntosDeVersion(v, examen.questions, enteros());
     const porNum = new Map(examen.questions.map(q => [q.num, q]));
     $('pdf-ver-preguntas').replaceChildren(...numsEnOrden(v, examen.questions, opciones()).map((n, k) => {
       const q = porNum.get(n);
@@ -142,7 +143,7 @@ export function crearVersiones({ alCambiar }) {
       const enunciado = String((q.data && q.data.stem) || '').replace(/\s+/g, ' ').trim();
       li.innerHTML = `<span class="ver-pregunta-num">${k + 1}.</span>`
         + `<span class="ver-pregunta-texto" title="${esc_html(enunciado)}">${esc_html(enunciado.slice(0, 70) || '(sin enunciado)')}<small>#${n}</small></span>`
-        + `<input type="number" class="form-input" min="0" step="any" data-num="${n}" value="${puntos[n]}" aria-label="Puntos de la pregunta ${k + 1}">`;
+        + `<input type="number" class="form-input" min="0" step="${enteros() ? 1 : 'any'}" data-num="${n}" value="${puntos[n]}" aria-label="Puntos de la pregunta ${k + 1}">`;
       return li;
     }));
   }
@@ -150,9 +151,9 @@ export function crearVersiones({ alCambiar }) {
   function pintarSuma() {
     const v = versiones[actual];
     if (!v) return;
-    const total = totalDeVersion(v, examen.questions);
+    const total = totalDeVersion(v, examen.questions, enteros());
     const meta = objetivo();
-    const bien = cuadra(v, examen.questions, meta);
+    const bien = cuadra(v, examen.questions, meta, enteros());
     const suma = $('pdf-ver-suma');
     suma.textContent = bien ? `La versión ${v.etiqueta} suma ${fmt(total)} puntos.` : `La versión ${v.etiqueta} suma ${fmt(total)} puntos y el total deseado es ${fmt(meta)}. Usa «Ajustar» o cambia los puntos de abajo.`;
     suma.classList.toggle('desajuste', !bien);
@@ -166,6 +167,7 @@ export function crearVersiones({ alCambiar }) {
 
   function repintarTodo() {
     if (!examen) return;
+    $('pdf-ver-objetivo').step = enteros() ? '1' : 'any';
     pintarResumen();
     pintarPestanas();
   }
@@ -205,7 +207,7 @@ export function crearVersiones({ alCambiar }) {
     const meta = objetivo();
     if (!(meta > 0)) { $('pdf-ver-objetivo').focus(); return; }
     const modo = $('pdf-ver-reparto').value;
-    (indice === null ? versiones : [versiones[indice]]).forEach(v => { v.puntos = repartirVersion(v, examen.questions, meta, modo); });
+    (indice === null ? versiones : [versiones[indice]]).forEach(v => { v.puntos = repartirVersion(v, examen.questions, meta, modo, enteros()); });
     pintarPestanas();
     alCambiar();
   }
@@ -215,10 +217,21 @@ export function crearVersiones({ alCambiar }) {
     if (!inp) return;
     const valor = Number(String(inp.value).replace(',', '.'));
     if (!Number.isFinite(valor) || valor < 0) return;
+    if (enteros() && !Number.isInteger(valor)) return;      // se espera: al salir de la casilla se redondea (puntosAlSalir)
     versiones[actual].puntos[Number(inp.dataset.num)] = valor;
     pintarSuma();
     clearTimeout(temporizadorPuntos);
     temporizadorPuntos = setTimeout(alCambiar, 0);
+  }
+
+  /** Con «Puntos enteros», un decimal escrito a mano se redondea al salir de la casilla (se ve en la casilla y en la suma). */
+  function puntosAlSalir(ev) {
+    const inp = ev.target.closest('input[data-num]');
+    if (!inp || !enteros()) return;
+    const valor = Number(String(inp.value).replace(',', '.'));
+    if (!Number.isFinite(valor) || valor < 0 || Number.isInteger(valor)) return;
+    inp.value = String(Math.round(valor));
+    puntosEditados({ target: inp });
   }
 
   function alEditarPlan(ev) {
@@ -257,6 +270,7 @@ export function crearVersiones({ alCambiar }) {
       if (ev.target.closest('#btn-pdf-ver-ajustar')) ajustar(actual);
       else if (ev.target.closest('#btn-pdf-ver-ajustar-todas')) ajustar(null);
     });
+    previa.addEventListener('change', ev => { if (ev.target.closest('#pdf-ver-preguntas')) puntosAlSalir(ev); });
     previa.addEventListener('input', ev => {
       if (ev.target.closest('#pdf-ver-preguntas')) puntosEditados(ev);
       else if (ev.target.closest('#pdf-ver-objetivo')) { pintarPestanas(); }
@@ -314,12 +328,19 @@ export function crearVersiones({ alCambiar }) {
 
   /** Las versiones cuya suma no es el total deseado: [{ etiqueta, total }]. */
   function desajustes() {
-    return versiones.filter(v => !cuadra(v, examen.questions, objetivo()))
-      .map(v => ({ etiqueta: v.etiqueta, total: totalDeVersion(v, examen.questions) }));
+    return versiones.filter(v => !cuadra(v, examen.questions, objetivo(), enteros()))
+      .map(v => ({ etiqueta: v.etiqueta, total: totalDeVersion(v, examen.questions, enteros()) }));
+  }
+
+  /** «Puntos enteros» se activó o se apagó: los puntos de cada versión se muestran de nuevo. */
+  function repintar() {
+    if (!examen) return;
+    repintarTodo();
+    alCambiar();
   }
 
   return {
-    iniciar, abrir, cerrar, activa, listas, estadoVista, cuerpoVista, cuerpoExportar, desajustes,
+    iniciar, abrir, cerrar, repintar, activa, listas, estadoVista, cuerpoVista, cuerpoExportar, desajustes,
     objetivo, cantidad: () => versiones.length, resumen: () => ({ n: versiones.length, porVersion: versiones[0] ? versiones[0].nums.length : 0 }),
     MAX_VERSIONES,
   };

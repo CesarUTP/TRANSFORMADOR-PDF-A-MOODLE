@@ -13,6 +13,7 @@ para que el manual se pueda regenerar sin Playwright (dev/generar_manual_usuario
 """
 
 import io
+import os
 import sys
 from pathlib import Path
 
@@ -25,6 +26,10 @@ except ImportError:  # sin Pillow se guardan tal cual
 
 RAIZ = Path(__file__).resolve().parent.parent
 SALIDA = RAIZ / "docs" / "manual-usuario" / "fuente" / "capturas"
+# CAPTURAS_LIMPIAS=<carpeta>: las mismas capturas SIN los números ámbar y en otra carpeta (las usan las publicaciones de redes).
+if os.environ.get("CAPTURAS_LIMPIAS"):
+    SALIDA = Path(os.environ["CAPTURAS_LIMPIAS"]).resolve()
+SIN_MARCAS = bool(os.environ.get("CAPTURAS_LIMPIAS"))
 URL = "http://127.0.0.1:8794/#t=prueba-local"
 ANCHO, ALTO, ESCALA = 1280, 800, 1.5
 
@@ -70,6 +75,8 @@ class Capturador:
     def marcas(self, lista):
         """lista: [(selector, número, esquina='izq', dx=0, dy=0)]. Quita las marcas viejas antes."""
         self.p.evaluate("document.querySelectorAll('.__marca').forEach(m => m.remove())")
+        if SIN_MARCAS:
+            return
         for item in lista:
             sel, n = item[0], item[1]
             esquina = item[2] if len(item) > 2 else "izq"
@@ -198,7 +205,7 @@ def main() -> None:
         page.wait_for_selector("#vista-pdf.open")
         c.esperar(3000)
         c.ocultar_robot()
-        c.foto("09-pdf.png", [("#pdf-perfil", 1, "der", 0, -14), ("#pdf-datos-examen", 2, "der", 0, -4), ("#pdf-grupo-incluir", 3, "der", 0, -4), ("#pdf-previa", 4, "izq", 6, 6)])
+        c.foto("09-pdf.png", [("#pdf-perfil", 1, "der", 0, -14), ("#pdf-datos-examen", 2, "der", 0, -4), ("#pdf-grupo-incluir", 3, "der", 0, -4), ("#pdf-previa .pdf-vista-marco", 4, "izq", 6, 6), ("#pdf-pts-panel", 5, "der", 0, -6)])
         page.evaluate("document.getElementById('pdf-sec-encabezado').open = true; document.getElementById('pdf-sec-formato').open = true")
         page.evaluate("document.getElementById('pdf-sec-encabezado').scrollIntoView({block:'start'})")
         c.esperar(500)

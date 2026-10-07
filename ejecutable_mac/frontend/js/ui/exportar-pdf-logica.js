@@ -27,11 +27,11 @@ export const FUENTES_NOMBRES = { dejavu: 'DejaVu Sans', arial: 'Arial', times: '
 export const ACTIVIDADES = ['Parcial', 'Quiz', 'Prueba corta', 'Examen final', 'Taller', 'Evaluación diagnóstica'];
 
 /** Lo que se recuerda entre exámenes (no la fecha: cambia cada vez). */
-const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas', 'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'renglones_ensayo'];
+const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas', 'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'puntos_enteros', 'renglones_ensayo'];
 
 const VACIOS = {
   institucion: '', facultad: '', departamento: '', rotulo_docente: 'facilitador', logo_izquierdo: '', logo_derecho: '', materia: '', docente: '', actividad: '', grupo: '', fecha: '', instrucciones: '', version: '',
-  contenido: 'examen_y_clave', papel: 'carta', margenes: 'moderados', fuente_titulos: 'dejavu', tam_titulos: 11, fuente_preguntas: 'dejavu', tam_preguntas: 10, campos_estudiante: true, partes: true, mezclar: true, puntos_por_pregunta: true, renglones_ensayo: 6,
+  contenido: 'examen_y_clave', papel: 'carta', margenes: 'moderados', fuente_titulos: 'dejavu', tam_titulos: 11, fuente_preguntas: 'dejavu', tam_preguntas: 10, campos_estudiante: true, partes: true, mezclar: true, puntos_por_pregunta: true, puntos_enteros: true, renglones_ensayo: 6,
 };
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -52,7 +52,7 @@ export function enteroEn(v, min, max) {
 /** Lo que guarda un perfil de encabezado: el encabezado y el formato, NO lo propio de cada examen. */
 export const PERFIL_CAMPOS = ['institucion', 'facultad', 'departamento', 'docente', 'rotulo_docente', 'instrucciones',
   'logo_izquierdo', 'logo_derecho', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas',
-  'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'renglones_ensayo'];
+  'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'puntos_enteros', 'renglones_ensayo'];
 
 /** Los datos de un perfil (validados campo por campo; lo que falte toma su valor de siempre). */
 export function datosDePerfil(datos) {
@@ -131,6 +131,7 @@ export function valoresIniciales(guardado) {
   if (typeof guardado.partes === 'boolean') out.partes = guardado.partes;
   if (typeof guardado.mezclar === 'boolean') out.mezclar = guardado.mezclar;
   if (typeof guardado.puntos_por_pregunta === 'boolean') out.puntos_por_pregunta = guardado.puntos_por_pregunta;
+  if (typeof guardado.puntos_enteros === 'boolean') out.puntos_enteros = guardado.puntos_enteros;   // sin dato (perfil viejo): activada
   const r = enteroEn(guardado.renglones_ensayo, RENGLONES_MIN, RENGLONES_MAX);
   if (r !== null) out.renglones_ensayo = r;
   return out;

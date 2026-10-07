@@ -222,7 +222,7 @@ function llenarEditor(nombre, d) {
   $('pe-fuente-preguntas').value = d.fuente_preguntas; $('pe-tam-preguntas').value = d.tam_preguntas;
   $('pe-renglones').value = d.renglones_ensayo;
   $('pe-mezclar').checked = d.mezclar; $('pe-partes').checked = d.partes;
-  $('pe-puntos').checked = d.puntos_por_pregunta; $('pe-campos').checked = d.campos_estudiante;
+  $('pe-puntos').checked = d.puntos_por_pregunta; $('pe-enteros').checked = d.puntos_enteros; $('pe-campos').checked = d.campos_estudiante;
   Object.keys(LADOS).forEach(k => mostrarLogo(k, d[k]));
 }
 
@@ -234,7 +234,7 @@ function leerEditor() {
     fuente_titulos: $('pe-fuente-titulos').value, tam_titulos: $('pe-tam-titulos').value,
     fuente_preguntas: $('pe-fuente-preguntas').value, tam_preguntas: $('pe-tam-preguntas').value,
     renglones_ensayo: $('pe-renglones').value, mezclar: $('pe-mezclar').checked, partes: $('pe-partes').checked,
-    puntos_por_pregunta: $('pe-puntos').checked, campos_estudiante: $('pe-campos').checked,
+    puntos_por_pregunta: $('pe-puntos').checked, puntos_enteros: $('pe-enteros').checked, campos_estudiante: $('pe-campos').checked,
     ...logosEd,
   };
 }

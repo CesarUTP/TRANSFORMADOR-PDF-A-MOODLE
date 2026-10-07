@@ -12,6 +12,7 @@
  * La clave nunca se copia: se toma del examen completo, así que cada pregunta lleva SU respuesta.
  */
 import { autoDistributePoints } from './puntos.js';
+import { repartirEnteros } from './puntos-pdf.js';
 
 export const MAX_VERSIONES = 12;
 export const MODOS = ['aleatorio', 'por_tipo'];
@@ -223,8 +224,11 @@ export function numsEnOrden(version, questions, { partes = true, barajarPregunta
 }
 
 // ── Puntos ─────────────────────────────────────────────────────────────────
-/** Los puntos de cada pregunta de la versión: el del docente si lo cambió; si no, el del examen. */
-export function puntosDeVersion(version, questions) {
+/**
+ * Los puntos de cada pregunta de la versión: el del docente si lo cambió; si no, el del examen.
+ * Con `enteros` (la opción «Puntos enteros» del PDF) salen en números enteros con el mismo total, sin tocar los del examen.
+ */
+export function puntosDeVersion(version, questions, enteros = false) {
   const porNum = new Map(questions.map(q => [q.num, q]));
   const salida = {};
   for (const n of version.nums) {
@@ -233,43 +237,49 @@ export function puntosDeVersion(version, questions) {
     const p = propio !== undefined ? propio : (q && Number.isFinite(q.points) ? q.points : 0);
     salida[n] = Number.isFinite(p) && p >= 0 ? p : 0;
   }
-  return salida;
+  if (!enteros) return salida;
+  const r = repartirEnteros(version.nums.map(n => salida[n]), version.nums.map(n => (porNum.get(n) || {}).type));
+  return Object.fromEntries(version.nums.map((n, i) => [n, r.puntos[i]]));
 }
 
 /** La suma de los puntos de una versión (en centésimas exactas). */
-export function totalDeVersion(version, questions) {
-  return redondear(Object.values(puntosDeVersion(version, questions)).reduce((a, b) => a + b, 0));
+export function totalDeVersion(version, questions, enteros = false) {
+  return redondear(Object.values(puntosDeVersion(version, questions, enteros)).reduce((a, b) => a + b, 0));
 }
 
-/** Reparte `total` puntos entre las preguntas de la versión ('equal' o 'byType'); la suma cuadra siempre. */
-export function repartirVersion(version, questions, total, modo = 'byType') {
+/** Reparte `total` puntos entre las preguntas de la versión ('equal' o 'byType'); la suma cuadra siempre (con `enteros`, en enteros). */
+export function repartirVersion(version, questions, total, modo = 'byType', enteros = false) {
   const porNum = new Map(questions.map(q => [q.num, q]));
   const copia = version.nums.filter(n => porNum.has(n)).map(n => ({ num: n, type: porNum.get(n).type }));
   autoDistributePoints(copia, total, modo);
+  if (enteros) {
+    const r = repartirEnteros(copia.map(q => q.points), copia.map(q => q.type), Math.round(Number(total)));
+    return Object.fromEntries(copia.map((q, i) => [q.num, r.puntos[i]]));
+  }
   return Object.fromEntries(copia.map(q => [q.num, q.points]));
 }
 
 /** ¿La suma de la versión es el total que se quiere? (`objetivo` vacío = no se compara). */
-export function cuadra(version, questions, objetivo) {
+export function cuadra(version, questions, objetivo, enteros = false) {
   const meta = Number(objetivo);
   if (!Number.isFinite(meta) || meta <= 0) return true;
-  return Math.abs(totalDeVersion(version, questions) - meta) < 0.005;
+  return Math.abs(totalDeVersion(version, questions, enteros) - meta) < 0.005;
 }
 
 // ── Lo que se envía al servidor ───────────────────────────────────────────
 /**
  * El examen de UNA versión (para su vista previa): solo sus preguntas, en su orden, con sus puntos y SU clave.
- * `opciones`: { partes, barajarPreguntas }.
+ * `opciones`: { partes, barajarPreguntas, enteros }.
  */
 export function examenDeVersion(examen, version, opciones = {}) {
   const orden = numsEnOrden(version, examen.questions, opciones);
   const porNum = new Map(examen.questions.map(q => [q.num, q]));
-  const puntos = puntosDeVersion(version, examen.questions);
+  const puntos = puntosDeVersion(version, examen.questions, !!opciones.enteros);
   const answer_key = {};
   for (const n of orden) if (examen.answer_key && examen.answer_key[n] !== undefined) answer_key[n] = examen.answer_key[n];
   return {
     filename: examen.filename,
-    total_points: Math.max(0.01, totalDeVersion(version, examen.questions)),
+    total_points: Math.max(0.01, totalDeVersion(version, examen.questions, !!opciones.enteros)),
     questions: orden.map(n => ({ ...porNum.get(n), points: puntos[n] })),
     answer_key,
   };
@@ -277,11 +287,13 @@ export function examenDeVersion(examen, version, opciones = {}) {
 
 /** Las versiones tal como las pide POST /api/exportar_versiones (el examen completo va aparte). */
 export function versionesParaEnviar(examen, versiones, opciones = {}) {
+  const enteros = !!opciones.enteros;
   return versiones.map(v => ({
     etiqueta: v.etiqueta,
     nums: numsEnOrden(v, examen.questions, opciones),
-    puntos: Object.fromEntries(Object.entries(v.puntos).map(([k, p]) => [String(k), p])),
-    total_points: Math.max(0.01, totalDeVersion(v, examen.questions)),
+    // Con enteros se mandan los puntos de TODAS las preguntas (los del examen son decimales); si no, solo los que el docente cambió.
+    puntos: Object.fromEntries(Object.entries(enteros ? puntosDeVersion(v, examen.questions, true) : v.puntos).map(([k, p]) => [String(k), p])),
+    total_points: Math.max(0.01, totalDeVersion(v, examen.questions, enteros)),
   }));
 }
 

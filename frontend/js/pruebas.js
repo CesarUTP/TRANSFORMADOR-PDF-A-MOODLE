@@ -8,6 +8,7 @@
  * páginas (backend/seguridad.py) no deja correr scripts en línea.
  */
 import { autoDistributePoints, fmtPoints, DEFAULT_TYPE_WEIGHTS } from './puntos.js';
+import { alternativasDeTotal, esEntero, examenConPuntos, puntosParaPdf, repartirEnteros } from './puntos-pdf.js';
 import { questionIssues } from './validacion.js';
 import { construirClozeDesdeSegmentos, huecoDeEstructura, indicesUtilizables, parseClozeSegments } from './editor/cloze-segmentos.js';
 import { claveDeOpcionMultiple, letrasCorrectasPorIndice } from './editor/respuesta-indices.js';
@@ -1196,6 +1197,111 @@ prueba('versiones: los puntos se pueden repartir de nuevo y la suma cuadra', () 
   igual(puntosDeVersion(uno, banco100)[v.nums[0]], 7, 'un valor editado a mano manda');
   igual(totalDeVersion({ nums: [1, 2], puntos: { 1: 0.1, 2: 0.2 } }, banco100), 0.3, 'sin errores de coma flotante');
 });
+// ── Puntos enteros para el PDF (2.7) ────────────────────────────────────────
+/** Un examen con `cuentas` = { tipo: cuántas } y sus puntos repartidos por tipo, como lo deja el editor. */
+const examenPorTipo = (cuentas, total) => {
+  const qs = [];
+  for (const [tipo, n] of Object.entries(cuentas)) for (let i = 0; i < n; i++) qs.push({ num: qs.length + 1, type: tipo, points: 0, data: { stem: `P${qs.length + 1}` } });
+  autoDistributePoints(qs, total, 'byType');
+  return { filename: 'e.docx', total_points: total, questions: qs, answer_key: {} };
+};
+const valoresPorTipo = (ex, r) => Object.fromEntries([...new Set(ex.questions.map(q => q.type))].map(t => [t, [...new Set(ex.questions.filter(q => q.type === t).map(q => r.porNum[q.num]))]]));
+
+prueba('puntos enteros: 5 + 5 + 5 preguntas y 100 puntos dan 7, 3 y 10 (iguales por tipo, suma exacta)', () => {
+  const ex = examenPorTipo({ multichoice: 5, truefalse: 5, matching: 5 }, 100);
+  const r = puntosParaPdf(ex);
+  igual(valoresPorTipo(ex, r), { multichoice: [7], truefalse: [3], matching: [10] });
+  igual([r.total, r.uniforme, r.ceros, r.alternativas.length], [100, true, 0, 0]);
+});
+prueba('puntos enteros: 15 de un tipo y 100 puntos = 10 de 7 y 5 de 6 (las primeras valen más) y ofrece 105 y 90', () => {
+  const ex = examenPorTipo({ multichoice: 15 }, 100);
+  const r = puntosParaPdf(ex);
+  const lista = ex.questions.map(q => r.porNum[q.num]);
+  igual([lista.filter(x => x === 7).length, lista.filter(x => x === 6).length, r.total, r.uniforme], [10, 5, 100, false]);
+  igual(lista.slice(0, 10), Array(10).fill(7), 'las primeras llevan el punto de más');
+  igual(r.alternativas.map(a => a.total), [105, 90]);
+});
+prueba('puntos enteros: cambiar el total a una alternativa deja todas las preguntas del tipo iguales', () => {
+  const ex = examenPorTipo({ multichoice: 15 }, 100);
+  const r = puntosParaPdf(ex, { total: 105 });
+  igual([...new Set(ex.questions.map(q => r.porNum[q.num]))], [7]);
+  igual([r.total, r.uniforme], [105, true]);
+});
+prueba('puntos enteros: la suma siempre es el total entero y ningún valor tiene decimales', () => {
+  for (const [cuentas, total] of [[{ multichoice: 7, truefalse: 3 }, 20], [{ multichoice: 11, cloze: 4, essay: 2 }, 100], [{ matching: 3 }, 50], [{ truefalse: 40, shortanswer: 20 }, 100]]) {
+    const ex = examenPorTipo(cuentas, total);
+    const r = puntosParaPdf(ex);
+    igual(r.total, total, JSON.stringify(cuentas));
+    igual(ex.questions.every(q => esEntero(r.porNum[q.num])), true, JSON.stringify(cuentas));
+    igual(ex.questions.reduce((a, q) => a + r.porNum[q.num], 0), total, JSON.stringify(cuentas));
+  }
+});
+prueba('puntos enteros: un total con decimales (17,5) se lleva al entero más cercano y se nota en el total', () => {
+  const ex = examenPorTipo({ multichoice: 5, truefalse: 2 }, 17.5);
+  const r = puntosParaPdf(ex);
+  igual([r.total, r.totalEditor], [18, 17.5]);
+});
+prueba('puntos enteros: valores propios dentro de un tipo se respetan (solo se afinan los decimales)', () => {
+  const ex = { filename: 'e', total_points: 10, questions: [{ num: 1, type: 'multichoice', points: 5 }, { num: 2, type: 'multichoice', points: 3 }, { num: 3, type: 'multichoice', points: 2 }], answer_key: {} };
+  igual(puntosParaPdf(ex).porNum, { 1: 5, 2: 3, 3: 2 });
+});
+prueba('puntos enteros: las ediciones a mano mandan y cambian el total del PDF, no el de Moodle', () => {
+  const ex = examenPorTipo({ multichoice: 20 }, 100);
+  const r = puntosParaPdf(ex, { ediciones: { 1: 9 } });
+  igual([r.porNum[1], r.porNum[2], r.total, r.totalEditor], [9, 5, 104, 100]);
+  igual(r.diferencias.map(d => d.num), [1]);
+  igual(ex.questions[0].points, 5, 'el examen original no se toca');
+});
+prueba('puntos enteros: más preguntas que puntos deja preguntas en 0 y lo dice', () => {
+  const ex = examenPorTipo({ multichoice: 8 }, 5);
+  const r = puntosParaPdf(ex);
+  igual([r.total, r.ceros], [5, 3]);
+});
+prueba('puntos enteros: el examen para el PDF es una copia con el total entero', () => {
+  const ex = examenPorTipo({ multichoice: 15 }, 100);
+  const copia = examenConPuntos(ex, puntosParaPdf(ex));
+  igual(copia.total_points, 100);
+  igual(copia.questions.every(q => Number.isInteger(q.points)), true);
+  igual(ex.questions.every(q => !Number.isInteger(q.points)), true, 'el original sigue con decimales');
+  igual(copia.questions[0].data, ex.questions[0].data);
+});
+prueba('puntos enteros: sin puntos de partida se reparte en partes iguales con el total del examen', () => {
+  const ex = { filename: 'e', total_points: 10, questions: [{ num: 1, type: 'multichoice' }, { num: 2, type: 'truefalse' }], answer_key: {} };
+  igual(puntosParaPdf(ex).porNum, { 1: 5, 2: 5 });
+});
+prueba('puntos enteros: repartirEnteros y alternativas por separado', () => {
+  igual(repartirEnteros([6.67, 6.67, 6.66], ['a', 'a', 'a']).puntos, [7, 7, 6]);
+  igual(repartirEnteros([], []).total, 0);
+  igual(repartirEnteros([1, -3, NaN], ['a', 'a', 'a'], 4).puntos.reduce((x, y) => x + y, 0), 4, 'lo no válido cuenta como 0');
+  igual(alternativasDeTotal(Array(15).fill(100 / 15), Array(15).fill('a'), 100).map(a => a.total), [105, 90]);
+});
+prueba('puntos enteros: las versiones muestran y envían enteros sin tocar los del examen', () => {
+  const ex = { filename: 'b.docx', total_points: 100, questions: banco100.map(q => ({ ...q, points: 1.67 })), answer_key: claveBanco };
+  const v = { etiqueta: 'A', nums: banco100.slice(0, 15).map(q => q.num), puntos: {} };
+  const dec = totalDeVersion(v, ex.questions);
+  igual(dec, 25.05);
+  const ent = totalDeVersion(v, ex.questions, true);
+  igual(ent, 25);
+  igual(Object.values(puntosDeVersion(v, ex.questions, true)).every(esEntero), true);
+  igual(cuadra(v, ex.questions, 25, true), true);
+  v.puntos = repartirVersion(v, ex.questions, 100, 'byType', true);
+  igual(Object.values(v.puntos).every(esEntero) && totalDeVersion(v, ex.questions, true) === 100, true);
+  const enviado = versionesParaEnviar(ex, [{ etiqueta: 'B', nums: [1, 2, 3], puntos: {} }], { enteros: true })[0];
+  igual(Object.values(enviado.puntos).every(esEntero), true);
+  igual(enviado.total_points, 5);
+  igual(examenDeVersion(ex, { nums: [1, 2, 3], puntos: {} }, { enteros: true }).questions.every(q => Number.isInteger(q.points)), true);
+  igual(ex.questions[0].points, 1.67);
+});
+prueba('puntos enteros: la opción se recuerda, viaja en el perfil y viene activada de fábrica', () => {
+  igual(valoresIniciales(null).puntos_enteros, true);
+  igual(valoresIniciales({ puntos_enteros: false }).puntos_enteros, false);
+  igual(valoresIniciales({ puntos_enteros: 'no' }).puntos_enteros, true, 'un valor raro cae al de siempre');
+  igual(datosDePerfil({ puntos_enteros: false }).puntos_enteros, false);
+  igual(PERFIL_CAMPOS.includes('puntos_enteros'), true);
+  igual(paraGuardar({ puntos_enteros: false }).puntos_enteros, false);
+  igual(datosParaEnviar({}).puntos_enteros, true);
+});
+
 prueba('versiones: lo que se envía al servidor lleva el orden, los puntos y el total de cada versión', () => {
   const ex = { filename: 'b.docx', total_points: 100, questions: banco100, answer_key: claveBanco };
   const vs = sortear(banco100, conPlan({ versiones: 2 }), 8);

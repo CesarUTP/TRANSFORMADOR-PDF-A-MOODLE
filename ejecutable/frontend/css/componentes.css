@@ -1229,6 +1229,15 @@ strong.txt-fuerte { color: var(--color-text); }
 .ver-pregunta-texto small { color: var(--color-text-subtle); margin-left: 6px; }
 .ver-pregunta .form-input { padding: 5px 8px; font-size: var(--text-sm); text-align: right; }
 
+/* Puntos enteros del PDF (2.7). */
+.pts-panel[hidden] { display: none; }
+.pts-nota { display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); line-height: 1.5; color: var(--color-text-muted); }
+.pts-nota p { margin: 0; }
+.pts-nota .pts-principal { color: var(--color-text); font-weight: 700; font-variant-numeric: tabular-nums; }
+.pts-nota .pts-alerta { color: var(--color-warning); font-weight: 700; }
+.pts-alt { display: flex; flex-wrap: wrap; gap: 8px; }
+.pts-alt[hidden] { display: none; }
+
 /* ── MI PERFIL ───────────────────────────────────────────────────────── */
 .btn-avatar {
   width: 38px; height: 38px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;

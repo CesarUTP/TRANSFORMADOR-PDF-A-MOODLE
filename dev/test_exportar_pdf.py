@@ -590,6 +590,14 @@ ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"tam_preguntas": 5}},
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"fuente_titulos": "times", "tam_titulos": 12.5, "fuente_preguntas": "arial", "tam_preguntas": 10}}, headers=H).status_code == 200, "tipo de letra y tamaños válidos: 200")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"renglones_ensayo": 1}}, headers=H).status_code == 422 and cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"renglones_ensayo": 99}}, headers=H).status_code == 422, "renglones fuera de 2 a 24: 422")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"puntos_por_pregunta": False, "renglones_ensayo": 10}}, headers=H).status_code == 200, "sin puntos por pregunta y 10 renglones: 200")
+# Puntos enteros (2.7): el servidor NO redondea; si se pidieron enteros y llega un decimal, lo rechaza y dice cuáles.
+con_decimales = {**cuerpo, "questions": [{**q, "points": 6.67} for q in qs]}
+r_dec = cli.post("/api/exportar_pdf", json={**con_decimales, "datos": {"puntos_enteros": True}}, headers=H)
+ok(r_dec.status_code == 422 and "decimales" in r_dec.json()["detail"] and "6,67" in r_dec.json()["detail"], f"puntos enteros + decimales: 422 con el motivo ({r_dec.status_code})")
+ok(cli.post("/api/exportar_pdf", json=con_decimales, headers=H).status_code == 200, "sin pedir enteros, los decimales pasan igual que siempre")
+con_enteros = {**cuerpo, "questions": [{**q, "points": 7.0} for q in qs]}
+ok(cli.post("/api/exportar_pdf", json={**con_enteros, "datos": {"puntos_enteros": True}}, headers=H).status_code == 200, "puntos enteros + enteros: 200")
+ok(cli.post("/api/vista_previa_pdf", json={**con_decimales, "datos": {"puntos_enteros": True}}, headers=H).status_code == 422, "la vista previa también avisa de los decimales")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"margenes": "enormes"}}, headers=H).status_code == 422, "márgenes desconocidos: 422")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"margenes": "estrechos"}}, headers=H).status_code == 200, "márgenes «estrechos»: 200")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"papel": "folio"}}, headers=H).status_code == 422, "papel desconocido: 422")

@@ -617,6 +617,15 @@
             </section>
 
             <section class="guia-sec">
+              <h3>Puntos enteros en el PDF</h3>
+              <p>En papel, un valor como 6,67 complica calificar y deja errores de redondeo. La opción <strong>Puntos enteros</strong> (en <em>Formato</em>, activada de fábrica) hace que el PDF use solo números enteros con el mismo total. <strong>El XML de Moodle no cambia</strong>: allí los puntos siguen como en el editor y Moodle los suma solo.</p>
+              <ul class="guia-lista">
+                <li><strong>Cómo se reparten:</strong> si se puede, todas las preguntas de un mismo tipo valen lo mismo (por ejemplo 7, 3 y 10 en vez de 6,67, 3,33 y 10). Si no, algunas del mismo tipo valen 1 punto más, y la pantalla te lo dice.</li>
+                <li><strong>Totales que sí cuadran:</strong> cuando no hay reparto en iguales, la pantalla ofrece totales cercanos que sí lo permiten (por ejemplo 90 o 105 en vez de 100). Elegirlos solo cambia el total del PDF.</li>
+                <li><strong>Tú decides:</strong> en <em>Puntos de cada pregunta en el PDF</em> ves cuánto valdrá cada una (y cuánto vale en Moodle) y puedes cambiar cualquiera; el total del PDF será la suma de lo que ves. Si prefieres medios puntos, desactiva la opción (también en tu perfil de encabezado).</li>
+              </ul>
+            </section>
+            <section class="guia-sec">
               <h3>Varias versiones de un examen</h3>
               <p>Si subiste un examen de, digamos, 100 preguntas, ese examen puede hacer de <strong>banco</strong>: en el XML de Moodle lo usas completo y configuras allí el sorteo al azar; para <strong>papel</strong>, la sección <em>Versiones del examen</em> de la pantalla del PDF saca varios parciales distintos, cada uno con su clave.</p>
               <ul class="guia-lista">
@@ -1066,6 +1075,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-mezclar"> <span><strong>Mezclar el orden de las opciones</strong><small>Para que la clave no forme un patrón (1-a, 2-b, 3-c).</small></span></label>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-partes"> <span><strong>Dividir el examen en partes</strong><small>Agrupa las preguntas por tipo, con su indicación y su valor.</small></span></label>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-puntos"> <span><strong>Mostrar cuánto vale cada pregunta</strong></span></label>
+                <label class="pdf-opcion"><input type="checkbox" id="pe-enteros"> <span><strong>Puntos enteros</strong><small>El PDF usa solo números enteros, con el mismo total. El Moodle XML no cambia.</small></span></label>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-campos"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>
               </div>
             </details>
@@ -1466,6 +1476,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
               <label class="pdf-opcion"><input type="checkbox" name="mezclar"> <span><strong>Mezclar el orden de las opciones</strong><small>Baraja las opciones de selección múltiple y la Columna B de los emparejamientos para que la clave no forme un patrón (por ejemplo 1-a, 2-b, 3-c). Las preguntas con «todas las anteriores» o «A y B» conservan su orden. La clave usa las letras impresas.</small></span></label>
               <label class="pdf-opcion"><input type="checkbox" name="partes"> <span><strong>Dividir el examen en partes</strong><small>Agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con la indicación para el estudiante y el valor de cada parte. Las preguntas del mismo tipo quedan juntas.</small></span></label>
               <label class="pdf-opcion"><input type="checkbox" name="puntos_por_pregunta"> <span><strong>Mostrar cuánto vale cada pregunta</strong><small>Si lo desmarcas, el examen solo dice el valor de cada parte y el total; la clave sí conserva el valor de cada pregunta.</small></span></label>
+              <label class="pdf-opcion"><input type="checkbox" name="puntos_enteros"> <span><strong>Puntos enteros</strong><small>El PDF usa solo números enteros (7 pts en vez de 6,67) para calificar sin redondeos. Mantiene el total y no cambia el Moodle XML: allí los puntos siguen como en el editor.</small></span></label>
               <label class="pdf-opcion"><input type="checkbox" name="campos_estudiante"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>
             </div>
           </details>
@@ -1496,6 +1507,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <details class="pdf-seccion" id="pdf-ver-detalle">
               <summary><span>Puntos de cada pregunta</span><small id="pdf-ver-detalle-resumen"></small></summary>
               <div class="pdf-seccion-cuerpo"><ol class="ver-preguntas" id="pdf-ver-preguntas"></ol></div>
+            </details>
+          </div>
+          <!-- Puntos enteros (2.7): lo que valdrá cada pregunta en el PDF cuando no hay versiones. -->
+          <div class="ver-panel pts-panel" id="pdf-pts-panel" hidden>
+            <div class="pts-nota" id="pdf-pts-nota" role="status"></div>
+            <div class="pts-alt" id="pdf-pts-alt" hidden></div>
+            <details class="pdf-seccion" id="pdf-pts-detalle">
+              <summary><span>Puntos de cada pregunta en el PDF</span><small id="pdf-pts-detalle-resumen"></small></summary>
+              <div class="pdf-seccion-cuerpo"><ol class="ver-preguntas" id="pdf-pts-lista"></ol></div>
             </details>
           </div>
           <div class="pdf-vista-barra">

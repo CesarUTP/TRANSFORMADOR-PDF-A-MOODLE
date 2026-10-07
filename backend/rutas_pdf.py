@@ -64,6 +64,7 @@ class DatosPortada(BaseModel):
     partes: bool = True
     mezclar: bool = True
     puntos_por_pregunta: bool = True
+    puntos_enteros: bool = False      # el diálogo lo manda activado por defecto; una llamada sin él conserva los puntos tal cual
     renglones_ensayo: int = Field(6, ge=exportar_pdf.RENGLONES_MIN, le=exportar_pdf.RENGLONES_MAX)
     # Logos en base64 (el diálogo los reduce antes de enviarlos); "" = sin logo.
     logo_izquierdo: str = Field("", max_length=exportar_pdf.LIMITE_LOGO)
@@ -89,9 +90,12 @@ def _exportar_sync(req: ExportarPdfRequest, clave: Dict[int, Any]):
         titulo_respaldo=Path(req.filename).stem, version=d.version, contenido=d.contenido, papel=d.papel, margenes=d.margenes,
         fuente_titulos=d.fuente_titulos, tam_titulos=d.tam_titulos, fuente_preguntas=d.fuente_preguntas, tam_preguntas=d.tam_preguntas,
         campos_estudiante=d.campos_estudiante, rotulo_docente=d.rotulo_docente, partes=d.partes, mezclar=d.mezclar,
-        puntos_por_pregunta=d.puntos_por_pregunta, renglones_ensayo=d.renglones_ensayo,
+        puntos_por_pregunta=d.puntos_por_pregunta, puntos_enteros=d.puntos_enteros, renglones_ensayo=d.renglones_ensayo,
         logo_izquierdo=d.logo_izquierdo, logo_derecho=d.logo_derecho)
-    return exportar_pdf.generar_pdf(req.questions, clave, req.total_points, datos)
+    try:
+        return exportar_pdf.generar_pdf(req.questions, clave, req.total_points, datos)
+    except exportar_pdf.PuntosNoEnteros as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 _SUFIJO = {"examen_y_clave": "_examen_y_clave", "solo_examen": "_examen", "solo_clave": "_clave",
@@ -162,9 +166,12 @@ def _exportar_versiones_sync(req: ExportarVersionesRequest, clave: Dict[int, Any
             version=etiqueta, contenido=d.contenido, papel=d.papel, margenes=d.margenes,
             fuente_titulos=d.fuente_titulos, tam_titulos=d.tam_titulos, fuente_preguntas=d.fuente_preguntas, tam_preguntas=d.tam_preguntas,
             campos_estudiante=d.campos_estudiante, rotulo_docente=d.rotulo_docente, partes=d.partes, mezclar=d.mezclar,
-            puntos_por_pregunta=d.puntos_por_pregunta, renglones_ensayo=d.renglones_ensayo,
+            puntos_por_pregunta=d.puntos_por_pregunta, puntos_enteros=d.puntos_enteros, renglones_ensayo=d.renglones_ensayo,
             logo_izquierdo=d.logo_izquierdo, logo_derecho=d.logo_derecho)
-        r = exportar_pdf.generar_pdf(qs, clave_v, v.total_points, datos)
+        try:
+            r = exportar_pdf.generar_pdf(qs, clave_v, v.total_points, datos)
+        except exportar_pdf.PuntosNoEnteros as exc:
+            raise HTTPException(status_code=422, detail=f"Versión {etiqueta}: {exc}")
         archivos.append((f"{stem}_version_{versiones.etiqueta_para_archivo(etiqueta)}{sufijo}.pdf", r.pdf))
         resumen.append({"etiqueta": etiqueta, "paginas": r.paginas, "preguntas": r.preguntas})
         avisos += [f"Versión {etiqueta}: {a}" for a in r.avisos]
@@ -255,6 +262,7 @@ class PerfilPdf(BaseModel):
     partes: bool = True
     mezclar: bool = True
     puntos_por_pregunta: bool = True
+    puntos_enteros: bool = True        # los perfiles nuevos (y los viejos, al leerlos) usan puntos enteros
     renglones_ensayo: int = Field(6, ge=exportar_pdf.RENGLONES_MIN, le=exportar_pdf.RENGLONES_MAX)
 
 
