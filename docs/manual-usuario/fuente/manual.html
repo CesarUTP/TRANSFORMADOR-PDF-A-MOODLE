@@ -45,7 +45,7 @@ table { break-inside: avoid; border-collapse: collapse; width: 100%; font-size: 
 th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pizarra); background: var(--fondo); } tr { break-inside: avoid; }
 .chip { display: inline-block; padding: 0.4mm 2.4mm; border-radius: 99px; font-size: 8.3pt; font-weight: 800; background: #e0f2fe; color: #075985; }
 .tecla { display: inline-block; min-width: 6mm; text-align: center; padding: 0.2mm 1.6mm; border: 1px solid var(--borde); border-bottom-width: 2px; border-radius: 4px; font: 600 8.6pt 'JetBrains Mono', monospace; background: #fff; }
-.tarj { border: 1px solid var(--borde); border-radius: 12px; padding: 4mm 4.5mm 2mm; break-inside: avoid; background: #fff; } .tarj h4 { margin-top: 0; }
+.tarj { border: 1px solid var(--borde); border-radius: 12px; padding: 4mm 4.5mm 2mm; break-inside: avoid; background: #fff; } .tarj h4 { margin-top: 0; } .tarj h3.tj { margin: 0 0 1.5mm; font-size: 11pt; }
 .indice { margin: 0; list-style: none; } .indice li { display: flex; align-items: baseline; gap: 2mm; padding: 1.05mm 0; border-bottom: 1px solid var(--borde); margin: 0; } .indice .n { font: 800 10pt 'Outfit'; color: var(--azul); width: 8mm; } .indice .d { flex: 1; } .indice .pg { font: 800 9.5pt 'Outfit'; color: var(--marino); }
 .indice li.sub { padding-left: 8mm; font-size: 9.2pt; color: var(--pizarra); padding-top: 0.6mm; padding-bottom: 0.6mm; } .indice li.sub .pg { font-weight: 600; }
 </style>
@@ -181,10 +181,10 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <div class="ey">4 · Guías por tarea</div><h2>Guías por tarea</h2>
   <p class="lead">Cada guía es independiente y responde a una pregunta: «¿cómo hago…?». Ve directo a la que necesites.</p>
   <div class="dos">
-    <div class="tarj"><h4>Revisar</h4><ul><li>Revisar bien las preguntas</li><li>Revisar con el original</li><li>Completar una respuesta que falta y otras ayudas con IA</li></ul></div>
-    <div class="tarj"><h4>Llevar a Moodle</h4><ul><li>Corregir un XML que ya tienes</li><li>Importar el XML en Moodle</li></ul></div>
-    <div class="tarj"><h4>Llevar al papel</h4><ul><li>Exportar el examen en PDF</li><li>Sacar varias versiones de un examen</li></ul></div>
-    <div class="tarj"><h4>Organizarte</h4><ul><li>Ordenar tus exámenes por materia</li><li>Guardar tus datos y encabezados en Mi perfil</li><li>El robot ayudante y la Guía</li></ul></div>
+    <div class="tarj"><h3 class="tj">Revisar</h3><ul><li>Revisar bien las preguntas</li><li>Revisar con el original</li><li>Completar una respuesta que falta y otras ayudas con IA</li></ul></div>
+    <div class="tarj"><h3 class="tj">Llevar a Moodle</h3><ul><li>Corregir un XML que ya tienes</li><li>Importar el XML en Moodle</li></ul></div>
+    <div class="tarj"><h3 class="tj">Llevar al papel</h3><ul><li>Exportar el examen en PDF</li><li>Sacar varias versiones de un examen</li></ul></div>
+    <div class="tarj"><h3 class="tj">Organizarte</h3><ul><li>Ordenar tus exámenes por materia</li><li>Guardar tus datos y encabezados en Mi perfil</li><li>El robot ayudante y la Guía</li></ul></div>
   </div>
 </section>
 
@@ -258,7 +258,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <table><tr><th style="width:30%">Ayuda</th><th>Qué hace</th></tr>
     <tr><td><span class="btn">Escribir con IA</span> (retroalimentación)</td><td>Redacta la explicación que verá el estudiante después de responder. Es opcional: puedes escribirla tú, pedirla a la IA o dejarla vacía. Si tu documento trae la justificación, se copia sola.</td></tr>
     <tr><td><span class="btn">Mejorar redacción</span></td><td>Corrige ortografía y claridad del enunciado <b>sin cambiar datos, código ni fórmulas</b>. Ves la propuesta y eliges.</td></tr>
-    <tr><td><b>Posibles problemas</b></td><td>Avisos de preguntas repetidas u opciones dependientes. No usa IA.</td></tr></table>
+    <tr><td><b>Posibles problemas</b></td><td>Avisa de preguntas repetidas u opciones que dependen de otras, sin usar IA.</td></tr></table>
   <h4>Imágenes y fórmulas</h4>
   <p>Las imágenes de tu documento viajan a Moodle dentro de su pregunta. En la revisión puedes quitarlas, moverlas a otra pregunta, o agregar las tuyas con <span class="btn">Agregar imagen</span> o soltando el archivo sobre la pregunta. Las fórmulas se escriben en LaTeX entre <span class="mono">\( … \)</span>, con vista previa.</p>
 </section>
@@ -514,9 +514,9 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
 <section class="sec" id="glosario" data-titulo="Actualizar, desinstalar y glosario">
   <div class="ey">8 · Mantenimiento</div><h2>Actualizar, desinstalar y glosario</h2>
   <div class="dos" style="margin-top:3mm;">
-    <div class="tarj"><h4>Actualizar</h4><p>Abre <span class="btn">Acerca de</span>: ahí ves tu versión y, con <span class="btn">Buscar actualizaciones</span>, si hay una nueva. Si la hay, el botón <span class="btn">Descargar</span> te lleva a la página de la versión para bajar el instalador. Cátedra también te avisa sola al abrirse. Tus exámenes, materias y perfiles se conservan.</p>
+    <div class="tarj"><h3 class="tj">Actualizar</h3><p>Abre <span class="btn">Acerca de</span>: ahí ves tu versión y, con <span class="btn">Buscar actualizaciones</span>, si hay una nueva. Si la hay, el botón <span class="btn">Descargar</span> te lleva a la página de la versión para bajar el instalador. Cátedra también te avisa sola al abrirse. Tus exámenes, materias y perfiles se conservan.</p>
     <p style="font-size:9.3pt;color:var(--pizarra);">Al abrir una versión nueva por primera vez puede actualizar tu base de datos y dejar una copia de seguridad previa.</p></div>
-    <div class="tarj"><h4>Desinstalar</h4><p><b>Windows:</b> desde «Aplicaciones» o «Agregar o quitar programas». El desinstalador te pregunta si también quieres borrar tu historial y tu clave guardados; la respuesta por defecto es <b>No</b>.</p><p><b>macOS:</b> arrastra Catedra desde Aplicaciones a la Papelera. Para borrar también tus datos, elimina la carpeta <span class="mono">ConversorMoodleXML</span> de <span class="mono">~/Library/Application Support/</span>.</p></div>
+    <div class="tarj"><h3 class="tj">Desinstalar</h3><p><b>Windows:</b> desde «Aplicaciones» o «Agregar o quitar programas». El desinstalador te pregunta si también quieres borrar tu historial y tu clave guardados; la respuesta por defecto es <b>No</b>.</p><p><b>macOS:</b> arrastra Catedra desde Aplicaciones a la Papelera. Para borrar también tus datos, elimina la carpeta <span class="mono">ConversorMoodleXML</span> de <span class="mono">~/Library/Application Support/</span>.</p></div>
   </div>
   <h3>Glosario</h3>
   <table><tr><th style="width:26%">Término</th><th>Qué significa</th></tr>
