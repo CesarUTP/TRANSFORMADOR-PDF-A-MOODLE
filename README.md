@@ -24,6 +24,9 @@
 **Cátedra** (antes «Conversor a Moodle XML») lleva tus evaluaciones de punta a punta: convierte pruebas, cuestionarios y exámenes (**PDF**, Word o **TXT**) en un archivo **Moodle XML Question Format** listo para importar, los imprime en PDF con su clave, saca varias versiones y los ordena por materia. Corre como una app de escritorio nativa en Windows y macOS — **no hace falta saber nada técnico para usarla**.
 
 > [!TIP]
+> **Manual de usuario:** [**Cátedra: Manual de usuario (PDF)**](docs/manual-usuario/Catedra-Manual-de-Usuario.pdf) explica, con capturas, cómo instalar, convertir un examen, revisarlo, importarlo en Moodle, imprimirlo en PDF, sacar varias versiones y ordenarlo por materia.
+
+> [!TIP]
 > **Identidad visual:** el logo, los colores, las tipografías y el tono de Cátedra están en el [**Manual de identidad visual (PDF)**](docs/identidad/Catedra-Manual-de-Identidad-Visual.pdf). Los archivos del logo (SVG) están en [`assets/marca/`](assets/marca/).
 
 > [!IMPORTANT]
@@ -285,6 +288,7 @@ Cátedra/
 ├── assets/Icon.ico       ← Ícono oficial de la app (ejecutable, instalador y UI)
 ├── assets/marca/         ← El logo de Cátedra en SVG (principal, claro, monocromo y glifos)
 ├── docs/identidad/       ← Manual de identidad visual (PDF) y su fuente (se regenera con dev/generar_manual_identidad.py)
+├── docs/manual-usuario/  ← Manual de usuario (PDF, tamaño carta), su fuente y las capturas (dev/generar_manual_usuario.py)
 ├── errores.log           ← Trazas de errores inesperados (se crea solo, no versionado)
 ├── data/exams_history.db ← Historial (se crea solo, no versionado)
 ├── docs/                 ← Referencia del spec Moodle XML
