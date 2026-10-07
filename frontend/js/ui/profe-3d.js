@@ -1,58 +1,64 @@
 /**
- * profe-3d.js — «el profe»: el personaje 3D del asistente flotante (ui/asistente.js).
+ * profe-3d.js — el personaje 3D del asistente flotante (ui/asistente.js): un robot redondo y amable.
  *
- * Es un busto MINIMALISTA y sobrio (un docente universitario, no un muñeco) armado entero con código (three.js):
- * ningún modelo ni imagen descargados. Proporciones de adulto —cabeza ovalada, hombros anchos, cuello—, formas
- * simples y un solo color por pieza: pelo corto, ojos redondos con brillo, lentes redondos de pasta gruesa,
- * mejillas rosadas, sonrisa amable, saco azul marino liso con la camisa en V. Respira, parpadea, sigue el puntero con la mirada
- * y la cámara (paralaje) y SACA LA MANO para saludar.
+ * Está armado entero con código (three.js): ningún modelo ni imagen descargados. Cabeza esférica blanca con un visor
+ * azul marino donde se dibujan dos ojos felices (arcos celestes) y dos mejillas ámbar, antena con una bolita ámbar,
+ * cuerpo ovalado con una placa ámbar y dos brazos: el derecho de la pantalla saluda, el izquierdo cuelga relajado.
+ * Respira, parpadea, sigue el puntero con la mirada y la cámara (paralaje) y SACA LA MANO para saludar.
+ * Formas simples y un solo color por pieza (la paleta de Cátedra: azul marino, ámbar y celeste): no añadir detalles
+ * sin que el usuario lo pida. El nombre del archivo y de crearProfe() se conservan de cuando era un profe de carne y hueso.
  * Si el equipo no tiene WebGL, crearProfe() devuelve null y el asistente muestra un ícono en su lugar.
  */
 import {
-  BufferGeometry, CapsuleGeometry, CircleGeometry, Color, CylinderGeometry, DirectionalLight, DoubleSide, Float32BufferAttribute, Group,
-  HemisphereLight, MathUtils, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Scene, Shape, ShapeGeometry, SphereGeometry,
+  BufferGeometry, CapsuleGeometry, Color, CylinderGeometry, DirectionalLight, DoubleSide, Float32BufferAttribute, Group,
+  HemisphereLight, MathUtils, Mesh, MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, Scene, SphereGeometry,
   SRGBColorSpace, TorusGeometry, WebGLRenderer,
 } from '../vendor/three/three-profe.js';
 
-const COLOR = { piel: '#e8b08a', pielSombra: '#d39874', pelo: '#2d231f', saco: '#243f6b', camisa: '#f1f4f8', ojo: '#241d1b', boca: '#8f4f43', montura: '#16171b', mejilla: '#f08f8f' };
+const COLOR = {
+  cabeza: '#f1f5f9', cuerpo: '#e2e8f0', brazo: '#cbd5e1', mano: '#f1f5f9', metal: '#94a3b8',
+  visor: '#1e3a5f', ojo: '#7dd3fc', ambar: '#fbbf24',
+};
 
-const suave = (a, b, x) => { const t = MathUtils.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+/** Radio de la cabeza: todo lo demás se mide con él. */
+const R = 1;
 
-// ── La forma de la cabeza ───────────────────────────────────────────────
-// Un superelipsoide |x/a|^n + |y/b|^n + |z/c|^n = 1 con n un poco mayor que 2: una esfera algo más «llena», de
-// dibujo animado. Lo pegado a la cara (ojos, sonrisa) calcula su profundidad con zCara() para no flotar.
-const CAB = { a: 0.89, b: 1.04, c: 0.92, n: 2.5 };
-/** La mandíbula se afina hacia abajo: una cara de adulto, no una pelota. */
-const afinado = y => 1 - 0.2 * Math.pow(Math.max(0, -y / CAB.b - 0.1), 1.25);
+/** Material mate de un solo color. */
+const mate = (color, rugosidad = 0.5, metal = 0) => new MeshStandardMaterial({ color: new Color(color), roughness: rugosidad, metalness: metal });
 
-function zCara(x, y) {
-  const v = 1 - Math.pow(Math.abs(x / afinado(y) / CAB.a), CAB.n) - Math.pow(Math.abs(y / CAB.b), CAB.n);
-  return v > 0 ? CAB.c * Math.pow(v, 1 / CAB.n) : 0;
+function malla(geometria, material, pos = [0, 0, 0], escala = [1, 1, 1]) {
+  const m = new Mesh(geometria, material);
+  m.position.set(...pos);
+  m.scale.set(...escala);
+  return m;
 }
 
-function superelipsoide(dx, dy, dz, a, b, c, n = CAB.n) {
-  const k = Math.pow(Math.pow(Math.abs(dx), n) + Math.pow(Math.abs(dy), n) + Math.pow(Math.abs(dz), n), 1 / n) || 1;
-  return [dx / k * a, dy / k * b, dz / k * c];
-}
+/** Profundidad de la esfera de la cabeza en (x, y): lo pegado a la cara (visor, ojos, mejillas) no flota ni se hunde. */
+const zEsfera = (x, y, extra = 0) => Math.sqrt(Math.max(0, R * R - x * x - y * y)) + extra;
 
-/** Superficie paramétrica (longitud φ con 0 = al frente, y θ desde la coronilla). `thetaMax(φ)` recorta por abajo. */
-function superficie({ cols = 64, filas = 40, thetaMax = () => Math.PI, punto }) {
+/**
+ * El visor: una pastilla curva (un rectángulo muy redondeado) pegada a la esfera de la cabeza. Se arma con anillos
+ * concéntricos y cada punto se proyecta sobre la esfera, así sigue su curvatura.
+ */
+function visorSobreEsfera(mitadAncho, mitadAlto, anillos = 10, lados = 64) {
   const pos = [];
-  for (let i = 0; i < cols; i++) {
-    const phi = (i / cols) * Math.PI * 2;
-    const tm = thetaMax(phi);
-    for (let j = 0; j <= filas; j++) {
-      const t = j / filas, theta = t * tm;
-      const s = Math.sin(theta);
-      pos.push(...punto(s * Math.sin(phi), Math.cos(theta), s * Math.cos(phi), t));
-    }
+  const punto = (s, th) => {
+    const c = Math.cos(th), sn = Math.sin(th);
+    const x = s * mitadAncho * Math.sign(c) * Math.pow(Math.abs(c), 2 / 3.4);
+    const y = s * mitadAlto * Math.sign(sn) * Math.pow(Math.abs(sn), 2 / 3.4);
+    return [x, y, zEsfera(x, y, 0.008)];
+  };
+  pos.push(0, 0, zEsfera(0, 0, 0.008));
+  for (let k = 1; k <= anillos; k++) {
+    for (let i = 0; i < lados; i++) pos.push(...punto(k / anillos, (i / lados) * Math.PI * 2));
   }
   const idx = [];
-  const id = (i, j) => (i % cols) * (filas + 1) + j;
-  for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < filas; j++) {
-      const a = id(i, j), b = id(i + 1, j), c = id(i + 1, j + 1), d = id(i, j + 1);
-      idx.push(a, d, b, b, d, c);
+  for (let i = 0; i < lados; i++) idx.push(0, 1 + i, 1 + ((i + 1) % lados));
+  for (let k = 1; k < anillos; k++) {
+    const a = 1 + (k - 1) * lados, b = 1 + k * lados;
+    for (let i = 0; i < lados; i++) {
+      const j = (i + 1) % lados;
+      idx.push(a + i, b + i, b + j, a + i, b + j, a + j);
     }
   }
   const g = new BufferGeometry();
@@ -62,38 +68,20 @@ function superficie({ cols = 64, filas = 40, thetaMax = () => Math.PI, punto }) 
   return g;
 }
 
-/** Material mate de un solo color (el aspecto «de arcilla» del personaje). */
-const mate = (color, rugosidad = 0.62) => new MeshStandardMaterial({ color: new Color(color), roughness: rugosidad, metalness: 0 });
-
-function malla(geometria, material, pos = [0, 0, 0], escala = [1, 1, 1]) {
-  const m = new Mesh(geometria, material);
-  m.position.set(...pos);
-  m.scale.set(...escala);
-  return m;
-}
-
 /** Un brazo completo: hombro → codo → mano. `lado` 1 = derecho de la pantalla, -1 = izquierdo. */
-function armarBrazo(lado, piel, saco) {
+function armarBrazo(lado) {
+  const brazo = mate(COLOR.brazo, 0.55);
   const hombro = new Group();
-  hombro.position.set(lado * 1.36, -1.42, 0.1);
-  hombro.add(malla(new SphereGeometry(0.31, 22, 16), saco));
-  hombro.add(malla(new CapsuleGeometry(0.255, 0.75, 8, 20), saco, [0, 0.5, 0]));
+  hombro.position.set(lado * 0.98, -1.28, 0.05);
+  hombro.add(malla(new SphereGeometry(0.16, 18, 14), brazo));
+  hombro.add(malla(new CapsuleGeometry(0.15, 0.5, 8, 18), brazo, [0, 0.4, 0]));
   const codo = new Group();
-  codo.position.set(0, 1.0, 0);
-  codo.add(malla(new SphereGeometry(0.235, 18, 14), saco));
-  codo.add(malla(new CapsuleGeometry(0.21, 0.6, 8, 20), saco, [0, 0.45, 0]));
+  codo.position.set(0, 0.78, 0);
+  codo.add(malla(new SphereGeometry(0.15, 16, 12), brazo));
+  codo.add(malla(new CapsuleGeometry(0.135, 0.42, 8, 18), brazo, [0, 0.34, 0]));
   const mano = new Group();
-  mano.position.set(0, 0.98, 0);
-  mano.scale.setScalar(1.15);
-  mano.add(malla(new SphereGeometry(1, 22, 16), piel, [0, 0.14, 0], [0.17, 0.2, 0.07]));                 // palma
-  for (const [x, alto, giro] of [[-0.105, 0.2, 0.22], [-0.035, 0.24, 0.07], [0.035, 0.24, -0.07], [0.105, 0.2, -0.22]]) {
-    const dedo = malla(new CapsuleGeometry(0.034, alto, 6, 10), piel, [x + Math.sin(-giro) * alto * 0.45, 0.28 + alto * 0.5, 0]);
-    dedo.rotation.z = giro;
-    mano.add(dedo);
-  }
-  const pulgar = malla(new CapsuleGeometry(0.038, 0.15, 6, 10), piel, [-0.2 * lado, 0.12, 0.01]);
-  pulgar.rotation.z = 0.95 * lado;
-  mano.add(pulgar);
+  mano.position.set(0, 0.78, 0);
+  mano.add(malla(new SphereGeometry(0.22, 22, 16), mate(COLOR.mano, 0.45)));
   codo.add(mano);
   hombro.add(codo);
   return { hombro, codo, mano };
@@ -102,107 +90,64 @@ function armarBrazo(lado, piel, saco) {
 // ── El personaje ────────────────────────────────────────────────────────
 function armarPersonaje() {
   const raiz = new Group();
-  const piel = mate(COLOR.piel, 0.55);
-  const saco = mate(COLOR.saco, 0.72);
 
-  // Hombros anchos (una cápsula horizontal), torso y cuello de adulto.
+  // Cuerpo ovalado con una placa ámbar al frente.
   const cuerpo = new Group();
-  const hombros = malla(new CapsuleGeometry(0.46, 2.0, 10, 28), saco, [0, -1.62, 0], [1, 1, 0.78]);
-  hombros.rotation.z = Math.PI / 2;
-  cuerpo.add(hombros);
-  cuerpo.add(malla(new CapsuleGeometry(0.95, 1.3, 12, 32), saco, [0, -3.0, 0], [1.28, 1, 0.72]));
-  cuerpo.add(malla(new CylinderGeometry(0.34, 0.4, 0.75, 28), mate(COLOR.pielSombra, 0.6), [0, -1.04, 0.03]));     // cuello
-  // Camisa en V: un solo triángulo blanco sobre el saco.
-  const triangulo = new Shape();
-  triangulo.moveTo(-0.34, 0); triangulo.lineTo(0.34, 0); triangulo.lineTo(0, -0.95); triangulo.closePath();
-  const camisa = new Mesh(new ShapeGeometry(triangulo), new MeshStandardMaterial({ color: new Color(COLOR.camisa), roughness: 0.8, side: DoubleSide }));
-  camisa.position.set(0, -1.28, 0.74);
-  camisa.rotation.x = -0.12;
-  cuerpo.add(camisa);
-  cuerpo.position.y = 0.2;
+  cuerpo.position.set(0, -1.62, 0);
+  cuerpo.add(malla(new SphereGeometry(1, 40, 30), mate(COLOR.cuerpo, 0.5, 0.04), [0, 0, 0], [0.96, 0.84, 0.7]));
+  const placa = new Group();                       // sigue la curva del pecho: un poco inclinada hacia arriba
+  placa.position.set(0, 0.56, 0.5);
+  placa.rotation.x = -0.5;
+  const pastilla = malla(new CapsuleGeometry(0.1, 0.4, 6, 14), mate(COLOR.ambar, 0.4), [0, 0, 0], [1, 1, 0.5]);
+  pastilla.rotation.z = Math.PI / 2;
+  placa.add(pastilla);
+  cuerpo.add(placa);
   raiz.add(cuerpo);
 
   // Los dos brazos: el derecho de la pantalla sube y saluda; el izquierdo queda relajado al costado.
-  const derecho = armarBrazo(1, piel, saco);
-  const izquierdo = armarBrazo(-1, piel, saco);
+  const derecho = armarBrazo(1);
+  const izquierdo = armarBrazo(-1);
   raiz.add(derecho.hombro, izquierdo.hombro);
 
-  // Cabeza: ovalada, con casquete de pelo corto.
+  // Cabeza: una esfera blanca con visor, ojos felices, mejillas y antena.
   const cabeza = new Group();
-  cabeza.position.set(0, 0.3, 0);
-  cabeza.add(new Mesh(superficie({
-    cols: 64, filas: 44,
-    punto: (dx, dy, dz) => { const [x, y, z] = superelipsoide(dx, dy, dz, CAB.a, CAB.b, CAB.c); return [x * afinado(y), y, z]; },
-  }), piel));
+  cabeza.position.set(0, 0.12, 0);
+  cabeza.add(malla(new SphereGeometry(R, 56, 40), mate(COLOR.cabeza, 0.4, 0.05)));
+  cabeza.add(new Mesh(visorSobreEsfera(0.875, 0.4), new MeshStandardMaterial({ color: new Color(COLOR.visor), roughness: 0.18, metalness: 0.35, side: DoubleSide })));
 
-  // Pelo: una cáscara un poco más grande con su línea de nacimiento (baja en las sienes y la nuca).
-  cabeza.add(new Mesh(superficie({
-    cols: 72, filas: 28,
-    thetaMax: phi => {
-      const lejos = Math.abs(((phi + Math.PI) % (Math.PI * 2)) - Math.PI);                 // distancia angular al frente
-      return Math.PI * (0.29 + 0.19 * suave(0.16 * Math.PI, 0.5 * Math.PI, lejos) + 0.05 * suave(0.6 * Math.PI, Math.PI, lejos));
-    },
-    punto: (dx, dy, dz, t) => {
-      const [x, y, z] = superelipsoide(dx, dy, dz, CAB.a * 1.06, CAB.b * 1.045, CAB.c * 1.07, 2.4);
-      const fuera = 1 - 0.05 * suave(0.85, 1, t);                                          // el borde se pega a la piel
-      return [x * fuera, y * fuera + 0.03, z * fuera - 0.04];
-    },
-  }), mate(COLOR.pelo, 0.5)));
-
-  // Orejas pequeñas.
-  for (const lado of [-1, 1]) cabeza.add(malla(new SphereGeometry(1, 16, 12), piel, [lado * (CAB.a * 0.98), -0.04, 0.03], [0.07, 0.19, 0.14]));
-
-  // Nariz pequeña y redonda.
-  cabeza.add(malla(new SphereGeometry(1, 18, 14), mate(COLOR.pielSombra, 0.6), [0, -0.1, zCara(0, -0.1) + 0.012], [0.075, 0.075, 0.07]));
-
-  // Ojos redondos y brillantes, con una cejita encima.
+  // Ojos felices: dos arcos celestes («^ ^») sobre el visor. Parpadean aplastándose.
   const ojos = new Group();
-  const blanco = new MeshBasicMaterial({ color: '#ffffff' });
+  const luz = new MeshBasicMaterial({ color: COLOR.ojo });
   for (const lado of [-1, 1]) {
-    const x = lado * 0.3, y = 0.08;
+    const x = lado * 0.37, y = -0.03;
     const ojo = new Group();
-    ojo.position.set(x, y, zCara(x, y) - 0.004);
-    ojo.add(malla(new SphereGeometry(1, 22, 18), mate(COLOR.ojo, 0.25), [0, 0, 0], [0.072, 0.088, 0.04]));
-    ojo.add(malla(new SphereGeometry(0.02, 10, 8), blanco, [0.024, 0.03, 0.036]));                      // brillo
+    ojo.position.set(x, y, zEsfera(x, y, 0.02));
+    ojo.rotation.y = Math.atan2(x, zEsfera(x, y));          // sigue la curvatura de la cabeza
+    const arco = malla(new TorusGeometry(0.2, 0.046, 12, 36, 2.0), luz);
+    arco.rotation.z = Math.PI / 2 - 1.0;                     // centrado: un arco que sube y baja
+    arco.position.y = -0.1;
+    ojo.add(arco);
     ojos.add(ojo);
-    const ceja = malla(new CapsuleGeometry(0.018, 0.17, 4, 8), mate(COLOR.pelo, 0.6), [x, 0.4, zCara(x, 0.4) + 0.014]);
-    ceja.rotation.z = Math.PI / 2 - lado * 0.1;
-    cabeza.add(ceja);
   }
   cabeza.add(ojos);
 
-  // Lentes redondos de pasta gruesa.
-  const montura = mate(COLOR.montura, 0.35);
+  // Mejillas ámbar (dos puntos pequeños en el borde bajo del visor).
+  const mejillas = new Group();
   for (const lado of [-1, 1]) {
-    const x = lado * 0.3, y = 0.08;
-    const aro = malla(new TorusGeometry(0.2, 0.036, 12, 40), montura, [x, y, zCara(x, y) + 0.03], [1.08, 1, 1]);
-    aro.rotation.y = lado * 0.2;
-    cabeza.add(aro);
+    const x = lado * 0.66, y = -0.24;
+    mejillas.add(malla(new SphereGeometry(0.045, 12, 10), new MeshBasicMaterial({ color: COLOR.ambar }), [x, y, zEsfera(x, y, 0.02)]));
   }
-  const puente = malla(new CylinderGeometry(0.02, 0.02, 0.13, 8), montura, [0, 0.11, zCara(0, 0.11) + 0.035]);
-  puente.rotation.z = Math.PI / 2;
-  cabeza.add(puente);
+  cabeza.add(mejillas);
 
-  // Mejillas rosadas.
-  for (const lado of [-1, 1]) {
-    const mx = lado * 0.52, my = -0.2;
-    const mej = new Mesh(new CircleGeometry(0.1, 24), new MeshBasicMaterial({ color: COLOR.mejilla, transparent: true, opacity: 0.5, depthWrite: false }));
-    mej.position.set(mx, my, zCara(mx, my) + 0.01);
-    mej.rotation.y = lado * 0.6;
-    cabeza.add(mej);
-  }
-
-  // Sonrisa amable: un arco con las puntas hacia arriba.
-  const boca = new Group();
-  const arco = 1.5;
-  boca.position.set(0, -0.06, zCara(0.2, -0.32) + 0.03);
-  const sonrisa = malla(new TorusGeometry(0.32, 0.02, 10, 32, arco), mate(COLOR.boca, 0.6));
-  sonrisa.rotation.z = -Math.PI / 2 - arco / 2;
-  boca.add(sonrisa);
-  cabeza.add(boca);
+  // Antena con una bolita ámbar.
+  const antena = new Group();
+  antena.position.set(0, R - 0.02, 0);
+  antena.add(malla(new CylinderGeometry(0.035, 0.035, 0.3, 10), mate(COLOR.metal, 0.4, 0.2), [0, 0.15, 0]));
+  antena.add(malla(new SphereGeometry(0.095, 16, 12), mate(COLOR.ambar, 0.35), [0, 0.34, 0]));
+  cabeza.add(antena);
 
   raiz.add(cabeza);
-  return { raiz, cabeza, cuerpo, hombro: derecho.hombro, codo: derecho.codo, mano: derecho.mano, hombroIzq: izquierdo.hombro, codoIzq: izquierdo.codo, ojos, boca };
+  return { raiz, cabeza, cuerpo, hombro: derecho.hombro, codo: derecho.codo, mano: derecho.mano, hombroIzq: izquierdo.hombro, codoIzq: izquierdo.codo, ojos, mejillas, antena };
 }
 
 /**
@@ -236,7 +181,7 @@ export function crearProfe(lienzo, { animado = true } = {}) {
   escena.add(contraluz);
 
   const camara = new PerspectiveCamera(30, 1, 0.1, 60);
-  const CAM = { x: 0, y: -0.2, z: 8.6, mira: -0.6 };
+  const CAM = { x: 0, y: -0.3, z: 8.4, mira: -0.55 };
   camara.position.set(CAM.x, CAM.y, CAM.z);
   camara.lookAt(0, CAM.mira, 0);
 
@@ -257,35 +202,38 @@ export function crearProfe(lienzo, { animado = true } = {}) {
 
     // Respiración y balanceo suave.
     const resp = Math.sin(t * 1.7);
-    p.cuerpo.scale.y = 1 + resp * 0.01;
-    p.raiz.position.y = resp * 0.018;
+    p.cuerpo.scale.y = 1 + resp * 0.012;
+    p.raiz.position.y = resp * 0.02;
     miraX += (objetivoX - miraX) * k;
     miraY += (objetivoY - miraY) * k;
     p.cabeza.rotation.y = miraX * 0.55;
-    p.cabeza.rotation.x = -miraY * 0.3 + Math.sin(t * 6) * 0.05 * e + 0.02;
+    p.cabeza.rotation.x = -miraY * 0.3 + Math.sin(t * 6) * 0.04 * e;
     p.cabeza.rotation.z = Math.sin(t * 0.8) * 0.02 - miraX * 0.05 + Math.sin(t * 5) * 0.025 * e;
     p.cuerpo.rotation.y = miraX * 0.14;
+    // La antena se bambolea un poco (más al saludar).
+    p.antena.rotation.z = Math.sin(t * 2.3) * 0.05 + Math.sin(t * 9) * 0.1 * e;
+    p.antena.rotation.x = Math.sin(t * 1.9) * 0.04;
     // Paralaje: la cámara se mueve un poco con el puntero, así se nota el volumen.
     camara.position.x = CAM.x + miraX * 0.55;
     camara.position.y = CAM.y - miraY * 0.28;
     camara.lookAt(0, CAM.mira, 0);
 
-    // Brazo: del costado (colgando) a levantado, con la manopla moviéndose de lado a lado.
-    p.hombro.rotation.z = MathUtils.lerp(-2.95, -0.6, e);
+    // Brazo: del costado (colgando) a levantado, con la mano moviéndose de lado a lado.
+    p.hombro.rotation.z = MathUtils.lerp(-2.95, -0.8, e);
     p.hombro.rotation.x = MathUtils.lerp(0, 0.1, e);
     const ola = Math.sin(t * 10) * e;
-    p.codo.rotation.z = MathUtils.lerp(0.12, 1.0, e) + ola * 0.2;
+    p.codo.rotation.z = MathUtils.lerp(0.12, 0.75, e) + ola * 0.2;
     p.mano.rotation.z = ola * 0.45;
     // El otro brazo, relajado: cuelga y se mece apenas con la respiración (algo más abierto al saludar).
     p.hombroIzq.rotation.z = 2.95 + resp * 0.018 - 0.03 * e;
     p.codoIzq.rotation.z = -0.12 - resp * 0.015;
 
-    // Cara: parpadeo y sonrisa que se ensancha al saludar.
+    // Cara: parpadeo y mejillas que se agrandan un poco al saludar.
     proximoParpadeo -= dt;
     if (proximoParpadeo <= 0) { parpadeo = 0.15; proximoParpadeo = 2.6 + Math.random() * 3.2; }
     if (parpadeo > 0) parpadeo -= dt;
     p.ojos.scale.y = parpadeo > 0 ? 0.1 : 1;
-    p.boca.scale.set(1 + 0.12 * e, 1 + 0.3 * e, 1);
+    p.mejillas.children.forEach(m => m.scale.setScalar(1 + 0.6 * e));
     renderer.render(escena, camara);
   }
 
@@ -316,7 +264,7 @@ export function crearProfe(lienzo, { animado = true } = {}) {
   cuadro(0.016);
 
   return {
-    /** El profe saca la mano y saluda durante unos segundos. */
+    /** El robot saca la mano y saluda durante unos segundos. */
     saludar(segundos = 2.6) {
       saludo = segundos;
       if (!animado) { alza = 1; cuadro(0.016); }

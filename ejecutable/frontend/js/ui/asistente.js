@@ -1,5 +1,5 @@
 /**
- * asistente.js — el asistente flotante: un profe 3D en la esquina (profe-3d.js) que saca la mano para saludar y ofrece el recorrido guiado de la pantalla en que estás («¿No sabes por dónde empezar? ¡Déjame ayudarte!»)
+ * asistente.js — el asistente flotante: un robot 3D en la esquina (profe-3d.js) que saca la mano para saludar y ofrece el recorrido guiado de la pantalla en que estás («¿No sabes por dónde empezar? ¡Déjame ayudarte!»)
  * y lo empieza al hacer clic.
  *
  * Qué recorrido toca lo decide contextoDeAyuda() (tour-logica.js) según la ventana de más arriba y el panel; con
@@ -25,7 +25,7 @@ let temporizadorGlobo = 0;
 const yaOfrecidos = new Set();
 const reducidoMovimiento = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-/** El profe saca la mano y saluda (y da un saltito el botón entero, por si el 3D no está). */
+/** El robot saca la mano y saluda (y da un saltito el botón entero, por si el 3D no está). */
 function saludar(segundos) {
   const boton = $('asistente-boton');
   boton.classList.remove('saludando');
@@ -78,7 +78,7 @@ function actualizar() {
   }
 }
 
-/** Mientras el recorrido de esta pantalla no se haya hecho, el profe vuelve a sacar la mano de vez en cuando para que se note. */
+/** Mientras el recorrido de esta pantalla no se haya hecho, el robot vuelve a sacar la mano de vez en cuando para que se note. */
 function buscarAtencion() {
   clearInterval(temporizadorAtencion);
   if (reducidoMovimiento || !contexto) return;
@@ -103,7 +103,7 @@ export function iniciarAsistente() {
   const reducido = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   crearIconos(raiz);
 
-  // El profe 3D (si hay WebGL); si no, queda el ícono de birrete.
+  // El robot 3D (si hay WebGL); si no, queda el ícono de birrete.
   try { profe = crearProfe($('asistente-canvas'), { animado: !reducido }); } catch (_) { profe = null; }
   raiz.classList.toggle('sin-3d', !profe);
 

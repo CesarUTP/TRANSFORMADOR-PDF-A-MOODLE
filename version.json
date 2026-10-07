@@ -1,5 +1,5 @@
 {
-  "version": "2.5",
+  "version": "2.6",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Versión 2.5: la app ahora se llama Cátedra (antes Conversor a Moodle XML) y estrena ícono. Saca varias versiones de un examen, al azar o por tipo, con su clave y los puntos ajustables, en un ZIP; el PDF se exporta en una pantalla completa."
+  "notas": "Versión 2.6: nuevo ayudante en la esquina: un robot 3D amable, con visor y ojos felices, que saluda y te explica cada pantalla en un recorrido guiado. Guía, recorridos y textos al día con el cambio."
 }

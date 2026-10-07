@@ -1181,7 +1181,7 @@ strong.txt-fuerte { color: var(--color-text); }
   .vpdf-pie { padding: 10px 14px; flex-wrap: wrap; }
   .vpdf-pie-mensajes { flex: 1 1 100%; }
 }
-/* En el celular el profe flotante ocupa la esquina de abajo a la izquierda: «Cerrar» (arriba) hace de cancelar. */
+/* En el celular el robot flotante ocupa la esquina de abajo a la izquierda: «Cerrar» (arriba) hace de cancelar. */
 @media (max-width: 640px) {
   .vpdf-pie #btn-pdf-cancelar { display: none; }
   .vpdf-pie #btn-pdf-exportar { flex: 1; margin-left: 78px; }
@@ -1300,7 +1300,7 @@ strong.txt-fuerte { color: var(--color-text); }
 .tour-popover .driver-popover-arrow-side-top { border-top-color: var(--color-surface-modal); }
 .tour-popover .driver-popover-arrow-side-bottom { border-bottom-color: var(--color-surface-modal); }
 
-/* ── ASISTENTE FLOTANTE: el profe 3D de la esquina ───────────────────── */
+/* ── ASISTENTE FLOTANTE: el robot 3D de la esquina ───────────────────── */
 .asistente { position: fixed; left: 20px; bottom: 20px; z-index: 1100; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; pointer-events: none; }
 .asistente[hidden] { display: none; }
 .asistente > * { pointer-events: auto; }

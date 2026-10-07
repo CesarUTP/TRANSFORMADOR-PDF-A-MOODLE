@@ -20,7 +20,7 @@ export const TOURS = {
       { el: '#btn-convert', titulo: 'Convertir', texto: 'Se activa cuando eliges un archivo. La app lee el examen con ayuda de IA y te lleva a la revisión. Tarda unos segundos.', lado: 'top' },
       { el: '#btn-materias', titulo: 'Mis materias', texto: 'Tu biblioteca: todos los exámenes que conviertas, ordenados por materia, para reabrirlos, descargarlos o exportarlos en PDF.', lado: 'bottom' },
       { el: '#btn-perfil', titulo: 'Mi perfil', texto: 'Guarda tu nombre y los encabezados de tu institución (con logos) una sola vez: saldrán solos en cada PDF.', lado: 'bottom' },
-      { el: '#btn-help', titulo: 'Guía', texto: 'Aquí está la explicación completa. Además, el <b>profe</b> de la esquina de abajo a la izquierda te explica cualquier pantalla: haz clic en él cuando quieras repetir un recorrido.', lado: 'bottom' },
+      { el: '#btn-help', titulo: 'Guía', texto: 'Aquí está la explicación completa. Además, el <b>robot ayudante</b> de la esquina de abajo a la izquierda te explica cualquier pantalla: haz clic en él cuando quieras repetir un recorrido.', lado: 'bottom' },
     ],
   },
   revision: {
