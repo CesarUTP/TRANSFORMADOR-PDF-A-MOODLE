@@ -1,5 +1,5 @@
 ---
-name: Conversor a Moodle XML
+name: Cátedra
 description: Panel de conversión oscuro y preciso que transforma exámenes desordenados en Moodle XML validado.
 colors:
   bg: "#090d16"
@@ -122,7 +122,7 @@ components:
     padding: "12px 16px"
 ---
 
-# Design System: Conversor a Moodle XML
+# Design System: Cátedra
 
 ## Overview
 

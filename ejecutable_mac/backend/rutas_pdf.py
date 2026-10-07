@@ -20,7 +20,7 @@ import logging
 import sqlite3
 import threading
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field
 
 import exportar_pdf
 import pypdfium2 as pdfium
+import versiones
 from database import MAX_PERFILES, delete_perfil, list_perfiles, rename_perfil, save_perfil
 from estado_servidor import ERROR_LOG_PATH, _avisos_para_cabecera, _content_disposition, _detalle_tecnico, _nombre_nfc
 from rutas_xml import validar_para_exportar
@@ -50,6 +51,7 @@ class DatosPortada(BaseModel):
     fecha: str = Field("", max_length=exportar_pdf.LIMITE_CAMPO)
     instrucciones: str = Field("", max_length=exportar_pdf.LIMITE_INSTRUCCIONES)
     contenido: str = "examen_y_clave"
+    version: str = Field("", max_length=exportar_pdf.LIMITE_VERSION)     # «A», «B»… (solo en las versiones de un examen)
     papel: str = "carta"
     margenes: str = "moderados"
     # Tipo de letra y tamaño (pt) de los títulos/encabezados/indicaciones y de las preguntas.
@@ -84,7 +86,7 @@ def _exportar_sync(req: ExportarPdfRequest, clave: Dict[int, Any]):
     datos = exportar_pdf.DatosExamen(
         institucion=d.institucion, facultad=d.facultad, departamento=d.departamento, materia=d.materia, docente=d.docente, actividad=d.actividad,
         grupo=d.grupo, fecha=d.fecha, instrucciones=d.instrucciones,
-        titulo_respaldo=Path(req.filename).stem, contenido=d.contenido, papel=d.papel, margenes=d.margenes,
+        titulo_respaldo=Path(req.filename).stem, version=d.version, contenido=d.contenido, papel=d.papel, margenes=d.margenes,
         fuente_titulos=d.fuente_titulos, tam_titulos=d.tam_titulos, fuente_preguntas=d.fuente_preguntas, tam_preguntas=d.tam_preguntas,
         campos_estudiante=d.campos_estudiante, rotulo_docente=d.rotulo_docente, partes=d.partes, mezclar=d.mezclar,
         puntos_por_pregunta=d.puntos_por_pregunta, renglones_ensayo=d.renglones_ensayo,
@@ -115,6 +117,79 @@ async def api_exportar_pdf(req: ExportarPdfRequest):
         logger.exception("Error inesperado generando el PDF de '%s'", req.filename)
         raise HTTPException(status_code=500, detail=(
             "Ocurrió un error inesperado al generar el PDF. Tu revisión sigue intacta y el XML no se ve afectado: "
+            f"vuelve a intentarlo. Si se repite, envía al desarrollador el registro «{ERROR_LOG_PATH}». "
+            f"(Detalle técnico: {_detalle_tecnico(exc)})"))
+
+
+# ── Versiones de un examen (2.5) ────────────────────────────────────────────
+class VersionPdf(BaseModel):
+    """Una versión: qué preguntas del examen lleva (en qué orden) y, si el docente los ajustó, sus puntos."""
+    etiqueta: str = Field(min_length=1, max_length=exportar_pdf.LIMITE_VERSION)
+    nums: List[int] = Field(min_length=1, max_length=2000)
+    puntos: Dict[str, float] = Field(default_factory=dict)
+    total_points: float = Field(gt=0, le=100_000, allow_inf_nan=False)
+
+
+class ExportarVersionesRequest(BaseModel):
+    """El examen COMPLETO (el mismo del XML) y las versiones que se sacan de él."""
+    filename: str
+    total_points: float = Field(gt=0, le=100_000, allow_inf_nan=False)
+    questions: List[Dict[str, Any]]
+    answer_key: Dict[str, Any]
+    datos: DatosPortada = DatosPortada()
+    versiones: List[VersionPdf] = Field(min_length=1, max_length=versiones.MAX_VERSIONES)
+
+
+def _exportar_versiones_sync(req: ExportarVersionesRequest, clave: Dict[int, Any]):
+    d = req.datos
+    if d.contenido not in exportar_pdf.CONTENIDOS or d.papel not in exportar_pdf.PAPELES or d.margenes not in exportar_pdf.MARGENES or d.fuente_titulos not in exportar_pdf.FUENTES or d.fuente_preguntas not in exportar_pdf.FUENTES or d.rotulo_docente not in exportar_pdf.ROTULOS:
+        raise HTTPException(status_code=422, detail="Opciones de exportación no válidas.")
+    validar_para_exportar(req.questions, clave)          # el examen completo cumple lo mismo que para el XML
+    etiquetas = [v.etiqueta.strip() for v in req.versiones]
+    if len({e.upper() for e in etiquetas}) != len(etiquetas) or not all(etiquetas):
+        raise HTTPException(status_code=422, detail="Cada versión necesita un nombre distinto.")
+    archivos, resumen, avisos = [], [], []
+    sufijo = _SUFIJO.get(d.contenido, "")
+    stem = Path(req.filename).stem
+    for v, etiqueta in zip(req.versiones, etiquetas):
+        try:
+            qs, clave_v = versiones.subconjunto(req.questions, clave, v.nums, {int(k): p for k, p in v.puntos.items()})
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=f"Versión {etiqueta}: {exc}")
+        datos = exportar_pdf.DatosExamen(
+            institucion=d.institucion, facultad=d.facultad, departamento=d.departamento, materia=d.materia, docente=d.docente,
+            actividad=d.actividad, grupo=d.grupo, fecha=d.fecha, instrucciones=d.instrucciones, titulo_respaldo=stem,
+            version=etiqueta, contenido=d.contenido, papel=d.papel, margenes=d.margenes,
+            fuente_titulos=d.fuente_titulos, tam_titulos=d.tam_titulos, fuente_preguntas=d.fuente_preguntas, tam_preguntas=d.tam_preguntas,
+            campos_estudiante=d.campos_estudiante, rotulo_docente=d.rotulo_docente, partes=d.partes, mezclar=d.mezclar,
+            puntos_por_pregunta=d.puntos_por_pregunta, renglones_ensayo=d.renglones_ensayo,
+            logo_izquierdo=d.logo_izquierdo, logo_derecho=d.logo_derecho)
+        r = exportar_pdf.generar_pdf(qs, clave_v, v.total_points, datos)
+        archivos.append((f"{stem}_version_{versiones.etiqueta_para_archivo(etiqueta)}{sufijo}.pdf", r.pdf))
+        resumen.append({"etiqueta": etiqueta, "paginas": r.paginas, "preguntas": r.preguntas})
+        avisos += [f"Versión {etiqueta}: {a}" for a in r.avisos]
+    return versiones.empaquetar(archivos), resumen, avisos
+
+
+@router.post("/api/exportar_versiones")
+async def api_exportar_versiones(req: ExportarVersionesRequest):
+    try:
+        clave = {int(k): v for k, v in req.answer_key.items()}
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Las claves de answer_key deben ser enteros.")
+    req.filename = _nombre_nfc(req.filename)
+    try:
+        contenido, resumen, avisos = await run_in_threadpool(_exportar_versiones_sync, req, clave)
+        nombre = f"{Path(req.filename).stem}_versiones.zip"
+        info = json.dumps({"versiones": resumen, "avisos": _avisos_para_cabecera(avisos)})
+        return Response(content=contenido, media_type="application/zip",
+                        headers={"Content-Disposition": _content_disposition(nombre), "X-PDF-Info": info})
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Error inesperado generando las versiones de '%s'", req.filename)
+        raise HTTPException(status_code=500, detail=(
+            "Ocurrió un error inesperado al generar las versiones. Tu revisión sigue intacta y el XML no se ve afectado: "
             f"vuelve a intentarlo. Si se repite, envía al desarrollador el registro «{ERROR_LOG_PATH}». "
             f"(Detalle técnico: {_detalle_tecnico(exc)})"))
 

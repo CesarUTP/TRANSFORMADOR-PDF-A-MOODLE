@@ -1,5 +1,5 @@
 """
-build.py — Construye ConvertidorMoodle.app con PyInstaller (macOS).
+build.py — Construye Catedra.app con PyInstaller (macOS).
 
 Ejecutar desde esta carpeta con:
     ./venv/bin/python build.py
@@ -35,7 +35,7 @@ cmd = [
     "launcher.py",
     "--onedir",
     "--windowed",
-    "--name", "ConvertidorMoodle",
+    "--name", "Catedra",
     "--noconfirm",
     # ── Icono de la app ──────────────────────────────────────────────────
     "--icon", "assets/Icon.icns",
@@ -111,7 +111,7 @@ cmd = [
     "--hidden-import", "base64",
 ]
 
-print("Construyendo ConvertidorMoodle.app ...")
+print("Construyendo Catedra.app ...")
 print("(Esto puede tardar 3-5 minutos)\n")
 
 # Avisos de terceros («Acerca de»): con ESTE Python, que es el que se
@@ -123,7 +123,32 @@ result = subprocess.run(cmd, cwd=HERE)
 
 if result.returncode == 0:
     print("\n[OK] Build exitoso.")
-    print("  La app esta en: dist/ConvertidorMoodle.app")
+    # El archivo se llama Catedra.app (sin tilde, por seguridad con las rutas), pero la app debe llamarse «Cátedra»
+    # en la barra de menús y en el Finder: se pone en su Info.plist y se vuelve a firmar (cambiar el plist rompe la
+    # firma, y en un Mac con Apple Silicon una app con la firma rota no abre). Si algo falla se deja como estaba.
+    import plistlib
+    _app = os.path.join(HERE, "dist", "Catedra.app")
+    _plist = os.path.join(_app, "Contents", "Info.plist")
+    try:
+        with open(_plist, "rb") as _f:
+            _original = _f.read()
+        _datos = plistlib.loads(_original)
+        _datos["CFBundleName"] = "Cátedra"
+        _datos["CFBundleDisplayName"] = "Cátedra"
+        with open(_plist, "wb") as _f:
+            plistlib.dump(_datos, _f)
+        _firma = subprocess.run(["codesign", "--force", "--deep", "--sign", "-", _app], capture_output=True, text=True)
+        if _firma.returncode != 0:
+            raise RuntimeError(_firma.stderr.strip() or "codesign falló")
+        print("  Nombre mostrado: Cátedra (firmada de nuevo)")
+    except Exception as _e:  # noqa: BLE001
+        try:
+            with open(_plist, "wb") as _f:
+                _f.write(_original)
+        except Exception:  # noqa: BLE001
+            pass
+        print(f"  [AVISO] No se pudo poner el nombre «Cátedra» en el Info.plist ({_e}); la app se llamará «Catedra».")
+    print("  La app esta en: dist/Catedra.app")
 else:
     print("\n[ERROR] Build fallido. Revisa los mensajes de arriba.")
     sys.exit(1)

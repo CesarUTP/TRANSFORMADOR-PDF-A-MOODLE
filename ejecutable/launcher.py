@@ -145,7 +145,7 @@ _URLS_PERMITIDAS = ("https://aistudio.google.com/", "https://ai.google.dev/", PR
 def save_xml_file(filename: str, b64_content: str) -> dict:
     """
     Abre el dialogo nativo 'Guardar como', escribe el archivo (el XML de Moodle o,
-    desde la 2.1, el PDF del examen: el tipo sale de la extension del nombre) y
+    desde la 2.1, el PDF del examen y, desde la 2.5, el ZIP con sus versiones: el tipo sale de la extension del nombre) y
     devuelve {'saved': True, 'path': '...'} o {'saved': False}.
     """
     try:
@@ -154,8 +154,9 @@ def save_xml_file(filename: str, b64_content: str) -> dict:
 
         import webview
 
-        # Solo xml o pdf: es lo que la interfaz guarda.
-        ext = "pdf" if str(filename).lower().endswith(".pdf") else "xml"
+        # Solo xml, pdf o zip: es lo que la interfaz guarda.
+        nombre_min = str(filename).lower()
+        ext = "pdf" if nombre_min.endswith(".pdf") else "zip" if nombre_min.endswith(".zip") else "xml"
 
         # Carpeta inicial: Descargas del usuario
         downloads = os.path.join(os.path.expanduser("~"), "Downloads")
@@ -335,7 +336,7 @@ _SPLASH_HEAD = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Conversor a Moodle XML</title>
+  <title>C&aacute;tedra</title>
   <style>""" + _SPLASH_FUENTES + _SPLASH_STYLE + """</style>
 </head>"""
 
@@ -371,8 +372,8 @@ SPLASH_HTML = _SPLASH_HEAD + f"""
 <body>
   <main>
     {_MARCA}
-    <h1>Conversor a Moodle XML</h1>
-    <p class="lead">Convierte tus pruebas y ex&aacute;menes en PDF o TXT al formato de Moodle, con revisi&oacute;n antes de exportar.</p>
+    <h1>C&aacute;tedra</h1>
+    <p class="lead">Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.</p>
     <div class="status" role="status" aria-live="polite">
       <div class="track" aria-hidden="true"><div class="fill" id="fill"></div></div>
       <div class="status-row">
@@ -504,7 +505,7 @@ def main():
     global _VENTANA
 
     window = webview.create_window(
-        title="Conversor a Moodle XML",
+        title="Cátedra",
         html=SPLASH_HTML,
         width=800,
         height=750,

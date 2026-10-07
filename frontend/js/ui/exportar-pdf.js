@@ -1,6 +1,6 @@
 /**
- * exportar-pdf.js — «Exportar examen en PDF»: el diálogo con los datos de la portada, el formato y una
- * vista previa, y la descarga del examen impreso con su clave.
+ * exportar-pdf.js — «Exportar examen en PDF»: la pantalla con los datos de la portada, el formato, las versiones
+ * del examen y la vista previa, y la descarga del examen impreso con su clave (un PDF, o un ZIP con varias versiones).
  *
  * Es un documento de apoyo: el PDF sale de las MISMAS preguntas que se enviaron para el Moodle XML
  * (estado.exportable) o de las de un examen del Historial, y no cambia nada de él. Lo escrito se recuerda
@@ -17,6 +17,7 @@ import { confirmar } from './confirmar.js';
 import { MENSAJE_LOGO_INVALIDO, logoArchivoValido, reducirLogo } from './logo-imagen.js';
 import { abrirModal, cerrarModal } from './modales.js';
 import { showToast } from './toast.js';
+import { crearVersiones } from './versiones.js';
 import {
   ACTIVIDADES, RENGLONES_MAX, RENGLONES_MIN, aplicarPerfil, avisosDelPdf, cuerpoPdf, datosDePerfil, enteroEn, fechaLegible,
   nombreDeDescarga, nombrePerfil, paraGuardar, tamanoValido, valoresIniciales,
@@ -24,7 +25,7 @@ import {
 
 const CLAVE_GUARDADO = 'conversor.exportar_pdf';
 const $ = id => document.getElementById(id);
-const modal = $('modal-pdf');
+const modal = $('vista-pdf');
 const form = $('pdf-form');
 const errorEl = $('pdf-error');
 const btnExportar = $('btn-pdf-exportar');
@@ -41,6 +42,8 @@ let perfiles = [];
 /** Los logos elegidos (base64 sin «data:»); '' = sin logo. */
 const logos = { logo_izquierdo: '', logo_derecho: '' };
 const vista = { abierta: false, pagina: 1, paginas: 1, url: null, temporizador: null, controlador: null };
+/** Las versiones del examen (2.5): su sección, sus pestañas y sus puntos viven en versiones.js. */
+const versiones = crearVersiones({ alCambiar: () => cambioEnFormulario() });
 
 // ── Lo recordado ────────────────────────────────────────────────────────
 function leerGuardado() {
@@ -109,9 +112,32 @@ function mostrarError(texto) {
   form.classList.toggle('has-error', !!texto);
 }
 
+let generando = false;
+
 function ocupado(si) {
-  btnExportar.disabled = si;
-  $('btn-pdf-exportar-etiqueta').textContent = si ? 'Generando el PDF…' : 'Exportar PDF';
+  generando = si;
+  actualizarPie();
+}
+
+/** El botón de exportar y la línea de abajo según haya o no versiones sorteadas. */
+function actualizarPie() {
+  const conVersiones = versiones.activa();
+  const listas = versiones.listas();
+  const etiqueta = $('btn-pdf-exportar-etiqueta');
+  if (generando) etiqueta.textContent = conVersiones ? 'Generando las versiones…' : 'Generando el PDF…';
+  else if (conVersiones) etiqueta.textContent = listas ? `Exportar ${versiones.cantidad()} versiones (ZIP)` : 'Exportar versiones';
+  else etiqueta.textContent = 'Exportar PDF';
+  btnExportar.disabled = generando || (conVersiones && !listas);
+  let texto = '';
+  if (conVersiones && !generando) {
+    if (!versiones.cantidad()) texto = 'Sortea las versiones (a la izquierda) para poder exportarlas.';
+    else if (!listas) texto = 'Cambiaste el plan de versiones: vuelve a sortear para exportar.';
+    else {
+      const r = versiones.resumen();
+      texto = `Un ZIP con ${r.n} PDF, uno por versión, cada uno con su clave. El XML de Moodle no cambia.`;
+    }
+  }
+  $('pdf-pie-texto').textContent = texto;
 }
 
 /** Lo que dice cada sección plegada, para saber qué hay dentro sin abrirla. */
@@ -283,14 +309,28 @@ function soltarImagenDeVista() {
   $('pdf-vista-img').hidden = true;
 }
 
+const MENSAJE_VISTA = {
+  sin_sortear: 'Sortea las versiones y aquí verás cada una.',
+  desfasada: 'Cambiaste el plan: vuelve a sortear para ver las versiones nuevas.',
+};
+
 async function refrescarVista(pagina = vista.pagina) {
   detenerVista();
-  const marco = document.querySelector('.pdf-vista-marco');
+  const marco = document.querySelector('#pdf-previa .pdf-vista-marco');
   const estadoEl = $('pdf-vista-estado');
   const img = $('pdf-vista-img');
   const datos = leer();
   const problema = problemaDe(datos);
   if (problema) { estadoEl.textContent = problema; return; }
+  const modo = versiones.estadoVista();
+  if (MENSAJE_VISTA[modo]) {
+    soltarImagenDeVista();
+    estadoEl.textContent = MENSAJE_VISTA[modo];
+    vista.paginas = 1;
+    vista.pagina = 1;
+    actualizarBarraDeVista();
+    return;
+  }
   const ctl = new AbortController();
   vista.controlador = ctl;
   marco.classList.add('cargando');
@@ -299,7 +339,7 @@ async function refrescarVista(pagina = vista.pagina) {
     const res = await apiFetch(`/api/vista_previa_pdf?pagina=${pagina}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cuerpoPdf(examen, datos)),
+      body: JSON.stringify(modo === 'version' ? versiones.cuerpoVista(datos) : cuerpoPdf(examen, datos)),
       signal: ctl.signal,
     });
     if (!res.ok) {
@@ -326,18 +366,10 @@ async function refrescarVista(pagina = vista.pagina) {
   }
 }
 
-function alternarVista(abrir = !vista.abierta) {
-  vista.abierta = abrir;
-  $('pdf-vista').hidden = !abrir;
-  $('pdf-caja').classList.toggle('modal-pdf-ancho', abrir);
-  $('btn-pdf-vista').setAttribute('aria-pressed', String(abrir));
-  if (abrir) refrescarVista(1);
-  else { detenerVista(); soltarImagenDeVista(); }
-}
-
-/** Todo cambio del formulario: actualiza los resúmenes y, con la vista previa abierta, la rehace. */
+/** Todo cambio del formulario: actualiza los resúmenes y la línea de abajo, y rehace la vista previa. */
 function cambioEnFormulario() {
   actualizarResumenes();
+  actualizarPie();
   if (vista.abierta) {
     clearTimeout(vista.temporizador);
     vista.temporizador = setTimeout(() => refrescarVista(), 700);
@@ -357,10 +389,14 @@ export function abrirExportarPdf(origen = null) {
   llenarPerfil(v);
   const n = examen.questions.length;
   $('pdf-examen-nombre').textContent = `${examen.filename} · ${n} pregunta${n === 1 ? '' : 's'}. Todos los datos son opcionales y se recuerdan para el próximo examen.`;
+  $('pdf-migas-examen').textContent = examen.filename;
   mostrarError('');
   ocupado(false);
   cerrarNombreDePerfil();
-  alternarVista(false);
+  versiones.abrir(examen);
+  vista.abierta = true;
+  vista.pagina = 1;
+  soltarImagenDeVista();
   // La materia del examen (si la tiene) manda sobre lo recordado: pone su nombre, su perfil, su docente y su grupo.
   const examenAbierto = examen;
   const idMateria = examen.materia_id != null && materiaPorId(examen.materia_id) ? examen.materia_id : null;
@@ -378,13 +414,24 @@ export function abrirExportarPdf(origen = null) {
     }
     aplicarDocente();
     if (idMateria != null) elegirMateria(idMateria);
-    cambioEnFormulario();
+    actualizarResumenes();
+    actualizarPie();
+    refrescarVista(1);
   });
-  abrirModal(modal, { foco: $('pdf-materia-sel') });
+  abrirModal(modal, { foco: $('pdf-config'), onClose: alCerrar });
+  $('pdf-config').scrollTop = 0;
+  $('pdf-previa').scrollTop = 0;
+}
+
+/** Se cierre como se cierre (botón, Escape…): se corta lo que estaba en marcha y se suelta lo pesado. */
+function alCerrar() {
+  vista.abierta = false;
+  detenerVista();
+  soltarImagenDeVista();
+  versiones.cerrar();
 }
 
 function cerrar() {
-  detenerVista();
   cerrarModal(modal);
 }
 
@@ -395,12 +442,27 @@ async function exportar(e) {
   mostrarError('');
   const problema = problemaDe(datos);
   if (problema) { mostrarError(problema); return; }
+  const conVersiones = versiones.activa();
+  if (conVersiones) {
+    if (!versiones.listas()) { mostrarError('Sortea las versiones antes de exportarlas.'); return; }
+    const mal = versiones.desajustes();
+    if (mal.length) {
+      const meta = versiones.objetivo();
+      const ok = await confirmar({
+        titulo: 'Algunas versiones no suman el total',
+        mensaje: `El total deseado es ${meta} puntos y ${mal.map(m => `la versión ${m.etiqueta} suma ${m.total}`).join(', ')}. ¿Exportar así de todos modos?`,
+        confirmar: 'Exportar de todos modos',
+        cancelar: 'Volver a ajustar',
+      });
+      if (!ok) return;
+    }
+  }
   ocupado(true);
   try {
-    const res = await apiFetch('/api/exportar_pdf', {
+    const res = await apiFetch(conVersiones ? '/api/exportar_versiones' : '/api/exportar_pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cuerpoPdf(examen, datos)),
+      body: JSON.stringify(conVersiones ? versiones.cuerpoExportar(datos) : cuerpoPdf(examen, datos)),
     });
     if (!res.ok) {
       let msg = friendlyHttpError(res.status);
@@ -409,16 +471,16 @@ async function exportar(e) {
       return;
     }
     const avisos = avisosDelPdf(res.headers.get('X-PDF-Info'));
-    const nombre = nombreDeDescarga(res.headers.get('Content-Disposition'), 'examen.pdf');
+    const nombre = nombreDeDescarga(res.headers.get('Content-Disposition'), conVersiones ? 'versiones.zip' : 'examen.pdf');
     const guardado = await saveFileToUser(await res.blob(), nombre,
-      'PDF guardado en tu equipo' + (avisos.length ? '. ' + avisos.join(' ') : ''));
+      (conVersiones ? 'Versiones guardadas en un ZIP en tu equipo' : 'PDF guardado en tu equipo') + (avisos.length ? '. ' + avisos.join(' ') : ''));
     // Si cerró el diálogo de «Guardar como» sin guardar, se queda aquí para poder intentarlo otra vez.
     if (guardado) {
       guardar(datos);
       cerrar();
     }
   } catch (err) {
-    mostrarError('No se pudo generar el PDF. Tu revisión y el XML no se ven afectados: inténtalo de nuevo.');
+    mostrarError(`No se pudo generar ${versiones.activa() ? 'las versiones' : 'el PDF'}. Tu revisión y el XML no se ven afectados: inténtalo de nuevo.`);
   } finally {
     ocupado(false);
   }
@@ -443,10 +505,9 @@ export function iniciarExportarPdf() {
   $('pdf-perfil-nombre').addEventListener('keydown', ev => {
     if (ev.key === 'Enter') { ev.preventDefault(); guardarPerfil(); }
   });
-  $('btn-pdf-vista').addEventListener('click', () => alternarVista());
   $('btn-pdf-vista-ant').addEventListener('click', () => refrescarVista(vista.pagina - 1));
   $('btn-pdf-vista-sig').addEventListener('click', () => refrescarVista(vista.pagina + 1));
   $('btn-pdf-cancelar').addEventListener('click', cerrar);
   $('btn-pdf-cerrar').addEventListener('click', cerrar);
-  modal.addEventListener('click', ev => { if (ev.target === modal) cerrar(); });
+  versiones.iniciar();
 }

@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 echo ============================================================
-echo   Conversor a Moodle XML - Generador de instalador Windows
+echo   Cátedra - Generador de instalador Windows
 echo ============================================================
 echo.
 
@@ -85,6 +85,6 @@ if errorlevel 1 (
 echo.
 echo ============================================================
 echo   Listo. Instalador generado en:
-echo   %~dp0Output\ConversorMoodleXML_Setup.exe
+echo   %~dp0Output\Catedra_Setup.exe
 echo ============================================================
 pause

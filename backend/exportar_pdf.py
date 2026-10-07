@@ -59,6 +59,7 @@ MARGENES = {"normal": (2.5, 2.5, 3.0, 3.0), "estrechos": (1.27, 1.27, 1.27, 1.27
             "moderados": (2.54, 2.54, 1.91, 1.91), "anchos": (2.54, 2.54, 5.08, 5.08)}
 LIMITE_CAMPO = 160
 LIMITE_INSTRUCCIONES = 1500
+LIMITE_VERSION = 20                     # «A», «B»… o un nombre corto
 LIMITE_LOGO = 2_000_000                 # caracteres base64 (~1,5 MB) por logo
 ROTULOS = {"facilitador": "FACILITADOR", "docente": "DOCENTE", "profesor": "PROFESOR"}
 
@@ -100,6 +101,7 @@ class DatosExamen:
     fecha: str = ""
     instrucciones: str = ""
     titulo_respaldo: str = "Examen"          # si no hay actividad ni materia (el nombre del archivo)
+    version: str = ""                        # «A», «B»…: una de las versiones de un examen (sale en el encabezado y en la clave)
     contenido: str = "examen_y_clave"        # CONTENIDOS
     papel: str = "carta"                     # PAPELES
     margenes: str = "moderados"              # MARGENES
@@ -477,6 +479,7 @@ class _Constructor:
         self.folleto = False                  # True mientras se arma el folleto: preguntas sin espacio para responder
         actividad, materia = _campo(datos.actividad, LIMITE_CAMPO), _campo(datos.materia, LIMITE_CAMPO)
         self.titulo = " · ".join(x for x in (actividad, materia) if x) or _campo(datos.titulo_respaldo, LIMITE_CAMPO) or "Examen"
+        self.version = _campo(datos.version, LIMITE_VERSION).upper()
 
     # ---- piezas comunes ----
     def _p(self, texto: str, estilo: str = "base") -> Paragraph:
@@ -945,6 +948,8 @@ class _Constructor:
         estudiante = d.campos_estudiante and not folleto       # el folleto no se escribe: sin cuadro de estudiante
         lineas = [_campo(x, LIMITE_CAMPO).upper() for x in (d.institucion, d.facultad, d.departamento, d.materia, d.actividad)]
         lineas = [x for x in lineas if x] or [self.titulo.upper()]
+        if self.version:
+            lineas.append(f"VERSIÓN {self.version}")
         centro = [self._p(self.txt.marcado(x), "cabecera") for x in lineas]
         izq, der = self._logo(d.logo_izquierdo, "izquierdo"), self._logo(d.logo_derecho, "derecho")
         items: list = []
@@ -1027,6 +1032,8 @@ class _Constructor:
 
     def _encabezado(self, seccion: str, derecha: str, primera_sin: bool):
         izquierda = " · ".join(x for x in (_campo(self.datos.materia, 60), _campo(self.datos.actividad, 60)) if x) or self.titulo
+        if self.version:
+            izquierda += f" · VERSIÓN {self.version}"
 
         def dibujar(c, doc):
             c._seccion = seccion                     # para «Página X de Y» dentro de su sección (ver _Lienzo)
@@ -1057,7 +1064,7 @@ class _Constructor:
         doc = BaseDocTemplate(buf, pagesize=self.tam, leftMargin=self.m_izq, rightMargin=self.m_der,
                               topMargin=self.m_sup, bottomMargin=self.m_inf, title=self.txt.plano(self.titulo),
                               author=self.txt.plano(_campo(d.docente, 80)), subject=self.txt.plano(_campo(d.materia, 80)),
-                              creator="Conversor a Moodle XML")
+                              creator="Cátedra")
         marco = lambda: Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="m", leftPadding=0, rightPadding=0,
                               topPadding=0, bottomPadding=0)
         self._vista = {"seccion": None, "n": 0}

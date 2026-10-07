@@ -73,7 +73,8 @@ function _ocultarClave() {
 function _abrir(obligatorio) {
   modal.dataset.obligatorio = obligatorio ? 'true' : 'false';
   closeBtn.hidden = obligatorio;
-  titleText.textContent = obligatorio ? 'Conecta tu API de Gemini' : 'API de Gemini';
+  titleText.textContent = obligatorio ? 'Te damos la bienvenida a Cátedra' : 'API de Gemini';
+  document.getElementById('apikey-bienvenida').hidden = !obligatorio;
   current.hidden = !_estado.configurada;
   if (_estado.configurada) {
     currentDetail.textContent = _estado.origen === 'entorno'

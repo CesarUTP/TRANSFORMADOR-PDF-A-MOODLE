@@ -1,4 +1,4 @@
-CONVERSOR A MOODLE XML — Generar el instalador de Windows
+CÁTEDRA — Generar el instalador de Windows
 ============================================================
 
 Esta carpeta es autosuficiente: trae una copia limpia de todo lo
@@ -39,10 +39,10 @@ Pasos
 3. Espera a que termine — compila primero el programa y luego el
    instalador. La primera vez puede tardar varios minutos.
 4. El instalador final queda en:
-       Output\ConversorMoodleXML_Setup.exe
+       Output\Catedra_Setup.exe
 
 Ese único archivo es el que compartes con quien vaya a probar la app.
-Al abrirlo, instala "Conversor a Moodle XML" como cualquier programa
+Al abrirlo, instala "Cátedra" como cualquier programa
 de Windows: queda en el Menú Inicio, puede crear acceso directo en el
 Escritorio, tiene su propio ícono, y se desinstala desde "Agregar o
 quitar programas" — quien lo instale NO necesita tener Python ni nada
@@ -81,7 +81,7 @@ ninguna ventana. Para diagnosticarlo:
 1. Corre el .exe una vez (aunque se quede pegado en la pantalla de
    carga) y ciérralo.
 2. Busca "launcher_error.log" en la misma carpeta donde quedó
-   instalado el .exe (junto a "ConvertidorMoodle.exe"). Ahí queda el
+   instalado el .exe (junto a "Catedra.exe"). Ahí queda el
    traceback completo de lo que falló.
 3. La causa más común es un import que falta en el .exe porque vive
    en backend/ (que PyInstaller trata como datos, no como código que

@@ -30,7 +30,7 @@ export const ACTIVIDADES = ['Parcial', 'Quiz', 'Prueba corta', 'Examen final', '
 const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas', 'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'renglones_ensayo'];
 
 const VACIOS = {
-  institucion: '', facultad: '', departamento: '', rotulo_docente: 'facilitador', logo_izquierdo: '', logo_derecho: '', materia: '', docente: '', actividad: '', grupo: '', fecha: '', instrucciones: '',
+  institucion: '', facultad: '', departamento: '', rotulo_docente: 'facilitador', logo_izquierdo: '', logo_derecho: '', materia: '', docente: '', actividad: '', grupo: '', fecha: '', instrucciones: '', version: '',
   contenido: 'examen_y_clave', papel: 'carta', margenes: 'moderados', fuente_titulos: 'dejavu', tam_titulos: 11, fuente_preguntas: 'dejavu', tam_preguntas: 10, campos_estudiante: true, partes: true, mezclar: true, puntos_por_pregunta: true, renglones_ensayo: 6,
 };
 
@@ -112,6 +112,7 @@ export function valoresIniciales(guardado) {
     if (typeof guardado[k] === 'string') out[k] = limpiarCampo(guardado[k]);
   }
   if (typeof guardado.instrucciones === 'string') out.instrucciones = limpiarTexto(guardado.instrucciones);
+  if (typeof guardado.version === 'string') out.version = limpiarCampo(guardado.version, 20);   // «A», «B»…: solo en las versiones de un examen
   if (CONTENIDOS.includes(guardado.contenido)) out.contenido = guardado.contenido;
   if (PAPELES.includes(guardado.papel)) out.papel = guardado.papel;
   if (MARGENES.includes(guardado.margenes)) out.margenes = guardado.margenes;

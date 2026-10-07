@@ -22,6 +22,7 @@ import { CLAVE_VISTOS, TOURS, debeOfrecer, leerVistos, marcarVisto, nombreDeTour
 import { ejemploExamen, iniciales, materiasQueUsan, nombreCopia, nombreOcupado, ordenarPerfiles, resumenEncabezado, resumenFormato } from './perfil-logica.js';
 import { ZOOMS, paginaDe, recuadroValido, urlOriginal, vecino, zoomVecino } from './ui/original-logica.js';
 import { duracionValida, estimarDuracion, onProgressQueue, onProgressStage, stopProgress } from './progreso.js';
+import { MAX_VERSIONES, composicion, crearAzar, cuadra, cuotasProporcionales, etiquetaDe, examenDeVersion, numsEnOrden, planInicial, preguntasPorVersion, preguntasRepetidas, puntosDeVersion, repartirVersion, resumenPorTipo, revisarPlan, sortear, totalDeVersion, versionesParaEnviar } from './versiones-logica.js';
 import { avisosDelXml, crearIconos, detalleDeError, esc_html, findClozeBrackets, humanizeSkipReason, splitAnswers, splitOptions } from './util.js';
 
 const casos = [];
@@ -1084,6 +1085,140 @@ prueba('Recorridos: lo visto se recuerda y la bienvenida se ofrece una sola vez'
   igual(leerVistos('basura'), vacio);
   igual(leerVistos('[1,2]'), vacio);
   igual(leerVistos('{"vistos":["a",3,"b"],"descartado":"si"}'), { vistos: ['a', 'b'], descartado: false });
+});
+
+// ── Versiones de un examen (2.5) ───────────────────────────────────────────
+// Un examen de 100 preguntas: 50 de opción múltiple, 30 de emparejamiento y 20 de verdadero/falso.
+const banco100 = Array.from({ length: 100 }, (_, i) => ({ num: i + 1, type: i < 50 ? 'multichoice' : i < 80 ? 'matching' : 'truefalse', points: 1 }));
+const claveBanco = Object.fromEntries(banco100.map(q => [q.num, { type: q.type, answer: `R${q.num}` }]));
+const conPlan = (extra) => ({ versiones: 4, modo: 'aleatorio', total: 25, cuotas: {}, sinRepetir: true, ...extra });
+const todasLasNums = (vs) => vs.flatMap(v => v.nums);
+
+prueba('versiones: el resumen por tipo sigue el orden del examen', () => {
+  igual(resumenPorTipo(banco100).map(t => [t.tipo, t.cantidad]), [['multichoice', 50], ['matching', 30], ['truefalse', 20]]);
+  igual(resumenPorTipo(banco100)[0].nombre, 'Opción múltiple');
+  igual(['A', 'B', 'Z', 'AA', 'AB'].join(), [0, 1, 25, 26, 27].map(etiquetaDe).join());
+});
+prueba('versiones: 4 de 25 sobre 100 no repiten ninguna pregunta', () => {
+  const vs = sortear(banco100, conPlan({}), 7);
+  igual(vs.map(v => v.nums.length), [25, 25, 25, 25]);
+  igual(new Set(todasLasNums(vs)).size, 100, 'las 100 se usan una sola vez');
+  igual(preguntasRepetidas(vs), 0);
+  igual(vs.map(v => v.etiqueta), ['A', 'B', 'C', 'D']);
+});
+prueba('versiones: la misma semilla da el mismo sorteo y otra semilla otro', () => {
+  const a = sortear(banco100, conPlan({}), 11), b = sortear(banco100, conPlan({}), 11), c = sortear(banco100, conPlan({}), 12);
+  igual(a, b);
+  igual(JSON.stringify(a) === JSON.stringify(c), false);
+});
+prueba('versiones: por tipo respeta cada cuota exacta en cada versión', () => {
+  const plan = conPlan({ versiones: 3, modo: 'por_tipo', cuotas: { multichoice: 10, matching: 5, truefalse: 20 } });
+  const vs = sortear(banco100, plan, 3);
+  for (const v of vs) {
+    igual(composicion(v, banco100).map(c => [c.tipo, c.cantidad]), [['multichoice', 10], ['matching', 5], ['truefalse', 20]]);
+  }
+  // 20 de 20 de verdadero/falso: «queda igual» (todas) en cada versión, así que esas SÍ se repiten entre versiones.
+  igual(preguntasRepetidas(vs), 20);
+  // Las de opción múltiple (3 × 10 de 50) y las de emparejamiento (3 × 5 de 30) no se repiten.
+  const mc = vs.flatMap(v => v.nums.filter(n => n <= 50));
+  igual(new Set(mc).size, 30);
+});
+prueba('versiones: si no alcanza para no repetir, se repite lo mínimo y se avisa', () => {
+  const plan = conPlan({ versiones: 4, modo: 'por_tipo', cuotas: { multichoice: 25, matching: 0, truefalse: 0 } });
+  const rev = revisarPlan(plan, banco100);
+  igual(rev.errores, []);
+  igual(rev.repiten, 50);
+  igual(rev.avisos.length, 1);
+  const vs = sortear(banco100, plan, 5);
+  igual(vs.map(v => v.nums.length), [25, 25, 25, 25]);
+  igual(vs.every(v => new Set(v.nums).size === 25), true, 'dentro de una versión nunca se repite');
+  igual(new Set(todasLasNums(vs)).size, 50, 'se usaron las 50, ni una de más');
+  igual(preguntasRepetidas(vs), 50);
+});
+prueba('versiones: sin «no repetir» cada versión es un sorteo aparte (sin repetir dentro de la versión)', () => {
+  const vs = sortear(banco100, conPlan({ versiones: 6, total: 60, sinRepetir: false }), 9);
+  igual(vs.every(v => new Set(v.nums).size === 60), true);
+  igual(preguntasRepetidas(vs) > 0, true);
+  igual(revisarPlan(conPlan({ versiones: 6, total: 60, sinRepetir: false }), banco100).avisos, []);
+});
+prueba('versiones: el plan se revisa antes de sortear', () => {
+  igual(revisarPlan(conPlan({ versiones: 0 }), banco100).errores.length, 1);
+  igual(revisarPlan(conPlan({ versiones: MAX_VERSIONES + 1 }), banco100).errores.length, 1);
+  igual(revisarPlan(conPlan({ total: 101 }), banco100).errores.length, 1);
+  igual(revisarPlan(conPlan({ total: 2.5 }), banco100).errores.length, 1);
+  igual(revisarPlan(conPlan({ modo: 'por_tipo', cuotas: { multichoice: 51, matching: 0, truefalse: 0 } }), banco100).errores.length, 1);
+  igual(revisarPlan(conPlan({ modo: 'por_tipo', cuotas: { multichoice: 0, matching: 0, truefalse: 0 } }), banco100).errores.length, 1);
+  let fallo = false;
+  try { sortear(banco100, conPlan({ total: 0 }), 1); } catch (_) { fallo = true; }
+  igual(fallo, true, 'un plan que no sirve no sortea');
+  igual(preguntasPorVersion(conPlan({ modo: 'por_tipo', cuotas: { multichoice: 10, matching: 5, truefalse: 2 } }), resumenPorTipo(banco100)), 17);
+});
+prueba('versiones: las cuotas proporcionales suman lo pedido', () => {
+  const tipos = resumenPorTipo(banco100);
+  igual(cuotasProporcionales(tipos, 25), { multichoice: 13, matching: 7, truefalse: 5 });
+  igual(Object.values(cuotasProporcionales(tipos, 100)).reduce((a, b) => a + b, 0), 100);
+  igual(Object.values(cuotasProporcionales(tipos, 1)).reduce((a, b) => a + b, 0), 1);
+  igual(planInicial(banco100), { versiones: 2, modo: 'aleatorio', total: 50, cuotas: { multichoice: 25, matching: 15, truefalse: 10 }, sinRepetir: true });
+});
+prueba('versiones: el orden impreso es el mismo siempre y respeta las partes', () => {
+  const v = sortear(banco100, conPlan({}), 21)[0];
+  const a = numsEnOrden(v, banco100, { partes: true }), b = numsEnOrden(v, banco100, { partes: true });
+  igual(a, b);
+  igual([...a].sort((x, y) => x - y), v.nums, 'son las mismas preguntas');
+  const tipos = a.map(n => banco100[n - 1].type);
+  const cambios = tipos.filter((t, i) => i > 0 && t !== tipos[i - 1]).length;
+  igual(cambios <= 2, true, 'cada tipo queda junto (una parte) y en el orden del examen');
+  igual(numsEnOrden(v, banco100, { barajarPreguntas: false }), v.nums, 'sin barajar, el orden del examen');
+  igual(numsEnOrden(v, banco100, { partes: false }).length, v.nums.length);
+});
+prueba('versiones: cada pregunta de una versión lleva SU clave', () => {
+  const ex = { filename: 'b.docx', total_points: 100, questions: banco100, answer_key: claveBanco };
+  const v = sortear(banco100, conPlan({}), 2)[1];
+  const e = examenDeVersion(ex, v);
+  igual(e.questions.map(q => q.num), numsEnOrden(v, banco100));
+  igual(Object.keys(e.answer_key).map(Number).sort((a, b) => a - b), v.nums);
+  igual(e.questions.every(q => e.answer_key[q.num].answer === `R${q.num}` && e.answer_key[q.num] === claveBanco[q.num]), true);
+  igual(e.total_points, 25);
+  igual(banco100[0].points, 1, 'el examen original no cambia');
+});
+prueba('versiones: los puntos se pueden repartir de nuevo y la suma cuadra', () => {
+  const v = sortear(banco100, conPlan({}), 4)[0];
+  igual(totalDeVersion(v, banco100), 25);
+  igual(cuadra(v, banco100, 25), true);
+  igual(cuadra(v, banco100, 100), false);
+  igual(cuadra(v, banco100, ''), true, 'sin objetivo no se compara');
+  v.puntos = repartirVersion(v, banco100, 100, 'equal');
+  igual(totalDeVersion(v, banco100), 100);
+  igual(cuadra(v, banco100, 100), true);
+  v.puntos = repartirVersion(v, banco100, 50, 'byType');
+  igual(totalDeVersion(v, banco100), 50);
+  const uno = { ...v, puntos: { ...v.puntos, [v.nums[0]]: 7 } };
+  igual(puntosDeVersion(uno, banco100)[v.nums[0]], 7, 'un valor editado a mano manda');
+  igual(totalDeVersion({ nums: [1, 2], puntos: { 1: 0.1, 2: 0.2 } }, banco100), 0.3, 'sin errores de coma flotante');
+});
+prueba('versiones: lo que se envía al servidor lleva el orden, los puntos y el total de cada versión', () => {
+  const ex = { filename: 'b.docx', total_points: 100, questions: banco100, answer_key: claveBanco };
+  const vs = sortear(banco100, conPlan({ versiones: 2 }), 8);
+  vs[0].puntos = repartirVersion(vs[0], banco100, 100, 'equal');
+  const env = versionesParaEnviar(ex, vs, { partes: true });
+  igual(env.map(e => e.etiqueta), ['A', 'B']);
+  igual(env[0].nums, numsEnOrden(vs[0], banco100, { partes: true }));
+  igual(env[0].total_points, 100);
+  igual(env[1].total_points, 25);
+  igual(Object.keys(env[1].puntos), []);
+  igual(typeof Object.keys(env[0].puntos)[0], 'string');
+});
+prueba('exportar PDF: el nombre de la versión viaja con los datos y se limita', () => {
+  igual(datosParaEnviar({ version: 'A' }).version, 'A');
+  igual(datosParaEnviar({ version: 'x'.repeat(50) }).version.length, 20);
+  igual(datosParaEnviar({}).version, '');
+  igual(paraGuardar({ version: 'B' }).version, undefined, 'la versión no se recuerda para el próximo examen');
+});
+prueba('versiones: el azar con semilla es repetible y estaría entre 0 y 1', () => {
+  const a = crearAzar(5), b = crearAzar(5);
+  const xs = Array.from({ length: 20 }, () => a()), ys = Array.from({ length: 20 }, () => b());
+  igual(xs, ys);
+  igual(xs.every(x => x >= 0 && x < 1), true);
 });
 
 // ── Cómo se muestra (solo en pruebas.html; en Node no hay lista y no hace nada) ──

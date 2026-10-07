@@ -11,7 +11,7 @@ export const CLAVE_VISTOS = 'conversor.tours';
 export const TOURS = {
   cargar: {
     pasos: [
-      { el: '.stepper', titulo: 'Así se convierte un examen', texto: 'Tres pasos: <b>cargas</b> tu examen, <b>revisas</b> lo que leyó la app y <b>descargas</b> el XML para Moodle (o el PDF para imprimirlo). Te enseño esta pantalla en un minuto.', lado: 'bottom' },
+      { el: '.stepper', titulo: 'Así funciona Cátedra', texto: 'Tres pasos: <b>cargas</b> tu examen, <b>revisas</b> lo que leyó la app y <b>exportas</b>: el XML para Moodle, el PDF para imprimirlo o varias versiones. Te enseño esta pantalla en un minuto.', lado: 'bottom' },
       { el: '#drop-zone', titulo: 'Elige tu examen', texto: 'Arrastra aquí el <b>PDF</b>, el <b>Word</b> o el <b>TXT</b> del examen, o haz clic para buscarlo. También sirve un <b>XML de Moodle</b> que ya tengas: se abre para corregirlo, sin IA.', lado: 'bottom' },
       { el: '#category-input', titulo: 'Categoría de Moodle', texto: 'El nombre de la carpeta donde quedarán las preguntas en el <b>Banco de preguntas</b> de Moodle. Por ejemplo: <i>Parcial-Historia-2026</i>.', lado: 'bottom' },
       { el: '#points-input', titulo: 'Puntaje total', texto: 'Cuánto vale todo el examen. Después, en la revisión, lo repartes entre las preguntas (la app lo hace por ti y tú lo ajustas).', lado: 'bottom' },
@@ -39,7 +39,7 @@ export const TOURS = {
     pasos: [
       { el: '#success-title', titulo: '¡Tu XML está listo!', texto: 'El examen quedó guardado en tu equipo (en <b>Mis materias</b>). Esto es lo que puedes hacer ahora.', lado: 'bottom' },
       { el: '#btn-download', titulo: 'Descargar Moodle XML', texto: 'Guarda el archivo. Para usarlo en Moodle: <b>Banco de preguntas → Importar → Formato XML de Moodle</b>.', lado: 'bottom' },
-      { el: '#btn-exportar-pdf', titulo: 'Exportar examen en PDF', texto: 'Para tenerlo en papel con su clave, o como folleto de preguntas con hoja de respuestas. Se abre un diálogo con <b>vista previa</b>.', lado: 'bottom' },
+      { el: '#btn-exportar-pdf', titulo: 'Exportar examen en PDF', texto: 'Para tenerlo en papel con su clave, o como folleto de preguntas con hoja de respuestas. Se abre una pantalla con <b>vista previa</b>.', lado: 'bottom' },
       { el: '#exito-materia', titulo: 'Guardado en tu materia', texto: 'Aquí ves en qué materia quedó y puedes cambiarla.', lado: 'bottom' },
       { el: '#btn-back-to-review', titulo: 'Volver a la revisión', texto: '¿Viste un error? Regresa, corrige y genera el XML otra vez.', lado: 'bottom' },
       { el: '#points-chart-card', titulo: 'Resumen', texto: 'Cuántas preguntas y cuántos puntos hay de cada tipo.', lado: 'top' },
@@ -75,20 +75,21 @@ export const TOURS = {
       { el: '#vp-form', titulo: 'Mis datos', texto: 'Tu nombre y cómo te llamas en el encabezado (<i>Facilitador</i>, <i>Docente</i> o <i>Profesor</i>). Los escribes una vez y salen en cada PDF.', lado: 'bottom' },
       { el: '[data-accion="nuevoPerfilEnc"]', titulo: 'Perfiles de encabezado', texto: 'Un perfil guarda la <b>institución, los logos, las indicaciones generales y el formato de impresión</b>, con vista previa. Crea uno por cada institución donde das clase.', lado: 'bottom' },
       { el: '#vp-perfiles .vp-perfil', titulo: 'Tu perfil', texto: '<b>Editar</b> lo cambia, <b>Duplicar</b> hace una copia para variarla, y la papelera lo borra.', lado: 'bottom' },
-      { el: '#vp-perfiles .vp-perfil [data-accion="predeterminadoPerfilEnc"]', titulo: 'Usar por defecto', texto: 'El perfil predeterminado es con el que empieza el diálogo del PDF.', lado: 'top' },
-      { el: null, titulo: 'Qué se aplica al exportar', texto: 'Al exportar un PDF, el diálogo empieza con lo de la <b>materia</b> (su perfil, docente y grupo); si no, con tu <b>perfil predeterminado</b> y tus datos; si no, con lo último que escribiste. Siempre puedes cambiarlo en ese examen.' },
+      { el: '#vp-perfiles .vp-perfil [data-accion="predeterminadoPerfilEnc"]', titulo: 'Usar por defecto', texto: 'El perfil predeterminado es con el que empieza la pantalla del PDF.', lado: 'top' },
+      { el: null, titulo: 'Qué se aplica al exportar', texto: 'Al exportar un PDF, la pantalla empieza con lo de la <b>materia</b> (su perfil, docente y grupo); si no, con tu <b>perfil predeterminado</b> y tus datos; si no, con lo último que escribiste. Siempre puedes cambiarlo en ese examen.' },
     ],
   },
   pdf: {
     pasos: [
-      { el: '#pdf-perfil', titulo: 'Perfil de encabezado', texto: 'Carga de una vez el encabezado y el formato que guardaste (institución, logos, márgenes, letra…). Los administras en <b>Mi perfil</b>.', lado: 'bottom' },
-      { el: '#pdf-materia-sel', titulo: 'Materia', texto: 'Al elegir una materia se rellenan su perfil, su docente y su grupo.', lado: 'bottom' },
-      { el: '#pdf-datos-examen', titulo: 'Datos de este examen', texto: 'Actividad, grupo y fecha: salen en el encabezado. Todo es opcional.', lado: 'bottom' },
-      { el: '#pdf-grupo-incluir', titulo: 'Qué incluir', texto: 'El examen con su clave, solo uno de los dos, o <b>folleto + hoja de respuestas + clave</b>: un folleto de preguntas para repartir, una hoja para que el estudiante conteste y la clave ya llena.', lado: 'top' },
-      { el: '#pdf-sec-encabezado', titulo: 'Encabezado de la institución', texto: 'Institución, facultad, logos (uno o dos) e indicaciones generales.', lado: 'top' },
-      { el: '#pdf-sec-formato', titulo: 'Formato', texto: 'Papel, márgenes, tipo y tamaño de letra, renglones de los ensayos y si se <b>mezclan las opciones</b> (para que la clave no delate las respuestas).', lado: 'top' },
-      { el: '#btn-pdf-vista', titulo: 'Vista previa', texto: 'Muestra la página tal como saldrá y se actualiza al cambiar cualquier dato.', lado: 'top' },
-      { el: '#btn-pdf-exportar', titulo: 'Exportar PDF', texto: 'Genera el PDF y te deja elegir dónde guardarlo. El XML no cambia.', lado: 'top' },
+      { el: '#pdf-perfil', titulo: 'Perfil de encabezado', texto: 'Carga de una vez el encabezado y el formato que guardaste (institución, logos, márgenes, letra…). Los administras en <b>Mi perfil</b>.', lado: 'right' },
+      { el: '#pdf-materia-sel', titulo: 'Materia', texto: 'Al elegir una materia se rellenan su perfil, su docente y su grupo.', lado: 'right' },
+      { el: '#pdf-datos-examen', titulo: 'Datos de este examen', texto: 'Actividad, grupo y fecha: salen en el encabezado. Todo es opcional.', lado: 'right' },
+      { el: '#pdf-grupo-incluir', titulo: 'Qué incluir', texto: 'El examen con su clave, solo uno de los dos, o <b>folleto + hoja de respuestas + clave</b>: un folleto de preguntas para repartir, una hoja para que el estudiante conteste y la clave ya llena.', lado: 'right' },
+      { el: '#pdf-versiones', titulo: 'Versiones del examen', texto: 'Con un examen grande como banco (por ejemplo 100 preguntas) puedes sacar <b>varios parciales distintos</b>: elige cuántas versiones y cuántas preguntas lleva cada una, al azar o <b>por tipo</b> (todas las de verdadero o falso, 25 de selección múltiple…). Cada versión sale con su clave, en un ZIP.', lado: 'right' },
+      { el: '#pdf-sec-encabezado', titulo: 'Encabezado de la institución', texto: 'Institución, facultad, logos (uno o dos) e indicaciones generales.', lado: 'right' },
+      { el: '#pdf-sec-formato', titulo: 'Formato', texto: 'Papel, márgenes, tipo y tamaño de letra, renglones de los ensayos y si se <b>mezclan las opciones</b> (para que la clave no delate las respuestas).', lado: 'right' },
+      { el: '#pdf-previa', titulo: 'Vista previa', texto: 'La página tal como saldrá; se actualiza al cambiar cualquier dato. Con versiones, cada una tiene su pestaña, y ahí mismo ajustas sus <b>puntos</b> para que sumen el total que quieres.', lado: 'left' },
+      { el: '#btn-pdf-exportar', titulo: 'Exportar PDF', texto: 'Genera el PDF (o el ZIP con las versiones) y te deja elegir dónde guardarlo. El XML no cambia.', lado: 'top' },
     ],
   },
 };
@@ -124,7 +125,7 @@ export function debeOfrecer(estado) {
 
 // ── El asistente flotante (ui/asistente.js) ──────────────────────────────
 /** Los ids de las ventanas encima de las cuales el asistente sigue disponible (con su recorrido). */
-const CONTEXTO_POR_VENTANA = { 'modal-pdf': 'pdf', 'vista-perfil': 'perfil', 'vista-materias': 'biblioteca' };
+const CONTEXTO_POR_VENTANA = { 'vista-pdf': 'pdf', 'vista-perfil': 'perfil', 'vista-materias': 'biblioteca' };
 const CONTEXTO_POR_PANEL = { upload: 'cargar', editor: 'revision', success: 'final' };
 
 /**
@@ -142,7 +143,7 @@ export const MENSAJES = {
   final: { titulo: '¿Y ahora qué hago?', texto: 'Te explico cómo llevar el XML a Moodle y qué más puedes hacer.' },
   biblioteca: { titulo: '¿Cómo funcionan las materias?', texto: 'Te enseño a ordenar y a encontrar tus exámenes.' },
   perfil: { titulo: '¿Para qué sirve tu perfil?', texto: 'Te cuento cómo guardar tu nombre y tus encabezados.' },
-  pdf: { titulo: '¿Qué opciones tiene el PDF?', texto: 'Te explico cada parte de este diálogo.' },
+  pdf: { titulo: '¿Qué opciones tiene el PDF?', texto: 'Te explico cada parte de esta pantalla.' },
 };
 
 /**

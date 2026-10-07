@@ -95,6 +95,9 @@ jobs:
       - name: Mis materias (2.3)
         if: ${{ !cancelled() }}
         run: python dev/test_materias.py
+      - name: Versiones de un examen (2.5)
+        if: ${{ !cancelled() }}
+        run: python dev/test_versiones.py
       # Solo una vez (no en los 3 sistemas: compara archivos, no depende
       # del SO). Antes nadie se enteraba de que ejecutable/ o
       # ejecutable_mac/ quedaron desfasados de backend/frontend hasta

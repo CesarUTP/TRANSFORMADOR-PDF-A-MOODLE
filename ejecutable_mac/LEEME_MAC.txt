@@ -1,4 +1,4 @@
-CONVERSOR A MOODLE XML — Generar la app de macOS
+CÁTEDRA — Generar la app de macOS
 ============================================================
 
 Esta carpeta es autosuficiente: trae una copia limpia de todo lo
@@ -23,10 +23,10 @@ Pasos
    instala dependencias, compila la app con PyInstaller y arma el
    instalador .dmg. La primera vez puede tardar varios minutos.
 3. El instalador final queda en:
-       dist/ConversorMoodleXML.dmg
+       dist/Catedra.dmg
 
 Ese único archivo es el que compartes con quien vaya a probar la
-app. Al abrirlo, aparece una ventana con "ConvertidorMoodle.app" y
+app. Al abrirlo, aparece una ventana con "Catedra.app" y
 un acceso directo a la carpeta Aplicaciones — arrastrando el ícono
 ahí queda "instalada" como cualquier app de Mac.
 
@@ -55,7 +55,7 @@ La app se queda cargando (splash) y nunca abre
 Significa que el backend (uvicorn) no pudo arrancar. Revisa
 "launcher_error.log", creado junto al ejecutable real dentro del
 bundle:
-    ConvertidorMoodle.app/Contents/MacOS/launcher_error.log
+    Catedra.app/Contents/MacOS/launcher_error.log
 
 La causa más común: un módulo que usa `backend/` (fastapi, uvicorn,
 sqlite3, etc.) no quedó incluido en la app. Como PyInstaller trata

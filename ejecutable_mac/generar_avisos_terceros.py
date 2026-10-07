@@ -53,7 +53,7 @@ def main(salida: Path) -> None:
     # En ejecutable*/ el frontend está al lado; en dev/, un nivel arriba.
     frontend = raiz / "frontend" if (raiz / "frontend").is_dir() else raiz.parent / "frontend"
     partes = [
-        "AVISOS DE TERCEROS — Conversor a Moodle XML",
+        "AVISOS DE TERCEROS — Cátedra",
         f"Generado el {date.today().isoformat()} con Python {sys.version.split()[0]} ({sys.platform}).",
         "",
         "Esta aplicación incluye software de terceros. Cada componente se distribuye",

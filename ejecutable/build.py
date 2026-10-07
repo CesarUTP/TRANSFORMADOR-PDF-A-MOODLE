@@ -1,5 +1,5 @@
 """
-build.py — Construye ConvertidorMoodle.exe con PyInstaller (Windows).
+build.py — Construye Catedra.exe con PyInstaller (Windows).
 
 No se corre a mano: lo invoca build_windows.bat después de crear el
 entorno virtual de compilación (build_venv) e instalar las dependencias.
@@ -35,7 +35,7 @@ cmd = [
     "launcher.py",
     "--onedir",
     "--noconsole",
-    "--name", "ConvertidorMoodle",
+    "--name", "Catedra",
     "--noconfirm",
     # ── Icono del ejecutable ─────────────────────────────────────────────
     "--icon", "assets/Icon.ico",
@@ -108,7 +108,7 @@ cmd = [
     "--hidden-import", "base64",
 ]
 
-print("Construyendo ConvertidorMoodle.exe ...")
+print("Construyendo Catedra.exe ...")
 print("(Esto puede tardar 3-5 minutos)\n")
 
 # Avisos de terceros («Acerca de»): con ESTE Python, que es el que se
@@ -120,7 +120,7 @@ result = subprocess.run(cmd, cwd=HERE)
 
 if result.returncode == 0:
     print("\n[OK] Build exitoso.")
-    print("  El ejecutable esta en: dist\\ConvertidorMoodle\\")
+    print("  El ejecutable esta en: dist\\Catedra\\")
 else:
     print("\n[ERROR] Build fallido. Revisa los mensajes de arriba.")
     sys.exit(1)

@@ -1,6 +1,6 @@
 /* componentes.css — piezas reutilizables: contenedores, stepper, botones,
    zona de carga, formularios, resumen final, modales, código y toast
-   Parte de la hoja de estilos del Conversor a Moodle XML.
+   Parte de la hoja de estilos de Cátedra.
    Se cargan en orden desde index.html. */
 
 /* ── CONTAINER & CARDS ───────────────────────────────────────────────── */
@@ -1100,7 +1100,8 @@ strong.txt-fuerte { color: var(--color-text); }
   .orig-vista, .proc-chip.proc-boton { transition: none; }
 }
 
-/* ── EXPORTAR EL EXAMEN EN PDF (modal) ───────────────────────────────── */
+/* ── EXPORTAR EL EXAMEN EN PDF ───────────────────────────────────────── */
+/* Los estilos .pdf-* los comparten la pantalla de exportar (.vpdf-*) y la ventana del editor de perfiles de Mi perfil. */
 .pdf-form { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .pdf-cuerpo { padding: 20px 24px 8px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto; }
 .pdf-intro { margin: 0; font-size: var(--text-md); line-height: 1.6; color: var(--color-text-muted); }
@@ -1158,6 +1159,75 @@ strong.txt-fuerte { color: var(--color-text); }
 .pdf-seccion > summary small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); font-weight: 500; color: var(--color-text-muted); }
 .pdf-seccion-cuerpo { display: flex; flex-direction: column; gap: 16px; padding: 4px 14px 14px; }
 .pdf-subgrupo { display: flex; flex-direction: column; gap: 8px; }
+
+/* La pantalla de exportar (2.5): datos a la izquierda, vista previa (y versiones) a la derecha. */
+.vpdf-form { flex: 1; min-height: 0; }
+.vpdf-cuerpo { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(360px, 560px) minmax(0, 1fr); width: 100%; max-width: 1280px; margin: 0 auto; }
+.vpdf-config { min-width: 0; overflow-y: auto; padding: 20px 24px 28px; display: flex; flex-direction: column; gap: 18px; outline: none; }
+.vpdf-previa { min-width: 0; overflow-y: auto; padding: 16px 24px 28px; display: flex; flex-direction: column; gap: 12px; border-left: 1px solid var(--color-border); background: var(--color-surface); }
+.vpdf-previa .pdf-vista-marco { width: 100%; max-width: 620px; margin: 0 auto; flex-shrink: 0; }
+.vpdf-previa .pdf-vista-barra { flex-shrink: 0; }
+.pdf-vista-marco img[hidden] { display: none; }
+.vpdf-pie { flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 12px 24px 12px 116px; border-top: 1px solid var(--color-border); background: var(--color-surface); }
+.vpdf-pie-mensajes { flex: 1; min-width: 0; }
+.vpdf-pie-mensajes p { margin: 0; }
+.vpdf-pie-texto { font-size: var(--text-sm); color: var(--color-text-muted); }
+.vpdf-pie-texto:empty, .vpdf-pie .field-error[hidden] { display: none; }
+.vpdf-pie .btn { flex-shrink: 0; }
+@media (max-width: 900px) {
+  .vpdf-cuerpo { display: block; overflow-y: auto; }
+  .vpdf-config { overflow: visible; padding: 16px 14px; }
+  .vpdf-previa { overflow: visible; border-left: 0; border-top: 1px solid var(--color-border); padding: 16px 14px 24px; }
+  .vpdf-pie { padding: 10px 14px; flex-wrap: wrap; }
+  .vpdf-pie-mensajes { flex: 1 1 100%; }
+}
+/* En el celular el profe flotante ocupa la esquina de abajo a la izquierda: «Cerrar» (arriba) hace de cancelar. */
+@media (max-width: 640px) {
+  .vpdf-pie #btn-pdf-cancelar { display: none; }
+  .vpdf-pie #btn-pdf-exportar { flex: 1; margin-left: 78px; }
+  .vpdf-pie-mensajes { padding-left: 78px; }
+  .ver-tipo { grid-template-columns: minmax(0, 1fr) 72px auto; }
+  .ver-pregunta { grid-template-columns: 28px minmax(0, 1fr) 72px; }
+}
+
+/* Versiones del examen (2.5). */
+.ver-cuerpo { display: flex; flex-direction: column; gap: 14px; padding: 12px 14px 14px; background: var(--color-surface); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); }
+.ver-cuerpo[hidden] { display: none; }
+.ver-modo { display: flex; flex-direction: column; gap: 10px; }
+.ver-tipos { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg); }
+.ver-tipos[hidden] { display: none; }
+.ver-tipo { display: grid; grid-template-columns: minmax(0, 1fr) 84px auto; align-items: center; gap: 4px 10px; }
+.ver-tipo-nombre { min-width: 0; font-size: var(--text-md); font-weight: 600; }
+.ver-tipo-nombre small { display: block; font-weight: 500; font-size: var(--text-xs); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.ver-tipo .form-input { padding-block: 7px; padding-left: 10px; font-size: var(--text-md); }
+.ver-tipo .btn { white-space: nowrap; }
+.ver-resumen { margin: 0; font-size: var(--text-sm); font-weight: 600; color: var(--color-text); font-variant-numeric: tabular-nums; }
+.ver-resumen:empty { display: none; }
+.ver-avisos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ver-avisos:empty { display: none; }
+.ver-avisos li { padding: 8px 10px; font-size: var(--text-sm); line-height: 1.45; border-radius: var(--radius-sm); background: var(--color-warning-bg); border: 1px solid var(--color-warning); color: var(--color-text); }
+.ver-avisos li.error { background: var(--color-error-bg); border-color: var(--color-error); }
+.ver-tabs { display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
+.ver-tabs[hidden], .ver-panel[hidden] { display: none; }
+.ver-tab { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; min-width: 76px; padding: 7px 14px; font: inherit; font-weight: 800; cursor: pointer; color: var(--color-text-muted); background: var(--color-surface-card); border: 1px solid var(--color-border); border-radius: var(--radius-md); transition-property: border-color, background-color, color; transition-duration: var(--dur-fast); }
+.ver-tab small { font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ver-tab:hover { border-color: var(--color-accent); color: var(--color-text); }
+.ver-tab[aria-selected="true"] { color: var(--color-text); border-color: var(--color-accent); background: var(--color-accent-glow); }
+.ver-tab:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.ver-tab.desajuste small { color: var(--color-warning); }
+.ver-panel { display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+.ver-composicion { margin: 0; font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.5; }
+.ver-puntos-barra { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.ver-puntos-barra .form-group { flex: 0 1 150px; min-width: 110px; }
+.ver-puntos-barra .form-input { padding-block: 8px; padding-left: 12px; font-size: var(--text-md); }
+.ver-suma { margin: 0; font-size: var(--text-sm); font-weight: 700; font-variant-numeric: tabular-nums; }
+.ver-suma.desajuste { color: var(--color-warning); }
+.ver-preguntas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 340px; overflow-y: auto; }
+.ver-pregunta { display: grid; grid-template-columns: 34px minmax(0, 1fr) 84px; align-items: center; gap: 8px; padding: 4px 2px; font-size: var(--text-sm); }
+.ver-pregunta-num { font-weight: 800; color: var(--color-text-muted); font-variant-numeric: tabular-nums; text-align: right; }
+.ver-pregunta-texto { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ver-pregunta-texto small { color: var(--color-text-subtle); margin-left: 6px; }
+.ver-pregunta .form-input { padding: 5px 8px; font-size: var(--text-sm); text-align: right; }
 
 /* ── MI PERFIL ───────────────────────────────────────────────────────── */
 .btn-avatar {

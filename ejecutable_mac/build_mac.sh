@@ -1,10 +1,10 @@
 #!/bin/bash
-# build_mac.sh — Genera ConvertidorMoodle.app y el instalador .dmg (macOS).
+# build_mac.sh — Genera Catedra.app y el instalador .dmg (macOS).
 set -e
 cd "$(dirname "$0")"
 
 echo "============================================================"
-echo "  Conversor a Moodle XML - Generador de instalador macOS"
+echo "  Cátedra - Generador de instalador macOS"
 echo "============================================================"
 echo ""
 
@@ -34,22 +34,22 @@ echo "[3/4] Compilando la app (PyInstaller)..."
 "build_venv/bin/python3" build.py
 
 echo "[4/4] Generando el instalador .dmg..."
-rm -f dist/ConvertidorMoodle.app/Contents/MacOS/launcher_error.log
+rm -f dist/Catedra.app/Contents/MacOS/launcher_error.log
 rm -rf dist/dmg_staging
 mkdir -p dist/dmg_staging
-cp -R dist/ConvertidorMoodle.app dist/dmg_staging/
+cp -R dist/Catedra.app dist/dmg_staging/
 ln -s /Applications dist/dmg_staging/Aplicaciones
 
-hdiutil create -volname "Conversor a Moodle XML" \
+hdiutil create -volname "Cátedra" \
     -srcfolder dist/dmg_staging \
     -ov -format UDZO \
-    dist/ConversorMoodleXML.dmg
+    dist/Catedra.dmg
 
 rm -rf dist/dmg_staging
 
 echo ""
 echo "============================================================"
 echo "  Listo. Instalador generado en:"
-echo "  $(pwd)/dist/ConversorMoodleXML.dmg"
+echo "  $(pwd)/dist/Catedra.dmg"
 echo "============================================================"
 read -p "Presiona Enter para salir..."

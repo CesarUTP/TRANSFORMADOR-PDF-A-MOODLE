@@ -23,7 +23,7 @@ export async function avisarSiHayVersionNueva() {
   if (!info || info.estado !== 'nueva') return;
   // showToast pone el mensaje con textContent: las notas no se leen como HTML.
   const notas = info.notas ? ` ${info.notas}` : '';
-  showToast(`Hay una versión nueva del conversor (${info.version}); tienes la ${info.actual}.${notas}`, 'info', {
+  showToast(`Hay una versión nueva de Cátedra (${info.version}); tienes la ${info.actual}.${notas}`, 'info', {
     accion: { texto: 'Descargar', alPulsar: () => abrirEnlaceExterno(info.url) },
   });
 }

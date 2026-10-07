@@ -120,6 +120,7 @@ PRUEBAS = (
     "test_importar_xml.py",
     "test_exportar_pdf.py",
     "test_materias.py",
+    "test_versiones.py",
 )
 
 

@@ -1,5 +1,5 @@
 """
-main.py — creación de la aplicación FastAPI (Conversor a Moodle XML).
+main.py — creación de la aplicación FastAPI (Cátedra).
 
 Aquí solo vive lo que arma la app: el middleware de seguridad (token por
 arranque, Host/Origin, CSP; ver seguridad.py), el manejo de errores de

@@ -4,10 +4,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Conversor a Moodle XML</title>
+  <title>Cátedra</title>
   <link rel="icon" type="image/png" href="img/icono.png">
   <meta name="description"
-    content="Herramienta de escritorio para docentes: convierte pruebas, quices y exámenes (PDF, Word o TXT) a Moodle XML con revisión y validación, los exporta en PDF listo para imprimir con su clave, y los organiza por materia." />
+    content="Cátedra: tu espacio para gestionar tus evaluaciones. Convierte pruebas, quices y exámenes (PDF, Word o TXT) a Moodle XML con revisión y validación, los exporta en PDF listo para imprimir con su clave, saca varias versiones y los organiza por materia." />
 
   <!-- Tipografías incluidas en la app (css/fuentes.css) -->
   <link rel="stylesheet" href="css/fuentes.css">
@@ -37,8 +37,8 @@
       <div class="logo-container">
         <img src="img/icono.png" class="logo-img" alt="" width="44" height="44">
         <div style="min-width:0;">
-          <h1 class="brand-title">Conversor a Moodle XML</h1>
-          <p class="brand-sub">Exámenes a Moodle XML y PDF, ordenados por materia.</p>
+          <h1 class="brand-title">Cátedra</h1>
+          <p class="brand-sub">Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.</p>
         </div>
       </div>
 
@@ -88,7 +88,7 @@
       <li class="step-line" id="step-line-2" aria-hidden="true"></li>
       <li class="step-item" id="step-3-indicator">
         <div class="step-num" aria-hidden="true">3</div>
-        <span>Descargar XML</span>
+        <span>Exportar</span>
       </li>
     </ol>
 
@@ -270,7 +270,7 @@
             <i data-lucide="check" style="width:28px;height:28px;color:var(--color-success);"></i>
           </div>
           <div style="min-width:0;">
-            <h2 id="success-title" class="screen-title" tabindex="-1">Tu XML está listo</h2>
+            <h2 id="success-title" class="screen-title" tabindex="-1">Tu examen está listo</h2>
             <p id="success-subtitle" style="font-size:var(--text-md);color:var(--color-text-muted);margin-top:2px;overflow-wrap:anywhere;"></p>
           </div>
           </div>
@@ -469,7 +469,7 @@
             <section class="guia-sec">
               <h3>Qué es</h3>
               <p class="guia-nota"><i data-lucide="circle-help" class="ico-14" style="vertical-align:-2px;"></i> ¿Primera vez? El <strong>profe</strong> de la esquina inferior izquierda te explica cada pantalla paso a paso: haz clic en él (o espera a que te ofrezca ayuda) y te muestra para qué sirve cada parte. Puedes repetirlo cuando quieras.</p>
-              <p>Una herramienta de escritorio para docentes que lleva tus exámenes de punta a punta: los lee desde el PDF, Word o TXT que ya tienes, los pasa a <strong>Moodle XML</strong> para importarlos en <em>Banco de preguntas → Importar</em>, los puede <strong>imprimir en PDF con su clave</strong> y los guarda <strong>ordenados por materia</strong> para volver a ellos cuando quieras. Tú revisas cada pregunta antes de descargar. No inventa preguntas ni respuestas: solo transcribe lo que ya está en el documento.</p>
+              <p><strong>Cátedra</strong> es tu espacio para gestionar tus evaluaciones (antes se llamaba «Conversor a Moodle XML»). Una herramienta de escritorio para docentes que lleva tus exámenes de punta a punta: los lee desde el PDF, Word o TXT que ya tienes, los pasa a <strong>Moodle XML</strong> para importarlos en <em>Banco de preguntas → Importar</em>, los puede <strong>imprimir en PDF con su clave</strong>, sacar <strong>varias versiones</strong> de un mismo examen y los guarda <strong>ordenados por materia</strong> para volver a ellos cuando quieras. Tú revisas cada pregunta antes de descargar. No inventa preguntas ni respuestas: solo transcribe lo que ya está en el documento.</p>
             </section>
 
             <section class="guia-sec">
@@ -480,6 +480,7 @@
                 <li><strong>Apoyarte en la IA sin que decida por ti.</strong> Sugerir una respuesta que falta, escribir la retroalimentación, mejorar la redacción y avisar de preguntas repetidas: siempre lo ves antes y solo se aplica si lo aceptas.</li>
                 <li><strong>Corregir un XML que ya tienes.</strong> Abre un Moodle XML (de esta aplicación o de tu banco de preguntas) en el mismo editor, sin IA, y vuelve a generarlo.</li>
                 <li><strong>Imprimir el examen en PDF.</strong> Con tu institución, logos y datos; con su clave, o como folleto de preguntas más hoja de respuestas y clave. Las opciones se mezclan para que la clave no delate las respuestas.</li>
+                <li><strong>Sacar varias versiones de un examen.</strong> Un examen grande hace de banco: sorteas, por ejemplo, 4 parciales de 25 preguntas (al azar o con tantas de cada tipo), sin repetir preguntas entre versiones, y descargas un ZIP con el PDF y la clave de cada una.</li>
                 <li><strong>Ordenar todo por materia</strong> en <em>Mis materias</em>: cada materia es un espacio con todos sus exámenes, que puedes reabrir, descargar en XML, exportar en PDF o duplicar como punto de partida de uno nuevo.</li>
                 <li><strong>Escribir tus datos una sola vez</strong> en <em>Mi perfil</em>: tu nombre y tus perfiles de encabezado (institución, logos, formato) se aplican solos en cada PDF.</li>
                 <li><strong>Trabajar en privado.</strong> Todo vive en tu equipo: sin cuenta, sin cookies y sin enviar tus archivos a ningún servidor propio. A la IA solo va el texto necesario para ordenar las preguntas.</li>
@@ -604,7 +605,7 @@
           <div class="guia">
             <section class="guia-sec">
               <h3>Exportar el examen en PDF</h3>
-              <p>Con el XML generado, el botón <strong>Exportar examen en PDF</strong> (también el botón <em>PDF</em> de cada examen en Mis materias) abre un diálogo con una <strong>vista previa</strong> de la página, que se rehace al cambiar cualquier dato. Es un documento de apoyo para papel y archivo: sale de las mismas preguntas y la misma clave que el XML, y lo que se importa a Moodle sigue siendo el XML.</p>
+              <p>Con el XML generado, el botón <strong>Exportar examen en PDF</strong> (también el botón <em>PDF</em> de cada examen en Mis materias) abre una pantalla con tus datos a la izquierda y la <strong>vista previa</strong> de la página a la derecha, que se rehace al cambiar cualquier dato. Es un documento de apoyo para papel y archivo: sale de las mismas preguntas y la misma clave que el XML, y lo que se importa a Moodle sigue siendo el XML.</p>
               <ul class="guia-lista">
                 <li><strong>Qué incluir:</strong> el examen y su clave (la clave va en páginas aparte), solo el examen, solo la clave, o <em>folleto + hoja de respuestas + clave</em>: un folleto de preguntas sin espacios para escribir, una hoja para que el estudiante conteste y la clave, que es esa misma hoja ya llena.</li>
                 <li><strong>Encabezado:</strong> institución, facultad, departamento, hasta dos logos, materia, actividad, grupo, fecha, nombre del docente e indicaciones generales, con el cuadro de nombre, cédula, grupo y fecha.</li>
@@ -616,12 +617,24 @@
             </section>
 
             <section class="guia-sec">
+              <h3>Varias versiones de un examen</h3>
+              <p>Si subiste un examen de, digamos, 100 preguntas, ese examen puede hacer de <strong>banco</strong>: en el XML de Moodle lo usas completo y configuras allí el sorteo al azar; para <strong>papel</strong>, la sección <em>Versiones del examen</em> de la pantalla del PDF saca varios parciales distintos, cada uno con su clave.</p>
+              <ul class="guia-lista">
+                <li><strong>Cuántas versiones y cuántas preguntas:</strong> «Totalmente al azar» toma, por ejemplo, 25 de las 100 sin mirar el tipo. «Elegir cuántas de cada tipo» detecta los tipos que hay y te deja pedir una cantidad de cada uno (con «Todas», ese tipo queda igual en cada versión).</li>
+                <li><strong>No repetir:</strong> mientras las preguntas alcancen, ninguna sale en dos versiones. Si no alcanzan, se repiten las menos posibles y la app te lo dice antes de sortear.</li>
+                <li><strong>Revisa cada versión:</strong> cada una tiene su pestaña con su vista previa. Puedes sortear de nuevo cuando quieras.</li>
+                <li><strong>Los puntos:</strong> cada versión muestra cuánto suma. Si no es el total que quieres (por ejemplo 100), pulsa <em>Ajustar</em> (según el tipo o en partes iguales) o cambia los puntos pregunta por pregunta. La app no cambia puntos por su cuenta.</li>
+                <li><strong>Qué sale:</strong> un ZIP con un PDF por versión (examen y clave, o folleto, hoja y clave, según lo que hayas elegido en «Qué incluir»). Cada PDF dice «VERSIÓN A», «VERSIÓN B»… también en su clave, y la clave de cada versión es la de sus propias preguntas.</li>
+              </ul>
+            </section>
+
+            <section class="guia-sec">
               <h3>Mis materias</h3>
               <p>El botón <strong>Mis materias</strong> de la cabecera es tu biblioteca: cada materia es un espacio con todos sus exámenes.</p>
               <ul class="guia-lista">
                 <li><strong>Elige la materia al cargar el examen</strong> (paso 1), con una actividad opcional como «Parcial 1». Puedes cambiarla al terminar, en la pantalla final.</li>
                 <li><strong>Dentro de una materia:</strong> busca, <em>Reabrir</em> la revisión, descarga el XML, exporta el PDF, y con <em>Organizar</em> cambia su materia o su actividad, o bórralo. <strong>Nuevo examen en esta materia</strong> vuelve al paso 1 con ella elegida.</li>
-                <li><strong>Valores por defecto:</strong> cada materia puede traer su perfil de encabezado, su docente y su grupo; el diálogo del PDF los usa al exportar.</li>
+                <li><strong>Valores por defecto:</strong> cada materia puede traer su perfil de encabezado, su docente y su grupo; la pantalla del PDF los usa al exportar.</li>
                 <li><strong>Sin materia y Todos los exámenes</strong> completan la pantalla. Con <em>Elegir todos</em> puedes mover o borrar muchos de una vez. Un <strong>asistente</strong> propone la materia de los exámenes viejos según su categoría y su nombre; tú decides qué se mueve.</li>
                 <li><strong>Espacio:</strong> se guardan hasta 300 exámenes (400 MB). Al llenarse se borran primero los que <em>no tienen materia</em>, los más antiguos antes; la app avisa al acercarse y muestra cuánto espacio usas. Borrar o archivar una materia no borra sus exámenes.</li>
               </ul>
@@ -633,7 +646,7 @@
               <ul class="guia-lista">
                 <li><strong>Mis datos:</strong> tu nombre y cómo te llamas en el encabezado (Facilitador, Docente o Profesor).</li>
                 <li><strong>Perfiles de encabezado:</strong> institución, logos, indicaciones generales y formato de impresión, con vista previa. Crea uno por cada institución donde das clase, duplícalo, renómbralo y marca el que más uses como <em>predeterminado</em>.</li>
-                <li><strong>Qué manda:</strong> al exportar, el diálogo empieza con lo de la materia (su perfil, docente y grupo); si no, con tu perfil predeterminado y tus datos; si no, con lo último que escribiste. Siempre puedes cambiarlo en ese examen.</li>
+                <li><strong>Qué manda:</strong> al exportar, la pantalla empieza con lo de la materia (su perfil, docente y grupo); si no, con tu perfil predeterminado y tus datos; si no, con lo último que escribiste. Siempre puedes cambiarlo en ese examen.</li>
               </ul>
               <p class="guia-nota">Todo se guarda solo en este equipo.</p>
             </section>
@@ -1057,7 +1070,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
               </div>
             </details>
 
-            <label class="pdf-opcion"><input type="checkbox" id="pe-predeterminado"> <span><strong>Usar este perfil por defecto</strong><small>Al exportar un examen, el diálogo del PDF empieza con este encabezado. Una materia puede tener otro.</small></span></label>
+            <label class="pdf-opcion"><input type="checkbox" id="pe-predeterminado"> <span><strong>Usar este perfil por defecto</strong><small>Al exportar un examen, la pantalla del PDF empieza con este encabezado. Una materia puede tener otro.</small></span></label>
             <p class="field-error" id="pe-error" role="alert" hidden></p>
           </div>
 
@@ -1124,7 +1137,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <details class="pdf-seccion" id="mat-defectos">
             <summary><span>Valores por defecto para el PDF</span><small id="mat-resumen-defectos"></small></summary>
             <div class="pdf-seccion-cuerpo">
-              <p class="field-hint" style="margin:0 0 10px;">Al exportar un examen de esta materia en PDF, el diálogo ya trae estos datos.</p>
+              <p class="field-hint" style="margin:0 0 10px;">Al exportar un examen de esta materia en PDF, la pantalla ya trae estos datos.</p>
               <div class="form-group">
                 <label class="field-label" for="mat-perfil">Perfil de encabezado</label>
                 <select id="mat-perfil" class="form-input"><option value="">Ninguno</option></select>
@@ -1254,22 +1267,26 @@ Ahora convierte el examen adjunto a este formato.</pre>
   </div>
 
   <!-- ════════════════ EXPORTAR EL EXAMEN EN PDF ════════════════
-       Los datos de la portada, el formato y una vista previa; se abre desde la pantalla final y desde cada
-       examen del Historial (backend/exportar_pdf.py). Lógica en ui/exportar-pdf.js. -->
-  <div id="modal-pdf" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pdf-titulo">
-    <div class="modal-box modal-md" id="pdf-caja">
-      <div class="modal-header">
-        <h2 class="modal-title" id="pdf-titulo">
-          <i data-lucide="file-text" style="width:20px;height:20px;color:var(--color-accent);"></i>
-          Exportar examen en PDF
-        </h2>
-<button type="button" id="btn-pdf-cerrar" class="btn btn-icon" aria-label="Cerrar" title="Cerrar">
-          <i data-lucide="x" class="ico-18"></i>
+       Pantalla propia (como «Mis materias» y «Mi perfil»): a la izquierda los datos, el encabezado y el formato; a la
+       derecha la vista previa (con una pestaña por versión cuando se sacan varias). Se abre desde la pantalla final y
+       desde cada examen de «Mis materias» (backend/exportar_pdf.py, backend/versiones.py). Lógica en ui/exportar-pdf.js
+       y ui/versiones.js. -->
+  <div id="vista-pdf" class="vista-materias vista-pdf" role="dialog" aria-modal="true" aria-labelledby="pdf-titulo">
+    <div class="vm-barra">
+      <nav class="vm-migas" aria-label="Dónde estás">
+        <span class="vm-miga" aria-current="page"><i data-lucide="file-text" class="ico-16"></i><span id="pdf-titulo">Exportar en PDF</span></span>
+        <span class="vm-sep" aria-hidden="true">/</span>
+        <strong id="pdf-migas-examen"></strong>
+      </nav>
+      <div class="vm-barra-der">
+        <button type="button" id="btn-pdf-cerrar" class="btn btn-ghost btn-sm" aria-label="Cerrar y volver">
+          <i data-lucide="x" class="ico-16"></i> Cerrar
         </button>
       </div>
-      <form id="pdf-form" class="pdf-form" novalidate>
-        <div class="pdf-dos">
-        <div class="modal-body pdf-cuerpo">
+    </div>
+    <form id="pdf-form" class="pdf-form vpdf-form" novalidate>
+      <div class="vpdf-cuerpo">
+        <div class="vpdf-config" id="pdf-config" tabindex="-1">
           <p class="pdf-intro" id="pdf-examen-nombre"></p>
 
           <!-- Perfiles: el encabezado y el formato con nombre, para no escribirlos cada vez. -->
@@ -1318,6 +1335,34 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <label class="pdf-opcion"><input type="radio" name="contenido" value="solo_examen"> <span><strong>Solo el examen</strong><small>Sin respuestas: listo para entregar.</small></span></label>
             <label class="pdf-opcion"><input type="radio" name="contenido" value="folleto_hoja_clave"> <span><strong>Folleto, hoja de respuestas y clave</strong><small>Para repartir: un folleto de preguntas sin espacios para escribir, una hoja de respuestas para llenar (con nombre y calificación) y la clave, que es esa misma hoja ya llena. Cada parte empieza en su propia página.</small></span></label>
             <label class="pdf-opcion"><input type="radio" name="contenido" value="solo_clave"> <span><strong>Solo la clave</strong><small>Cada respuesta con su letra y su texto, porque Moodle mezcla las opciones.</small></span></label>
+          </fieldset>
+
+          <!-- Versiones (2.5): el examen hace de banco y se sortean varios parciales, cada uno con su clave. -->
+          <fieldset class="pdf-grupo" id="pdf-versiones">
+            <legend class="field-label">Versiones del examen</legend>
+            <label class="pdf-opcion"><input type="checkbox" id="pdf-ver-activar"> <span><strong>Sacar varias versiones de este examen</strong><small>Sortea preguntas de este examen, que hace de banco, para armar varios parciales distintos, cada uno con su clave. El XML de Moodle sigue siendo el del examen completo: allí el sorteo lo hace Moodle.</small></span></label>
+            <div class="ver-cuerpo" id="pdf-ver-cuerpo" hidden>
+              <div class="config-grid">
+                <div class="form-group">
+                  <label class="field-label" for="pdf-ver-n">¿Cuántas versiones?</label>
+                  <input type="number" id="pdf-ver-n" class="form-input" min="1" max="12" step="1" value="2">
+                </div>
+                <div class="form-group" id="pdf-ver-total-caja">
+                  <label class="field-label" for="pdf-ver-total">Preguntas en cada versión</label>
+                  <input type="number" id="pdf-ver-total" class="form-input" min="1" step="1" value="1">
+                </div>
+              </div>
+              <div class="ver-modo" role="radiogroup" aria-label="Cómo se sortean">
+                <label class="pdf-opcion"><input type="radio" name="ver_modo" value="aleatorio"> <span><strong>Totalmente al azar</strong><small>Cualquier pregunta del examen, sin mirar de qué tipo es.</small></span></label>
+                <label class="pdf-opcion"><input type="radio" name="ver_modo" value="por_tipo"> <span><strong>Elegir cuántas de cada tipo</strong><small>Por ejemplo, todas las de verdadero o falso, 25 de selección múltiple y 10 de emparejamiento. «Todas» deja ese tipo igual en cada versión.</small></span></label>
+              </div>
+              <div class="ver-tipos" id="pdf-ver-tipos" hidden></div>
+              <label class="pdf-opcion"><input type="checkbox" id="pdf-ver-sin-repetir"> <span><strong>No repetir preguntas entre versiones</strong><small>Mientras alcancen las preguntas del examen, ninguna sale en dos versiones. Si no alcanzan, se repiten las menos posibles y se avisa.</small></span></label>
+              <label class="pdf-opcion"><input type="checkbox" id="pdf-ver-barajar"> <span><strong>Barajar el orden de las preguntas</strong><small>Dentro de cada parte, cada versión las lleva en otro orden. Es independiente del sorteo.</small></span></label>
+              <p class="ver-resumen" id="pdf-ver-resumen" role="status"></p>
+              <ul class="ver-avisos" id="pdf-ver-avisos"></ul>
+              <button type="button" id="btn-pdf-ver-sortear" class="btn btn-primary btn-sm"><i data-lucide="shuffle" class="ico-16"></i> <span id="btn-pdf-ver-sortear-texto">Sortear las versiones</span></button>
+            </div>
           </fieldset>
 
           <details class="pdf-seccion" id="pdf-sec-encabezado">
@@ -1425,11 +1470,34 @@ Ahora convierte el examen adjunto a este formato.</pre>
             </div>
           </details>
 
-          <p class="field-error" id="pdf-error" role="alert" hidden></p>
         </div>
 
-        <!-- Vista previa: la página tal como saldrá, con los datos de arriba. -->
-        <aside class="pdf-vista" id="pdf-vista" hidden aria-label="Vista previa del PDF">
+        <!-- Vista previa: la página tal como saldrá, con los datos de la izquierda. -->
+        <section class="vpdf-previa" id="pdf-previa" aria-label="Vista previa del PDF">
+          <div class="ver-tabs" id="pdf-ver-tabs" role="tablist" aria-label="Versiones" hidden></div>
+          <div class="ver-panel" id="pdf-ver-panel" hidden>
+            <p class="ver-composicion" id="pdf-ver-composicion"></p>
+            <div class="ver-puntos-barra">
+              <div class="form-group">
+                <label class="field-label" for="pdf-ver-objetivo">Total de puntos</label>
+                <input type="number" id="pdf-ver-objetivo" class="form-input" min="1" step="any" value="100">
+              </div>
+              <div class="form-group">
+                <label class="field-label" for="pdf-ver-reparto">Repartir</label>
+                <select id="pdf-ver-reparto" class="form-input">
+                  <option value="byType">Según el tipo</option>
+                  <option value="equal">En partes iguales</option>
+                </select>
+              </div>
+              <button type="button" id="btn-pdf-ver-ajustar" class="btn btn-ghost btn-sm">Ajustar esta versión</button>
+              <button type="button" id="btn-pdf-ver-ajustar-todas" class="btn btn-ghost btn-sm">Ajustar todas</button>
+            </div>
+            <p class="ver-suma" id="pdf-ver-suma" role="status"></p>
+            <details class="pdf-seccion" id="pdf-ver-detalle">
+              <summary><span>Puntos de cada pregunta</span><small id="pdf-ver-detalle-resumen"></small></summary>
+              <div class="pdf-seccion-cuerpo"><ol class="ver-preguntas" id="pdf-ver-preguntas"></ol></div>
+            </details>
+          </div>
           <div class="pdf-vista-barra">
             <button type="button" id="btn-pdf-vista-ant" class="btn btn-icon" aria-label="Página anterior" title="Página anterior"><i data-lucide="chevron-left" class="ico-16"></i></button>
             <span id="pdf-vista-pagina" aria-live="polite">Página 1</span>
@@ -1439,15 +1507,17 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <img id="pdf-vista-img" alt="Vista previa de la página" hidden>
             <p id="pdf-vista-estado" class="pdf-vista-estado" role="status"></p>
           </div>
-        </aside>
+        </section>
+      </div>
+      <div class="vpdf-pie">
+        <div class="vpdf-pie-mensajes">
+          <p class="field-error" id="pdf-error" role="alert" hidden></p>
+          <p class="vpdf-pie-texto" id="pdf-pie-texto" role="status"></p>
         </div>
-        <div class="modal-footer">
-          <button type="button" id="btn-pdf-vista" class="btn btn-ghost" aria-pressed="false" aria-controls="pdf-vista"><i data-lucide="eye" class="ico-16"></i> Vista previa</button>
-          <button type="submit" id="btn-pdf-exportar" class="btn btn-primary"><span id="btn-pdf-exportar-etiqueta">Exportar PDF</span></button>
-          <button type="button" id="btn-pdf-cancelar" class="btn btn-ghost">Cancelar</button>
-        </div>
-      </form>
-    </div>
+        <button type="button" id="btn-pdf-cancelar" class="btn btn-ghost">Cancelar</button>
+        <button type="submit" id="btn-pdf-exportar" class="btn btn-primary"><span id="btn-pdf-exportar-etiqueta">Exportar PDF</span></button>
+      </div>
+    </form>
   </div>
 
   <!-- ════════════════ API DE GEMINI (bienvenida y ajustes) ════════════════
@@ -1475,7 +1545,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <div class="acerca-app">
             <img src="img/icono.png" alt="" width="44" height="44">
             <div>
-              <h3 id="acerca-h-version" class="acerca-app-name">Conversor a Moodle XML</h3>
+              <h3 id="acerca-h-version" class="acerca-app-name">Cátedra</h3>
               <p class="acerca-app-version">Versión <span id="acerca-version">—</span></p>
             </div>
           </div>
@@ -1492,13 +1562,14 @@ Ahora convierte el examen adjunto a este formato.</pre>
 
         <section class="acerca-card" aria-labelledby="acerca-h-ofrece">
           <h3 id="acerca-h-ofrece" class="acerca-h"><i data-lucide="sparkles"></i> Qué ofrece</h3>
-          <p class="acerca-texto">Más que un conversor: una herramienta para llevar tus exámenes de principio a fin, en tu propio equipo.</p>
+          <p class="acerca-texto"><strong>Cátedra</strong> (antes «Conversor a Moodle XML») es tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel, todo en tu propio equipo.</p>
           <ul class="acerca-lista">
             <li><strong>Moodle XML listo para importar,</strong> de pruebas en PDF, Word o TXT, con los 7 tipos de pregunta, imágenes, fórmulas y retroalimentación, validado contra lo que Moodle acepta.</li>
             <li><strong>Revisión con el original:</strong> cada pregunta junto al recorte de su página, con el origen y la confianza de la respuesta. Nada se decide solo.</li>
             <li><strong>IA como ayuda, no como juez:</strong> sugerir respuestas faltantes, escribir retroalimentación, mejorar la redacción y detectar preguntas repetidas; siempre visible y editable.</li>
             <li><strong>Edición de un XML que ya tienes,</strong> sin IA.</li>
             <li><strong>Examen en PDF para imprimir,</strong> con su clave o como folleto, hoja de respuestas y clave; con tus logos, opciones mezcladas, partes, márgenes y tipo de letra a elección, y vista previa.</li>
+            <li><strong>Varias versiones de un examen:</strong> sortea parciales distintos a partir de un examen grande, al azar o por tipo de pregunta, cada uno con su clave y con los puntos que quieras.</li>
             <li><strong>Mis materias:</strong> tus exámenes ordenados por materia, para reabrirlos, descargarlos o reutilizarlos.</li>
             <li><strong>Mi perfil:</strong> tu nombre y tus encabezados guardados, para no escribirlos en cada examen.</li>
             <li><strong>Privada y sin cuenta:</strong> sin cookies, sin analítica y con tus datos en tu equipo.</li>
@@ -1545,7 +1616,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <li><strong>Sin garantía.</strong> La aplicación se ofrece tal cual. La lectura con IA puede equivocarse: revisa cada pregunta y su respuesta antes de usar el examen en una evaluación. Los autores no se hacen responsables de errores en los exámenes generados ni de su uso.</li>
             <li><strong>Tus exámenes son tuyos.</strong> La aplicación no reclama ningún derecho sobre el contenido que conviertes.</li>
             <li><strong>API de Gemini.</strong> Al crear tu clave aceptas los términos de Google; el uso, sus límites y cualquier costo corresponden a tu cuenta de Google.</li>
-            <li><strong>Marcas.</strong> Moodle es una marca registrada de Moodle Pty Ltd. Google y Gemini son marcas de Google LLC. Esta aplicación es independiente: no está afiliada, patrocinada ni respaldada por ellas.</li>
+            <li><strong>Marcas.</strong> Moodle es una marca registrada de Moodle Pty Ltd. Google y Gemini son marcas de Google LLC. Cátedra es independiente: no está afiliada, patrocinada ni respaldada por ellas.</li>
           </ul>
         </section>
 
@@ -1604,7 +1675,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       </div>
       <div class="modal-body apikey-body">
         <p id="apikey-intro" class="apikey-intro">
-          La aplicación usa la IA de Google (Gemini) para leer tus exámenes. Para eso necesita tu propia <strong>clave de la API de Gemini</strong>, que se obtiene <strong>gratis</strong> en un par de minutos.
+          <span id="apikey-bienvenida"><strong>Cátedra es tu espacio para gestionar tus evaluaciones:</strong> del documento a Moodle y al papel. </span>Para leer tus exámenes usa la IA de Google (Gemini) y necesita tu propia <strong>clave de la API de Gemini</strong>, que se obtiene <strong>gratis</strong> en un par de minutos.
         </p>
 
         <div id="apikey-current" class="apikey-current" hidden>
