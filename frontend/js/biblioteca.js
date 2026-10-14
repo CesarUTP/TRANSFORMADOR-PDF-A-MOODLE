@@ -146,7 +146,7 @@ function fila(e, q, conMateria) {
       </div>
       <div class="vm-fila-acciones">
         ${e.has_editor ? `<button type="button" class="btn btn-ghost btn-sm" data-accion="reabrirExamen" data-arg-n="${e.id}" title="Abrir de nuevo la revisión de este examen"><i data-lucide="pencil" class="ico-14"></i> Reabrir</button>` : ''}
-        ${e.has_editor ? `<button type="button" class="btn btn-ghost btn-sm" data-accion="exportarPdfHistorial" data-arg-n="${e.id}" title="Configurar y exportar este examen en PDF, con su clave"><i data-lucide="file-text" class="ico-14"></i> PDF</button>` : ''}
+        ${e.has_editor ? `<button type="button" class="btn btn-ghost btn-sm" data-accion="exportarPdfHistorial" data-arg-n="${e.id}" title="Configurar y exportar este examen en PDF o Word, con su clave"><i data-lucide="file-text" class="ico-14"></i> PDF</button>` : ''}
         <button type="button" class="btn btn-ghost btn-sm" data-accion="descargarExamen" data-arg-n="${e.id}" title="Descargar el Moodle XML"><i data-lucide="download" class="ico-14"></i> XML</button>
         <button type="button" class="btn btn-ghost btn-sm vm-organizar-boton" data-accion="organizarExamen" data-arg-n="${e.id}" aria-expanded="false" aria-controls="vm-org-${e.id}" title="Cambiar su materia o su actividad, o borrarlo"><i data-lucide="folder-input" class="ico-14"></i> Organizar</button>
       </div>
@@ -223,7 +223,7 @@ function pintarRaiz() {
   const sin = examenesDe(examenes, null);
   let html = cabecera({
     titulo: 'Mis materias',
-    sub: 'Cada materia es un espacio con todos sus exámenes. Elige una para reabrirlos, descargarlos o exportarlos en PDF.',
+    sub: 'Cada materia es un espacio con todos sus exámenes. Elige una para reabrirlos, descargarlos o exportarlos en PDF o Word.',
     acciones: `<button type="button" class="btn btn-primary btn-sm" data-accion="nuevaMateria"><i data-lucide="plus" class="ico-14"></i> Nueva materia</button>
       <button type="button" class="btn btn-ghost btn-sm" data-accion="abrirTodos"><i data-lucide="clock" class="ico-14"></i> Todos los exámenes</button>`,
   });

@@ -1351,3 +1351,5 @@ strong.txt-fuerte { color: var(--color-text); }
 @media (prefers-reduced-motion: reduce) { .asistente-boton.saludando, .asistente-burbuja { animation: none; } }
 @media (max-width: 1139.98px) { body.editor-active .asistente { bottom: calc(92px + env(safe-area-inset-bottom)); } }
 @media (max-width: 480px) { .asistente { left: 12px; bottom: 12px; } .asistente-boton { width: 76px; height: 76px; border-width: 3px; } }
+
+.pdf-vista-nota { margin: 0; flex-shrink: 0; }

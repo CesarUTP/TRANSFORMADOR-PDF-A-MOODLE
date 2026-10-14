@@ -67,7 +67,7 @@ def etiqueta_para_archivo(etiqueta: str) -> str:
 
 
 def empaquetar(archivos: List[Tuple[str, bytes]]) -> bytes:
-    """Un ZIP con los PDF de las versiones (los nombres repetidos se numeran)."""
+    """Un ZIP con los archivos de las versiones (PDF y/o Word; los nombres repetidos se numeran)."""
     salida = io.BytesIO()
     usados: Dict[str, int] = {}
     with zipfile.ZipFile(salida, "w", zipfile.ZIP_DEFLATED) as z:

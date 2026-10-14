@@ -17,7 +17,7 @@ export function fechaLocal(iso) {
   return isNaN(d) ? String(iso) : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-/** Configurar y exportar un examen guardado en PDF, con su clave (sin reabrir la revisión). */
+/** Configurar y exportar un examen guardado en PDF o Word, con su clave (sin reabrir la revisión). */
 export async function exportarPdfHistorial(id) {
   try {
     const res = await apiFetch(`/api/history/${id}/editor`);
@@ -25,7 +25,7 @@ export async function exportarPdfHistorial(id) {
     const d = await res.json();
     abrirExportarPdf({ filename: d.filename, total_points: d.total_points, questions: d.questions, answer_key: d.answer_key, materia_id: d.materia_id, actividad: d.actividad });
   } catch (_) {
-    showToast('No se pudo preparar el PDF de este examen. Vuelve a intentarlo.', 'error');
+    showToast('No se pudo preparar la exportación de este examen. Vuelve a intentarlo.', 'error');
   }
 }
 

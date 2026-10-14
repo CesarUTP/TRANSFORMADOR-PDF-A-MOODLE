@@ -57,7 +57,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
 <section class="portada">
   <div style="display:flex;align-items:center;gap:6mm;"><div style="width:26mm;height:26mm;"><svg style="width:100%;height:100%;"><use href="#logo-principal"/></svg></div><div><div class="t" style="font-size:34pt;">Cátedra</div><div style="font-size:11.5pt;color:#cbd5e1;max-width:105mm;line-height:1.4;">Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.</div></div></div>
   <div><div class="ey" style="color:var(--celeste);">Manual de usuario</div><h1 class="t" style="font-size:44pt;line-height:1.08;">De tu examen a Moodle y al papel, paso a paso.</h1><p style="font-size:12pt;color:#cbd5e1;margin-top:6mm;max-width:130mm;">Todo lo que necesitas para convertir, revisar, imprimir y ordenar tus evaluaciones, sin conocimientos técnicos.</p></div>
-  <div style="display:flex;justify-content:space-between;font-size:9pt;color:#94a3b8;"><span>Para Cátedra 2.7 · octubre de 2026</span><span>Windows y macOS</span></div>
+  <div style="display:flex;justify-content:space-between;font-size:9pt;color:#94a3b8;"><span>Para Cátedra 2.8 · octubre de 2026</span><span>Windows y macOS</span></div>
 </section>
 
 <!-- CONTENIDO -->
@@ -73,7 +73,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <li class="sub"><span class="d">Completar una respuesta que falta y otras ayudas con IA</span><span class="pg" data-pag="g-ia"></span></li>
     <li class="sub"><span class="d">Corregir un XML que ya tienes</span><span class="pg" data-pag="g-xml"></span></li>
     <li class="sub"><span class="d">Importar el XML en Moodle</span><span class="pg" data-pag="g-moodle"></span></li>
-    <li class="sub"><span class="d">Exportar el examen en PDF</span><span class="pg" data-pag="g-pdf"></span></li>
+    <li class="sub"><span class="d">Exportar el examen en PDF o Word</span><span class="pg" data-pag="g-pdf"></span></li>
     <li class="sub"><span class="d">Sacar varias versiones de un examen</span><span class="pg" data-pag="g-versiones"></span></li>
     <li class="sub"><span class="d">Ordenar tus exámenes por materia</span><span class="pg" data-pag="g-materias"></span></li>
     <li class="sub"><span class="d">Guardar tus datos y encabezados en Mi perfil</span><span class="pg" data-pag="g-perfil"></span></li>
@@ -96,17 +96,17 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
 <!-- 1. ANTES DE EMPEZAR -->
 <section class="sec" id="antes" data-titulo="Antes de empezar">
   <div class="ey">1 · Primeros pasos</div><h2>Antes de empezar</h2>
-  <p class="lead">Cátedra es una aplicación de escritorio para docentes. Convierte tus exámenes a Moodle, los imprime en PDF y los ordena por materia. Funciona en tu propio equipo.</p>
+  <p class="lead">Cátedra es una aplicación de escritorio para docentes. Convierte tus exámenes a Moodle, los imprime en PDF o Word y los ordena por materia. Funciona en tu propio equipo.</p>
   <h3>Qué necesitas</h3>
   <ul>
-    <li>Una computadora con <b>Windows</b> o <b>macOS</b>.</li>
+    <li>Una computadora con <b>Windows</b> o con <b>macOS con chip Apple</b> (M1 o posterior). La versión para Mac no funciona en un Mac con procesador Intel: si no sabes cuál tienes, abre el menú Apple → «Acerca de este Mac» y mira «Chip».</li>
     <li>Tus exámenes en <b>PDF, Word (.docx) o TXT</b>, o un <b>Moodle XML</b> que ya tengas. No hace falta darles un formato especial: basta con que las preguntas estén numeradas o separadas.</li>
     <li>Una <b>clave de la API de Gemini</b> (la IA de Google). Es gratuita y la consigues en pocos minutos; la sección 2 explica cómo.</li>
     <li>Conexión a internet <b>solo</b> para que la IA ordene tus preguntas y para buscar actualizaciones. Revisar, exportar y ordenar funciona sin conexión.</li>
   </ul>
   <h3>Instalar Cátedra</h3>
   <div class="dos">
-    <div class="tarj"><h4>En macOS</h4><ol class="pasos"><li>Descarga <span class="mono">Catedra.dmg</span> desde la página de la versión más reciente en GitHub.</li><li>Ábrelo: verás la aplicación <b>Catedra</b> y un acceso a la carpeta <b>Aplicaciones</b>.</li><li>Arrastra la aplicación a <b>Aplicaciones</b>.</li><li>Ábrela desde allí.</li></ol></div>
+    <div class="tarj"><h4>En macOS (chip Apple)</h4><ol class="pasos"><li>Descarga <span class="mono">Catedra.dmg</span> desde la página de la versión más reciente en GitHub.</li><li>Ábrelo: verás la aplicación <b>Catedra</b> y un acceso a la carpeta <b>Aplicaciones</b>.</li><li>Arrastra la aplicación a <b>Aplicaciones</b>.</li><li>Ábrela desde allí.</li></ol></div>
     <div class="tarj"><h4>En Windows</h4><ol class="pasos"><li>Descarga <span class="mono">Catedra_Setup.exe</span> desde la misma página.</li><li>Ejecútalo y sigue el asistente (está en español). Puedes crear un acceso directo en el Escritorio.</li><li>Al terminar, marca <b>Abrir Cátedra</b>.</li></ol></div>
   </div>
   <div class="aviso importante"><span class="et">Importante</span><p>La primera vez, tu sistema puede mostrar un aviso porque la aplicación no está firmada por una empresa registrada con Apple o Microsoft. En macOS, si dice que no puede verificarla, abre <b>Ajustes del Sistema → Privacidad y seguridad</b> y elige <b>Abrir de todos modos</b>. En Windows, si aparece «Windows protegió su PC», pulsa <b>Más información</b> y luego <b>Ejecutar de todas formas</b>. Descárgala siempre desde la página oficial del proyecto.</p></div>
@@ -171,8 +171,8 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <h3>Paso 4 · Genera el XML</h3>
   <p>Cuando todo esté bien, pulsa <span class="btn">Generar XML</span> (en el panel de la derecha). Cátedra comprueba el examen contra lo que Moodle acepta y lo guarda en <span class="btn">Mis materias</span>.</p>
   <h3>Paso 5 · Descarga o exporta</h3>
-  <figure class="fig estrecha"><img src="{{IMG:08-final.png}}" alt="Pantalla final con tres botones y el resumen del examen"><figcaption><b>Tu examen está listo.</b> (1) <i>Descargar Moodle XML</i>. (2) <i>Exportar examen en PDF</i>. (3) <i>Volver a la revisión</i>. (4) La materia donde se guardó.</figcaption></figure>
-  <p><span class="btn">Descargar Moodle XML</span> te deja elegir dónde guardar el archivo <span class="mono">.xml</span>, que después importarás en Moodle (guía «Importar el XML en Moodle»). <span class="btn">Exportar examen en PDF</span> abre la pantalla para imprimir el examen con su clave.</p>
+  <figure class="fig estrecha"><img src="{{IMG:08-final.png}}" alt="Pantalla final con tres botones y el resumen del examen"><figcaption><b>Tu examen está listo.</b> (1) <i>Descargar Moodle XML</i>. (2) <i>Exportar examen</i>. (3) <i>Volver a la revisión</i>. (4) La materia donde se guardó.</figcaption></figure>
+  <p><span class="btn">Descargar Moodle XML</span> te deja elegir dónde guardar el archivo <span class="mono">.xml</span>, que después importarás en Moodle (guía «Importar el XML en Moodle»). <span class="btn">Exportar examen</span> abre la pantalla para imprimir el examen con su clave.</p>
   <div class="aviso consejo"><span class="et">Consejo</span><p>¿Te equivocaste? Desde la pantalla final puedes <span class="btn">Volver a la revisión</span>, corregir y generar de nuevo. Tu trabajo también queda guardado: lo reabres desde <span class="btn">Mis materias</span> cuando quieras.</p></div>
 </section>
 
@@ -183,7 +183,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <div class="dos">
     <div class="tarj"><h3 class="tj">Revisar</h3><ul><li>Revisar bien las preguntas</li><li>Revisar con el original</li><li>Completar una respuesta que falta y otras ayudas con IA</li></ul></div>
     <div class="tarj"><h3 class="tj">Llevar a Moodle</h3><ul><li>Corregir un XML que ya tienes</li><li>Importar el XML en Moodle</li></ul></div>
-    <div class="tarj"><h3 class="tj">Llevar al papel</h3><ul><li>Exportar el examen en PDF</li><li>Sacar varias versiones de un examen</li></ul></div>
+    <div class="tarj"><h3 class="tj">Llevar al papel</h3><ul><li>Exportar el examen en PDF o Word</li><li>Sacar varias versiones de un examen</li></ul></div>
     <div class="tarj"><h3 class="tj">Organizarte</h3><ul><li>Ordenar tus exámenes por materia</li><li>Guardar tus datos y encabezados en Mi perfil</li><li>El robot ayudante y la Guía</li></ul></div>
   </div>
 </section>
@@ -288,19 +288,19 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <div class="aviso consejo"><span class="et">Consejo</span><p>Los nombres y la ubicación de los menús cambian según la versión de Moodle de tu institución; lo que no cambia es el orden: crear el cuestionario, importar el XML en el banco de preguntas y añadir esas preguntas al cuestionario. Y si tu examen es un banco grande, en Moodle puedes agregar una <b>pregunta aleatoria</b> de la categoría para que cada estudiante reciba preguntas distintas.</p></div>
 </section>
 
-<section id="g-pdf" data-titulo="Exportar el examen en PDF">
-  <h3 style="margin-top:6mm;font-size:17pt;">Exportar el examen en PDF</h3>
+<section id="g-pdf" data-titulo="Exportar el examen en PDF o Word">
+  <h3 style="margin-top:6mm;font-size:17pt;">Exportar el examen en PDF o Word</h3>
   <p><i>Úsala cuando necesitas el examen en papel o un archivo para entregar, con su clave de respuestas.</i></p>
-  <p>El PDF sale de las <b>mismas preguntas y la misma clave</b> que el XML: es un documento de apoyo. Lo que se importa a Moodle sigue siendo el XML.</p>
+  <p>El PDF y el Word salen de las <b>mismas preguntas y la misma clave</b> que el XML: son documentos de apoyo. Lo que se importa a Moodle sigue siendo el XML.</p>
   <ol class="pasos">
-    <li>En la pantalla final pulsa <span class="btn">Exportar examen en PDF</span>. También puedes pulsar <span class="btn">PDF</span> en cualquier examen de <span class="btn">Mis materias</span>.</li>
+    <li>En la pantalla final pulsa <span class="btn">Exportar examen</span>. También puedes pulsar <span class="btn">PDF</span> en cualquier examen de <span class="btn">Mis materias</span>.</li>
     <li>Revisa o elige tu <b>Perfil de encabezado</b> (institución, logos, formato). Si ya tienes uno predeterminado, se aplica solo.</li>
     <li>Completa <b>Datos de este examen</b>: materia, tipo de actividad, grupo y fecha. Todo es opcional.</li>
-    <li>Elige <b>Qué incluir</b>.</li>
+    <li>Elige <b>Qué incluir</b> y el <b>Formato del archivo</b>: <i>PDF</i>, <i>Word (.docx)</i> o <i>PDF y Word</i> (un ZIP con los dos).</li>
     <li>Mira la <b>vista previa</b> a la derecha: se actualiza al cambiar cualquier dato.</li>
-    <li>Pulsa <span class="btn">Exportar PDF</span> y elige dónde guardarlo.</li>
+    <li>Pulsa el botón de abajo, que dice <span class="btn">Exportar PDF</span> o <span class="btn">Exportar Word</span> según el formato, y elige dónde guardarlo.</li>
   </ol>
-  <figure class="fig"><img src="{{IMG:09-pdf.png}}" alt="Pantalla de exportar el PDF con la vista previa"><figcaption><b>Exportar en PDF.</b> (1) Perfil de encabezado. (2) Datos de este examen. (3) Qué incluir. (4) Vista previa de la página. (5) Puntos en el PDF (con «Puntos enteros» activado).</figcaption></figure>
+  <figure class="fig"><img src="{{IMG:09-pdf.png}}" alt="Pantalla de exportar el examen con la vista previa"><figcaption><b>Exportar examen.</b> (1) Perfil de encabezado. (2) Datos de este examen. (3) Qué incluir (debajo, el formato del archivo: PDF, Word o los dos). (4) Vista previa de la página. (5) Puntos en el PDF (con «Puntos enteros» activado).</figcaption></figure>
 </section>
 
 <section>
@@ -320,6 +320,17 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <li><b>Mostrar cuánto vale cada pregunta</b> (o solo el valor de cada parte), cuadro de nombre y calificación, y <b>renglones por ensayo</b>.</li>
     <li><b>Puntos enteros:</b> el PDF usa solo números enteros (7 pts en vez de 6,67), con el mismo total, para calificar sin redondeos. Está activada de fábrica; ve «Puntos enteros en el PDF» más abajo.</li>
   </ul>
+  <h4>El Word</h4>
+  <p>Con <b>Word (.docx)</b> recibes el mismo examen en un archivo que puedes <b>editar</b> antes de imprimir: cambiar un texto, quitar una pregunta, ajustar el formato. Dice <b>exactamente lo mismo que el PDF</b>: las mismas preguntas, el mismo orden de las opciones, las mismas letras y la misma clave, porque los dos salen del mismo plan.</p>
+  <ul>
+    <li><b>Es editable de verdad.</b> Cada parte tiene un estilo de Word con nombre (<i>Cátedra enunciado</i>, <i>Cátedra parte</i>…) para cambiar su aspecto de una vez; los cuadros son tablas de Word y «Página X de Y» es un campo de Word.</li>
+    <li><b>La vista previa es la del PDF.</b> En Word la paginación puede variar un poco, porque Word reparte el texto a su manera.</li>
+    <li><b>Tipo de letra.</b> Arial y Times New Roman salen con su nombre. DejaVu Sans va <b>incrustada</b> en el archivo: Word de escritorio la respeta; Word en línea y Google Docs la cambian por otra parecida.</li>
+    <li><b>Con versiones</b>, recibes un Word por versión en el ZIP (o un PDF y un Word de cada una si eliges <i>PDF y Word</i>).</li>
+  </ul>
+  <figure class="fig"><img src="{{IMG:09b-formato.png}}" alt="El formato del archivo: PDF, Word o PDF y Word, y la nota de la vista previa"><figcaption><b>Formato del archivo.</b> (1) Elige PDF, Word o los dos en un ZIP. (2) Con Word, una nota recuerda que la vista previa es la del PDF.</figcaption></figure>
+  <div class="aviso importante"><span class="et">Ojo</span><p>Si editas el Word y lo vuelves a subir a Cátedra, las opciones salen en el orden en que quedaron en el archivo: el Word no está pensado como «ida y vuelta». Para cambiar un examen y volver a sacar su XML, edítalo en la revisión de Cátedra.</p></div>
+
   <h4>Puntos enteros en el PDF</h4>
   <p>En papel, un valor como 6,67 complica calificar y deja errores de redondeo. Con <b>Puntos enteros</b>, el PDF lleva <b>su propia copia</b> de los puntos, en enteros y con el mismo total. <b>El XML de Moodle no cambia</b>: allí los puntos siguen como en el editor y Moodle los suma solo.</p>
   <ul>
@@ -337,7 +348,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <p><i>Úsala cuando tienes un examen grande (por ejemplo, 100 preguntas) y quieres varios parciales distintos en papel, cada uno con su clave.</i></p>
   <p>El examen grande hace de <b>banco</b>. En Moodle sigues usando el XML completo y configuras allí el sorteo; para <b>papel</b>, Cátedra sortea las preguntas de cada versión.</p>
   <ol class="pasos">
-    <li>Abre la pantalla de <b>Exportar en PDF</b> del examen (desde la pantalla final o con <span class="btn">PDF</span> en <span class="btn">Mis materias</span>).</li>
+    <li>Abre la pantalla de <b>Exportar examen</b> (desde la pantalla final o con <span class="btn">PDF</span> en <span class="btn">Mis materias</span>).</li>
     <li>En <b>Versiones del examen</b>, marca <span class="btn">Sacar varias versiones de este examen</span>.</li>
     <li>Elige <b>¿Cuántas versiones?</b> (hasta 12) y cómo se sortean:
       <ul style="margin-top:1mm;"><li><b>Totalmente al azar:</b> pides, por ejemplo, 25 preguntas por versión y salen de cualquier tipo.</li><li><b>Elegir cuántas de cada tipo:</b> pides, por ejemplo, 10 de selección múltiple, 5 de emparejamiento y todas las de verdadero o falso. <span class="btn">Todas</span> deja ese tipo igual en cada versión.</li></ul></li>
@@ -355,7 +366,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <h4>Que los puntos cuadren</h4>
   <p>Cada versión suma los puntos de <i>sus</i> preguntas, que casi nunca son los 100 que quieres. Escribe el <b>total de puntos</b> deseado y pulsa <span class="btn">Ajustar esta versión</span> o <span class="btn">Ajustar todas</span>; elige si se reparte <b>según el tipo</b> o <b>en partes iguales</b>. Si prefieres, abre <b>Puntos de cada pregunta</b> y cámbialos uno por uno. Cátedra <b>nunca cambia puntos por su cuenta</b> y, al exportar, te avisa si alguna versión no suma el total. Con <b>Puntos enteros</b> activado, los puntos de cada versión salen en enteros y <i>Ajustar</i> también reparte en enteros.</p>
   <h4>Descargar</h4>
-  <p>Pulsa <span class="btn">Exportar 4 versiones (ZIP)</span> (el número cambia según tus versiones). Recibes un archivo <span class="mono">.zip</span> con <b>un PDF por versión</b>, cada uno rotulado «VERSIÓN A», «VERSIÓN B»… también en su clave. Todas llevan lo mismo que hayas elegido en «Qué incluir». La clave de cada versión es siempre la de <b>sus propias preguntas</b>.</p>
+  <p>Pulsa <span class="btn">Exportar 4 versiones (ZIP)</span> (el número cambia según tus versiones). Recibes un archivo <span class="mono">.zip</span> con <b>un PDF por versión</b> (o un Word, o los dos, según el formato que elegiste), cada uno rotulado «VERSIÓN A», «VERSIÓN B»… también en su clave. Todas llevan lo mismo que hayas elegido en «Qué incluir». La clave de cada versión es siempre la de <b>sus propias preguntas</b>.</p>
   <div class="aviso consejo"><span class="et">Consejo</span><p>Puedes volver a pulsar <span class="btn">Sortear de nuevo</span> las veces que quieras hasta que te guste el resultado. Si cambiaste puntos a mano, Cátedra te pregunta antes de reemplazar las versiones.</p></div>
 </section>
 
@@ -401,7 +412,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <ul><li><span class="btn">Nuevo perfil</span> crea uno; <span class="btn">Editar</span> lo cambia; <span class="btn">Duplicar</span> hace una copia para variarla; la papelera lo borra.</li><li>Marca como <b>predeterminado</b> el que uses casi siempre.</li><li>Los logos aceptan PNG, JPG, GIF o WebP; Cátedra los reduce y los guarda solo en tu equipo.</li></ul></div>
     <figure class="fig" style="margin:0;"><img src="{{IMG:17-perfil-editor.png}}" alt="Ventana para editar un perfil de encabezado con vista previa"><figcaption><b>Editar perfil.</b> A la derecha, así sale el encabezado con un examen de ejemplo.</figcaption></figure>
   </div>
-  <div class="aviso consejo"><span class="et">Qué manda al exportar</span><p>Al abrir la pantalla del PDF, Cátedra usa primero los datos de la <b>materia</b> (su perfil, docente y grupo); si no, tu <b>perfil predeterminado</b> y tus datos; y si no, lo último que escribiste. Siempre puedes cambiarlo en ese examen.</p></div>
+  <div class="aviso consejo"><span class="et">Qué manda al exportar</span><p>Al abrir la pantalla de exportar, Cátedra usa primero los datos de la <b>materia</b> (su perfil, docente y grupo); si no, tu <b>perfil predeterminado</b> y tus datos; y si no, lo último que escribiste. Siempre puedes cambiarlo en ese examen.</p></div>
 </section>
 
 <section id="g-ayuda" data-titulo="El robot ayudante y la Guía">
@@ -416,7 +427,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <figure class="fig mitad" style="width:70%;"><img src="{{IMG:22-recorrido.png}}" alt="Un paso del recorrido guiado resaltando el indicador de pasos"><figcaption><b>Recorrido guiado.</b> Resalta una parte de la pantalla y explica para qué sirve.</figcaption></figure>
   <div class="dos" style="align-items:start;">
     <figure class="fig" style="margin:0;"><img src="{{IMG:18-guia.png}}" alt="La Guía del sistema"><figcaption><b>Guía del sistema.</b></figcaption></figure>
-    <div><h4 style="margin-top:0;">La Guía</h4><p>El botón <span class="btn">Guía</span> abre una referencia con pestañas: <b>¿Qué es?</b>, <b>Revisión</b>, <b>PDF y materias</b>, <b>Formato</b>, <b>Con otra IA</b> e <b>Importar</b>.</p><p>Dentro de la revisión, la tecla <span class="tecla">?</span> la abre directamente en la pestaña <b>Revisión</b>.</p></div>
+    <div><h4 style="margin-top:0;">La Guía</h4><p>El botón <span class="btn">Guía</span> abre una referencia con pestañas: <b>¿Qué es?</b>, <b>Revisión</b>, <b>PDF, Word y materias</b>, <b>Formato</b>, <b>Con otra IA</b> e <b>Importar</b>.</p><p>Dentro de la revisión, la tecla <span class="tecla">?</span> la abre directamente en la pestaña <b>Revisión</b>.</p></div>
   </div>
 </section>
 
@@ -468,6 +479,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <tr><td>Instalador de macOS / Windows</td><td class="mono">Catedra.dmg · Catedra_Setup.exe</td></tr>
     <tr><td>XML de Moodle</td><td class="mono">&lt;nombre del examen&gt;.xml · &lt;nombre&gt;_editado.xml</td></tr>
     <tr><td>PDF del examen</td><td class="mono">&lt;nombre&gt;_examen_y_clave.pdf · _examen.pdf · _clave.pdf · _folleto_hoja_y_clave.pdf</td></tr>
+    <tr><td>Word del examen</td><td class="mono">los mismos nombres, con .docx; con «PDF y Word»: &lt;nombre&gt;_examen_y_clave_pdf_y_word.zip</td></tr>
     <tr><td>Versiones</td><td class="mono">&lt;nombre&gt;_versiones.zip, con &lt;nombre&gt;_version_A_….pdf</td></tr>
     <tr><td>Tus datos (macOS)</td><td class="mono">~/Library/Application Support/ConversorMoodleXML/</td></tr>
     <tr><td>Tus datos (Windows)</td><td class="mono">%LOCALAPPDATA%\ConversorMoodleXML\</td></tr></table>
@@ -482,7 +494,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <h3 style="margin-top:3mm;">Qué hace la IA y qué no</h3>
   <div class="dos">
     <div class="tarj"><h4>La IA hace</h4><ul><li>Ordena la estructura de tu documento en preguntas y opciones.</li><li>Si tú lo pides: sugiere una respuesta que falta, escribe retroalimentación, mejora la redacción.</li></ul></div>
-    <div class="tarj"><h4>Cátedra hace (en código)</h4><ul><li>Lee las marcas de respuesta (color, subrayado, ✓…).</li><li>Valida que el examen sea aceptado por Moodle.</li><li>Arma el XML, el PDF y las versiones.</li><li>Detecta preguntas repetidas.</li></ul></div>
+    <div class="tarj"><h4>Cátedra hace (en código)</h4><ul><li>Lee las marcas de respuesta (color, subrayado, ✓…).</li><li>Valida que el examen sea aceptado por Moodle.</li><li>Arma el XML, el PDF, el Word y las versiones.</li><li>Detecta preguntas repetidas.</li></ul></div>
   </div>
   <div class="aviso importante"><span class="et">Un principio</span><p><b>La clave o la marca de tu documento manda.</b> Si tu examen no marca la respuesta, Cátedra no la inventa. Y todo lo que propone la IA queda visible, marcado y editable: nada se decide a tus espaldas.</p></div>
   <h3>Origen y confianza de una respuesta</h3>
@@ -492,6 +504,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <h3>Privacidad y tus datos</h3>
   <ul>
     <li><b>Tu archivo se procesa en tu equipo.</b> A la IA solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas dentro de una imagen o un PDF escaneado).</li>
+    <li><b>La clave gratuita de Gemini:</b> según los términos de la API de Gemini, con el plan gratuito Google puede usar lo que se le envía para mejorar sus productos y personas de Google pueden revisarlo; con el plan de pago (facturación activada en tu cuenta de Google) no. Si tus exámenes son confidenciales, activa la facturación.</li>
     <li><b>El PDF original</b> vive solo en la memoria de la aplicación mientras está abierta (para mostrártelo al revisar); no se guarda en el Historial ni en ningún archivo.</li>
     <li><b>Qué se guarda en tu equipo:</b> tus materias, tu nombre, tus perfiles de encabezado (con sus logos) y los exámenes convertidos con sus respuestas, en una base de datos local. Tu clave de Gemini se guarda <b>cifrada</b>, y solo se puede descifrar en tu equipo y con tu usuario.</li>
     <li><b>Sin cuenta, sin cookies, sin analítica:</b> Cátedra no te rastrea ni te pide registrarte.</li>
@@ -539,7 +552,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <tr><td><b>Materia</b></td><td>Un espacio de Cátedra que agrupa los exámenes de una asignatura.</td></tr>
     <tr><td><b>Moodle XML</b></td><td>El formato de archivo que Moodle sabe importar al banco de preguntas.</td></tr>
     <tr><td><b>Origen</b></td><td>De dónde salió la respuesta de una pregunta: documento, marca, IA, tú o sugerencia.</td></tr>
-    <tr><td><b>Perfil de encabezado</b></td><td>Un conjunto guardado de institución, logos, indicaciones y formato para los PDF.</td></tr>
+    <tr><td><b>Perfil de encabezado</b></td><td>Un conjunto guardado de institución, logos, indicaciones y formato para los PDF y Word.</td></tr>
     <tr><td><b>Versión (de un examen)</b></td><td>Un parcial sorteado a partir de un examen grande, con su propia clave.</td></tr></table>
   <p style="margin-top:6mm;font-size:9.4pt;color:var(--pizarra);">Cátedra es obra de los ingenieros César González y Vicente Urriola. Moodle es una marca registrada de Moodle Pty Ltd. Google y Gemini son marcas de Google LLC. Cátedra es independiente: no está afiliada, patrocinada ni respaldada por ellas. Este manual se regenera con <span class="mono">dev/generar_manual_usuario.py</span>.</p>
 </section>

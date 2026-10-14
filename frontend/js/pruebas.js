@@ -17,7 +17,7 @@ import { MAX_ABIERTAS, abiertasPorDefecto, recortar } from './editor/plegado-log
 import { detectarProblemas, normalizar, similitud } from './editor/calidad.js';
 import { faltaRespuesta } from './validacion.js';
 import { describirSugerencia } from './editor/sugerencias-logica.js';
-import { LIMITE_CAMPO, PERFIL_CAMPOS, aplicarPerfil, datosDePerfil, enteroEn, nombrePerfil, tamanoValido, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, valoresIniciales } from './ui/exportar-pdf-logica.js';
+import { LIMITE_CAMPO, PERFIL_CAMPOS, aplicarPerfil, datosDePerfil, enteroEn, nombrePerfil, tamanoValido, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, resumenDeDescarga, textoDelBoton, valoresIniciales } from './ui/exportar-pdf-logica.js';
 import { COLORES, activas, archivadas, avisoDeLimite, examenesDe, existeNombre, fechaCorta, filtrarExamenes, formatoBytes, nombreSugerido, normalizar as normalizarMateria, ordenarMaterias, planDelAsistente, sugerirMaterias, textoUso, variableDeColor } from './materias-logica.js';
 import { CLAVE_VISTOS, TOURS, debeOfrecer, leerVistos, marcarVisto, nombreDeTour, pasosVisibles } from './ui/tour-logica.js';
 import { ejemploExamen, iniciales, materiasQueUsan, nombreCopia, nombreOcupado, ordenarPerfiles, resumenEncabezado, resumenFormato } from './perfil-logica.js';
@@ -822,6 +822,29 @@ prueba('Exportar PDF: lo guardado se valida campo por campo', () => {
   igual(valoresIniciales({ partes: false }).partes, false);
   igual(valoresIniciales({ partes: 'no' }).partes, true);
   igual(valoresIniciales('basura').papel, 'carta');
+});
+prueba('Exportar: el formato del archivo (PDF, Word o ambos) se valida y se recuerda', () => {
+  igual(valoresIniciales(null).formato, 'pdf');                      // lo de siempre
+  igual(valoresIniciales({ formato: 'word' }).formato, 'word');
+  igual(valoresIniciales({ formato: 'ambos' }).formato, 'ambos');
+  igual(valoresIniciales({ formato: 'excel' }).formato, 'pdf');      // desconocido: el de siempre
+  igual(paraGuardar({ formato: 'word' }).formato, 'word');
+  igual(cuerpoPdf({ filename: 'a.docx', total_points: 10, questions: [], answer_key: {} }, { formato: 'ambos' }).datos.formato, 'ambos');
+  igual(datosDePerfil({ formato: 'word', institucion: 'UTP' }).formato, undefined);   // el formato es de cada exportación, no de un perfil
+});
+prueba('Exportar: el botón y la línea de abajo dicen qué archivo sale', () => {
+  igual(textoDelBoton({ formato: 'pdf' }), 'Exportar PDF');
+  igual(textoDelBoton({ formato: 'word' }), 'Exportar Word');
+  igual(textoDelBoton({ formato: 'ambos' }), 'Exportar PDF y Word (ZIP)');
+  igual(textoDelBoton({ formato: 'word', generando: true }), 'Generando el Word…');
+  igual(textoDelBoton({ formato: 'ambos', generando: true }), 'Generando los archivos…');
+  igual(textoDelBoton({ formato: 'pdf', versiones: true, listas: false }), 'Exportar versiones');
+  igual(textoDelBoton({ formato: 'word', versiones: true, listas: true, cantidad: 3 }), 'Exportar 3 versiones (ZIP)');
+  igual(textoDelBoton({ formato: 'pdf', versiones: true, generando: true }), 'Generando las versiones…');
+  igual(textoDelBoton(), 'Exportar PDF');
+  igual(resumenDeDescarga({ formato: 'pdf', cantidad: 3 }), 'Un ZIP con 3 PDF, uno por versión, cada uno con su clave. El XML de Moodle no cambia.');
+  igual(resumenDeDescarga({ formato: 'word', cantidad: 2 }), 'Un ZIP con 2 Word, uno por versión, cada uno con su clave. El XML de Moodle no cambia.');
+  igual(resumenDeDescarga({ formato: 'ambos', cantidad: 2 }), 'Un ZIP con 2 PDF y 2 Word, uno de cada por versión, cada uno con su clave. El XML de Moodle no cambia.');
 });
 prueba('Exportar PDF: no se recuerda la fecha y sí lo demás', () => {
   const g = paraGuardar({ docente: 'Ana', fecha: '12 de octubre de 2026', papel: 'a4', instrucciones: 'Sin calculadora.' });

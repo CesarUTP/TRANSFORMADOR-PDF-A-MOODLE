@@ -24,7 +24,7 @@
 **Cátedra** (antes «Conversor a Moodle XML») lleva tus evaluaciones de punta a punta: convierte pruebas, cuestionarios y exámenes (**PDF**, Word o **TXT**) en un archivo **Moodle XML Question Format** listo para importar, los imprime en PDF con su clave, saca varias versiones y los ordena por materia. Corre como una app de escritorio nativa en Windows y macOS — **no hace falta saber nada técnico para usarla**.
 
 > [!TIP]
-> **Manual de usuario:** [**Cátedra: Manual de usuario (PDF)**](docs/manual-usuario/Catedra-Manual-de-Usuario.pdf) explica, con capturas, cómo instalar, convertir un examen, revisarlo, importarlo en Moodle, imprimirlo en PDF, sacar varias versiones y ordenarlo por materia.
+> **Manual de usuario:** [**Cátedra: Manual de usuario (PDF)**](docs/manual-usuario/Catedra-Manual-de-Usuario.pdf) explica, con capturas, cómo instalar, convertir un examen, revisarlo, importarlo en Moodle, imprimirlo en PDF o Word, sacar varias versiones y ordenarlo por materia.
 
 > [!TIP]
 > **Identidad visual:** el logo, los colores, las tipografías y el tono de Cátedra están en el [**Manual de identidad visual (PDF)**](docs/identidad/Catedra-Manual-de-Identidad-Visual.pdf). Los archivos del logo (SVG) están en [`assets/marca/`](assets/marca/).
@@ -55,8 +55,8 @@ flowchart TB
     end
     subgraph SALIDA["5 · Exportar"]
         G["📦 Moodle XML"]
-        H["🖨️ PDF con su clave<br/>o folleto + hoja + clave"]
-        I["🗃️ Varias versiones<br/>un ZIP, un PDF por versión"]
+        H["🖨️ PDF o Word con su clave<br/>o folleto + hoja + clave"]
+        I["🗃️ Varias versiones<br/>un ZIP, un PDF o Word por versión"]
     end
     J[("📚 Mis materias<br/>en tu equipo")]
 
@@ -119,6 +119,7 @@ flowchart TB
 - **Recorridos guiados** (2.3): un **robot ayudante 3D flotante** en la esquina (un robot redondo y amable, con visor, ojos felices y antena, en los colores de Cátedra, armado con [three.js](https://threejs.org) —MIT— sin ningún modelo ni imagen descargados: respira, parpadea, te sigue con la mirada y **saca la mano para saludar**; sin WebGL queda un ícono) ofrece, con un globo («¿No sabes por dónde empezar? ¡Déjame ayudarte!»), el recorrido de la pantalla en que estás —cargar, revisión, pantalla final, Mis materias, Mi perfil y la pantalla del PDF—; al hacer clic resalta, paso a paso, sus partes y explica para qué sirven, con [driver.js](https://driverjs.com) (MIT, copiado en `frontend/js/vendor/driver/`, sin red). La primera vez se ofrece el de bienvenida; los pasos cuyo elemento no está en pantalla se saltan ([`ui/asistente.js`](frontend/js/ui/asistente.js), [`ui/profe-3d.js`](frontend/js/ui/profe-3d.js), [`ui/tour.js`](frontend/js/ui/tour.js), [`tour-logica.js`](frontend/js/ui/tour-logica.js)).
 - **Mi perfil** (2.3): el ícono de la esquina (con tus iniciales) abre tus datos —cómo sales en el encabezado («Facilitador: Ing. Ana Pérez»)— y tus **perfiles de encabezado** (institución, facultad, departamento, logos, indicaciones y formato de impresión, con vista previa de cómo sale). Se pueden crear, editar, duplicar, renombrar y borrar; uno se marca como **predeterminado**. Al exportar un PDF el diálogo empieza con todo puesto: la materia (su perfil, docente y grupo) manda sobre tu perfil predeterminado y tus datos, y estos sobre lo último que escribiste. Renombrar o borrar un perfil actualiza las materias que lo usaban ([`backend/rutas_perfil.py`](backend/rutas_perfil.py), [`frontend/js/perfil.js`](frontend/js/perfil.js)).
 - **Mis materias** (2.3): el Historial es una biblioteca organizada por materia. La materia (y la actividad, ej. «Parcial 1») se elige en el paso 1, al cargar el examen, y se puede cambiar al terminar. Cada materia es un espacio con todos sus exámenes —reabrir la revisión, descargar el XML, exportar el PDF, mover, renombrar la actividad o borrar— y **«Nuevo examen en esta materia»** vuelve al paso 1 con ella elegida. Cada materia puede traer valores por defecto para el PDF (perfil de encabezado, docente, grupo) y el diálogo de exportar los usa. «Sin materia» y «Todos los exámenes» (la lista de siempre, con **buscador**; en cada lista, «Elegir todos» y borrar o mover lo elegido de una vez) completan la pantalla; un **asistente** propone la materia de los exámenes viejos según su categoría y su nombre (el docente decide qué se mueve). Cuando el Historial se llena (300 exámenes o 400 MB) se borran primero los exámenes **sin materia**; la app avisa al acercarse al límite y muestra el espacio usado. No se separa por período ([`backend/rutas_materias.py`](backend/rutas_materias.py), [`frontend/js/biblioteca.js`](frontend/js/biblioteca.js)).
+- **Exportar también en Word** (2.8): la pantalla de exportar (ahora «Exportar examen») tiene el selector *Formato del archivo*: **PDF**, **Word (.docx)** o **PDF y Word** en un ZIP; con versiones, un archivo por versión. El Word es **editable** (estilos de párrafo con nombre, tablas reales, «Página X de Y» con campos de Word, un encabezado por sección) y dice **exactamente lo mismo** que el PDF: los dos salen del mismo *plan* ([`backend/plan_impreso.py`](backend/plan_impreso.py)), que decide una sola vez el orden de las preguntas, el barajado y las letras de las opciones, la clave, las indicaciones, las fórmulas y las medidas; [`backend/exportar_pdf.py`](backend/exportar_pdf.py) y [`backend/exportar_docx.py`](backend/exportar_docx.py) solo lo dibujan. Arial y Times New Roman se escriben con su nombre en el Word (el PDF usa Liberation Sans y Liberation Serif, que miden lo mismo: las líneas se parten en los mismos sitios); **DejaVu Sans** va incrustada en el .docx (Word de escritorio la respeta; Word en línea y Google Docs la cambian). Casillas y burbujas son imágenes pequeñas. La vista previa sigue siendo la del PDF y en Word la paginación puede variar un poco. Si el docente edita el Word y lo vuelve a subir a Cátedra, las opciones salen en el orden del archivo (no se promete «ida y vuelta»). Pruebas: [`dev/test_exportar_docx.py`](dev/test_exportar_docx.py) (cada texto del plan está en el Word, mismas palabras que el PDF, fuentes incrustadas que se desofuscan a la original, rutas) y [`dev/pdf_regresion.py`](dev/pdf_regresion.py) (el PDF no cambió ni un píxel con el refactor).
 - **Varias versiones de un examen** (2.5): un examen grande hace de **banco** (el XML de Moodle sigue siendo el del examen completo, y allí el sorteo lo hace Moodle). Para papel, la pantalla de exportar el PDF —ahora una **vista a pantalla completa**, no un diálogo— tiene la sección *Versiones del examen*: se piden N versiones y cuántas preguntas lleva cada una, **totalmente al azar** o **por tipo** (por ejemplo, todas las de verdadero o falso, 25 de selección múltiple y 10 de emparejamiento). Si las preguntas alcanzan, ninguna se repite entre versiones; si no, se repiten las menos posibles y se avisa antes de sortear. Cada versión tiene su pestaña con su vista previa y su suma de puntos, que se puede ajustar (según el tipo o en partes iguales, o pregunta por pregunta) para que cuadre con el total deseado; la app no cambia puntos por su cuenta. Se descarga un **ZIP con un PDF por versión** (examen y clave, o folleto, hoja y clave: todas igual), cada uno rotulado «VERSIÓN A», «VERSIÓN B»… también en su clave. El sorteo se hace en la interfaz (con semilla, para que la vista previa y el PDF coincidan) y el servidor arma cada versión a partir del examen completo: la clave de una versión es siempre la de sus preguntas ([`backend/versiones.py`](backend/versiones.py), [`frontend/js/versiones-logica.js`](frontend/js/versiones-logica.js), [`frontend/js/ui/versiones.js`](frontend/js/ui/versiones.js)).
 - **Puntos enteros en el PDF** (2.7): en papel, un valor como 6,67 complica calificar y deja errores de redondeo. La opción *Puntos enteros* (activada de fábrica; en *Formato* y guardada con el perfil de encabezado) hace que el PDF —y cada versión— use **su propia copia de los puntos, en enteros y con el mismo total**. **El Moodle XML no cambia**: allí los puntos siguen como en el editor y Moodle los suma solo. Si se puede, todas las preguntas de un mismo tipo valen lo mismo (7, 3 y 10 en vez de 6,67, 3,33 y 10); si no, algunas valen 1 punto más y la pantalla lo dice y ofrece totales cercanos que sí cuadran (por ejemplo 90 o 105 en vez de 100). Un panel muestra cuánto vale cada pregunta en el PDF frente a Moodle y deja cambiar cualquiera; el servidor nunca redondea, rechaza decimales si se pidieron enteros ([`frontend/js/puntos-pdf.js`](frontend/js/puntos-pdf.js), [`frontend/js/ui/puntos-pdf.js`](frontend/js/ui/puntos-pdf.js)).
 - **API de Gemini propia**: la primera vez, un paso de bienvenida explica cómo obtener la clave gratis en Google AI Studio, la comprueba con Google y la guarda **cifrada** en el equipo (Mac y Windows). Se cambia o se quita desde *Acerca de → API de Gemini*.
@@ -136,6 +137,8 @@ flowchart TB
 
 > [!NOTE]
 > **Privacidad:** el documento se procesa en tu equipo. A Google solo se envía lo necesario para ordenar las preguntas — el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas dentro de una imagen, o un PDF escaneado). Ningún otro dato sale de tu máquina.
+>
+> **Clave gratuita de Gemini:** según los términos de la API de Gemini, con el plan gratuito Google puede usar lo que se le envía para mejorar sus productos y personas de Google pueden revisarlo; con el plan de pago (facturación activada) no. Si tus exámenes son confidenciales, activa la facturación. La app lo avisa al pedir la clave, en la Guía y en «Acerca de».
 
 ---
 
@@ -145,7 +148,7 @@ flowchart TB
 
 Los instaladores están en la página de [**la última versión**](https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest):
 
-- **macOS:** `Catedra.dmg` — ábrelo y arrastra **Cátedra** a la carpeta Aplicaciones.
+- **macOS:** `Catedra.dmg` — ábrelo y arrastra **Cátedra** a la carpeta Aplicaciones. Está compilado para **Macs con chip Apple** (M1 o posterior); no funciona en un Mac con procesador Intel.
 - **Windows:** `Catedra_Setup.exe` — instalador con acceso directo y desinstalador (se sube a la versión cuando está compilado).
 
 La primera vez la app pide tu clave de la API de Gemini (gratis; explica cómo obtenerla). Si vienes del **Conversor a Moodle XML** (hasta la 2.3), tus exámenes, materias, perfil y clave se conservan.
@@ -157,7 +160,7 @@ La primera vez la app pide tu clave de la API de Gemini (gratis; explica cómo o
 2️⃣  Doble clic en iniciar.command (macOS) o iniciar.bat (Windows)
 3️⃣  La primera vez instala todo solo (unos minutos); después abre directo
 4️⃣  La primera vez pega tu clave de la API de Gemini (gratis; la app explica cómo obtenerla)
-5️⃣  Sube el examen → revisa las preguntas → exporta: el XML de Moodle, el PDF o varias versiones
+5️⃣  Sube el examen → revisa las preguntas → exporta: el XML de Moodle, el PDF o el Word, o varias versiones
 ```
 
 En Moodle: **Banco de preguntas → Importar**.
@@ -253,7 +256,9 @@ Cátedra/
 │   ├── mark_resolver.py  ← Decide en código las respuestas marcadas
 │   ├── originales.py     ← El PDF de la sesión, solo en memoria, y el dibujo del recorte
 │   ├── importar_xml.py   ← Moodle XML existente → editor (sin IA)
-│   ├── exportar_pdf.py   ← El examen y su clave como PDF imprimible (ReportLab)
+│   ├── plan_impreso.py   ← Qué lleva el examen en el papel (orden, letras, clave, indicaciones, medidas): el plan que dibujan el PDF y el Word
+│   ├── exportar_pdf.py   ← Dibuja el plan como PDF imprimible (ReportLab)
+│   ├── exportar_docx.py  ← Dibuja el mismo plan como Word editable (python-docx; DejaVu incrustada)
 │   ├── versiones.py      ← Arma cada versión de un examen (preguntas, puntos y clave) y el ZIP
 │   ├── latex_texto.py    ← Fórmulas \( … \) → texto Unicode, para el PDF
 │   ├── validator.py      ← Validación contra el spec Moodle XML
@@ -450,7 +455,8 @@ Las preguntas **cloze** usan corchetes en el cuerpo, con letras correlativas si 
 | `POST` | `/api/vista_previa_pdf` | Lo mismo que `/api/exportar_pdf`, pero devuelve una página (`?pagina=N`) como PNG |
 | `GET` `PUT` `DELETE` | `/api/perfiles_pdf[/{nombre}]` | Perfiles de encabezado del PDF guardados con nombre (institución, logos, formato) |
 | `POST` | `/api/exportar_pdf` | Mismas preguntas y clave que `/api/generate_xml` más los datos de la portada; devuelve el PDF del examen y/o su clave (no se guarda en el Historial) |
-| `POST` | `/api/exportar_versiones` | El examen completo y las versiones sorteadas (números de pregunta y puntos de cada una); devuelve un ZIP con el PDF de cada versión y su clave (no se guarda en el Historial) |
+| `POST` | `/api/exportar_examen` | Lo mismo, pero con `datos.formato` = `pdf`, `word` (.docx editable) o `ambos` (un ZIP con los dos); el PDF y el Word salen del mismo plan y dicen lo mismo |
+| `POST` | `/api/exportar_versiones` | El examen completo y las versiones sorteadas (números de pregunta y puntos de cada una); devuelve un ZIP con el PDF y/o el Word (según `datos.formato`) de cada versión y su clave (no se guarda en el Historial) |
 | `POST` | `/api/importar_xml` | Abre un Moodle XML existente en el editor (sin IA): devuelve lo mismo que `/api/parse` |
 | `GET` | `/api/original/{id}/pagina/{n}` | PNG de la página (o del recorte de la pregunta) del PDF de esta sesión; `?vista=recorte\|pagina&recuadro=x0,y0,x1,y1&zoom=1..3` |
 | `GET` | `/api/history` | Últimos 300 exámenes convertidos (solo metadatos, con su materia y actividad; el buscador filtra sobre esta lista) |

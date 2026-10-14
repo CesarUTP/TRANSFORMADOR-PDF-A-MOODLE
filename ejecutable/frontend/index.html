@@ -7,7 +7,7 @@
   <title>Cátedra</title>
   <link rel="icon" type="image/png" href="img/icono.png">
   <meta name="description"
-    content="Cátedra: tu espacio para gestionar tus evaluaciones. Convierte pruebas, quices y exámenes (PDF, Word o TXT) a Moodle XML con revisión y validación, los exporta en PDF listo para imprimir con su clave, saca varias versiones y los organiza por materia." />
+    content="Cátedra: tu espacio para gestionar tus evaluaciones. Convierte pruebas, quices y exámenes (PDF, Word o TXT) a Moodle XML con revisión y validación, los exporta en PDF o Word listo para imprimir con su clave, saca varias versiones y los organiza por materia." />
 
   <!-- Tipografías incluidas en la app (css/fuentes.css) -->
   <link rel="stylesheet" href="css/fuentes.css">
@@ -284,14 +284,14 @@
           </button>
           <button type="button" id="btn-exportar-pdf" class="btn btn-ghost btn-lg" data-accion="abrirExportarPdf">
             <i data-lucide="file-text" class="ico-16"></i>
-            Exportar examen en PDF
+            Exportar examen
           </button>
           <button type="button" id="btn-back-to-review" class="btn btn-ghost btn-lg">
             <i data-lucide="arrow-left" class="ico-16"></i>
             Volver a la revisión
           </button>
         </div>
-        <p class="success-next">Siguiente paso: impórtalo en Moodle, en <em>Banco de preguntas → Importar</em>. <button type="button" class="text-link" data-accion="openHelp" data-arg="moodle">Ver cómo, paso a paso</button><br>Para tenerlo en papel o guardar la clave, usa <strong>Exportar examen en PDF</strong>: es un documento de apoyo, lo que se importa a Moodle sigue siendo el XML.</p>
+        <p class="success-next">Siguiente paso: impórtalo en Moodle, en <em>Banco de preguntas → Importar</em>. <button type="button" class="text-link" data-accion="openHelp" data-arg="moodle">Ver cómo, paso a paso</button><br>Para tenerlo en papel o guardar la clave, usa <strong>Exportar examen</strong> (PDF o Word): es un documento de apoyo, lo que se importa a Moodle sigue siendo el XML.</p>
 
         <!-- Mis materias: en cuál quedó guardado (se puede cambiar) y, si el Historial se llena, el aviso. -->
         <div id="exito-materia" class="exito-materia" hidden>
@@ -446,7 +446,7 @@
         </button>
         <button type="button" class="modal-tab" role="tab" id="tab-extras" aria-controls="modal-panel-extras" aria-selected="false" tabindex="-1" data-tab="extras">
           <i data-lucide="library" class="ico-15"></i>
-          PDF y materias
+          PDF, Word y materias
         </button>
         <button type="button" class="modal-tab" role="tab" id="tab-format" aria-controls="modal-panel-format" aria-selected="false" tabindex="-1" data-tab="format">
           <i data-lucide="file-code" class="ico-15"></i>
@@ -469,7 +469,7 @@
             <section class="guia-sec">
               <h3>Qué es</h3>
               <p class="guia-nota"><i data-lucide="circle-help" class="ico-14" style="vertical-align:-2px;"></i> ¿Primera vez? El <strong>robot ayudante</strong> de la esquina inferior izquierda te explica cada pantalla paso a paso: haz clic en él (o espera a que te ofrezca ayuda) y te muestra para qué sirve cada parte. Puedes repetirlo cuando quieras.</p>
-              <p><strong>Cátedra</strong> es tu espacio para gestionar tus evaluaciones (antes se llamaba «Conversor a Moodle XML»). Una herramienta de escritorio para docentes que lleva tus exámenes de punta a punta: los lee desde el PDF, Word o TXT que ya tienes, los pasa a <strong>Moodle XML</strong> para importarlos en <em>Banco de preguntas → Importar</em>, los puede <strong>imprimir en PDF con su clave</strong>, sacar <strong>varias versiones</strong> de un mismo examen y los guarda <strong>ordenados por materia</strong> para volver a ellos cuando quieras. Tú revisas cada pregunta antes de descargar. No inventa preguntas ni respuestas: solo transcribe lo que ya está en el documento.</p>
+              <p><strong>Cátedra</strong> es tu espacio para gestionar tus evaluaciones (antes se llamaba «Conversor a Moodle XML»). Una herramienta de escritorio para docentes que lleva tus exámenes de punta a punta: los lee desde el PDF, Word o TXT que ya tienes, los pasa a <strong>Moodle XML</strong> para importarlos en <em>Banco de preguntas → Importar</em>, los puede <strong>imprimir en PDF o Word con su clave</strong>, sacar <strong>varias versiones</strong> de un mismo examen y los guarda <strong>ordenados por materia</strong> para volver a ellos cuando quieras. Tú revisas cada pregunta antes de descargar. No inventa preguntas ni respuestas: solo transcribe lo que ya está en el documento.</p>
             </section>
 
             <section class="guia-sec">
@@ -479,10 +479,10 @@
                 <li><strong>Revisar contra el original.</strong> En un PDF, cada pregunta se compara con el recorte de su página, con la respuesta que propone la app, su origen y su confianza. Lo dudoso se marca para que lo veas primero.</li>
                 <li><strong>Apoyarte en la IA sin que decida por ti.</strong> Sugerir una respuesta que falta, escribir la retroalimentación, mejorar la redacción y avisar de preguntas repetidas: siempre lo ves antes y solo se aplica si lo aceptas.</li>
                 <li><strong>Corregir un XML que ya tienes.</strong> Abre un Moodle XML (de esta aplicación o de tu banco de preguntas) en el mismo editor, sin IA, y vuelve a generarlo.</li>
-                <li><strong>Imprimir el examen en PDF.</strong> Con tu institución, logos y datos; con su clave, o como folleto de preguntas más hoja de respuestas y clave. Las opciones se mezclan para que la clave no delate las respuestas.</li>
+                <li><strong>Imprimir el examen en PDF o en Word.</strong> Con tu institución, logos y datos; con su clave, o como folleto de preguntas más hoja de respuestas y clave. Las opciones se mezclan para que la clave no delate las respuestas. El Word es editable y dice exactamente lo mismo que el PDF.</li>
                 <li><strong>Sacar varias versiones de un examen.</strong> Un examen grande hace de banco: sorteas, por ejemplo, 4 parciales de 25 preguntas (al azar o con tantas de cada tipo), sin repetir preguntas entre versiones, y descargas un ZIP con el PDF y la clave de cada una.</li>
-                <li><strong>Ordenar todo por materia</strong> en <em>Mis materias</em>: cada materia es un espacio con todos sus exámenes, que puedes reabrir, descargar en XML, exportar en PDF o duplicar como punto de partida de uno nuevo.</li>
-                <li><strong>Escribir tus datos una sola vez</strong> en <em>Mi perfil</em>: tu nombre y tus perfiles de encabezado (institución, logos, formato) se aplican solos en cada PDF.</li>
+                <li><strong>Ordenar todo por materia</strong> en <em>Mis materias</em>: cada materia es un espacio con todos sus exámenes, que puedes reabrir, descargar en XML, exportar en PDF o Word o duplicar como punto de partida de uno nuevo.</li>
+                <li><strong>Escribir tus datos una sola vez</strong> en <em>Mi perfil</em>: tu nombre y tus perfiles de encabezado (institución, logos, formato) se aplican solos en cada PDF o Word.</li>
                 <li><strong>Trabajar en privado.</strong> Todo vive en tu equipo: sin cuenta, sin cookies y sin enviar tus archivos a ningún servidor propio. A la IA solo va el texto necesario para ordenar las preguntas.</li>
               </ul>
             </section>
@@ -512,6 +512,7 @@
             <section class="guia-sec">
               <h3>Privacidad</h3>
               <p>Tu archivo se procesa en tu equipo. Al servicio de IA solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas en imágenes o PDF escaneados). El PDF que subes se conserva solo en la memoria de la aplicación mientras está abierta, para mostrártelo al revisar; no se guarda en el Historial ni en ningún archivo. Más detalle en «Acerca de».</p>
+              <p><strong>Ojo con la clave gratuita:</strong> según los términos de la API de Gemini, con el plan gratuito Google puede usar lo que se le envía para mejorar sus productos y personas de Google pueden revisarlo; con el plan de pago (facturación activada en tu cuenta de Google) no. Si tus exámenes son confidenciales, considera activar la facturación.</p>
             </section>
           </div>
         </div>
@@ -594,7 +595,7 @@
                 <li><strong>Deshacer:</strong> al borrar una pregunta o aplicar un reparto de puntos aparece un aviso abajo con el botón <em>Deshacer</em> (dura unos segundos; si pasas el mouse encima, espera).</li>
                 <li><strong>Tu revisión se guarda sola</strong> en este equipo. Si la ventana se cierra, al volver a abrir la app aparece <em>Retomar revisión</em>.</li>
                 <li><strong>Volver a la revisión:</strong> desde la pantalla final puedes regresar a corregir algo y generar el XML de nuevo. <strong>Descartar</strong> pide confirmación antes de borrar la revisión completa.</li>
-                <li><strong>Reabrir un examen:</strong> cada XML generado queda guardado en <em>Mis materias</em>; desde ahí vuelves a su revisión cuando quieras (ver «PDF y materias»).</li>
+                <li><strong>Reabrir un examen:</strong> cada XML generado queda guardado en <em>Mis materias</em>; desde ahí vuelves a su revisión cuando quieras (ver «PDF, Word y materias»).</li>
               </ul>
             </section>
           </div>
@@ -604,10 +605,11 @@
         <div class="tab-panel" id="modal-panel-extras" role="tabpanel" aria-labelledby="tab-extras" tabindex="0">
           <div class="guia">
             <section class="guia-sec">
-              <h3>Exportar el examen en PDF</h3>
-              <p>Con el XML generado, el botón <strong>Exportar examen en PDF</strong> (también el botón <em>PDF</em> de cada examen en Mis materias) abre una pantalla con tus datos a la izquierda y la <strong>vista previa</strong> de la página a la derecha, que se rehace al cambiar cualquier dato. Es un documento de apoyo para papel y archivo: sale de las mismas preguntas y la misma clave que el XML, y lo que se importa a Moodle sigue siendo el XML.</p>
+              <h3>Exportar el examen en PDF o Word</h3>
+              <p>Con el XML generado, el botón <strong>Exportar examen</strong> (también el botón <em>PDF</em> de cada examen en Mis materias) abre una pantalla con tus datos a la izquierda y la <strong>vista previa</strong> de la página a la derecha, que se rehace al cambiar cualquier dato. Es un documento de apoyo para papel y archivo: sale de las mismas preguntas y la misma clave que el XML, y lo que se importa a Moodle sigue siendo el XML.</p>
               <ul class="guia-lista">
                 <li><strong>Qué incluir:</strong> el examen y su clave (la clave va en páginas aparte), solo el examen, solo la clave, o <em>folleto + hoja de respuestas + clave</em>: un folleto de preguntas sin espacios para escribir, una hoja para que el estudiante conteste y la clave, que es esa misma hoja ya llena.</li>
+                <li><strong>Formato del archivo:</strong> <em>PDF</em> (listo para imprimir), <em>Word</em> (un .docx editable, con estilos de párrafo con nombre, tablas y «Página X de Y») o <em>PDF y Word</em> en un ZIP. Los dos salen del mismo plan: mismas preguntas, mismo orden de las opciones, misma clave y mismo formato; en Word la paginación puede variar un poco. La vista previa es la del PDF.</li>
                 <li><strong>Encabezado:</strong> institución, facultad, departamento, hasta dos logos, materia, actividad, grupo, fecha, nombre del docente e indicaciones generales, con el cuadro de nombre, cédula, grupo y fecha.</li>
                 <li><strong>Partes:</strong> las preguntas se agrupan por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con su indicación para el estudiante y su valor.</li>
                 <li><strong>Opciones mezcladas:</strong> en los documentos la clave suele ir en orden (1-a, 2-b, 3-c…) y en papel eso delata las respuestas. La app baraja las opciones y la Columna B de los emparejamientos; la clave usa siempre las letras impresas.</li>
@@ -633,7 +635,7 @@
                 <li><strong>No repetir:</strong> mientras las preguntas alcancen, ninguna sale en dos versiones. Si no alcanzan, se repiten las menos posibles y la app te lo dice antes de sortear.</li>
                 <li><strong>Revisa cada versión:</strong> cada una tiene su pestaña con su vista previa. Puedes sortear de nuevo cuando quieras.</li>
                 <li><strong>Los puntos:</strong> cada versión muestra cuánto suma. Si no es el total que quieres (por ejemplo 100), pulsa <em>Ajustar</em> (según el tipo o en partes iguales) o cambia los puntos pregunta por pregunta. La app no cambia puntos por su cuenta.</li>
-                <li><strong>Qué sale:</strong> un ZIP con un PDF por versión (examen y clave, o folleto, hoja y clave, según lo que hayas elegido en «Qué incluir»). Cada PDF dice «VERSIÓN A», «VERSIÓN B»… también en su clave, y la clave de cada versión es la de sus propias preguntas.</li>
+                <li><strong>Qué sale:</strong> un ZIP con un PDF por versión, o un Word, o los dos, según el <em>Formato del archivo</em> (examen y clave, o folleto, hoja y clave, según lo que hayas elegido en «Qué incluir»). Cada archivo dice «VERSIÓN A», «VERSIÓN B»… también en su clave, y la clave de cada versión es la de sus propias preguntas.</li>
               </ul>
             </section>
 
@@ -651,7 +653,7 @@
 
             <section class="guia-sec">
               <h3>Mi perfil</h3>
-              <p>El círculo de arriba a la derecha (con tus iniciales) guarda lo que escribirías en cada PDF.</p>
+              <p>El círculo de arriba a la derecha (con tus iniciales) guarda lo que escribirías en cada PDF o Word.</p>
               <ul class="guia-lista">
                 <li><strong>Mis datos:</strong> tu nombre y cómo te llamas en el encabezado (Facilitador, Docente o Profesor).</li>
                 <li><strong>Perfiles de encabezado:</strong> institución, logos, indicaciones generales y formato de impresión, con vista previa. Crea uno por cada institución donde das clase, duplícalo, renómbralo y marca el que más uses como <em>predeterminado</em>.</li>
@@ -915,7 +917,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
 
           <div class="callout" style="margin-top:16px;">
             <i data-lucide="file-text"></i>
-            <span><strong>¿Lo quieres también en papel?</strong> En la pantalla final, <em>Exportar examen en PDF</em> genera el mismo examen listo para imprimir y su clave de respuestas (en páginas aparte). Es solo un apoyo: a Moodle siempre se importa el XML.</span>
+            <span><strong>¿Lo quieres también en papel?</strong> En la pantalla final, <em>Exportar examen</em> genera el mismo examen en PDF o Word, listo para imprimir, y su clave de respuestas (en páginas aparte). Es solo un apoyo: a Moodle siempre se importa el XML.</span>
           </div>
 
           <div class="callout" style="margin-top:16px;">
@@ -945,7 +947,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         <span class="vp-avatar" id="vp-avatar" aria-hidden="true"></span>
         <div class="vm-cab-texto">
           <h2 id="vp-titulo" class="vm-titulo">Mi perfil</h2>
-          <p class="vm-sub">Tus datos y tus encabezados. Se usan al exportar un examen en PDF, para no escribirlos cada vez. Todo queda guardado solo en este equipo.</p>
+          <p class="vm-sub">Tus datos y tus encabezados. Se usan al exportar un examen en PDF o Word, para no escribirlos cada vez. Todo queda guardado solo en este equipo.</p>
         </div>
       </header>
 
@@ -1147,7 +1149,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <details class="pdf-seccion" id="mat-defectos">
             <summary><span>Valores por defecto para el PDF</span><small id="mat-resumen-defectos"></small></summary>
             <div class="pdf-seccion-cuerpo">
-              <p class="field-hint" style="margin:0 0 10px;">Al exportar un examen de esta materia en PDF, la pantalla ya trae estos datos.</p>
+              <p class="field-hint" style="margin:0 0 10px;">Al exportar un examen de esta materia (PDF o Word), la pantalla ya trae estos datos.</p>
               <div class="form-group">
                 <label class="field-label" for="mat-perfil">Perfil de encabezado</label>
                 <select id="mat-perfil" class="form-input"><option value="">Ninguno</option></select>
@@ -1284,7 +1286,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
   <div id="vista-pdf" class="vista-materias vista-pdf" role="dialog" aria-modal="true" aria-labelledby="pdf-titulo">
     <div class="vm-barra">
       <nav class="vm-migas" aria-label="Dónde estás">
-        <span class="vm-miga" aria-current="page"><i data-lucide="file-text" class="ico-16"></i><span id="pdf-titulo">Exportar en PDF</span></span>
+        <span class="vm-miga" aria-current="page"><i data-lucide="file-text" class="ico-16"></i><span id="pdf-titulo">Exportar examen</span></span>
         <span class="vm-sep" aria-hidden="true">/</span>
         <strong id="pdf-migas-examen"></strong>
       </nav>
@@ -1345,6 +1347,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <label class="pdf-opcion"><input type="radio" name="contenido" value="solo_examen"> <span><strong>Solo el examen</strong><small>Sin respuestas: listo para entregar.</small></span></label>
             <label class="pdf-opcion"><input type="radio" name="contenido" value="folleto_hoja_clave"> <span><strong>Folleto, hoja de respuestas y clave</strong><small>Para repartir: un folleto de preguntas sin espacios para escribir, una hoja de respuestas para llenar (con nombre y calificación) y la clave, que es esa misma hoja ya llena. Cada parte empieza en su propia página.</small></span></label>
             <label class="pdf-opcion"><input type="radio" name="contenido" value="solo_clave"> <span><strong>Solo la clave</strong><small>Cada respuesta con su letra y su texto, porque Moodle mezcla las opciones.</small></span></label>
+          </fieldset>
+
+          <!-- Formato del archivo (2.8): el PDF o el Word salen del mismo plan y dicen lo mismo. -->
+          <fieldset class="pdf-grupo" id="pdf-grupo-formato">
+            <legend class="field-label">Formato del archivo</legend>
+            <label class="pdf-opcion"><input type="radio" name="formato" value="pdf"> <span><strong>PDF</strong><small>Listo para imprimir. Es lo que ves en la vista previa.</small></span></label>
+            <label class="pdf-opcion"><input type="radio" name="formato" value="word"> <span><strong>Word (.docx)</strong><small>Para editarlo antes de imprimir: cambias el texto, el orden o el formato. Dice lo mismo que el PDF: mismas preguntas, mismo orden de las opciones y misma clave.</small></span></label>
+            <label class="pdf-opcion"><input type="radio" name="formato" value="ambos"> <span><strong>PDF y Word</strong><small>Un ZIP con los dos archivos.</small></span></label>
+            <p class="field-hint pdf-pista" id="pdf-word-aviso" hidden>Si editas el Word, las letras y el orden de las opciones quedan como en el archivo: no lo vuelvas a subir a Cátedra esperando el mismo orden. Con <strong>DejaVu Sans</strong> la letra va incrustada en el archivo (Word de escritorio); Word en línea y Google Docs la cambian por otra parecida.</p>
           </fieldset>
 
           <!-- Versiones (2.5): el examen hace de banco y se sortean varios parciales, cada uno con su clave. -->
@@ -1484,7 +1495,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </div>
 
         <!-- Vista previa: la página tal como saldrá, con los datos de la izquierda. -->
-        <section class="vpdf-previa" id="pdf-previa" aria-label="Vista previa del PDF">
+        <section class="vpdf-previa" id="pdf-previa" aria-label="Vista previa de la página (PDF)">
           <div class="ver-tabs" id="pdf-ver-tabs" role="tablist" aria-label="Versiones" hidden></div>
           <div class="ver-panel" id="pdf-ver-panel" hidden>
             <p class="ver-composicion" id="pdf-ver-composicion"></p>
@@ -1523,6 +1534,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <span id="pdf-vista-pagina" aria-live="polite">Página 1</span>
             <button type="button" id="btn-pdf-vista-sig" class="btn btn-icon" aria-label="Página siguiente" title="Página siguiente"><i data-lucide="chevron-right" class="ico-16"></i></button>
           </div>
+          <p class="field-hint pdf-vista-nota" id="pdf-vista-nota" hidden>La vista previa es la del PDF: el Word se arma con el mismo plan, así que dice lo mismo (en Word la paginación puede variar un poco).</p>
           <div class="pdf-vista-marco">
             <img id="pdf-vista-img" alt="Vista previa de la página" hidden>
             <p id="pdf-vista-estado" class="pdf-vista-estado" role="status"></p>
@@ -1588,7 +1600,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <li><strong>Revisión con el original:</strong> cada pregunta junto al recorte de su página, con el origen y la confianza de la respuesta. Nada se decide solo.</li>
             <li><strong>IA como ayuda, no como juez:</strong> sugerir respuestas faltantes, escribir retroalimentación, mejorar la redacción y detectar preguntas repetidas; siempre visible y editable.</li>
             <li><strong>Edición de un XML que ya tienes,</strong> sin IA.</li>
-            <li><strong>Examen en PDF para imprimir,</strong> con su clave o como folleto, hoja de respuestas y clave; con tus logos, opciones mezcladas, partes, márgenes y tipo de letra a elección, y vista previa.</li>
+            <li><strong>Examen en PDF o Word para imprimir,</strong> con su clave o como folleto, hoja de respuestas y clave; con tus logos, opciones mezcladas, partes, márgenes y tipo de letra a elección, y vista previa.</li>
             <li><strong>Varias versiones de un examen:</strong> sortea parciales distintos a partir de un examen grande, al azar o por tipo de pregunta, cada uno con su clave y con los puntos que quieras.</li>
             <li><strong>Mis materias:</strong> tus exámenes ordenados por materia, para reabrirlos, descargarlos o reutilizarlos.</li>
             <li><strong>Mi perfil:</strong> tu nombre y tus encabezados guardados, para no escribirlos en cada examen.</li>
@@ -1728,6 +1740,10 @@ Ahora convierte el examen adjunto a este formato.</pre>
         <div class="callout apikey-limits">
           <i data-lucide="info"></i>
           <p><strong>Es gratis, con límites de uso.</strong> Alcanzan para el trabajo normal de un docente, pero en horas de mucha demanda Google puede tardar más o pedirte esperar unos minutos. Si algún día lo necesitas, puedes activar el plan de pago en tu cuenta de Google para quitar esos límites.</p>
+        </div>
+        <div class="callout is-warning">
+          <i data-lucide="shield-alert"></i>
+          <p><strong>Con la clave gratuita, Google puede usar lo que le envías para mejorar sus productos</strong> y personas de Google pueden revisarlo; con el plan de pago (facturación activada en tu cuenta de Google) no. Si tus exámenes son confidenciales, activa la facturación. Los términos pueden cambiar: están en <button type="button" class="text-link" data-url="https://ai.google.dev/gemini-api/terms">ai.google.dev/gemini-api/terms</button>.</p>
         </div>
 
         <form id="apikey-form" class="apikey-form" novalidate>

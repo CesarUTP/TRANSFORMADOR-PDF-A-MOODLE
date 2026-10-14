@@ -92,6 +92,9 @@ jobs:
       - name: Exportar el examen en PDF (2.1)
         if: ${{ !cancelled() }}
         run: python dev/test_exportar_pdf.py
+      - name: Exportar el examen en Word (2.8)
+        if: ${{ !cancelled() }}
+        run: python dev/test_exportar_docx.py
       - name: Mis materias (2.3)
         if: ${{ !cancelled() }}
         run: python dev/test_materias.py

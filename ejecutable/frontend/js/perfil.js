@@ -1,7 +1,7 @@
 /**
  * perfil.js — «Mi perfil»: los datos del docente (nombre y cómo se le llama) y sus perfiles de encabezado
  * (institución, logos, indicaciones y formato de impresión), en una pantalla propia. Lo que se guarda aquí lo usa
- * el diálogo «Exportar examen en PDF» para empezar con todo ya puesto.
+ * el diálogo «Exportar examen» para empezar con todo ya puesto.
  *
  * Los datos viven en el servidor local: /api/yo (nombre, rótulo, perfil predeterminado) y /api/perfiles_pdf.
  */
@@ -128,7 +128,7 @@ function pintar() {
     ul.innerHTML = `<li class="vm-vacio vp-vacio">
       <i data-lucide="file-text" aria-hidden="true"></i>
       <p class="vm-vacio-titulo">Todavía no tienes perfiles de encabezado</p>
-      <p>Un perfil guarda tu institución, tus logos, las indicaciones generales y el formato de impresión. Créalo una vez y cada PDF empieza con todo puesto.</p>
+      <p>Un perfil guarda tu institución, tus logos, las indicaciones generales y el formato de impresión. Créalo una vez y cada PDF o Word empieza con todo puesto.</p>
       <button type="button" class="btn btn-primary btn-sm" data-accion="nuevoPerfilEnc">Crear mi primer perfil</button>
     </li>`;
   } else {

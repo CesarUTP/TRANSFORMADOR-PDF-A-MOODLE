@@ -11,15 +11,15 @@ export const CLAVE_VISTOS = 'conversor.tours';
 export const TOURS = {
   cargar: {
     pasos: [
-      { el: '.stepper', titulo: 'Así funciona Cátedra', texto: 'Tres pasos: <b>cargas</b> tu examen, <b>revisas</b> lo que leyó la app y <b>exportas</b>: el XML para Moodle, el PDF para imprimirlo o varias versiones. Te enseño esta pantalla en un minuto.', lado: 'bottom' },
+      { el: '.stepper', titulo: 'Así funciona Cátedra', texto: 'Tres pasos: <b>cargas</b> tu examen, <b>revisas</b> lo que leyó la app y <b>exportas</b>: el XML para Moodle, el PDF o el Word para imprimirlo o varias versiones. Te enseño esta pantalla en un minuto.', lado: 'bottom' },
       { el: '#drop-zone', titulo: 'Elige tu examen', texto: 'Arrastra aquí el <b>PDF</b>, el <b>Word</b> o el <b>TXT</b> del examen, o haz clic para buscarlo. También sirve un <b>XML de Moodle</b> que ya tengas: se abre para corregirlo, sin IA.', lado: 'bottom' },
       { el: '#category-input', titulo: 'Categoría de Moodle', texto: 'El nombre de la carpeta donde quedarán las preguntas en el <b>Banco de preguntas</b> de Moodle. Por ejemplo: <i>Parcial-Historia-2026</i>.', lado: 'bottom' },
       { el: '#points-input', titulo: 'Puntaje total', texto: 'Cuánto vale todo el examen. Después, en la revisión, lo repartes entre las preguntas (la app lo hace por ti y tú lo ajustas).', lado: 'bottom' },
       { el: '#materia-select', titulo: 'Materia (opcional)', texto: 'Elige a qué materia pertenece, o crea una nueva desde aquí. Así lo encuentras después en <b>Mis materias</b>, y con materia el examen <b>no se borra solo</b> cuando el Historial se llena.', lado: 'top' },
       { el: '#actividad-input', titulo: 'Actividad (opcional)', texto: 'Un nombre para distinguirlo dentro de la materia: <i>Parcial 1</i>, <i>Quiz 2</i>…', lado: 'top' },
       { el: '#btn-convert', titulo: 'Convertir', texto: 'Se activa cuando eliges un archivo. La app lee el examen con ayuda de IA y te lleva a la revisión. Tarda unos segundos.', lado: 'top' },
-      { el: '#btn-materias', titulo: 'Mis materias', texto: 'Tu biblioteca: todos los exámenes que conviertas, ordenados por materia, para reabrirlos, descargarlos o exportarlos en PDF.', lado: 'bottom' },
-      { el: '#btn-perfil', titulo: 'Mi perfil', texto: 'Guarda tu nombre y los encabezados de tu institución (con logos) una sola vez: saldrán solos en cada PDF.', lado: 'bottom' },
+      { el: '#btn-materias', titulo: 'Mis materias', texto: 'Tu biblioteca: todos los exámenes que conviertas, ordenados por materia, para reabrirlos, descargarlos o exportarlos en PDF o Word.', lado: 'bottom' },
+      { el: '#btn-perfil', titulo: 'Mi perfil', texto: 'Guarda tu nombre y los encabezados de tu institución (con logos) una sola vez: saldrán solos en cada PDF o Word.', lado: 'bottom' },
       { el: '#btn-help', titulo: 'Guía', texto: 'Aquí está la explicación completa. Además, el <b>robot ayudante</b> de la esquina de abajo a la izquierda te explica cualquier pantalla: haz clic en él cuando quieras repetir un recorrido.', lado: 'bottom' },
     ],
   },
@@ -39,7 +39,7 @@ export const TOURS = {
     pasos: [
       { el: '#success-title', titulo: '¡Tu XML está listo!', texto: 'El examen quedó guardado en tu equipo (en <b>Mis materias</b>). Esto es lo que puedes hacer ahora.', lado: 'bottom' },
       { el: '#btn-download', titulo: 'Descargar Moodle XML', texto: 'Guarda el archivo. Para usarlo en Moodle: <b>Banco de preguntas → Importar → Formato XML de Moodle</b>.', lado: 'bottom' },
-      { el: '#btn-exportar-pdf', titulo: 'Exportar examen en PDF', texto: 'Para tenerlo en papel con su clave, o como folleto de preguntas con hoja de respuestas. Se abre una pantalla con <b>vista previa</b>.', lado: 'bottom' },
+      { el: '#btn-exportar-pdf', titulo: 'Exportar examen', texto: 'Para tenerlo en papel con su clave, en <b>PDF</b> o en <b>Word</b> editable, o como folleto de preguntas con hoja de respuestas. Se abre una pantalla con <b>vista previa</b>.', lado: 'bottom' },
       { el: '#exito-materia', titulo: 'Guardado en tu materia', texto: 'Aquí ves en qué materia quedó y puedes cambiarla.', lado: 'bottom' },
       { el: '#btn-back-to-review', titulo: 'Volver a la revisión', texto: '¿Viste un error? Regresa, corrige y genera el XML otra vez.', lado: 'bottom' },
       { el: '#points-chart-card', titulo: 'Resumen', texto: 'Cuántas preguntas y cuántos puntos hay de cada tipo.', lado: 'top' },
@@ -66,7 +66,7 @@ export const TOURS = {
       { el: '#vm-cuerpo .vm-cab-acciones [data-accion="abrirAsistente"]', titulo: 'Ordenar con ayuda', texto: 'Propone a qué materia pertenece cada examen según su categoría y su nombre. <b>Tú decides</b> qué se mueve.', lado: 'bottom' },
       { el: '#vm-cuerpo .vm-buscar', titulo: 'Buscar', texto: 'Por nombre del archivo, categoría, actividad o fecha. No distingue mayúsculas ni tildes.', lado: 'bottom' },
       { el: '#vm-cuerpo #vm-seleccion', titulo: 'Elegir varios', texto: 'Marca <b>Elegir todos</b> o algunos exámenes para <b>moverlos</b> a una materia o <b>borrarlos</b> de una vez. Útil para limpiar pruebas.', lado: 'bottom' },
-      { el: '#vm-cuerpo .vm-fila .vm-fila-acciones', titulo: 'Qué hacer con un examen', texto: '<b>Reabrir</b> vuelve a su revisión; <b>PDF</b> lo exporta para imprimir; <b>XML</b> lo descarga otra vez.', lado: 'left' },
+      { el: '#vm-cuerpo .vm-fila .vm-fila-acciones', titulo: 'Qué hacer con un examen', texto: '<b>Reabrir</b> vuelve a su revisión; <b>PDF</b> lo exporta para imprimir (en PDF o Word); <b>XML</b> lo descarga otra vez.', lado: 'left' },
       { el: '#vm-cuerpo .vm-organizar-boton', titulo: 'Organizar', texto: 'Cambia su materia o su actividad, o bórralo.', lado: 'left' },
     ],
   },
@@ -85,11 +85,12 @@ export const TOURS = {
       { el: '#pdf-materia-sel', titulo: 'Materia', texto: 'Al elegir una materia se rellenan su perfil, su docente y su grupo.', lado: 'right' },
       { el: '#pdf-datos-examen', titulo: 'Datos de este examen', texto: 'Actividad, grupo y fecha: salen en el encabezado. Todo es opcional.', lado: 'right' },
       { el: '#pdf-grupo-incluir', titulo: 'Qué incluir', texto: 'El examen con su clave, solo uno de los dos, o <b>folleto + hoja de respuestas + clave</b>: un folleto de preguntas para repartir, una hoja para que el estudiante conteste y la clave ya llena.', lado: 'right' },
-      { el: '#pdf-versiones', titulo: 'Versiones del examen', texto: 'Con un examen grande como banco (por ejemplo 100 preguntas) puedes sacar <b>varios parciales distintos</b>: elige cuántas versiones y cuántas preguntas lleva cada una, al azar o <b>por tipo</b> (todas las de verdadero o falso, 25 de selección múltiple…). Cada versión sale con su clave, en un ZIP.', lado: 'right' },
+      { el: '#pdf-grupo-formato', titulo: 'Formato del archivo', texto: '<b>PDF</b> para imprimir, <b>Word</b> (.docx) para editarlo antes, o los dos en un ZIP. Salen del mismo plan: mismas preguntas, mismo orden de las opciones y misma clave. La vista previa es la del PDF.', lado: 'right' },
+      { el: '#pdf-versiones', titulo: 'Versiones del examen', texto: 'Con un examen grande como banco (por ejemplo 100 preguntas) puedes sacar <b>varios parciales distintos</b>: elige cuántas versiones y cuántas preguntas lleva cada una, al azar o <b>por tipo</b> (todas las de verdadero o falso, 25 de selección múltiple…). Cada versión sale con su clave, en un ZIP (con PDF, Word o los dos).', lado: 'right' },
       { el: '#pdf-sec-encabezado', titulo: 'Encabezado de la institución', texto: 'Institución, facultad, logos (uno o dos) e indicaciones generales.', lado: 'right' },
       { el: '#pdf-sec-formato', titulo: 'Formato', texto: 'Papel, márgenes, tipo y tamaño de letra, renglones de los ensayos, si se <b>mezclan las opciones</b> (para que la clave no delate las respuestas) y <b>puntos enteros</b>: el PDF usa solo enteros (7 pts en vez de 6,67) y el XML de Moodle no cambia.', lado: 'right' },
       { el: '#pdf-previa', titulo: 'Vista previa', texto: 'La página tal como saldrá; se actualiza al cambiar cualquier dato. Con versiones, cada una tiene su pestaña, y ahí mismo ajustas sus <b>puntos</b> para que sumen el total que quieres.', lado: 'left' },
-      { el: '#btn-pdf-exportar', titulo: 'Exportar PDF', texto: 'Genera el PDF (o el ZIP con las versiones) y te deja elegir dónde guardarlo. El XML no cambia.', lado: 'top' },
+      { el: '#btn-pdf-exportar', titulo: 'Exportar', texto: 'Genera el PDF, el Word o el ZIP (con los dos o con las versiones) y te deja elegir dónde guardarlo. El XML no cambia.', lado: 'top' },
     ],
   },
 };
@@ -143,7 +144,7 @@ export const MENSAJES = {
   final: { titulo: '¿Y ahora qué hago?', texto: 'Te explico cómo llevar el XML a Moodle y qué más puedes hacer.' },
   biblioteca: { titulo: '¿Cómo funcionan las materias?', texto: 'Te enseño a ordenar y a encontrar tus exámenes.' },
   perfil: { titulo: '¿Para qué sirve tu perfil?', texto: 'Te cuento cómo guardar tu nombre y tus encabezados.' },
-  pdf: { titulo: '¿Qué opciones tiene el PDF?', texto: 'Te explico cada parte de esta pantalla.' },
+  pdf: { titulo: '¿Qué opciones tiene la exportación?', texto: 'Te explico cada parte de esta pantalla.' },
 };
 
 /**

@@ -105,6 +105,8 @@ cmd = [
     # de codificaciones; backend/ va como datos, así que tampoco se detectan
     # solos los módulos estándar que solo usa el código de backend/ ─────────
     "--collect-all", "reportlab",
+    # ── exportar_docx.py (examen en Word, 2.8): python-docx lleva su plantilla en blanco como dato ──
+    "--collect-all", "docx",
     "--collect-all", "chardet",
     "--hidden-import", "random",
     "--hidden-import", "unicodedata",

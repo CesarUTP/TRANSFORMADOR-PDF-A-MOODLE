@@ -206,6 +206,13 @@ def main() -> None:
         c.esperar(3000)
         c.ocultar_robot()
         c.foto("09-pdf.png", [("#pdf-perfil", 1, "der", 0, -14), ("#pdf-datos-examen", 2, "der", 0, -4), ("#pdf-grupo-incluir", 3, "der", 0, -4), ("#pdf-previa .pdf-vista-marco", 4, "izq", 6, 6), ("#pdf-pts-panel", 5, "der", 0, -6)])
+        # El formato del archivo (2.8): PDF, Word o los dos; con Word sale la nota de que la vista previa es la del PDF.
+        page.evaluate("document.getElementById('pdf-grupo-formato').scrollIntoView({block:'center'})")
+        page.locator("#pdf-grupo-formato label", has_text="Word (.docx)").first.click()
+        c.esperar(700)
+        c.foto("09b-formato.png", [("#pdf-grupo-formato", 1, "der", 0, -4), ("#pdf-vista-nota", 2, "der", 0, -6)])
+        page.locator("#pdf-grupo-formato label", has_text="PDF").first.click()
+        page.evaluate("document.getElementById('pdf-config').scrollTop = 0")
         page.evaluate("document.getElementById('pdf-sec-encabezado').open = true; document.getElementById('pdf-sec-formato').open = true")
         page.evaluate("document.getElementById('pdf-sec-encabezado').scrollIntoView({block:'start'})")
         c.esperar(500)

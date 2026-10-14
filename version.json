@@ -1,5 +1,5 @@
 {
-  "version": "2.7",
+  "version": "2.8",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Versión 2.7: puntos enteros en el PDF. Al exportar, el examen y su clave usan solo números enteros (7 pts en vez de 6,67) con el mismo total, para calificar sin redondeos. El Moodle XML no cambia. Viene activada y se apaga en Formato."
+  "notas": "Versión 2.8: exporta el examen también en Word (.docx editable) con lo mismo que el PDF: mismas preguntas, opciones y clave. Elige PDF, Word o los dos en un ZIP, también con versiones. Avisa de la privacidad de la clave gratuita de Gemini."
 }

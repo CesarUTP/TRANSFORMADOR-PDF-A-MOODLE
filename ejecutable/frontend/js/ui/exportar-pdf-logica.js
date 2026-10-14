@@ -10,6 +10,8 @@ export const LIMITE_INSTRUCCIONES = 1500;
 export const LIMITE_LOGO = 2000000;
 
 export const CONTENIDOS = ['examen_y_clave', 'solo_examen', 'solo_clave', 'folleto_hoja_clave'];
+/** El archivo que se descarga (2.8): el PDF, el Word editable, o un ZIP con los dos. */
+export const FORMATOS = ['pdf', 'word', 'ambos'];
 export const PAPELES = ['carta', 'legal', 'a4'];
 export const MARGENES = ['normal', 'estrechos', 'moderados', 'anchos'];
 export const FUENTES = ['dejavu', 'arial', 'times'];
@@ -27,11 +29,11 @@ export const FUENTES_NOMBRES = { dejavu: 'DejaVu Sans', arial: 'Arial', times: '
 export const ACTIVIDADES = ['Parcial', 'Quiz', 'Prueba corta', 'Examen final', 'Taller', 'Evaluación diagnóstica'];
 
 /** Lo que se recuerda entre exámenes (no la fecha: cambia cada vez). */
-const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas', 'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'puntos_enteros', 'renglones_ensayo'];
+const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'formato', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas', 'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'puntos_enteros', 'renglones_ensayo'];
 
 const VACIOS = {
   institucion: '', facultad: '', departamento: '', rotulo_docente: 'facilitador', logo_izquierdo: '', logo_derecho: '', materia: '', docente: '', actividad: '', grupo: '', fecha: '', instrucciones: '', version: '',
-  contenido: 'examen_y_clave', papel: 'carta', margenes: 'moderados', fuente_titulos: 'dejavu', tam_titulos: 11, fuente_preguntas: 'dejavu', tam_preguntas: 10, campos_estudiante: true, partes: true, mezclar: true, puntos_por_pregunta: true, puntos_enteros: true, renglones_ensayo: 6,
+  contenido: 'examen_y_clave', formato: 'pdf', papel: 'carta', margenes: 'moderados', fuente_titulos: 'dejavu', tam_titulos: 11, fuente_preguntas: 'dejavu', tam_preguntas: 10, campos_estudiante: true, partes: true, mezclar: true, puntos_por_pregunta: true, puntos_enteros: true, renglones_ensayo: 6,
 };
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -114,6 +116,7 @@ export function valoresIniciales(guardado) {
   if (typeof guardado.instrucciones === 'string') out.instrucciones = limpiarTexto(guardado.instrucciones);
   if (typeof guardado.version === 'string') out.version = limpiarCampo(guardado.version, 20);   // «A», «B»…: solo en las versiones de un examen
   if (CONTENIDOS.includes(guardado.contenido)) out.contenido = guardado.contenido;
+  if (FORMATOS.includes(guardado.formato)) out.formato = guardado.formato;
   if (PAPELES.includes(guardado.papel)) out.papel = guardado.papel;
   if (MARGENES.includes(guardado.margenes)) out.margenes = guardado.margenes;
   for (const k of ['fuente_titulos', 'fuente_preguntas']) {
@@ -150,7 +153,21 @@ export function datosParaEnviar(crudos) {
   return v;
 }
 
-/** El cuerpo de POST /api/exportar_pdf: el mismo examen que se envió para el XML + los datos. */
+/** El texto del botón de exportar según el formato, las versiones y si se está generando. */
+export function textoDelBoton({ formato = 'pdf', versiones = false, listas = false, cantidad = 0, generando = false } = {}) {
+  const que = formato === 'word' ? 'Word' : formato === 'ambos' ? 'PDF y Word' : 'PDF';
+  if (generando) return versiones ? 'Generando las versiones…' : (formato === 'ambos' ? 'Generando los archivos…' : `Generando el ${que}…`);
+  if (versiones) return listas ? `Exportar ${cantidad} versiones (ZIP)` : 'Exportar versiones';
+  return formato === 'ambos' ? 'Exportar PDF y Word (ZIP)' : `Exportar ${que}`;
+}
+
+/** Lo que lleva la descarga, para la línea de abajo cuando hay versiones: «un ZIP con 3 PDF…». */
+export function resumenDeDescarga({ formato = 'pdf', cantidad = 0 } = {}) {
+  const por = formato === 'word' ? `${cantidad} Word, uno por versión` : formato === 'ambos' ? `${cantidad} PDF y ${cantidad} Word, uno de cada por versión` : `${cantidad} PDF, uno por versión`;
+  return `Un ZIP con ${por}, cada uno con su clave. El XML de Moodle no cambia.`;
+}
+
+/** El cuerpo de POST /api/exportar_examen (y /api/exportar_pdf): el mismo examen que se envió para el XML + los datos. */
 export function cuerpoPdf(examen, datos) {
   return {
     filename: examen.filename,

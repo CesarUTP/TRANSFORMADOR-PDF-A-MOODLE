@@ -5,6 +5,9 @@ rutas_pdf.py — el examen revisado como PDF imprimible (2.1).
                            datos de la portada; devuelve el PDF (cabecera X-PDF-Info
                            con páginas, preguntas y avisos).
 
+  POST /api/exportar_examen  lo mismo, pero con `datos.formato` = «pdf», «word» o «ambos» (un ZIP con los dos): el PDF
+                           o el Word (.docx) salen del MISMO plan (plan_impreso.py), así que dicen lo mismo (2.8)
+
   POST /api/vista_previa_pdf?pagina=N   lo mismo, pero devuelve la página N como imagen PNG (cabecera X-PDF-Paginas)
   GET    /api/perfiles_pdf              los perfiles de encabezado guardados
   PUT    /api/perfiles_pdf/{nombre}     crea o reemplaza un perfil (institución, logos, formato…)
@@ -27,6 +30,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
+import exportar_docx
 import exportar_pdf
 import pypdfium2 as pdfium
 import versiones
@@ -51,6 +55,7 @@ class DatosPortada(BaseModel):
     fecha: str = Field("", max_length=exportar_pdf.LIMITE_CAMPO)
     instrucciones: str = Field("", max_length=exportar_pdf.LIMITE_INSTRUCCIONES)
     contenido: str = "examen_y_clave"
+    formato: str = "pdf"              # FORMATOS: «pdf», «word» (.docx editable) o «ambos» (un ZIP con los dos)
     version: str = Field("", max_length=exportar_pdf.LIMITE_VERSION)     # «A», «B»… (solo en las versiones de un examen)
     papel: str = "carta"
     margenes: str = "moderados"
@@ -79,23 +84,67 @@ class ExportarPdfRequest(BaseModel):
     datos: DatosPortada = DatosPortada()
 
 
-def _exportar_sync(req: ExportarPdfRequest, clave: Dict[int, Any]):
-    validar_para_exportar(req.questions, clave)
-    d = req.datos
-    if d.contenido not in exportar_pdf.CONTENIDOS or d.papel not in exportar_pdf.PAPELES or d.margenes not in exportar_pdf.MARGENES or d.fuente_titulos not in exportar_pdf.FUENTES or d.fuente_preguntas not in exportar_pdf.FUENTES or d.rotulo_docente not in exportar_pdf.ROTULOS:
+FORMATOS = ("pdf", "word", "ambos")
+MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+def _opciones_validas(d: DatosPortada) -> None:
+    if (d.contenido not in exportar_pdf.CONTENIDOS or d.papel not in exportar_pdf.PAPELES or d.margenes not in exportar_pdf.MARGENES
+            or d.fuente_titulos not in exportar_pdf.FUENTES or d.fuente_preguntas not in exportar_pdf.FUENTES
+            or d.rotulo_docente not in exportar_pdf.ROTULOS or d.formato not in FORMATOS):
         raise HTTPException(status_code=422, detail="Opciones de exportación no válidas.")
-    datos = exportar_pdf.DatosExamen(
+
+
+def _datos_examen(d: DatosPortada, titulo_respaldo: str, version: str = "") -> exportar_pdf.DatosExamen:
+    return exportar_pdf.DatosExamen(
         institucion=d.institucion, facultad=d.facultad, departamento=d.departamento, materia=d.materia, docente=d.docente, actividad=d.actividad,
         grupo=d.grupo, fecha=d.fecha, instrucciones=d.instrucciones,
-        titulo_respaldo=Path(req.filename).stem, version=d.version, contenido=d.contenido, papel=d.papel, margenes=d.margenes,
+        titulo_respaldo=titulo_respaldo, version=version or d.version, contenido=d.contenido, papel=d.papel, margenes=d.margenes,
         fuente_titulos=d.fuente_titulos, tam_titulos=d.tam_titulos, fuente_preguntas=d.fuente_preguntas, tam_preguntas=d.tam_preguntas,
         campos_estudiante=d.campos_estudiante, rotulo_docente=d.rotulo_docente, partes=d.partes, mezclar=d.mezclar,
         puntos_por_pregunta=d.puntos_por_pregunta, puntos_enteros=d.puntos_enteros, renglones_ensayo=d.renglones_ensayo,
         logo_izquierdo=d.logo_izquierdo, logo_derecho=d.logo_derecho)
+
+
+def _exportar_sync(req: ExportarPdfRequest, clave: Dict[int, Any]):
+    validar_para_exportar(req.questions, clave)
+    _opciones_validas(req.datos)
+    datos = _datos_examen(req.datos, Path(req.filename).stem)
     try:
         return exportar_pdf.generar_pdf(req.questions, clave, req.total_points, datos)
     except exportar_pdf.PuntosNoEnteros as exc:
         raise HTTPException(status_code=422, detail=str(exc))
+
+
+def _generar(questions, clave, total_points, datos: exportar_pdf.DatosExamen, formato: str) -> Dict[str, Any]:
+    """Los archivos de un examen según el formato: {"pdf": bytes, "docx": bytes, "paginas": int|None, "preguntas": int, "avisos": [...]}.
+    Los avisos son los del plan (los mismos para el PDF y el Word); `paginas` solo la sabe el PDF."""
+    salida: Dict[str, Any] = {"paginas": None}
+    try:
+        if formato in ("pdf", "ambos"):
+            r = exportar_pdf.generar_pdf(questions, clave, total_points, datos)
+            salida.update(pdf=r.pdf, paginas=r.paginas, preguntas=r.preguntas, avisos=r.avisos)
+        if formato in ("word", "ambos"):
+            w = exportar_docx.generar_docx(questions, clave, total_points, datos)
+            salida.update(docx=w.docx, preguntas=w.preguntas)
+            salida.setdefault("avisos", w.avisos)
+    except exportar_pdf.PuntosNoEnteros as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return salida
+
+
+def _exportar_examen_sync(req: ExportarPdfRequest, clave: Dict[int, Any]):
+    validar_para_exportar(req.questions, clave)
+    _opciones_validas(req.datos)
+    d = req.datos
+    stem = Path(req.filename).stem
+    g = _generar(req.questions, clave, req.total_points, _datos_examen(d, stem), d.formato)
+    base = f"{stem}{_SUFIJO.get(d.contenido, '')}"
+    if d.formato == "pdf":
+        return g["pdf"], "application/pdf", f"{base}.pdf", g
+    if d.formato == "word":
+        return g["docx"], MIME_DOCX, f"{base}.docx", g
+    return versiones.empaquetar([(f"{base}.pdf", g["pdf"]), (f"{base}.docx", g["docx"])]), "application/zip", f"{base}_pdf_y_word.zip", g
 
 
 _SUFIJO = {"examen_y_clave": "_examen_y_clave", "solo_examen": "_examen", "solo_clave": "_clave",
@@ -125,6 +174,28 @@ async def api_exportar_pdf(req: ExportarPdfRequest):
             f"(Detalle técnico: {_detalle_tecnico(exc)})"))
 
 
+@router.post("/api/exportar_examen")
+async def api_exportar_examen(req: ExportarPdfRequest):
+    """El examen en el formato que pida `datos.formato`: PDF, Word (.docx) o un ZIP con los dos."""
+    try:
+        clave = {int(k): v for k, v in req.answer_key.items()}
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Las claves de answer_key deben ser enteros.")
+    req.filename = _nombre_nfc(req.filename)
+    try:
+        contenido, mime, nombre, g = await run_in_threadpool(_exportar_examen_sync, req, clave)
+        info = json.dumps({"paginas": g["paginas"], "preguntas": g["preguntas"], "avisos": _avisos_para_cabecera(g["avisos"])})
+        return Response(content=contenido, media_type=mime, headers={"Content-Disposition": _content_disposition(nombre), "X-PDF-Info": info})
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Error inesperado generando el examen de '%s' (%s)", req.filename, req.datos.formato)
+        raise HTTPException(status_code=500, detail=(
+            "Ocurrió un error inesperado al generar el archivo. Tu revisión sigue intacta y el XML no se ve afectado: "
+            f"vuelve a intentarlo. Si se repite, envía al desarrollador el registro «{ERROR_LOG_PATH}». "
+            f"(Detalle técnico: {_detalle_tecnico(exc)})"))
+
+
 # ── Versiones de un examen (2.5) ────────────────────────────────────────────
 class VersionPdf(BaseModel):
     """Una versión: qué preguntas del examen lleva (en qué orden) y, si el docente los ajustó, sus puntos."""
@@ -146,8 +217,7 @@ class ExportarVersionesRequest(BaseModel):
 
 def _exportar_versiones_sync(req: ExportarVersionesRequest, clave: Dict[int, Any]):
     d = req.datos
-    if d.contenido not in exportar_pdf.CONTENIDOS or d.papel not in exportar_pdf.PAPELES or d.margenes not in exportar_pdf.MARGENES or d.fuente_titulos not in exportar_pdf.FUENTES or d.fuente_preguntas not in exportar_pdf.FUENTES or d.rotulo_docente not in exportar_pdf.ROTULOS:
-        raise HTTPException(status_code=422, detail="Opciones de exportación no válidas.")
+    _opciones_validas(d)
     validar_para_exportar(req.questions, clave)          # el examen completo cumple lo mismo que para el XML
     etiquetas = [v.etiqueta.strip() for v in req.versiones]
     if len({e.upper() for e in etiquetas}) != len(etiquetas) or not all(etiquetas):
@@ -160,21 +230,17 @@ def _exportar_versiones_sync(req: ExportarVersionesRequest, clave: Dict[int, Any
             qs, clave_v = versiones.subconjunto(req.questions, clave, v.nums, {int(k): p for k, p in v.puntos.items()})
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=f"Versión {etiqueta}: {exc}")
-        datos = exportar_pdf.DatosExamen(
-            institucion=d.institucion, facultad=d.facultad, departamento=d.departamento, materia=d.materia, docente=d.docente,
-            actividad=d.actividad, grupo=d.grupo, fecha=d.fecha, instrucciones=d.instrucciones, titulo_respaldo=stem,
-            version=etiqueta, contenido=d.contenido, papel=d.papel, margenes=d.margenes,
-            fuente_titulos=d.fuente_titulos, tam_titulos=d.tam_titulos, fuente_preguntas=d.fuente_preguntas, tam_preguntas=d.tam_preguntas,
-            campos_estudiante=d.campos_estudiante, rotulo_docente=d.rotulo_docente, partes=d.partes, mezclar=d.mezclar,
-            puntos_por_pregunta=d.puntos_por_pregunta, puntos_enteros=d.puntos_enteros, renglones_ensayo=d.renglones_ensayo,
-            logo_izquierdo=d.logo_izquierdo, logo_derecho=d.logo_derecho)
         try:
-            r = exportar_pdf.generar_pdf(qs, clave_v, v.total_points, datos)
-        except exportar_pdf.PuntosNoEnteros as exc:
-            raise HTTPException(status_code=422, detail=f"Versión {etiqueta}: {exc}")
-        archivos.append((f"{stem}_version_{versiones.etiqueta_para_archivo(etiqueta)}{sufijo}.pdf", r.pdf))
-        resumen.append({"etiqueta": etiqueta, "paginas": r.paginas, "preguntas": r.preguntas})
-        avisos += [f"Versión {etiqueta}: {a}" for a in r.avisos]
+            g = _generar(qs, clave_v, v.total_points, _datos_examen(d, stem, etiqueta), d.formato)
+        except HTTPException as exc:
+            raise HTTPException(status_code=exc.status_code, detail=f"Versión {etiqueta}: {exc.detail}")
+        base = f"{stem}_version_{versiones.etiqueta_para_archivo(etiqueta)}{sufijo}"
+        if "pdf" in g:
+            archivos.append((f"{base}.pdf", g["pdf"]))
+        if "docx" in g:
+            archivos.append((f"{base}.docx", g["docx"]))
+        resumen.append({"etiqueta": etiqueta, "paginas": g["paginas"], "preguntas": g["preguntas"]})
+        avisos += [f"Versión {etiqueta}: {a}" for a in g["avisos"]]
     return versiones.empaquetar(archivos), resumen, avisos
 
 

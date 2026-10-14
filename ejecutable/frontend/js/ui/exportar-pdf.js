@@ -1,8 +1,9 @@
 /**
- * exportar-pdf.js — «Exportar examen en PDF»: la pantalla con los datos de la portada, el formato, las versiones
- * del examen y la vista previa, y la descarga del examen impreso con su clave (un PDF, o un ZIP con varias versiones).
+ * exportar-pdf.js — «Exportar examen»: la pantalla con los datos de la portada, el formato, las versiones del examen
+ * y la vista previa, y la descarga del examen impreso con su clave: un PDF, un Word editable (2.8), un ZIP con los dos
+ * o un ZIP con varias versiones. La vista previa es siempre la del PDF: el Word sale del mismo plan y dice lo mismo.
  *
- * Es un documento de apoyo: el PDF sale de las MISMAS preguntas que se enviaron para el Moodle XML
+ * Es un documento de apoyo: el PDF y el Word salen de las MISMAS preguntas que se enviaron para el Moodle XML
  * (estado.exportable) o de las de un examen del Historial, y no cambia nada de él. Lo escrito se recuerda
  * para el próximo examen (localStorage, solo en este equipo); los perfiles de encabezado, con nombre,
  * viven en el servidor local (/api/perfiles_pdf).
@@ -21,7 +22,7 @@ import { crearPuntosPdf } from './puntos-pdf.js';
 import { crearVersiones } from './versiones.js';
 import {
   ACTIVIDADES, RENGLONES_MAX, RENGLONES_MIN, aplicarPerfil, avisosDelPdf, cuerpoPdf, datosDePerfil, enteroEn, fechaLegible,
-  nombreDeDescarga, nombrePerfil, paraGuardar, tamanoValido, valoresIniciales,
+  nombreDeDescarga, nombrePerfil, paraGuardar, resumenDeDescarga, tamanoValido, textoDelBoton, valoresIniciales,
 } from './exportar-pdf-logica.js';
 
 const CLAVE_GUARDADO = 'conversor.exportar_pdf';
@@ -62,6 +63,7 @@ function llenarExamen(v) {
   ['materia', 'actividad', 'grupo'].forEach(k => { $(`pdf-${k}`).value = v[k]; });
   $('pdf-fecha').value = '';
   form.elements.contenido.value = v.contenido;
+  form.elements.formato.value = v.formato;
 }
 
 /** El encabezado y el formato (lo que guarda un perfil). */
@@ -90,7 +92,7 @@ function leer() {
   const datos = { fecha: fechaLegible($('pdf-fecha').value) };
   CAMPOS_TEXTO.forEach(k => { datos[k] = $(`pdf-${k}`).value; });
   Object.assign(datos, {
-    contenido: f.contenido.value, papel: f.papel.value, margenes: f.margenes.value, rotulo_docente: f.rotulo_docente.value,
+    contenido: f.contenido.value, formato: f.formato.value, papel: f.papel.value, margenes: f.margenes.value, rotulo_docente: f.rotulo_docente.value,
     fuente_titulos: f.fuente_titulos.value, fuente_preguntas: f.fuente_preguntas.value,
     tam_titulos: f.tam_titulos.value, tam_preguntas: f.tam_preguntas.value,   // valoresIniciales() los valida (7–20 pt) al enviar
     renglones_ensayo: f.renglones_ensayo.value, campos_estudiante: f.campos_estudiante.checked, partes: f.partes.checked,
@@ -128,25 +130,25 @@ function ocupado(si) {
   actualizarPie();
 }
 
-/** El botón de exportar y la línea de abajo según haya o no versiones sorteadas. */
+/** El botón de exportar y la línea de abajo según el formato y haya o no versiones sorteadas. */
 function actualizarPie() {
   const conVersiones = versiones.activa();
   const listas = versiones.listas();
-  const etiqueta = $('btn-pdf-exportar-etiqueta');
-  if (generando) etiqueta.textContent = conVersiones ? 'Generando las versiones…' : 'Generando el PDF…';
-  else if (conVersiones) etiqueta.textContent = listas ? `Exportar ${versiones.cantidad()} versiones (ZIP)` : 'Exportar versiones';
-  else etiqueta.textContent = 'Exportar PDF';
+  const formato = form.elements.formato.value || 'pdf';
+  $('btn-pdf-exportar-etiqueta').textContent = textoDelBoton({ formato, versiones: conVersiones, listas, cantidad: versiones.cantidad(), generando });
   btnExportar.disabled = generando || (conVersiones && !listas);
   let texto = '';
   if (conVersiones && !generando) {
     if (!versiones.cantidad()) texto = 'Sortea las versiones (a la izquierda) para poder exportarlas.';
     else if (!listas) texto = 'Cambiaste el plan de versiones: vuelve a sortear para exportar.';
-    else {
-      const r = versiones.resumen();
-      texto = `Un ZIP con ${r.n} PDF, uno por versión, cada uno con su clave. El XML de Moodle no cambia.`;
-    }
+    else texto = resumenDeDescarga({ formato, cantidad: versiones.resumen().n });
+  } else if (!generando && formato === 'ambos') {
+    texto = 'Un ZIP con el PDF y el Word del examen. El XML de Moodle no cambia.';
   }
   $('pdf-pie-texto').textContent = texto;
+  // La vista previa es la del PDF; el Word dice lo mismo (mismas preguntas, mismo orden de opciones, misma clave).
+  $('pdf-vista-nota').hidden = formato === 'pdf';
+  $('pdf-word-aviso').hidden = formato === 'pdf';
 }
 
 /** Lo que dice cada sección plegada, para saber qué hay dentro sin abrirla. */
@@ -396,7 +398,7 @@ function cambioEnFormulario() {
 export function abrirExportarPdf(origen = null) {
   examen = origen && Array.isArray(origen.questions) ? origen : estado.exportable;
   if (!examen) {
-    showToast('Genera primero el XML: el PDF sale del mismo examen.', 'error');
+    showToast('Genera primero el XML: el PDF y el Word salen del mismo examen.', 'error');
     return;
   }
   const v = valoresIniciales(leerGuardado());
@@ -478,7 +480,7 @@ async function exportar(e) {
   }
   ocupado(true);
   try {
-    const res = await apiFetch(conVersiones ? '/api/exportar_versiones' : '/api/exportar_pdf', {
+    const res = await apiFetch(conVersiones ? '/api/exportar_versiones' : '/api/exportar_examen', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(conVersiones ? versiones.cuerpoExportar(datos) : cuerpoNormal(datos)),
@@ -490,16 +492,19 @@ async function exportar(e) {
       return;
     }
     const avisos = avisosDelPdf(res.headers.get('X-PDF-Info'));
-    const nombre = nombreDeDescarga(res.headers.get('Content-Disposition'), conVersiones ? 'versiones.zip' : 'examen.pdf');
+    const formato = datos.formato;
+    const nombre = nombreDeDescarga(res.headers.get('Content-Disposition'),
+      conVersiones || formato === 'ambos' ? 'examen.zip' : formato === 'word' ? 'examen.docx' : 'examen.pdf');
     const guardado = await saveFileToUser(await res.blob(), nombre,
-      (conVersiones ? 'Versiones guardadas en un ZIP en tu equipo' : 'PDF guardado en tu equipo') + (avisos.length ? '. ' + avisos.join(' ') : ''));
+      (conVersiones ? 'Versiones guardadas en un ZIP en tu equipo' : formato === 'ambos' ? 'PDF y Word guardados en un ZIP en tu equipo'
+        : formato === 'word' ? 'Word guardado en tu equipo' : 'PDF guardado en tu equipo') + (avisos.length ? '. ' + avisos.join(' ') : ''));
     // Si cerró el diálogo de «Guardar como» sin guardar, se queda aquí para poder intentarlo otra vez.
     if (guardado) {
       guardar(datos);
       cerrar();
     }
   } catch (err) {
-    mostrarError(`No se pudo generar ${versiones.activa() ? 'las versiones' : 'el PDF'}. Tu revisión y el XML no se ven afectados: inténtalo de nuevo.`);
+    mostrarError(`No se pudo generar ${versiones.activa() ? 'las versiones' : datos.formato === 'word' ? 'el Word' : datos.formato === 'ambos' ? 'los archivos' : 'el PDF'}. Tu revisión y el XML no se ven afectados: inténtalo de nuevo.`);
   } finally {
     ocupado(false);
   }
