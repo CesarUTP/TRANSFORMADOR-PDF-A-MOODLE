@@ -17,8 +17,10 @@ de un .exe ya armado.
 
 Requisitos en la PC con Windows (una sola vez)
 ------------------------------------------------
-1. Python 3.10 o superior — https://www.python.org/downloads/
+1. Python 3.11 o superior (recomendado 3.12 o 3.13) — https://www.python.org/downloads/
    Al instalarlo, marca la casilla "Add Python to PATH".
+   Con Python 3.10 también compila, pero instala Pillow 12.3.0, que tiene
+   avisos de seguridad conocidos (la 13 pide Python 3.11 o más).
 2. Inno Setup (gratis, cualquier versión) — https://jrsoftware.org/isdl.php
    Instálalo con las opciones por defecto.
 
@@ -42,6 +44,18 @@ Pasos
        Output\Catedra_Setup.exe
 
 Ese único archivo es el que compartes con quien vaya a probar la app.
+
+Después de compilar: huella y subida al release
+------------------------------------------------
+1. La huella SHA-256 del instalador (para publicarla y que quien lo
+   descargue pueda comprobarlo). En el Símbolo del sistema:
+       certutil -hashfile Output\Catedra_Setup.exe SHA256
+   Anota el valor: va en las notas del release y en SHA256SUMS.txt
+   (en la máquina de desarrollo: python dev/huellas_instaladores.py).
+2. Súbelo al release de esa versión (la del número que lleva el
+   instalador, ver "MyAppVersion" en installer.iss):
+       gh release upload vX.Y Output\Catedra_Setup.exe
+   El release de macOS dice «Windows: pendiente» hasta ese momento.
 Al abrirlo, instala "Cátedra" como cualquier programa
 de Windows: queda en el Menú Inicio, puede crear acceso directo en el
 Escritorio, tiene su propio ícono, y se desinstala desde "Agregar o
