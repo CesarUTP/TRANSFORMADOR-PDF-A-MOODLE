@@ -370,6 +370,47 @@ k = parser_legacy.parse_answer_key("RESPUESTAS\n1 truefalse\n2 multichoice B\n3 
 ok(k.get(1) == {"type": "truefalse", "answer": ""}, f"«1 truefalse» queda sin respuesta, no con la línea siguiente ({k.get(1)})")
 ok(k.get(2, {}).get("answer") == "B" and k.get(3, {}).get("answer") == "Falso", "las filas vecinas se leen bien")
 
+print("PDFium: un solo cerrojo para todo lo que dibuja páginas")
+import threading  # noqa: E402
+import pdfium_cerrojo  # noqa: E402
+import rutas_pdf  # noqa: E402
+ok(extractor.CERROJO_PDFIUM is imagenes.CERROJO_PDFIUM is rutas_pdf._CERROJO_RENDER is pdfium_cerrojo.CERROJO,
+   "la lectura de escaneados, el recorte de imágenes y la vista previa comparten el mismo cerrojo")
+
+class _PaginaFalsa:
+    width, height = 100.0, 100.0
+    def __init__(self): self.con_cerrojo = None
+    def to_image(self, resolution=72):
+        self.con_cerrojo = pdfium_cerrojo.CERROJO._is_owned()
+        class _Img: original = Image.new("RGB", (4, 4))
+        return _Img()
+_pf = _PaginaFalsa()
+extractor._render(_pf, 72)
+ok(_pf.con_cerrojo is True, "extractor._render dibuja con el cerrojo tomado")
+
+def _pdf_de_prueba(n: int) -> bytes:
+    buf = io.BytesIO(); c = canvas.Canvas(buf, pagesize=(200, 200))
+    for i in range(n):
+        c.drawString(20, 100, f"Pagina {i}"); c.showPage()
+    c.save(); return buf.getvalue()
+_bytes = _pdf_de_prueba(3)
+_errores = []
+def _dibuja():
+    try:
+        with pdfplumber.open(io.BytesIO(_bytes)) as pdf:
+            for pg in pdf.pages:
+                extractor._render(pg, 72)
+        with pdfium_cerrojo.CERROJO:                       # lo mismo que hace la vista previa
+            import pypdfium2 as _pdfium
+            d = _pdfium.PdfDocument(_bytes)
+            try: d[0].render(scale=1).to_pil()
+            finally: d.close()
+    except Exception as e:  # noqa: BLE001
+        _errores.append(repr(e))
+_hilos = [threading.Thread(target=_dibuja) for _ in range(8)]
+[h.start() for h in _hilos]; [h.join(60) for h in _hilos]
+ok(not _errores and not any(h.is_alive() for h in _hilos), f"8 hilos dibujando a la vez, sin errores ni bloqueos {_errores[:1]}")
+
 print()
 print("TODO OK" if not fallas else f"{fallas} FALLA(S)")
 sys.exit(1 if fallas else 0)

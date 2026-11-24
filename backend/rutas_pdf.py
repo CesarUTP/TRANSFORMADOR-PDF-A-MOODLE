@@ -21,7 +21,6 @@ import io
 import json
 import logging
 import sqlite3
-import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -33,6 +32,7 @@ from pydantic import BaseModel, Field
 import exportar_docx
 import exportar_pdf
 import pypdfium2 as pdfium
+from pdfium_cerrojo import CERROJO as CERROJO_PDFIUM
 import versiones
 from database import MAX_PERFILES, delete_perfil, list_perfiles, rename_perfil, save_perfil
 from estado_servidor import ERROR_LOG_PATH, _avisos_para_cabecera, _content_disposition, _detalle_tecnico, _nombre_nfc
@@ -268,7 +268,7 @@ async def api_exportar_versiones(req: ExportarVersionesRequest):
 
 
 # ── Vista previa ────────────────────────────────────────────────────────────
-_CERROJO_RENDER = threading.Lock()      # PDFium no es seguro entre hilos
+_CERROJO_RENDER = CERROJO_PDFIUM        # el mismo que usan la lectura de escaneados y el recorte de imágenes
 
 
 def _vista_previa_sync(req: ExportarPdfRequest, clave: Dict[int, Any], pagina: int):

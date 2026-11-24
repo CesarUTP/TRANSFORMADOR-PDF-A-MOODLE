@@ -93,6 +93,20 @@ def _norm(s: Any) -> str:
 
 _QNUM_PREFIX = re.compile(r"^\s*\d{1,3}\s*[.)]\s+(?=\S)")
 
+# Una clave en tabla con columnas «Nº  Tipo  Respuesta correcta» («1   múltiple   La planificación…»): el modelo
+# a veces copia la FILA entera en vez de la última columna. Se quita el «número + tipo» del principio (los mismos
+# nombres de tipo que lee parser.py). Exige el número delante: una respuesta que empiece por una palabra de tipo
+# («Ensayo», «Completar el…») no se toca. Antes, con la fila completa, la opción múltiple no se resolvía por la
+# clave del documento y la respuesta corta quedaba como «21 respuestacorta Ruido» con confianza alta.
+_TABLA_PREFIX = re.compile(
+    r"^\s*\d{1,3}\s+(?:m[úu]ltiple|multichoice|verdadero\s*/?\s*falso|verdaderofalso|ciertofalso|truefalse|"
+    r"emparejamiento|matching|completar|cloze|ensayo|essay|respuesta\s*corta|respuestacorta|shortanswer|"
+    r"num[ée]rico|numerical)\b[ \t]*", re.I)
+
+
+def _sin_prefijo_de_tabla(texto: Any) -> str:
+    return _TABLA_PREFIX.sub("", str(texto or "").strip(), count=1)
+
 # Flechas con que un documento escribe «1 → a»: Unicode, ASCII y LaTeX
 # («1 $\\rightarrow$ a», típico de lo que sale de un chat de IA). Todas se leen
 # como «-» antes de buscar los pares; sin esto una clave en LaTeX no se
@@ -102,7 +116,7 @@ _FLECHAS = re.compile(r"\$?\s*\\(?:long)?(?:right|to|mapsto)(?:arrow)?\b\s*\$?|-
 
 def _pares_de_clave(clave_texto: Any) -> List[Tuple[str, str]]:
     """«1-b, 2-a» / «1 → b» / «1 $\\rightarrow$ b» → [("1", "b"), ("2", "a")]."""
-    texto = _FLECHAS.sub("-", str(clave_texto or ""))
+    texto = _FLECHAS.sub("-", _sin_prefijo_de_tabla(clave_texto))
     return re.findall(r"(\d+)\s*[-.:]\s*([A-Za-z])\b", texto)
 
 
@@ -110,7 +124,7 @@ def _clave(q: dict) -> str:
     """clave_texto sin el número de la pregunta que a veces antepone el
     modelo al copiar la línea de la clave ("9. 50" → "50", "1. c" → "c").
     No aplica a emparejamiento, donde "1-b" es parte de la respuesta."""
-    raw = str(q.get("clave_texto") or "").strip()
+    raw = _sin_prefijo_de_tabla(q.get("clave_texto"))
     if q.get("tipo") == "matching":
         return raw
     return _QNUM_PREFIX.sub("", raw, count=1)
@@ -325,6 +339,43 @@ def _cloze_coincide_con_clave(q: dict) -> bool:
             if not texto or not re.search(r"(?<!\w)" + re.escape(texto) + r"(?!\w)", clave):
                 return False
     return True
+
+
+# Tipo de la tabla «RESPUESTAS» (parser.parse_answer_key) → tipo del modelo.
+_TIPO_DE_TABLA = {"multichoice": "multichoice", "truefalse": "truefalse", "matching": "matching", "cloze": "cloze",
+                  "essay": "essay", "shortanswer": "shortanswer", "numerical": "numerical"}
+
+
+def rellenar_claves_desde_tabla(payload: dict, tabla: dict) -> int:
+    """Copia la clave del DOCUMENTO en `clave_texto` de las preguntas donde el modelo la dejó VACÍA. Devuelve cuántas.
+
+    Pasaba así: el documento trae una tabla «RESPUESTAS» (Nº, Tipo, Respuesta correcta) y el prompt le pide al
+    modelo copiarla en `clave_texto`, pero a veces la deja vacía en todas y se queda con sus propias marcas. Las
+    respuestas pueden ser correctas, pero el código no las puede atribuir al documento y las etiqueta «interpretada
+    por la IA»: en un parcial de 38 preguntas, 35 salieron «para revisar» sin necesidad. La tabla la lee parser.py
+    en código; aquí se copia lo mismo que debió copiar el modelo, y adapt() la resuelve como siempre (la clave del
+    documento manda sobre lo que marcó el modelo).
+
+    Solo si la numeración se puede confiar, de punta a punta: la tabla tiene exactamente las filas 1..N, el modelo
+    devolvió exactamente N preguntas y el TIPO de cada fila coincide con el de su pregunta. Si algo no cuadra (el
+    modelo omitió o partió una pregunta, o la tabla es de otro examen) no se toca nada: un número desalineado
+    pondría la clave de una pregunta en otra. Nunca pisa un `clave_texto` que el modelo sí copió."""
+    if not tabla:
+        return 0
+    preguntas = sorted(payload.get("preguntas") or [], key=lambda q: (q.get("orden") or 0))
+    if not preguntas or set(tabla) != set(range(1, len(preguntas) + 1)):
+        return 0
+    for num, q in enumerate(preguntas, start=1):
+        if _TIPO_DE_TABLA.get(str((tabla[num] or {}).get("type"))) != q.get("tipo"):
+            return 0
+    rellenadas = 0
+    for num, q in enumerate(preguntas, start=1):
+        respuesta = str((tabla[num] or {}).get("answer") or "").strip()
+        if q.get("tipo") == "essay" or not respuesta or str(q.get("clave_texto") or "").strip():
+            continue
+        q["clave_texto"] = respuesta
+        rellenadas += 1
+    return rellenadas
 
 
 def adapt(payload: dict) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]]]:

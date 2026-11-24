@@ -491,7 +491,7 @@
               <h3>Qué acepta</h3>
               <ul class="guia-lista">
                 <li><strong>Pruebas, parciales y quices</strong> en PDF, Word o TXT, con preguntas de opción múltiple, verdadero/falso, emparejamiento, completar, ensayo, respuesta corta o numérica. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas.</li>
-                <li><strong>Un XML de Moodle que ya tengas</strong> (uno de esta aplicación o exportado de tu banco de preguntas): se abre en el editor para corregirlo y volver a generarlo. No usa IA. Las preguntas que el editor no entiende (calculadas, arrastrar y soltar…) quedan entre las «no incluidas», con su motivo.</li>
+                <li><strong>Un XML de Moodle que ya tengas</strong> (uno de esta aplicación o exportado de tu banco de preguntas): se abre en el editor para corregirlo y volver a generarlo. No usa IA. Las preguntas que el editor no entiende (calculadas, arrastrar y soltar…) quedan entre las «no incluidas», con su motivo. Lo que el editor no conserva (crédito parcial a una opción, respuestas alternativas, tolerancia numérica o retroalimentación propia de cada opción) se avisa.</li>
                 <li><strong>Imágenes y fórmulas.</strong> Las imágenes llegan a Moodle dentro de su pregunta; en la revisión puedes quitarlas, moverlas o agregar las tuyas («Agregar imagen» o soltando el archivo sobre la pregunta). Las fórmulas se escriben en LaTeX, entre <code class="inline">\(</code> y <code class="inline">\)</code>, con vista previa.</li>
                 <li><strong>Retroalimentación opcional.</strong> Si el examen trae la justificación, se copia sola; si no, escríbela, pídesela a la IA con «Escribir con IA» o déjala vacía. «Mejorar redacción» corrige ortografía y claridad sin cambiar datos, código ni fórmulas. Ves la propuesta y solo se aplica si pulsas «Aceptar».</li>
                 <li><strong>PDF escaneados.</strong> Si el PDF es una foto o un escaneo, el sistema lo avisa y ofrece <strong>Leer el PDF con IA</strong>, que lee las páginas como imagen (hasta 15). En ese caso verifica cada respuesta contra el original.</li>
@@ -565,9 +565,10 @@
               <h3>Herramientas</h3>
               <ul class="guia-lista">
                 <li><strong>Mostrar:</strong> deja ver solo un tipo de pregunta, <em>Revisar primero</em> (respuestas propuestas por la IA o con confianza baja que aún no tocaste) o <em>Posibles problemas</em>. Las preguntas ocultas igual se incluyen en el XML.</li>
-                <li><strong>Posibles problemas:</strong> avisos que la app detecta sin IA: preguntas repetidas o casi repetidas, opciones iguales, una opción que depende de las demás («todas las anteriores», «A y B») —Moodle <em>mezcla</em> el orden de las opciones y dejaría de tener sentido— y emparejamientos o espacios con elementos repetidos. Son avisos: no bloquean nada.</li>
+                <li><strong>Posibles problemas:</strong> avisos que la app detecta sin IA: preguntas repetidas o casi repetidas, opciones iguales, una opción que depende de las demás («todas las anteriores», «A y B») —Moodle <em>mezcla</em> el orden de las opciones y dejaría de tener sentido— emparejamientos o espacios con elementos repetidos, una respuesta numérica ambigua («1,000» puede ser mil o uno con tres decimales) y una pregunta de «Completar» con puntos decimales (Moodle solo admite enteros). Son avisos: no bloquean nada.</li>
                 <li><strong>Sugerir respuesta con IA:</strong> aparece solo en las preguntas a las que les falta la respuesta. La IA propone una (con su motivo), tú decides: <em>Aceptar</em> o <em>Descartar</em>, y puedes <em>Deshacer</em>. Gasta tu cuota de Gemini.</li>
-                <li><strong>Puntos:</strong> muestra cuánto suman frente al total del examen (en ámbar si no coinciden). Al abrirlo puedes repartirlos <em>Igual para todas</em> o <em>Según el tipo</em>, con pesos: un tipo con peso 2 vale el doble que uno con peso 1. El reparto siempre suma exacto el total.</li>
+                <li><strong>Puntos:</strong> muestra cuánto suman frente al total del examen (en ámbar si no coinciden). Al abrirlo eliges cómo repartirlos: <em>Igual para todas</em> divide el total del examen entre todas las preguntas; <em>Según el tipo</em> te deja escribir cuántos puntos vale <strong>cada pregunta</strong> de cada tipo, y el total del examen es la suma (10 de opción múltiple a 2 puntos y 5 de completar a 5 puntos valen 45). Si las preguntas de un tipo hoy valen distinto, su campo queda vacío («varía») y ese tipo no se toca hasta que escribas algo. Las preguntas de <em>Completar</em> valen puntos <strong>enteros</strong>, al menos uno por espacio, porque Moodle no admite decimales en sus espacios. Al aplicar puedes <em>Deshacer</em>; también puedes cambiar los puntos de cada pregunta a mano.</li>
+                <li><strong>Opciones de más en un emparejamiento:</strong> <em>Agregar opción de más</em> añade una opción de la Columna B que no es la pareja de ningún concepto, para que no se adivine por descarte. Aparece con borde discontinuo y se conserva al exportar.</li>
                 <li><strong>Preguntas que no se pudieron incluir:</strong> aparecen arriba en una sola línea; ábrela con <em>Ver motivos</em>. Si a una solo le falta la respuesta, usa <em>Añadir con lo ya extraído</em> y márcala tú.</li>
                 <li><strong>Añadir pregunta:</strong> al final de la lista, si faltó alguna del documento, de cualquiera de los 7 tipos.</li>
               </ul>
@@ -730,7 +731,7 @@ Explica con tus propias palabras las causas principales de la Revolución France
               <span class="type-badge numerical">7. Numérica</span>
               <div class="code-block mt-8">Pregunta 7:
 ¿Cuánto es 15 multiplicado por 4?</div>
-              <p class="nota-pie">Para preguntas cuya respuesta es un número. En RESPUESTAS va solo el número (ej. "60"), sin palabras ni unidades.</p>
+              <p class="nota-pie">Para preguntas cuya respuesta es un número. En RESPUESTAS va solo el número (ej. "60"), sin palabras ni unidades y <strong>sin separador de miles</strong> (1000, no 1,000 ni 1.000: la coma y el punto se toman como decimal). Moodle compara el número exacto (tolerancia 0).</p>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-accent);border-radius:var(--radius-md);padding:14px;">
@@ -1596,7 +1597,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <h3 id="acerca-h-ofrece" class="acerca-h"><i data-lucide="sparkles"></i> Qué ofrece</h3>
           <p class="acerca-texto"><strong>Cátedra</strong> (antes «Conversor a Moodle XML») es tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel, todo en tu propio equipo.</p>
           <ul class="acerca-lista">
-            <li><strong>Moodle XML listo para importar,</strong> de pruebas en PDF, Word o TXT, con los 7 tipos de pregunta, imágenes, fórmulas y retroalimentación, validado contra lo que Moodle acepta.</li>
+            <li><strong>Moodle XML listo para importar,</strong> de pruebas en PDF, Word o TXT, con los 7 tipos de pregunta, imágenes, fórmulas y retroalimentación, validado contra lo que Moodle acepta y con avisos cuando algo se vería distinto allí (puntos, orden de las opciones, números ambiguos).</li>
             <li><strong>Revisión con el original:</strong> cada pregunta junto al recorte de su página, con el origen y la confianza de la respuesta. Nada se decide solo.</li>
             <li><strong>IA como ayuda, no como juez:</strong> sugerir respuestas faltantes, escribir retroalimentación, mejorar la redacción y detectar preguntas repetidas; siempre visible y editable.</li>
             <li><strong>Edición de un XML que ya tienes,</strong> sin IA.</li>
@@ -1657,9 +1658,9 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <p class="acerca-texto">Esta aplicación usa software libre de terceros, cada uno con su propia licencia. Entre los principales:</p>
           <ul class="acerca-lista acerca-lista-compacta">
             <li>Python — PSF</li>
-            <li>FastAPI, pdfplumber, pdfminer.six, Pillow, pydantic — MIT</li>
+            <li>FastAPI, pdfplumber, pdfminer.six, Pillow, pydantic, python-docx (Word del examen) — MIT</li>
             <li>Uvicorn, Starlette, lxml, pywebview — BSD</li>
-            <li>requests, python-multipart — Apache 2.0</li>
+            <li>requests, python-multipart, OpenTelemetry API (dependencia de FastAPI) — Apache 2.0</li>
             <li>PDFium (vía pypdfium2) — BSD / Apache 2.0</li>
             <li>ReportLab (PDF del examen) — BSD</li>
             <li>cryptography — Apache 2.0 o BSD</li>

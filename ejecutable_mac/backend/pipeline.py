@@ -46,6 +46,7 @@ from schema_adapter import adapt
 import mark_resolver
 from mark_resolver import resolve_answer_marks, resolve_table_marks, resolve_tf_marks
 from parser import parse_answer_key, build_questions
+from schema_adapter import rellenar_claves_desde_tabla
 from validator import (
     partition_questions,
     pre_validate_raw_text,
@@ -395,6 +396,7 @@ def _parse_document(raw_bytes: bytes, filename: str, progress: ProgressCallback 
             estimated_question_count, colored_pages_text, color_marks_notice,
             colored_page_numbers, marks, imagenes_preguntas,
             pdf_bytes=raw_bytes if suffix == ".pdf" else None,
+            texto_documento=full_text,
         )
 
     if ia_cache is not None and "texto" in ia_cache:
@@ -500,6 +502,7 @@ def _normalize_document_with_ai(raw_bytes: bytes, filename: str, progress: Progr
             estimated_question_count, colored_pages_text, color_marks_notice,
             colored_page_numbers, marks, aviso_paginas=aviso_paginas, pdf_bytes=raw_bytes,
             escaneado=not full_text.strip(),
+            texto_documento=full_text,
         )
 
     if ia_cache is not None and "texto" in ia_cache:
@@ -744,9 +747,20 @@ def _finalize_structured(
     aviso_paginas: Optional[str] = None,
     pdf_bytes: Optional[bytes] = None,
     escaneado: bool = False,
+    texto_documento: str = "",
 ) -> Dict[str, Any]:
     """Modo JSON: la salida del modelo ya viene estructurada; el adaptador
-    la deja en la misma forma que produce parser.py en el modo texto."""
+    la deja en la misma forma que produce parser.py en el modo texto.
+
+    `texto_documento`: el texto extraído; si trae una tabla «RESPUESTAS» y el modelo dejó vacía la clave de
+    alguna pregunta, se copia de la tabla (ver schema_adapter.rellenar_claves_desde_tabla)."""
+    if texto_documento:
+        try:
+            n = rellenar_claves_desde_tabla(payload, parse_answer_key(texto_documento))
+            if n:
+                logger.info("Clave del documento copiada en %d pregunta(s) donde la IA la dejó vacía.", n)
+        except Exception as exc:  # noqa: BLE001 — sin esto el flujo sigue como antes
+            logger.warning("No se pudo leer la tabla de respuestas del documento: %s", exc)
     questions, answer_key = adapt(payload)
     rescatadas, desde_documento = confianza.senales_del_payload(payload)
     # Página verificada en el PDF (reemplaza a la que dijo la IA) y recuadro.

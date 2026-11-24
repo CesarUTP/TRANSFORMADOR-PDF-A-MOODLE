@@ -82,6 +82,14 @@ def split_options(text: str) -> List[str]:
 _CLOZE_SLOT_OPEN = re.compile(r"([A-Za-z]):\s*")
 
 
+
+# Opciones que dependen de su POSICIÓN («todas las anteriores», «A y B», «la opción C»…): al mezclar el orden
+# pierden el sentido, así que esa pregunta NO se mezcla (ni en el PDF y el Word ni en el XML de Moodle).
+# Las letras sueltas se separan con coma o con « y / e / o »: así «def», «bed» o «age» no cuentan.
+OPCION_POSICIONAL = re.compile(r"\b(anteriores?|ambas|ambos|las dos|los dos|todas las (opciones|respuestas|de arriba)|"
+                               r"ninguna de (las|los)|ninguno de (las|los)|(opci[oó]n|incisos?|literal(es)?)\s+[A-J])\b|"
+                               r"\b[A-J]\s*,\s*[A-J]\b|\b[A-J]\s+(y|e|o)\s+[A-J]\b", re.I)
+
 def find_cloze_brackets(text: str) -> List[Tuple[int, int, str, str]]:
     """
     Ubica cada espacio "[Letra: opción1 / opción2 / ...]" de un Cloze en
@@ -347,3 +355,35 @@ def normalizar_numero(texto: str) -> Optional[str]:
     español, pero Moodle solo entiende el punto); None si no es un número."""
     t = str(texto or "").strip().replace(",", ".")
     return t if _NUMERO.fullmatch(t) else None
+
+
+# Separador de miles. «1,000» o «1.000» pueden ser mil (en inglés y en español) o uno con tres decimales, y la
+# app los toma como DECIMAL (coma o punto): Moodle recibe 1.000 = 1, no 1000, y el docente no se entera.
+# Un número con UN solo separador y exactamente tres dígitos después, que no empieza en 0, es ambiguo.
+_MILES_AMBIGUO = re.compile(r"[+-]?[1-9][0-9]{0,2}[.,][0-9]{3}")
+# Con separadores de miles de verdad («1,234,567», «1.234,5», «1,234.5»): no es un número que Moodle entienda.
+_CON_MILES = re.compile(r"[+-]?[0-9]{1,3}(?:[.,][0-9]{3})+(?:[.,][0-9]+)?")
+
+
+def miles_ambiguo(texto: str) -> Optional[Tuple[str, str]]:
+    """(cómo se guarda, cómo quedaría sin separador) si `texto` es ambiguo («1,000» → («1.000», «1000»)); None si no."""
+    t = str(texto or "").strip()
+    if not _MILES_AMBIGUO.fullmatch(t):
+        return None
+    return t.replace(",", "."), re.sub(r"[.,]", "", t, count=1)
+
+
+def sin_separador_de_miles(texto: str) -> Optional[str]:
+    """El número sin separadores de miles si `texto` los lleva («1,234.5» → «1234.5», «1.234.567» → «1234567»);
+    None si no los lleva. Sirve para explicarle al docente cómo escribirlo."""
+    t = str(texto or "").strip()
+    if not _CON_MILES.fullmatch(t):
+        return None
+    seps = [(m.start(), m.group()) for m in re.finditer(r"[.,]", t)]
+    if len(seps) < 2:
+        return None
+    pos, ultimo = seps[-1]
+    es_decimal = len(t) - pos - 1 != 3 or any(c != ultimo for _, c in seps[:-1])
+    if es_decimal:
+        return re.sub(r"[.,]", "", t[:pos]) + "." + t[pos + 1:]
+    return re.sub(r"[.,]", "", t)

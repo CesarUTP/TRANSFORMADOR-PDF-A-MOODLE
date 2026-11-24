@@ -13,6 +13,9 @@
  * pura (sin DOM): se prueba en Node (pruebas.js).
  */
 
+import { puntosEnMoodle } from '../puntos.js';
+import { avisoDeMilesAmbiguo } from '../numero-logica.js';
+
 const sinTildes = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 /**
@@ -108,7 +111,18 @@ export function detectarProblemas(questions, answerKey = {}, { conImagen = [] } 
       if (dobleB.length) avisos[i].push(`Dos elementos de la columna B son iguales (${dobleB[0][0]} y ${dobleB[0][1]}): la pareja es ambigua`);
       const dobleA = opcionesRepetidas(d.col_a);
       if (dobleA.length) avisos[i].push(`Dos elementos de la columna A son iguales (${dobleA[0][0]} y ${dobleA[0][1]})`);
+    } else if (q.type === 'numerical') {
+      const aviso = avisoDeMilesAmbiguo(((answerKey || {})[q.num] || {}).answer);
+      if (aviso) avisos[i].push(aviso);
     } else if (q.type === 'cloze') {
+      // Moodle ignora los puntos de «Completar»: vale la suma de los pesos ENTEROS de sus huecos.
+      const dados = Number(q.points);
+      if (dados > 0 && typeof d.text === 'string') {
+        const { huecos: nHuecos, enMoodle } = puntosEnMoodle(d.text, dados);
+        if (Math.abs(enMoodle - dados) > 1e-9) {
+          avisos[i].push(`En Moodle valdrá ${enMoodle} punto${enMoodle === 1 ? '' : 's'}, no ${dados}: «Completar» solo admite puntos enteros (mínimo 1 por hueco; esta tiene ${nHuecos}) y el total del examen cambiará`);
+        }
+      }
       const huecos = ((answerKey || {})[q.num] || {}).huecos;
       if (Array.isArray(huecos)) {
         huecos.forEach((h, k) => {

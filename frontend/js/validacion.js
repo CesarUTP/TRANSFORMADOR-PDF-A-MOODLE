@@ -9,6 +9,7 @@
  * sola (ver frontend/pruebas.html).
  */
 import { findClozeBrackets, splitAnswers, splitOptions } from './util.js';
+import { sinSeparadorDeMiles } from './numero-logica.js';
 
 // ── Preguntas incompletas (revisión en vivo) ───────────────────────────
 // Mismas reglas que el validador del backend (validator.py): lo que
@@ -42,6 +43,7 @@ export function questionIssues(q, key) {
     const blanks = findClozeBrackets(text);
     if (!blanks.length) issues.push('Faltan los espacios para completar');
     else if (blanks.some(({ optionsRaw }) => splitOptions(optionsRaw).length === 0)) issues.push('Un espacio no tiene opciones');
+    else if (blanks.some(({ optionsRaw }) => splitOptions(optionsRaw).length === 1)) issues.push('Un espacio tiene una sola opción (mínimo 2)');
     let cursor = 0, rest = '';
     blanks.forEach(({ start, end }) => { rest += text.slice(cursor, start); cursor = end; });
     rest += text.slice(cursor);
@@ -74,7 +76,10 @@ export function questionIssues(q, key) {
     if (!ans) issues.push('Falta la respuesta');
   } else if (q.type === 'numerical') {
     if (!ans) issues.push('Falta la respuesta');
-    else if (isNaN(Number(ans.replace(',', '.')))) issues.push('La respuesta debe ser un número');
+    else if (isNaN(Number(ans.replace(',', '.')))) {
+      const sin = sinSeparadorDeMiles(ans);
+      issues.push(sin ? `La respuesta debe ser un número: escríbelo sin separador de miles (${sin})` : 'La respuesta debe ser un número');
+    }
   }
   return issues;
 }

@@ -195,7 +195,7 @@ REQUIRED_FIELDS: dict[str, list[str]] = {
 # ── Restricciones de estructura Moodle XML ─────────────────────────────────
 MIN_MULTICHOICE_OPTIONS: int = 2
 MIN_MATCHING_PAIRS: int = 2
-MIN_CLOZE_OPTIONS: int = 1
+MIN_CLOZE_OPTIONS: int = 2     # con una sola opción el estudiante no tiene nada que elegir
 
 # ── Prompts y esquema de la IA ──────────────────────────────────────────────
 # SYSTEM_PROMPT, SYSTEM_PROMPT_JSON y RESPONSE_SCHEMA viven ahora en

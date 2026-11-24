@@ -63,6 +63,7 @@ import pdfplumber
 from PIL import Image
 
 from extractor import MAX_PAGINAS, MAX_PIXELES_RENDER, clave_imagen, imagen_diminuta
+from pdfium_cerrojo import CERROJO as CERROJO_PDFIUM
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +190,8 @@ def extraer_imagenes_pdf(raw: bytes) -> Ubicaciones:
                         pagina_pt = float(page.width) * float(page.height)
                         if pagina_pt * (dpi / 72) ** 2 > MAX_PIXELES_RENDER:
                             dpi = max(1, int(72 * (MAX_PIXELES_RENDER / pagina_pt) ** 0.5))
-                        render_pagina = (page.to_image(resolution=dpi).original, dpi)
+                        with CERROJO_PDFIUM:      # PDFium no es segura entre hilos (ver pdfium_cerrojo.py)
+                            render_pagina = (page.to_image(resolution=dpi).original, dpi)
                     # PageImage recorta el render exactamente como lo hacía
                     # page.crop(caja).to_image(): mismo resultado.
                     recorte = PageImage(page.crop(caja), original=render_pagina[0],

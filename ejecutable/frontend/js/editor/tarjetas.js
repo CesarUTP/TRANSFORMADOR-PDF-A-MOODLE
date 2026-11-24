@@ -5,11 +5,12 @@ import { claveDeOpcionMultiple, letrasCorrectasPorIndice } from './respuesta-ind
 import { clozeBuildTextAndAnswer, initClozeBuilder, parseClozeSegments, renderClozeBuilder } from './cloze.js';
 import { scrollToEditorCard } from './panel.js';
 import { abiertasEnOrden, aplicarPlegado } from './plegado.js';
+import { datosDeFilas, filasConDistractores } from './emparejamiento-logica.js';
 import { _editorTotalPoints, reiniciarPanelPuntos, sincronizarPanelPuntos } from './puntos-ui.js';
 import { apiFetch } from '../api.js';
 import { imagenesDeTarjeta, imagenesHtml, prepararImagenes } from './imagenes.js';
 import { estado, notificar } from '../estado.js';
-import { DEFAULT_TYPE_WEIGHTS, fmtPoints } from '../puntos.js';
+import { fmtPoints, puntajeComunDe, puntosEnMoodle } from '../puntos.js';
 import { showToast } from '../ui/toast.js';
 import { crearIconos, esc_html, findClozeBrackets, humanizeSkipReason, scrollBehavior, splitAnswers, textoConFormulas, tieneFormulas } from '../util.js';
 import { chipsVisibles, chipsHtml, copiaSinImagenes, firmaRespuesta, marcarSiCambio, mostrarAvisoConfianzaLegado, mostrarAvisoMarcaLegado, motivoRevisarPrimero, necesitaRevisarPrimero, requiereRevision, respuestaCambio } from './procedencia.js';
@@ -58,6 +59,8 @@ export function deleteQuestionCard(btn) {
     // Estos objetos no se vuelven a tocar: cada sync arma objetos nuevos.
     const borrada = estado.currentParseResult.questions[pos];
     const claveBorrada = borrada ? estado.currentParseResult.answer_key[borrada.num] : null;
+    // Dónde está la tarjeta en la pantalla: tras borrarla, la que ocupe su lugar queda ahí mismo.
+    const alturaAntes = card.getBoundingClientRect().top;
     card.remove();
     syncParseResultFromDOM();
     // Vuelve a dibujar TODAS las tarjetas restantes (mismo patrón que
@@ -71,6 +74,17 @@ export function deleteQuestionCard(btn) {
     notificar('pregunta borrada');
     // El foco pasa a la tarjeta que ocupó su lugar (o a la anterior).
     const cards = document.querySelectorAll('.editor-card');
+    const heredera = cards[pos];           // la que quedó en su lugar (si era la última, no hay)
+    const ultima = cards[cards.length - 1];
+    // «auto» es salto instantáneo (la página no usa scroll suave): vale en WebKit, que es el motor de la app.
+    // Se repite un fotograma después: si el motor termina de acomodar la altura más tarde, la vista no se corre.
+    const reanclar = () => {
+      const ref = heredera && heredera.isConnected ? heredera.getBoundingClientRect().top
+        : ultima && ultima.isConnected ? ultima.getBoundingClientRect().bottom : null;
+      if (ref !== null && Math.abs(ref - alturaAntes) > 1) window.scrollBy({ top: ref - alturaAntes, behavior: 'auto' });
+    };
+    reanclar();
+    requestAnimationFrame(reanclar);
     cards[Math.min(pos, cards.length - 1)]?.focus({ preventScroll: true });
     showToast(`Pregunta ${pos + 1} eliminada`, 'info', {
       accion: { texto: 'Deshacer', alPulsar: () => {
@@ -144,6 +158,8 @@ export function addNewQuestion(type) {
   newQ.points = existingPoints.length
     ? Math.round((existingPoints.reduce((a, b) => a + b, 0) / existingPoints.length) * 100) / 100
     : Math.round((estado.currentUploadMetadata.total_points / (estado.currentParseResult.questions.length + 1)) * 100) / 100;
+  // «Completar» vale puntos enteros (Moodle no admite decimales en sus huecos).
+  if (type === 'cloze') newQ.points = puntosEnMoodle(newQ.data.text, newQ.points).enMoodle;
 
   estado.currentParseResult.questions.push(newQ);
   estado.currentParseResult.answer_key[nextNum] = { type: type, answer: defaultAns };
@@ -191,6 +207,7 @@ export function recoverSkippedQuestion(skippedIdx) {
   newQ.points = recoveredPeers.length
     ? Math.round((recoveredPeers.reduce((a, b) => a + b, 0) / recoveredPeers.length) * 100) / 100
     : Math.round((_editorTotalPoints() / (estado.currentParseResult.questions.length + 1)) * 100) / 100;
+  if (newQ.type === 'cloze' && newQ.data && typeof newQ.data.text === 'string') newQ.points = puntosEnMoodle(newQ.data.text, newQ.points).enMoodle;
 
   // Respuesta en blanco por tipo — el usuario la completa a mano. Para
   // truefalse se deja "Verdadero" preseleccionado (el <select> siempre
@@ -286,17 +303,55 @@ function getMatchingPairs(q, keyInfo) {
 export function addMatchingPairRow(qIdx) {
   const container = document.getElementById(`matching-pairs-list-${qIdx}`);
   if (!container) return;
-  const pairIdx = container.querySelectorAll('.matching-pair-row').length + 1;
+  const pairIdx = container.querySelectorAll('.matching-pair-row:not([data-distractor])').length + 1;
   const tmp = document.createElement('div');
   tmp.innerHTML = _matchingPairRowHtml({ left: '', right: '' }, pairIdx);
+  const row = tmp.firstElementChild;
+  // Las parejas van antes de las opciones de más: así el orden de la pantalla es el que se guarda.
+  const primerDistractor = container.querySelector('.matching-pair-row[data-distractor]');
+  container.insertBefore(row, primerDistractor);
+  crearIconos(row);
+  row.querySelectorAll('textarea').forEach(autoGrowTextarea);
+  row.querySelector('.pair-left').focus();
+  _renumerarParejas(container);
+}
+
+// Una opción de la columna B que no es la pareja de ningún concepto (distractor).
+// Con varias respuestas correctas, en Moodle cada opción INCORRECTA que el estudiante marque resta puntos
+// (el XML lo escribe así: fracciones negativas); la nota de la pregunta no baja de 0. Se dice en la tarjeta.
+const TEXTO_RESTAN = 'Con varias respuestas correctas, en Moodle cada opción <strong>incorrecta</strong> que el estudiante marque <strong>resta puntos</strong> (la nota de la pregunta no baja de 0).';
+
+// Muestra u oculta esa nota según cuántas opciones están marcadas como correctas.
+export function notaVariasCorrectas(casilla) {
+  const campo = casilla.closest('fieldset');
+  const nota = campo && campo.querySelector('.mc-resta-nota');
+  if (nota) nota.hidden = campo.querySelectorAll('.q-opt-correct:checked').length < 2;
+}
+
+export function addMatchingDistractorRow(qIdx) {
+  const container = document.getElementById(`matching-pairs-list-${qIdx}`);
+  if (!container) return;
+  const n = container.querySelectorAll('.matching-pair-row[data-distractor]').length + 1;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = _matchingPairRowHtml({ left: '', right: '', distractor: true }, n);
   const row = tmp.firstElementChild;
   container.appendChild(row);
   crearIconos(row);
   row.querySelectorAll('textarea').forEach(autoGrowTextarea);
-  row.querySelector('.pair-left').focus();
+  row.querySelector('.pair-right').focus();
 }
 
 function _matchingPairRowHtml(p, n) {
+  if (p.distractor) {
+    return `<div class="matching-pair-row matching-distractor-row" data-distractor="1">
+    <textarea class="pair-left form-input single-line" rows="1" disabled placeholder="Opción de más: no es pareja de ningún concepto" aria-label="Opción de más ${n}: sin concepto en la columna A"></textarea>
+    <i data-lucide="minus" class="pair-arrow" aria-hidden="true"></i>
+    <textarea class="pair-right form-input single-line" rows="1" placeholder="Opción de más (columna B)" aria-label="Opción de más ${n}, columna B">${esc_html(p.right)}</textarea>
+    <button type="button" class="btn btn-icon btn-danger-text" data-accion="removeMatchingPairRow" data-este aria-label="Quitar la opción de más ${n}" title="Quitar opción de más">
+      <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
+    </button>
+  </div>`;
+  }
   return `<div class="matching-pair-row">
     <textarea class="pair-left form-input single-line" rows="1" placeholder="Concepto (columna A)" aria-label="Concepto ${n}, columna A">${esc_html(p.left)}</textarea>
     <i data-lucide="arrow-right" class="pair-arrow" aria-hidden="true"></i>
@@ -318,12 +373,18 @@ export function removeMatchingPairRow(btn) {
 // Tras quitar una pareja, las etiquetas para el lector de pantalla (que
 // llevan el número) se corrigen: quedaba «Concepto 3» en la segunda fila.
 function _renumerarParejas(list) {
-  list.querySelectorAll('.matching-pair-row').forEach((row, k) => {
+  list.querySelectorAll('.matching-pair-row:not([data-distractor])').forEach((row, k) => {
     const n = k + 1;
     row.querySelector('.pair-left')?.setAttribute('aria-label', `Concepto ${n}, columna A`);
     row.querySelector('.pair-right')?.setAttribute('aria-label', `Pareja correcta del concepto ${n}, columna B`);
     const quitar = row.querySelector('[data-accion="removeMatchingPairRow"]');
     if (quitar) quitar.setAttribute('aria-label', `Quitar la pareja ${n}`);
+  });
+  list.querySelectorAll('.matching-pair-row[data-distractor]').forEach((row, k) => {
+    const n = k + 1;
+    row.querySelector('.pair-right')?.setAttribute('aria-label', `Opción de más ${n}, columna B`);
+    const quitar = row.querySelector('[data-accion="removeMatchingPairRow"]');
+    if (quitar) quitar.setAttribute('aria-label', `Quitar la opción de más ${n}`);
   });
 }
 
@@ -377,11 +438,11 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
   _sanearDatos(data);
   estado.currentParseResult = data;
   const container = document.getElementById('editor-questions-container');
-  // Los pesos que el docente escribió en «Distribuir puntos» viven en inputs
+  // Los puntos por tipo que el docente escribió en «Distribuir puntos» viven en inputs
   // que se reconstruyen con el resto de la barra: se leen antes y se vuelven
   // a poner después (para los tipos que siguen presentes).
   const pesosEscritos = {};
-  container.querySelectorAll('.points-weight-input').forEach(inp => { pesosEscritos[inp.dataset.type] = inp.value; });
+  container.querySelectorAll('.points-type-input').forEach(inp => { pesosEscritos[inp.dataset.type] = inp.value; });
   const total = data.questions.length;
 
   // Subtítulo con el conteo real del examen.
@@ -471,18 +532,24 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
         <button type="button" id="points-mode-equal" class="btn btn-ghost btn-sm" aria-pressed="false" data-accion="setPointsToolMode" data-arg="equal" style="flex:1;">Igual para todas</button>
         <button type="button" id="points-mode-byType" class="btn btn-primary btn-sm" aria-pressed="true" data-accion="setPointsToolMode" data-arg="byType" style="flex:1;">Según el tipo</button>
       </div>
-      <p class="points-help">Cada número es un <strong style="color:var(--color-text);">peso relativo</strong>: un tipo con peso 2 vale el doble que uno con peso 1. A la derecha ves cuánto quedaría cada pregunta; el reparto siempre suma el total del examen, <strong style="color:var(--color-text);">${fmtPoints(_editorTotalPoints())} pts</strong>.</p>
+      <p id="points-help-byType" class="points-help">Escribe cuántos puntos vale <strong style="color:var(--color-text);">cada pregunta</strong> de cada tipo. El total del examen es la suma: 10 preguntas de 2 pts valen 20 pts.</p>
+      <p id="points-help-equal" class="points-help" hidden>Reparte los <strong style="color:var(--color-text);">${fmtPoints(_editorTotalPoints())} pts</strong> del examen en partes iguales entre las ${data.questions.length} preguntas.</p>
       <div id="points-weights-editor" style="display:flex;flex-direction:column;gap:8px;">
         ${typesPresent.map(t => {
           const def = QUESTION_TYPE_DEFS.find(d => d.key === t) || { label: t, colorVar: 'var(--color-text)' };
-          return `<div class="points-weight-row">
+          const delTipo = data.questions.filter(q => q.type === t);
+          const comun = puntajeComunDe(delTipo.map(q => q.points));    // null: valen distinto → campo vacío, «varía»
+          const esCompletar = t === 'cloze';
+          return `<div class="points-type-row">
             <span class="type-name" style="color:${def.colorVar};">${esc_html(def.label)}</span>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span class="points-weight-preview" data-type="${esc_html(t)}">—</span>
-              <input type="number" class="form-input points-weight-input" data-type="${esc_html(t)}" min="0" step="0.5" value="${esc_html(DEFAULT_TYPE_WEIGHTS[t] || 1)}" aria-label="Peso relativo de ${esc_html(def.label)}" />
+            <div class="points-type-calc">
+              <span class="points-type-count">${delTipo.length} ${delTipo.length === 1 ? 'pregunta' : 'preguntas'} ×</span>
+              <input type="number" class="form-input points-type-input" data-type="${esc_html(t)}" min="${esCompletar ? 1 : 0}" step="${esCompletar ? 1 : 0.5}" value="${comun === null ? '' : esc_html(comun)}" placeholder="${comun === null ? 'varía' : ''}" aria-label="Puntos de cada pregunta de ${esc_html(def.label)}${comun === null ? ' (hoy valen distinto)' : ''}"${esCompletar ? ' title="Completar vale puntos enteros: al menos uno por espacio"' : ''} />
+              <span class="points-type-sub" data-type="${esc_html(t)}">—</span>
             </div>
           </div>`;
         }).join('')}
+        <p class="points-type-total" id="points-type-total" role="status"></p>
       </div>
       <button type="button" class="btn btn-primary btn-sm" data-accion="applyPointsDistribution">Aplicar a todas las preguntas</button>
     </div>
@@ -509,9 +576,21 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
   // parsear todo el contenedor en cada vuelta: lento con 50+ preguntas).
   const cardsHtml = data.questions.map((q, i) => _cardHtml(q, i, data.answer_key[q.num] || { answer: '' })).join('');
 
+  // Al vaciar y volver a llenar el contenedor, la página se queda sin altura un instante y el
+  // navegador recorta el scroll: con 50 preguntas, borrar la 49 estando en la 50 devolvía la vista a
+  // las primeras. Se reserva la altura que había y se vuelve a la misma posición. (Un examen
+  // recién abierto empieza arriba; quien necesite otra posición, como añadir una pregunta, la fija
+  // después de llamar a renderEditor.)
+  const yAntes = nuevo ? 0 : window.scrollY;
+  const altoAntes = nuevo ? 0 : container.offsetHeight;
+  if (altoAntes) container.style.minHeight = `${altoAntes}px`;
   container.innerHTML = noticesHtml + toolbarHtml + cardsHtml + addQuestionHtml;
-  // El HTML de la barra siempre trae «Según el tipo» y los pesos por
-  // defecto: se ponen el modo y los pesos reales, si no el botón decía una
+  if (altoAntes) {
+    window.scrollTo({ top: yAntes, behavior: 'auto' });
+    requestAnimationFrame(() => { container.style.minHeight = ''; });
+  }
+  // El HTML de la barra siempre trae «Según el tipo» y los puntos de hoy:
+  // se ponen el modo y lo que el docente había escrito, si no el botón decía una
   // cosa y «Aplicar» hacía otra.
   sincronizarPanelPuntos(pesosEscritos);
 
@@ -641,7 +720,7 @@ function _cardHtml(q, i, keyInfo) {
       <p class="card-resumen"></p>
       <span class="card-estado"></span>
       <div class="card-meta">
-        <input type="number" class="q-points form-input" step="0.01" min="0" value="${q.points != null ? esc_html(q.points) : ''}" aria-label="Puntos de la pregunta ${N}" title="Puntos que vale esta pregunta" />
+        <input type="number" class="q-points form-input" step="${q.type === 'cloze' ? 1 : 0.01}" min="0" value="${q.points != null ? esc_html(q.points) : ''}" aria-label="Puntos de la pregunta ${N}" title="Puntos que vale esta pregunta" />
         <span class="pts-unit" aria-hidden="true">pts</span>
         <button type="button" class="btn btn-icon btn-danger-text" data-accion="deleteQuestionCard" data-este aria-label="Eliminar la pregunta ${N}" title="Eliminar pregunta">
           <i data-lucide="trash-2" style="width:15px;height:15px;"></i>
@@ -701,12 +780,13 @@ function _cardHtml(q, i, keyInfo) {
       const checked = isOptCorrect(letter, optText);
       const L = esc_html(letter);
       html += `<div class="mc-option-row">
-        <input type="checkbox" id="q-opt-ok-${i}-${L}" class="q-opt-correct" data-letter="${L}" ${checked ? 'checked' : ''} aria-label="La opción ${L} es correcta" />
+        <input type="checkbox" id="q-opt-ok-${i}-${L}" class="q-opt-correct" data-letter="${L}" data-accion-cambio="notaVariasCorrectas" data-este ${checked ? 'checked' : ''} aria-label="La opción ${L} es correcta" />
         <label for="q-opt-ok-${i}-${L}" class="mc-option-letter" title="Marcar como correcta">${L}</label>
         <input class="form-input q-opt" data-letter="${L}" value="${esc_html(optText)}" aria-label="Texto de la opción ${L}" />
       </div>`;
     });
-    html += `<p class="card-note">Marca varias si la pregunta es de "selecciona todas las que correspondan".</p></fieldset>`;
+    html += `<p class="card-note">Marca varias si la pregunta es de "selecciona todas las que correspondan".</p>
+      <p class="card-note mc-resta-nota"${optEntries.filter(([l, t]) => isOptCorrect(l, t)).length > 1 ? '' : ' hidden'}><i data-lucide="info" style="width:13px;height:13px;vertical-align:-2px;"></i> ${TEXTO_RESTAN}</p></fieldset>`;
 
   } else if (q.type === 'truefalse') {
     html += `<div style="margin-top:14px;"><label class="field-label" for="q-ans-${i}" style="color:var(--color-success);">Respuesta correcta</label>
@@ -724,18 +804,23 @@ function _cardHtml(q, i, keyInfo) {
     html += renderClozeBuilder(i, segments);
 
   } else if (q.type === 'matching') {
-    const pairs = getMatchingPairs(q, keyInfo);
+    const pairs = filasConDistractores(getMatchingPairs(q, keyInfo), q.data && q.data.col_a, q.data && q.data.col_b, keyInfo && keyInfo.pairs);
     html += `<div class="matching-box">
       <p class="field-label" style="color:var(--color-success);margin-bottom:10px;">
         <i data-lucide="link-2" style="width:14px;height:14px;"></i>
         Parejas (concepto → su pareja correcta)
       </p>
       <div id="matching-pairs-list-${i}" class="matching-pairs-list">
-        ${pairs.map((p, pIdx) => _matchingPairRowHtml(p, pIdx + 1)).join('')}
+        ${(() => { let np = 0, nd = 0; return pairs.map(p => _matchingPairRowHtml(p, p.distractor ? ++nd : ++np)).join(''); })()}
       </div>
-      <button type="button" class="btn btn-ghost btn-sm btn-block" data-accion="addMatchingPairRow" data-arg-n="${i}" style="margin-top:10px;">
-        <i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar pareja
-      </button>
+      <div class="matching-add-row">
+        <button type="button" class="btn btn-ghost btn-sm" data-accion="addMatchingPairRow" data-arg-n="${i}">
+          <i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar pareja
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm" data-accion="addMatchingDistractorRow" data-arg-n="${i}" title="Una opción de la columna B que no es la pareja de ningún concepto: sirve para que no se adivine por descarte">
+          <i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar opción de más
+        </button>
+      </div>
     </div>`;
 
   } else if (q.type === 'essay') {
@@ -752,7 +837,8 @@ function _cardHtml(q, i, keyInfo) {
 
   } else if (q.type === 'numerical') {
     html += `<div style="margin-top:14px;"><label class="field-label" for="q-nu-${i}" style="color:var(--color-success);">Respuesta correcta (número)</label>
-      <input id="q-nu-${i}" class="q-nu-answer form-input" type="number" step="any" style="border-color:var(--color-success);" value="${esc_html(keyInfo.answer || '')}" placeholder="Escribe el número correcto" />
+      <input id="q-nu-${i}" class="q-nu-answer form-input" type="text" inputmode="decimal" autocomplete="off" style="border-color:var(--color-success);" value="${esc_html(keyInfo.answer || '')}" placeholder="Escribe el número correcto" aria-describedby="q-nu-nota-${i}" />
+      <p id="q-nu-nota-${i}" class="card-note">Moodle compara el número <strong>exacto</strong> (tolerancia 0): si la respuesta es 9,8, un estudiante que escriba 9,81 queda mal. Escríbelo sin separador de miles (1000, no 1.000 ni 1,000).</p>
     </div>`;
   }
 
@@ -1148,29 +1234,18 @@ export function collectEditorData({ conImagenes = true, firmas = null } = {}) {
       }
 
     } else if (newQ.type === 'matching') {
-      const pairRows = card.querySelectorAll('.matching-pair-row');
-      const colA = {};
-      const colB = {};
-      const pairsMap = {};
-      const keyPairs = [];
-
-      pairRows.forEach((row, pIdx) => {
-        const leftVal = row.querySelector('.pair-left').value.trim();
-        const rightVal = row.querySelector('.pair-right').value.trim();
-        if (leftVal || rightVal) {
-          const numKey = String(pIdx + 1);
-          const letterKey = String.fromCharCode(97 + pIdx);
-          colA[numKey] = leftVal;
-          colB[letterKey] = rightVal;
-          pairsMap[numKey] = letterKey;
-          keyPairs.push(`${numKey}-${letterKey}`);
-        }
-      });
+      const filas = Array.from(card.querySelectorAll('.matching-pair-row')).map(row => ({
+        left: row.querySelector('.pair-left').value,
+        right: row.querySelector('.pair-right').value,
+        distractor: row.dataset.distractor === '1',
+      }));
+      // Parejas numeradas seguidas y, después, las opciones de más (distractores): ver emparejamiento-logica.js
+      const { colA, colB, pares: pairsMap, clave } = datosDeFilas(filas);
 
       newQ.data.col_a = colA;
       newQ.data.col_b = colB;
       Object.assign(partesFirma, { colA, colB, pares: pairsMap });
-      ak[qNum] = { type: newQ.type, answer: keyPairs.join('; '), pairs: pairsMap };
+      ak[qNum] = { type: newQ.type, answer: clave, pairs: pairsMap };
 
     } else if (newQ.type === 'essay') {
       // Sin respuesta que guardar — se califica manualmente en Moodle.

@@ -17,9 +17,9 @@ import { sugerirRespuesta } from './editor/sugerencias.js';
 import { alternarTarjeta, alternarTodas, registrarPlegado } from './editor/plegado.js';
 import { buildReviewRail, closeRailGrid, jumpRelative, jumpToNextFlagged, scheduleIssuesRefresh, toggleRailGrid } from './editor/panel.js';
 import { toggleAddQuestionMenu } from './editor/paneles.js';
-import { applyPointsDistribution, setPointsToolMode, togglePointsToolMenu, updatePointsAssignedLabel, updatePointsWeightPreview } from './editor/puntos-ui.js';
+import { applyPointsDistribution, setPointsToolMode, togglePointsToolMenu, updatePointsAssignedLabel, actualizarVistaPorTipo } from './editor/puntos-ui.js';
 import { agregarImagen, iniciarArrastreImagenes, imagenElegida, moverImagenA, moverImagenAnterior, moverImagenSiguiente, quitarImagen } from './editor/imagenes.js';
-import { actualizarFormulas, addMatchingPairRow, addNewQuestion, changeQuestionType, deleteQuestionCard, generarRetroalimentacion, mejorarEnunciado, recoverSkippedQuestion, removeMatchingPairRow } from './editor/tarjetas.js';
+import { actualizarFormulas, addMatchingPairRow, addMatchingDistractorRow, notaVariasCorrectas, addNewQuestion, changeQuestionType, deleteQuestionCard, generarRetroalimentacion, mejorarEnunciado, recoverSkippedQuestion, removeMatchingPairRow } from './editor/tarjetas.js';
 import { estado, suscribir } from './estado.js';
 import { abrirAsistente, abrirBiblioteca, abrirMateria, abrirSinMateria, abrirTodos, bibliotecaRaiz, borrarElegidos, borrarExamenDeLista, descargarExamen, editarMateria, elegirTodos, escapeEnBiblioteca, guardarOrganizar, iniciarBiblioteca, marcarExamen, moverElegidos, nuevaMateria, nuevoExamenEnMateria, organizarExamen, quitarSeleccion, reabrirExamen } from './biblioteca.js';
 import { exportarPdfHistorial } from './historial.js';
@@ -48,7 +48,7 @@ import { crearIconos } from './util.js';
 suscribir(() => {
   refreshFilterChips();
   updatePointsAssignedLabel();
-  updatePointsWeightPreview();
+  actualizarVistaPorTipo();
   guardarBorrador();
 });
 
@@ -57,7 +57,7 @@ suscribir(() => {
 // ACCIONES[nombre] con: data-arg (texto), data-arg-n (número), data-este (el
 // propio elemento) o nada. Solo las funciones de esta lista: un atributo
 // inyectado no puede llamar a otra cosa.
-const ACCIONES = { iniciarTour, borrarPerfilEnc, duplicarPerfilEnc, editarPerfilEnc, nuevoPerfilEnc, predeterminadoPerfilEnc, borrarElegidos, elegirTodos, abrirAsistente, abrirBiblioteca, abrirMateria, abrirSinMateria, abrirTodos, bibliotecaRaiz, borrarExamenDeLista, descargarExamen, editarMateria, guardarOrganizar, marcarExamen, moverElegidos, nuevaMateria, nuevoExamenEnMateria, organizarExamen, quitarSeleccion, reabrirExamen, abrirExportarPdf, exportarPdfHistorial, sugerirRespuesta, verOriginal, alternarTarjeta, alternarTodas, addMatchingPairRow, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, changeQuestionType, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDiscardReview, deleteQuestionCard, generarRetroalimentacion, generateXml, jumpToNextFlagged, openHelp, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, resetAll, selectFilter, setPointsToolMode, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
+const ACCIONES = { iniciarTour, borrarPerfilEnc, duplicarPerfilEnc, editarPerfilEnc, nuevoPerfilEnc, predeterminadoPerfilEnc, borrarElegidos, elegirTodos, abrirAsistente, abrirBiblioteca, abrirMateria, abrirSinMateria, abrirTodos, bibliotecaRaiz, borrarExamenDeLista, descargarExamen, editarMateria, guardarOrganizar, marcarExamen, moverElegidos, nuevaMateria, nuevoExamenEnMateria, organizarExamen, quitarSeleccion, reabrirExamen, abrirExportarPdf, exportarPdfHistorial, sugerirRespuesta, verOriginal, alternarTarjeta, alternarTodas, addMatchingPairRow, addMatchingDistractorRow, notaVariasCorrectas, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, changeQuestionType, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDiscardReview, deleteQuestionCard, generarRetroalimentacion, generateXml, jumpToNextFlagged, openHelp, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, resetAll, selectFilter, setPointsToolMode, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
 
 function _ejecutarAccion(el, nombre) {
   if (!Object.hasOwn(ACCIONES, nombre)) return;
@@ -214,7 +214,7 @@ iniciarExportarPdf();
 
 document.getElementById('editor-questions-container').addEventListener('input', e => {
   if (e.target.classList.contains('q-points')) updatePointsAssignedLabel();
-  if (e.target.classList.contains('points-weight-input')) updatePointsWeightPreview();
+  if (e.target.classList.contains('points-type-input')) actualizarVistaPorTipo();
   // Vista previa de fórmulas mientras se escribe \( … \).
   if (e.target.matches('.q-stem, .q-opt, .q-feedback')) {
     const card = e.target.closest('.editor-card');

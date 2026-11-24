@@ -27,7 +27,7 @@ from config import (
     VALID_QUESTION_TYPES,
 )
 from imagenes import errores_imagenes
-from answer_matching import clave_de_columna
+from answer_matching import clave_de_columna, sin_separador_de_miles
 from modelo import (
     Clave, Pregunta, PreguntaCloze, PreguntaMatching, PreguntaMultichoice, PreguntaNumerical,
     PreguntaTruefalse, SIN_RESPUESTA,
@@ -493,10 +493,17 @@ def _validate_cloze(p: PreguntaCloze, target: List[str]) -> None:
         slot_letter, options = hueco.letra, hueco.opciones
 
         if len(options) < MIN_CLOZE_OPTIONS:
-            target.append(
-                f"Error: el espacio [{slot_letter}] está vacío y no tiene "
-                f"opciones para elegir en el ítem Pregunta {num} (cloze)."
-            )
+            if options:
+                target.append(
+                    f"Error: el espacio [{slot_letter}] tiene una sola opción en el ítem Pregunta {num} "
+                    f"(cloze): el estudiante no tendría nada que elegir. Agrega al menos otra "
+                    f"(mínimo {MIN_CLOZE_OPTIONS})."
+                )
+            else:
+                target.append(
+                    f"Error: el espacio [{slot_letter}] está vacío y no tiene "
+                    f"opciones para elegir en el ítem Pregunta {num} (cloze)."
+                )
             continue
 
         if any(SIN_RESPUESTA in opt.upper() for opt in options):
@@ -544,9 +551,11 @@ def _validate_numerical(p: PreguntaNumerical, target: List[str]) -> None:
       escrito con palabras).
     """
     if p.valor_numerico() is None:
+        sugerido = sin_separador_de_miles(p.respuesta_texto)
+        pista = (f" Parece llevar separador de miles: escríbelo sin él (por ejemplo {sugerido})." if sugerido else "")
         target.append(
             f"Error: la respuesta '{p.respuesta_texto[:60]}' de la Pregunta {p.num} "
-            f"(numerical) no es un número válido."
+            f"(numerical) no es un número válido.{pista}"
         )
 
 

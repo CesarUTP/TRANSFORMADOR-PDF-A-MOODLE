@@ -455,15 +455,21 @@ def _xml_puntos(pts_cloze, pts_match, huecos=3):
     xml_p, st_p = build_xml(qs_p, ak_p, category="t", grades=compute_grades(qs_p, 100))
     pesos_p = [int(w) for w in re.findall(r"\{(\d+):MULTI", xml_p)]
     grado_m = float(re.search(r'type="matching">.*?<defaultgrade>([^<]+)<', xml_p, re.S).group(1))
-    return sum(pesos_p), grado_m, st_p.escala
-_c, _m, _k = _xml_puntos(5.71, 4.29)
-ok(_k == 7 and _c == 40 and _m == 30.0,
-   f"5,71 y 4,29 pts: todo x7 para que «Completar» sea entero (40 y 30, proporción casi exacta): x{_k}, {_c}, {_m}")
-ok(abs((_c + _m) - (5.71 + 4.29) * _k) < 1e-6, "el total en Moodle es exactamente el del editor × factor (antes 102,9 en vez de 100)")
-_c, _m, _k = _xml_puntos(0.5, 0.5)
-ok(_c == _m == 3 and _k == 6, f"0,5 pts con 3 huecos: x{_k} y completar = emparejamiento ({_c} vs {_m})")
-_c, _m, _k = _xml_puntos(6, 4)
-ok(_k == 1 and _c == 6 and _m == 4.0, "puntos enteros (6 y 4): sin factor, Moodle muestra exactamente lo mismo que el editor")
+    return sum(pesos_p), grado_m, st_p.avisos, re.findall(r"<defaultgrade>([^<]+)<", xml_p)
+# Sin factor: el XML lleva EXACTAMENTE los puntos del editor (antes se multiplicaba todo:
+# un examen de 100 puntos con un «Completar» decimal llegaba a Moodle con 700).
+_c, _m, _av, _g = _xml_puntos(6, 4)
+ok(_c == 6 and _m == 4.0 and _g == ["6.0", "4.0"] and not _av, "puntos enteros (6 y 4): Moodle muestra exactamente lo mismo que el editor, sin avisos")
+_c, _m, _av, _g = _xml_puntos(5.71, 4.29)
+ok(_m == 4.29 and _g == ["5.71", "4.29"], f"5,71 y 4,29 pts: NINGUNA pregunta se multiplica ({_g})")
+ok(_c == 6, f"«Completar» con 5,71 pts: Moodle le da el entero más cercano ({_c})")
+_c, _m, _av, _g = _xml_puntos(0.5, 0.5)
+ok(_m == 0.5 and _g == ["0.5", "0.5"], f"0,5 pts: el emparejamiento no cambia ({_g})")
+ok(_c == 3 and len(_av) == 1 and "mínimo 1 punto por hueco" in _av[0], f"0,5 pts con 3 huecos: Moodle da 3 y se AVISA, no se multiplica ({_c}, {_av})")
+_c, _m, _av, _g = _xml_puntos(15, 85, huecos=3)
+ok(_c == 15 and _m == 85.0 and not _av and sum(float(x) for x in _g) == 100, "100 pts con un «Completar» entero: el XML suma 100")
+from models import QuestionStats  # noqa: E402
+ok(not hasattr(QuestionStats(), "escala"), "ya no existe el factor de escala")
 
 print("Fórmulas en PDF")
 class _Pagina:

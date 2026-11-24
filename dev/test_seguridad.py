@@ -261,14 +261,23 @@ RUTAS_ESPERADAS = {
 }
 MONTAJES_ESPERADOS = {"/static", "/css", "/js", "/img", "/fonts", "/legal"}
 
+def _todas_las_rutas(rutas, prefijo=""):
+    """(ruta completa, objeto) de cada ruta. Desde FastAPI 0.16x los routers incluidos (include_router) van
+    envueltos en un «_IncludedRouter» en vez de aplanarse en app.routes: hay que entrar en ellos."""
+    for r in rutas:
+        if hasattr(r, "original_router"):
+            yield from _todas_las_rutas(r.original_router.routes, prefijo + (getattr(r.include_context, "prefix", "") or ""))
+        else:
+            yield prefijo + r.path, r
+
 _rutas = set()
 _montajes = set()
-for _r in main.app.routes:
+for _path, _r in _todas_las_rutas(main.app.routes):
     _metodos = getattr(_r, "methods", None)
     if _metodos is None:
-        _montajes.add(_r.path)
+        _montajes.add(_path)
     else:
-        _rutas |= {(m, _r.path) for m in _metodos if m != "HEAD"}
+        _rutas |= {(m, _path) for m in _metodos if m != "HEAD"}
 ok(_rutas == RUTAS_ESPERADAS,
    "el conjunto de rutas (método + ruta) es exactamente el de antes de partir main.py"
    + ("" if _rutas == RUTAS_ESPERADAS else f" — sobran {sorted(_rutas - RUTAS_ESPERADAS)}, faltan {sorted(RUTAS_ESPERADAS - _rutas)}"))
@@ -369,6 +378,31 @@ ok(ventana._js_api is None, "la ventana no expone un objeto js_api")
 ok(all(_resolver(n) is None for n in ("_window.gui.os.system", "save_xml_file.__globals__", "open_url.__globals__.clear")),
    "el puente no alcanza la ventana ni os.system")
 ok(_resolver("save_xml_file") is launcher.save_xml_file, "el puente sí llega a save_xml_file")
+
+# Ninguna ruta se registra dos veces (rutas_materias se montaba dos veces en main.py).
+_rutas_lista = [(tuple(sorted(r.methods or [])), ruta) for ruta, r in _todas_las_rutas(main.app.routes) if hasattr(r, "methods")]
+_dobles = sorted({x for x in _rutas_lista if _rutas_lista.count(x) > 1})
+ok(len(_rutas_lista) >= 40, f"se recorrieron las rutas de todos los routers ({len(_rutas_lista)})")
+ok(not _dobles, f"ninguna ruta de la API está registrada dos veces {_dobles[:2]}")
+
+# Guardar: el tipo del archivo sale de la extensión del nombre (el .docx de la 2.8 se guardaba como .docx.xml).
+import base64 as _b64, tempfile as _tmp  # noqa: E402
+class _VentanaFalsa:
+    def __init__(self, carpeta): self.carpeta, self.pedido = carpeta, None
+    def create_file_dialog(self, tipo, directory="", save_filename="", file_types=()):
+        self.pedido = (save_filename, file_types)
+        return os.path.join(self.carpeta, os.path.splitext(save_filename)[0])    # el diálogo devuelve el nombre SIN extensión
+with _tmp.TemporaryDirectory() as _carpeta:
+    _real, launcher._VENTANA = launcher._VENTANA, _VentanaFalsa(_carpeta)
+    try:
+        for _nombre, _ext in (("examen.docx", "docx"), ("EXAMEN.DOCX", "docx"), ("examen.pdf", "pdf"), ("versiones.zip", "zip"), ("moodle.xml", "xml"), ("sin-extension", "xml")):
+            _r = launcher.save_xml_file(_nombre, _b64.b64encode(b"contenido").decode())
+            _destino = os.path.join(_carpeta, os.path.splitext(_nombre)[0] + "." + _ext)
+            ok(_r.get("saved") is True and _r.get("path") == _destino and os.path.isfile(_destino),
+               f"guardar «{_nombre}» deja un .{_ext} (no «.{_ext}.xml»): {os.path.basename(_r.get('path', ''))}")
+            ok(f"*.{_ext}" in launcher._VENTANA.pedido[1][0], f"el filtro del diálogo para «{_nombre}» es *.{_ext}")
+    finally:
+        launcher._VENTANA = _real
 
 print()
 print("TODO OK" if not fallas else f"{fallas} FALLA(S)")

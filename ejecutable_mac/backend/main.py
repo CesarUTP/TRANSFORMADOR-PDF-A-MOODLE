@@ -24,6 +24,7 @@ Los helpers compartidos están en estado_servidor.py y se re-exportan aquí
 con sus nombres de siempre (main._CUPOS_CONVERSION, main._evento_ndjson, …).
 """
 
+import contextlib
 import logging
 import math
 import sys
@@ -59,8 +60,16 @@ logger = logging.getLogger(__name__)
 
 # Sin /docs, /redoc ni /openapi.json: son páginas de desarrollo que listan toda
 # la API y no las usa nadie; una app de escritorio no debe publicarlas.
+@contextlib.asynccontextmanager
+async def _vida(_app):
+    """Arranque de la app. Es la forma actual de lo que antes era @app.on_event("startup"), que FastAPI
+    marca como obsoleto y quitará; startup_event() (más abajo) se queda igual porque una prueba la llama."""
+    startup_event()
+    yield
+
+
 app = FastAPI(title="PDF → Moodle XML", version=APP_VERSION,
-              docs_url=None, redoc_url=None, openapi_url=None)
+              docs_url=None, redoc_url=None, openapi_url=None, lifespan=_vida)
 
 # Sin CORS: la interfaz se sirve desde este mismo servidor, así que ninguna
 # otra página necesita (ni debe poder) leer sus respuestas. Host, Origin,
@@ -89,7 +98,6 @@ async def _error_de_validacion(request, exc: RequestValidationError):
     return JSONResponse(status_code=422, content={"detail": _sin_infinito(exc.errors())})
 
 
-@app.on_event("startup")
 def startup_event():
     # El historial es secundario: si no se puede preparar, la app arranca igual
     # (convertir y descargar no dependen de él) y el motivo queda en el
@@ -114,7 +122,6 @@ app.include_router(rutas_pdf.router)         # /api/exportar_pdf
 app.include_router(rutas_historial.router)   # /api/history*
 app.include_router(rutas_materias.router)    # /api/materias*
 app.include_router(rutas_perfil.router)      # /api/yo
-app.include_router(rutas_materias.router)    # /api/materias*
 app.include_router(rutas_ayuda.router)       # /api/retroalimentacion, /api/mejorar_enunciado, /api/sugerir_respuesta
 app.include_router(rutas_original.router)    # /api/original/{id}/pagina/{n}
 

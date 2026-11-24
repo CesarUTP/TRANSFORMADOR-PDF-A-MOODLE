@@ -99,12 +99,15 @@ def viaje(validas, key, categoria="Prueba"):
 print("1. Ida y vuelta: build_xml → importar_xml (los 25 exámenes sintéticos)")
 # ══════════════════════════════════════════════════════════════════════════
 total = 0
+ruidosos = []
 for nombre, qs in base.bancos().items():
     questions, key = adapt(xf.perfect_model(qs))
     validas, _ = partition_questions(questions, key)
     if not validas:
         continue
     xml, imp = viaje(validas, key)
+    if imp.get("completeness_notice"):
+        ruidosos.append((nombre, imp["completeness_notice"][:80]))
     a = [canon(q, key[q["num"]]) for q in validas]
     b = [canon(q, imp["answer_key"][q["num"]]) for q in imp["questions"]]
     iguales = a == b and not imp["skipped_questions"]
@@ -115,6 +118,7 @@ for nombre, qs in base.bancos().items():
         ok(True, f"{nombre}: {len(a)} preguntas vuelven idénticas")
     total += len(a)
 ok(total > 300, f"en total {total} preguntas hicieron el viaje")
+ok(not ruidosos, f"el XML que exporta esta aplicación se reimporta SIN avisos de pérdidas {ruidosos[:1]}")
 
 conf = (ROOT / "dev" / "conformidad_moodle" / "conformidad_moodle.xml").read_bytes()
 imp = ix.importar_xml(conf, "conformidad.xml")
@@ -223,6 +227,70 @@ h1 = m2["answer_key"][cl1["num"]]["huecos"]
 ok(h1[0]["options"] == ["mitocondria", "ribosoma", "núcleo"] and h1[0]["correct_idx"] == [0, 2] and h1[1]["options"] == ["ATP", "energía", "agua"] and h1[1]["correct_idx"] == [0, 1],
    f"completar de Moodle: «=», «%100%», «#comentario» y MULTIRESPONSE ({h1})")
 ok("#" not in str(h1) and "bien" not in str(h1), "la retroalimentación del hueco (#…) no se mezcla con las opciones")
+
+# ══════════════════════════════════════════════════════════════════════════
+print("2b. Lo que el editor no conserva (crédito parcial, alternativas, tolerancia, retroalimentación)")
+# ══════════════════════════════════════════════════════════════════════════
+def _pregunta(tipo, cuerpo, extra=""):
+    return (f'<question type="{tipo}"><name><text>x</text></name><questiontext format="html"><text><![CDATA[<p>Enunciado</p>]]>'
+            f"</text></questiontext>{extra}{cuerpo}</question>")
+
+def _resp(fraccion, texto, extra=""):
+    return f'<answer fraction="{fraccion}" format="html"><text>{texto}</text>{extra}</answer>'
+
+def _importar(*preguntas):
+    return ix.importar_xml(("<quiz>" + "".join(preguntas) + "</quiz>").encode("utf-8"), "p.xml")
+
+def _avisos(r):
+    return r["completeness_notice"] or ""
+
+# Respuesta única: solo cuenta la de 100 %
+r = _importar(_pregunta("multichoice", _resp(100, "Roma") + _resp(50, "Milán") + _resp(0, "Lima"), "<single>true</single>"))
+ok(r["answer_key"][1]["answer"] == "Roma", "respuesta única: la correcta es la de 100 %")
+ok("crédito parcial a 1 opción" in _avisos(r) and "Milán" in _avisos(r) and "100 %" in _avisos(r), f"…y se avisa de la que valía 50 % ({_avisos(r)[:110]})")
+RELLENO = _pregunta("essay", "")     # con solo preguntas sin respuesta el importador responde 422
+r = _importar(RELLENO, _pregunta("multichoice", _resp(50, "Roma") + _resp(50, "Milán") + _resp(0, "Lima"), "<single>true</single>"))
+ok(len(r["questions"]) == 1 and len(r["skipped_questions"]) == 1,
+   "respuesta única donde ninguna vale 100 %: no se inventa la correcta (queda en «no incluidas», rescatable)")
+ok("Ninguna vale 100 %" in _avisos(r), "…y se dice")
+# Varias respuestas: toda fracción positiva es correcta; solo se avisa si los porcentajes son desiguales
+r = _importar(_pregunta("multichoice", _resp(50, "Roma") + _resp(50, "Milán") + _resp(-50, "Lima") + _resp(-50, "Quito"), "<single>false</single>"))
+ok(r["answer_key"][1]["answer"] == "Roma | Milán" and not _avisos(r), "varias respuestas 50 + 50 (y negativas): sin avisos")
+r = _importar(_pregunta("multichoice", _resp(70, "Roma") + _resp(30, "Milán") + _resp(0, "Lima"), "<single>false</single>"))
+ok(r["answer_key"][1]["answer"] == "Roma | Milán" and "70 %, 30 %" in _avisos(r) and "partes iguales" in _avisos(r), f"varias respuestas 70 + 30: se avisa ({_avisos(r)[:100]})")
+r = _importar(_pregunta("multichoice", _resp(10, "A") * 1 + _resp(5, "B") + _resp(0, "C"), "<single>false</single>"))
+ok(not _avisos(r), "el reparto 10 % / 5 % (el de esta aplicación con muchas opciones) no se avisa")
+# Respuesta corta: alternativas
+r = _importar(_pregunta("shortanswer", _resp(100, "mar") + _resp(50, "océano") + _resp(0, "*")))
+ok(r["answer_key"][1]["answer"] == "mar" and "acepta 1 respuesta(s) más" in _avisos(r) and "océano" in _avisos(r), "respuesta corta: la alternativa al 50 % se avisa")
+r = _importar(_pregunta("shortanswer", _resp(100, "Panamá") + _resp(100, "Panama") + _resp(100, "PANAMÁ") + _resp(0, "*")))
+ok(not _avisos(r), "la variante sin tildes (y la de mayúsculas) no se avisa: la hace esta aplicación")
+# Numérica: tolerancia
+r = _importar(_pregunta("numerical", _resp(100, "9.8", "<tolerance>0.5</tolerance>")))
+ok(r["answer_key"][1]["answer"] == "9.8" and "±0.5" in _avisos(r), "numérica con tolerancia: se avisa")
+r = _importar(_pregunta("numerical", _resp(100, "9.8", "<tolerance>0</tolerance>")))
+ok(not _avisos(r), "numérica con tolerancia 0: sin aviso")
+# Retroalimentación por opción
+fb = lambda t: f'<feedback format="html"><text><![CDATA[<p>{t}</p>]]></text></feedback>'
+r = _importar(_pregunta("multichoice", _resp(100, "Roma", fb("¡Correcto!")) + _resp(0, "Lima", fb("Incorrecto.")), "<single>true</single>"))
+ok(not _avisos(r), "«¡Correcto!» e «Incorrecto.» (los de esta aplicación): sin aviso")
+r = _importar(_pregunta("multichoice", _resp(100, "Roma", fb("Es la capital desde 1871")) + _resp(0, "Lima", fb("Lima es de Perú")), "<single>true</single>"))
+ok("retroalimentación propia en 2 opción(es)" in _avisos(r) and "capital desde 1871" in _avisos(r), "retroalimentación propia de cada opción: se avisa")
+r = _importar(_pregunta("cloze", "", "").replace("<p>Enunciado</p>", "<p>Es {1:MULTICHOICE:=Roma#sí~Lima#no}</p>"))
+ok("retroalimentación propia en sus huecos" in _avisos(r), "«Completar» con retroalimentación en un hueco (#…): se avisa")
+r = _importar(_pregunta("cloze", "", "").replace("<p>Enunciado</p>", "<p>Es {1:MULTICHOICE:=Roma~Lima}</p>"))
+ok(not _avisos(r), "«Completar» sin retroalimentación: sin aviso")
+# Verdadero/falso: solo 100 %
+r = _importar(RELLENO, _pregunta("truefalse", _resp(50, "true") + _resp(0, "false")))
+ok(len(r["skipped_questions"]) == 1 or r["answer_key"][2]["answer"] in ("", "SIN_RESPUESTA"), "verdadero/falso al 50 %: no se toma como respuesta")
+
+# Respuestas cortas con caracteres difíciles: ida y vuelta exacta (se escriben como texto plano)
+for _resp_txt in ("O'Higgins", "AT&T", "R&D", "x < y", "a<b>c", 'dijo "hola"', "a]]>b", "H₂O"):
+    _qs = [{"num": 1, "type": "shortanswer", "data": {"stem": "¿Cuál?"}}]
+    _ak = {1: {"type": "shortanswer", "answer": _resp_txt}}
+    _xml, _ = build_xml(_qs, _ak)
+    _r = ix.importar_xml(_xml.encode("utf-8"), "sa.xml")
+    ok(_r["answer_key"][1]["answer"] == _resp_txt, f"respuesta corta «{_resp_txt}»: vuelve igual ({_r['answer_key'][1]['answer']!r})")
 
 # ══════════════════════════════════════════════════════════════════════════
 print("3. Imágenes")

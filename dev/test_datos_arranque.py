@@ -207,6 +207,40 @@ ok(database.get_xml_content(rid) is not None, "si la poda falla, la conversión 
 database._podar = _orig_podar
 
 # ═══════════════════════════ 2. launcher ═══════════════════════════
+print("\n== database: una base anterior sin auto_vacuum devuelve el espacio desde el próximo arranque ==")
+_limpiar_db()
+_viejo = sqlite3.connect(DB_FILE)
+_viejo.execute("PRAGMA auto_vacuum = NONE")
+_viejo.execute(database._ESQUEMA)
+_viejo.executemany("INSERT INTO history (filename, category, total_points, xml_content) VALUES (?, ?, ?, ?)",
+                   [(f"e{i}.xml", "Cat", 10.0, "x" * 200_000) for i in range(30)])
+_viejo.commit()
+_viejo.execute("DELETE FROM history WHERE id > 5")
+_viejo.commit()
+ok(_viejo.execute("PRAGMA auto_vacuum").fetchone()[0] == 0, "la base de partida es de las anteriores (auto_vacuum = 0)")
+_viejo.close()
+_tam_antes = DB_FILE.stat().st_size
+ok(database.init_db() is True, "arranca con una base anterior")
+with contextlib.closing(sqlite3.connect(DB_FILE)) as _c:
+    ok(_c.execute("PRAGMA auto_vacuum").fetchone()[0] == 2, "auto_vacuum quedó en incremental")
+    ok(_c.execute("SELECT count(*) FROM history").fetchone()[0] == 5, "los 5 exámenes que quedaban siguen ahí")
+    ok(_c.execute("SELECT length(xml_content) FROM history WHERE id = 1").fetchone()[0] == 200_000, "…con su contenido intacto")
+ok(DB_FILE.stat().st_size < _tam_antes // 2, f"el archivo se encogió ({_tam_antes // 1024} KB → {DB_FILE.stat().st_size // 1024} KB)")
+_tam = DB_FILE.stat().st_size
+ok(database.init_db() is True and DB_FILE.stat().st_size == _tam, "un segundo arranque no vuelve a reescribirla")
+# Si no cabe (demasiado grande o sin espacio), la app arranca igual y la base queda como estaba.
+_limpiar_db()
+_v2 = sqlite3.connect(DB_FILE); _v2.execute("PRAGMA auto_vacuum = NONE"); _v2.execute(database._ESQUEMA)
+_v2.execute("INSERT INTO history (filename, category, total_points, xml_content) VALUES ('a', 'c', 1, 'x')"); _v2.commit(); _v2.close()
+_tope, database._MAX_BYTES_VACUUM = database._MAX_BYTES_VACUUM, 1
+try:
+    ok(database.init_db() is True, "base por encima del tope: arranca igual")
+finally:
+    database._MAX_BYTES_VACUUM = _tope
+with contextlib.closing(sqlite3.connect(DB_FILE)) as _c:
+    ok(_c.execute("PRAGMA auto_vacuum").fetchone()[0] == 0 and _c.execute("SELECT count(*) FROM history").fetchone()[0] == 1,
+       "…y no se toca (sigue con sus datos)")
+
 print("\n== launcher ==")
 import launcher  # noqa: E402
 
@@ -285,6 +319,8 @@ logging.getLogger("uvicorn.error").error("fallo de arranque de prueba")
 ok("fallo de arranque de prueba" in LOG.read_text(encoding="utf-8"), "los errores de uvicorn se escriben en el registro del launcher")
 
 # ═══════════════════════════ 3. credenciales ═══════════════════════════
+ok(launcher._wait_for_server.__defaults__ == (90,), "el plazo de arranque por defecto es de 90 s (no 30)")
+
 print("\n== credenciales ==")
 CDIR = TMP / "Clave ñ con espacios"
 CDIR.mkdir()

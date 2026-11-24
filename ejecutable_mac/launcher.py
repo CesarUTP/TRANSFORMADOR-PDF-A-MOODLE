@@ -145,7 +145,7 @@ _URLS_PERMITIDAS = ("https://aistudio.google.com/", "https://ai.google.dev/", PR
 def save_xml_file(filename: str, b64_content: str) -> dict:
     """
     Abre el dialogo nativo 'Guardar como', escribe el archivo (el XML de Moodle o,
-    desde la 2.1, el PDF del examen y, desde la 2.5, el ZIP con sus versiones: el tipo sale de la extension del nombre) y
+    desde la 2.1, el PDF del examen, desde la 2.5, el ZIP con sus versiones y, desde la 2.8, el Word: el tipo sale de la extension del nombre) y
     devuelve {'saved': True, 'path': '...'} o {'saved': False}.
     """
     try:
@@ -154,9 +154,11 @@ def save_xml_file(filename: str, b64_content: str) -> dict:
 
         import webview
 
-        # Solo xml, pdf o zip: es lo que la interfaz guarda.
+        # Solo xml, pdf, docx o zip: es lo que la interfaz guarda. Un .docx (2.8) caía en
+        # «xml» y se guardaba como «examen.docx.xml».
         nombre_min = str(filename).lower()
-        ext = "pdf" if nombre_min.endswith(".pdf") else "zip" if nombre_min.endswith(".zip") else "xml"
+        ext = next((e for e in ("pdf", "docx", "zip") if nombre_min.endswith("." + e)), "xml")
+        etiqueta = {"docx": "Documentos de Word"}.get(ext, f"Archivos {ext.upper()}")
 
         # Carpeta inicial: Descargas del usuario
         downloads = os.path.join(os.path.expanduser("~"), "Downloads")
@@ -167,7 +169,7 @@ def save_xml_file(filename: str, b64_content: str) -> dict:
             webview.SAVE_DIALOG,
             directory=downloads,
             save_filename=os.path.basename(str(filename)),
-            file_types=(f"Archivos {ext.upper()} (*.{ext})", "Todos los archivos (*.*)"),
+            file_types=(f"{etiqueta} (*.{ext})", "Todos los archivos (*.*)"),
         )
 
         if not result:
@@ -479,7 +481,7 @@ def _es_nuestro_servidor() -> bool:
     return secrets.compare_digest(str(firma), seguridad.firma_salud(nonce))
 
 
-def _wait_for_server(timeout: int = 30) -> bool:
+def _wait_for_server(timeout: int = 90) -> bool:   # un equipo lento (antivirus revisando el instalador) tarda más de 30 s
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:

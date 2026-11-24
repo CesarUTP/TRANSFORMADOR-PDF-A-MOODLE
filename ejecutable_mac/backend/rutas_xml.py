@@ -174,7 +174,6 @@ async def api_generate_xml(req: GenerateXmlRequest):
             "shortanswer": stats.shortanswer,
             "numerical":   stats.numerical,
             "total_points": req.total_points,
-            "escala": stats.escala,
             # Avisos del constructor (texto) y estado del guardado en el Historial.
             "avisos": _avisos_para_cabecera(getattr(stats, "avisos", None)),
             "historial_guardado": aviso_historial is None,

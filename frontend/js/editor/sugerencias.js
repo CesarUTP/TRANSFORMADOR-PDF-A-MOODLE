@@ -59,7 +59,7 @@ export function aplicarSugerencia(card, tipo, sug) {
   } else if (tipo === 'matching') {
     // Cada fila empareja un elemento de la columna A con su pareja: la propuesta
     // cambia QUÉ pareja lleva cada fila, con los mismos textos que ya hay.
-    const filas = Array.from(card.querySelectorAll('.matching-pair-row'));
+    const filas = Array.from(card.querySelectorAll('.matching-pair-row:not([data-distractor])'));
     const derechas = filas.map(f => f.querySelector('.pair-right').value);
     for (const [n, letra] of Object.entries(sug.pares)) {
       const fila = filas[Number(n) - 1];

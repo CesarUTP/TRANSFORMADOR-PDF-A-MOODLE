@@ -7,7 +7,7 @@
  * En archivo aparte y no dentro del HTML: la política de seguridad de las
  * páginas (backend/seguridad.py) no deja correr scripts en línea.
  */
-import { autoDistributePoints, fmtPoints, DEFAULT_TYPE_WEIGHTS } from './puntos.js';
+import { autoDistributePoints, aplicarPuntosPorTipo, fmtPoints, puntajeComunDe, puntajeValido, puntosPorTipo, sumaDePuntos, DEFAULT_TYPE_WEIGHTS } from './puntos.js';
 import { alternativasDeTotal, esEntero, examenConPuntos, puntosParaPdf, repartirEnteros } from './puntos-pdf.js';
 import { questionIssues } from './validacion.js';
 import { construirClozeDesdeSegmentos, huecoDeEstructura, indicesUtilizables, parseClozeSegments } from './editor/cloze-segmentos.js';
@@ -15,6 +15,8 @@ import { claveDeOpcionMultiple, letrasCorrectasPorIndice } from './editor/respue
 import * as proc from './editor/procedencia.js';
 import { MAX_ABIERTAS, abiertasPorDefecto, recortar } from './editor/plegado-logica.js';
 import { detectarProblemas, normalizar, similitud } from './editor/calidad.js';
+import { datosDeFilas, filasConDistractores, resumenDeFilas } from './editor/emparejamiento-logica.js';
+import { avisoDeMilesAmbiguo, milesAmbiguo, sinSeparadorDeMiles } from './numero-logica.js';
 import { faltaRespuesta } from './validacion.js';
 import { describirSugerencia } from './editor/sugerencias-logica.js';
 import { LIMITE_CAMPO, PERFIL_CAMPOS, aplicarPerfil, datosDePerfil, enteroEn, nombrePerfil, tamanoValido, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, resumenDeDescarga, textoDelBoton, valoresIniciales } from './ui/exportar-pdf-logica.js';
@@ -115,6 +117,186 @@ prueba('dos preguntas del mismo tipo difieren como mucho en 0.01', () => {
   igual(Math.max(...p) - Math.min(...p) <= 0.01, true);
 });
 
+// «Completar»: Moodle le da la suma de los pesos ENTEROS de sus huecos (mínimo 1 por hueco).
+// El editor le reparte puntos enteros y las demás absorben la diferencia: el total no cambia.
+const completar = (huecos) => ({ type: 'cloze', data: { text: Array.from({ length: huecos }, (_, j) => `[${String.fromCharCode(65 + j)}: x / y]`).join(' ') } });
+const mezcla = () => [...Array(6).fill(0).map(() => ({ type: 'multichoice' })), completar(3), { type: 'matching' }, { type: 'truefalse' }, { type: 'essay' }];
+
+prueba('«Completar» recibe puntos enteros y el total sigue siendo el del docente', () => {
+  for (const modo of ['byType', 'equal']) for (const total of [100, 20, 10.5, 37]) {
+    const qs = mezcla();
+    autoDistributePoints(qs, total, modo);
+    igual(Number.isInteger(qs[6].points), true, `${modo} ${total}: ${qs[6].points} no es entero`);
+    igual(Math.round(suma(qs) * 100) / 100, total, `${modo} ${total}: la suma no cuadra`);
+  }
+});
+
+prueba('«Completar» vale al menos un punto por hueco', () => {
+  const qs = [completar(5), { type: 'multichoice' }, { type: 'truefalse' }];
+  autoDistributePoints(qs, 6, 'equal');   // exacto: 2 cada una; mínimo: 5
+  igual(qs[0].points, 5);
+  igual(Math.round(suma(qs) * 100) / 100, 6);
+});
+
+prueba('solo «Completar»: se reparten enteros (34, 33, 33) y suman el total', () => {
+  const qs = [completar(2), completar(2), completar(2)];
+  autoDistributePoints(qs, 100, 'byType');
+  igual(qs.map(q => q.points), [34, 33, 33]);
+});
+
+prueba('si los mínimos de «Completar» no caben en el total, se deja el reparto exacto', () => {
+  const qs = [completar(8), { type: 'multichoice' }];
+  autoDistributePoints(qs, 5, 'equal');
+  igual(Math.round(suma(qs) * 100) / 100, 5);
+});
+
+prueba('sin el texto de la pregunta (versiones) no se toca el reparto', () => {
+  const qs = [{ type: 'cloze' }, { type: 'multichoice' }];
+  autoDistributePoints(qs, 10.5, 'byType');
+  igual(qs[0].points, 6.3);
+});
+
+prueba('calidad: avisa si «Completar» no vale lo que dice en Moodle', () => {
+  const q = (puntos, huecos) => ({ num: 1, type: 'cloze', points: puntos, data: completar(huecos).data });
+  igual(detectarProblemas([q(6, 3)]), [[]]);
+  igual(detectarProblemas([q(5.71, 3)])[0].length, 1);
+  igual(detectarProblemas([q(1, 3)])[0][0].includes('valdrá 3 puntos'), true);
+});
+
+// ── Emparejamiento: opciones de más (distractores) ─────────────────
+prueba('distractores: las letras de B que nadie usa se dibujan como filas sin concepto', () => {
+  const parejas = [{ left: 'ADN', right: 'Núcleo' }, { left: 'ATP', right: 'Mitocondria' }];
+  const filas = filasConDistractores(parejas, { 1: 'ADN', 2: 'ATP' }, { a: 'Núcleo', b: 'Mitocondria', c: 'Pared celular', d: 'Vacuola' }, { 1: 'a', 2: 'b' });
+  igual(filas.map(f => [f.left, f.right, f.distractor]), [['ADN', 'Núcleo', false], ['ATP', 'Mitocondria', false], ['', 'Pared celular', true], ['', 'Vacuola', true]]);
+});
+
+prueba('distractores: con la pareja en otro orden, el sobrante es el que ningún concepto usa', () => {
+  const parejas = [{ left: 'ADN', right: 'Núcleo' }, { left: 'ATP', right: 'Mitocondria' }];
+  const filas = filasConDistractores(parejas, { 1: 'ADN', 2: 'ATP' }, { a: 'Pared', b: 'Mitocondria', c: 'Núcleo' }, { 1: 'c', 2: 'b' });
+  igual(filas.filter(f => f.distractor).map(f => f.right), ['Pared']);
+});
+
+prueba('distractores: sin clave de parejas sobran las letras después de emparejar en orden', () => {
+  const filas = filasConDistractores([{ left: 'x', right: 'A' }], { 1: 'x' }, { a: 'A', b: 'B' }, {});
+  igual(filas.filter(f => f.distractor).map(f => f.right), ['B']);
+  igual(filasConDistractores([{ left: 'x', right: 'A' }], { 1: 'x' }, { a: 'A' }, { 1: 'a' }).length, 1);
+});
+
+prueba('distractores: guardar conserva la opción de más y la columna A no tiene huecos', () => {
+  const d = datosDeFilas([
+    { left: 'ADN', right: 'Núcleo', distractor: false },
+    { left: '', right: 'Pared celular', distractor: true },
+    { left: '', right: '', distractor: false },            // fila vacía: se descarta
+    { left: 'ATP', right: 'Mitocondria', distractor: false },
+    { left: '', right: '  ', distractor: true },           // distractor sin texto: se descarta
+  ]);
+  igual(d.colA, { 1: 'ADN', 2: 'ATP' });
+  igual(d.colB, { a: 'Núcleo', b: 'Mitocondria', c: 'Pared celular' });
+  igual(d.pares, { 1: 'a', 2: 'b' });
+  igual(d.clave, '1-a; 2-b');
+  igual(d.distractores, 1);
+});
+
+prueba('distractores: dibujar y guardar no pierde nada (ida y vuelta)', () => {
+  const colA = { 1: 'Perú', 2: 'Chile' }, colB = { a: 'Lima', b: 'Santiago', c: 'Quito', d: 'Bogotá' }, pares = { 1: 'a', 2: 'b' };
+  const filas = filasConDistractores([{ left: 'Perú', right: 'Lima' }, { left: 'Chile', right: 'Santiago' }], colA, colB, pares);
+  const d = datosDeFilas(filas);
+  igual([d.colA, d.colB, d.pares], [colA, colB, pares]);
+  // y otra vez: es estable
+  const d2 = datosDeFilas(filasConDistractores([{ left: 'Perú', right: 'Lima' }, { left: 'Chile', right: 'Santiago' }], d.colA, d.colB, d.pares));
+  igual([d2.colA, d2.colB, d2.pares], [colA, colB, pares]);
+});
+
+prueba('distractores: una pareja con un solo lado se conserva (el validador la marca)', () => {
+  const d = datosDeFilas([{ left: 'ADN', right: '', distractor: false }, { left: 'ATP', right: 'Mitocondria', distractor: false }]);
+  igual([d.colA, d.colB], [{ 1: 'ADN', 2: 'ATP' }, { a: '', b: 'Mitocondria' }]);
+});
+
+prueba('distractores: el resumen de la tarjeta', () => {
+  igual(resumenDeFilas(1, 0), '1 pareja');
+  igual(resumenDeFilas(3, 0), '3 parejas');
+  igual(resumenDeFilas(3, 1), '3 parejas y 1 opción de más');
+  igual(resumenDeFilas(2, 2), '2 parejas y 2 opciones de más');
+});
+
+// ── Numéricas: el separador de miles (la MISMA tabla que dev/test_xml_validador.py) ──
+prueba('numérica: «1,000» y «1.000» son ambiguos (mil o uno con tres decimales)', () => {
+  const casos = [['1,000', ['1.000', '1000']], ['1.000', ['1.000', '1000']], ['12,345', ['12.345', '12345']], ['-3.141', ['-3.141', '-3141']],
+    ['999,999', ['999.999', '999999']], ['+1,500', ['+1.500', '+1500']],
+    ['0,500', null], ['0.001', null], ['3,5', null], ['3.14', null], ['1000', null], ['1234,567', null], ['1,00', null], ['9.8', null], ['', null], ['abc', null]];
+  for (const [txt, esperado] of casos) {
+    const a = milesAmbiguo(txt);
+    igual(a ? [a.leido, a.alterno] : null, esperado, `milesAmbiguo(${JSON.stringify(txt)})`);
+  }
+});
+
+prueba('numérica: un número con separadores de miles de verdad se explica sin ellos', () => {
+  const casos = [['1,234.5', '1234.5'], ['1.234,5', '1234.5'], ['1,234,567', '1234567'], ['12.345.678', '12345678'], ['1.234.567,89', '1234567.89'],
+    ['1,000', null], ['3,5', null], ['1234', null], ['1,2345', null], ['abc', null]];
+  for (const [txt, esperado] of casos) igual(sinSeparadorDeMiles(txt), esperado, `sinSeparadorDeMiles(${JSON.stringify(txt)})`);
+});
+
+prueba('numérica: el aviso en vivo y el mensaje del validador', () => {
+  igual(avisoDeMilesAmbiguo('3,5'), '');
+  igual(avisoDeMilesAmbiguo('1,000').includes('puede ser 1000 o 1.000') && avisoDeMilesAmbiguo('1,000').includes('sin separador de miles'), true);
+  igual(detectarProblemas([{ num: 1, type: 'numerical', data: {} }], { 1: { answer: '1,000' } })[0].length, 1);
+  igual(detectarProblemas([{ num: 1, type: 'numerical', data: {} }], { 1: { answer: '3,5' } }), [[]]);
+  igual(questionIssues({ num: 1, type: 'numerical', data: { stem: 'x' } }, { answer: '1,234.5' }), ['La respuesta debe ser un número: escríbelo sin separador de miles (1234.5)']);
+  igual(questionIssues({ num: 1, type: 'numerical', data: { stem: 'x' } }, { answer: 'abc' }), ['La respuesta debe ser un número']);
+  igual(questionIssues({ num: 1, type: 'numerical', data: { stem: 'x' } }, { answer: '3,5' }), []);
+});
+
+// ── «Según el tipo»: cuántos puntos vale CADA pregunta de un tipo; el total es la suma ──
+const sinHuecos = (type, n) => Array.from({ length: n }, () => ({ type }));
+
+prueba('por tipo: 10 de opción múltiple a 2 pts y 5 de completar a 5 pts valen 20 + 25 = 45', () => {
+  const qs = [...sinHuecos('multichoice', 10), ...Array.from({ length: 5 }, () => completar(2))];
+  const total = aplicarPuntosPorTipo(qs, { multichoice: 2, cloze: 5 });
+  igual(total, 45);
+  igual(qs.slice(0, 10).every(q => q.points === 2), true);
+  igual(qs.slice(10).every(q => q.points === 5), true);
+});
+
+prueba('por tipo: acepta decimales en los tipos que no son «Completar» y suma en centésimas exactas', () => {
+  const qs = [...sinHuecos('truefalse', 3), ...sinHuecos('essay', 2)];
+  igual(aplicarPuntosPorTipo(qs, { truefalse: 0.5, essay: 7.25 }), 16);
+  igual(qs.map(q => q.points), [0.5, 0.5, 0.5, 7.25, 7.25]);
+  igual(sumaDePuntos([0.1, 0.2, 0.3]), 0.6);
+});
+
+prueba('por tipo: «Completar» vale puntos enteros y al menos uno por espacio', () => {
+  const qs = [completar(2), completar(7), completar(1)];
+  aplicarPuntosPorTipo(qs, { cloze: 5 });
+  igual(qs.map(q => q.points), [5, 7, 5]);
+  const r = [completar(3)]; aplicarPuntosPorTipo(r, { cloze: 2.5 });
+  igual(r[0].points, 3);
+  const s2 = [completar(2)]; aplicarPuntosPorTipo(s2, { cloze: 0 });
+  igual(s2[0].points, 0);
+});
+
+prueba('por tipo: un tipo sin valor válido no se toca', () => {
+  const qs = [{ type: 'multichoice', points: 4 }, { type: 'truefalse', points: 1.5 }];
+  const total = aplicarPuntosPorTipo(qs, { multichoice: 3, truefalse: null });
+  igual(qs.map(q => q.points), [3, 1.5]);
+  igual(total, 4.5);
+  igual(puntosPorTipo([{ type: 'essay', actual: 6 }], { essay: -1 }), [6]);
+  igual(puntosPorTipo([{ type: 'essay', actual: 6 }], { essay: NaN }), [6]);
+  igual(puntosPorTipo([{ type: 'essay', actual: 6 }], {}), [6]);
+});
+
+prueba('por tipo: qué se acepta como puntaje', () => {
+  igual([0, 1, 2.5].every(puntajeValido), true);
+  igual([-1, NaN, Infinity, '3', null, undefined].some(puntajeValido), false);
+});
+
+prueba('por tipo: se precarga el valor común; si las preguntas valen distinto, nada (null) y ese tipo no se toca', () => {
+  igual(puntajeComunDe([2, 2, 2]), 2);
+  igual(puntajeComunDe([3.57, 3.57, 3.56]), 3.57);
+  igual(puntajeComunDe([2, 2, 7, 2, 2]), null);
+  igual(puntajeComunDe([2, 4]), null);
+  igual(puntajeComunDe([]), null);
+});
+
 prueba('total inválido no toca los puntos', () => {
   const qs = preguntas(['multichoice']);
   qs[0].points = 7;
@@ -177,6 +359,13 @@ prueba('completar: sin espacios y con un espacio vacío', () => {
   igual(questionIssues({ num: 1, type: 'cloze', data: { text: 'La capital es [A: ]' } }, { answer: '' }),
     ['Un espacio no tiene opciones']);
   igual(questionIssues({ num: 1, type: 'cloze', data: { text: 'La capital es [A: Lima / Quito]' } }, { answer: 'A. Lima' }), []);
+});
+
+prueba('completar: un espacio con una sola opción no se acepta (mínimo 2)', () => {
+  igual(questionIssues({ num: 1, type: 'cloze', data: { text: 'La capital es [A: Lima]' } }, { answer: 'A. Lima' }),
+    ['Un espacio tiene una sola opción (mínimo 2)']);
+  igual(questionIssues({ num: 1, type: 'cloze', data: { text: '[A: uno / dos] y [B: tres]' } }, { answer: 'A. uno; B. tres' }),
+    ['Un espacio tiene una sola opción (mínimo 2)']);
 });
 
 // «Completar»: sin marca en el documento no se inventa respuesta.

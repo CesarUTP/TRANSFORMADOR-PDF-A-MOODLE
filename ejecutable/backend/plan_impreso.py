@@ -57,9 +57,7 @@ NOMBRE_PARTE = {"multichoice": "SELECCIÓN MÚLTIPLE", "truefalse": "VERDADERO O
                 "cloze": "COMPLETAR", "shortanswer": "RESPUESTA CORTA", "numerical": "RESPUESTA NUMÉRICA", "essay": "DESARROLLO"}
 
 # Opciones que dependen de su POSICIÓN («todas las anteriores», «A y B»…): esa pregunta no se mezcla.
-_POSICIONAL = re.compile(r"\b(anteriores?|ambas|ambos|las dos|los dos|todas las (opciones|respuestas|de arriba)|"
-                         r"ninguna de (las|los)|ninguno de (las|los)|(opci[oó]n|incisos?|literal(es)?)\s+[A-J])\b|"
-                         r"\b[A-J]\s*(y|e|o|,)\s*[A-J]\b", re.I)
+from answer_matching import OPCION_POSICIONAL as _POSICIONAL   # la misma regla que usa el XML (answer_matching.py)
 
 _DIR_FUENTES = Path(__file__).resolve().parent / "fuentes"
 _FAMILIA = "DejaVu"                       # la fuente de respaldo: tiene casi todos los símbolos

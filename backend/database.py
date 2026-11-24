@@ -32,6 +32,7 @@ UMBRAL_AVISO = 0.85
 # Por encima de este tamaño no se hace la comprobación de integridad al
 # arrancar (sería lenta); el resto de la detección de daño sigue funcionando.
 _MAX_BYTES_COMPROBAR = 64 * 1024 * 1024
+_MAX_BYTES_VACUUM = 600 * 1024 * 1024     # el tope del Historial es 400 MB: cabe con holgura
 
 
 def _app_data_dir() -> Path:
@@ -159,6 +160,8 @@ def _crear_o_migrar() -> None:
             estado = conn.execute("PRAGMA quick_check(1)").fetchone()
             if estado and str(estado[0]).lower() != "ok":
                 raise sqlite3.DatabaseError("database disk image is malformed (quick_check)")
+        if tablas > 0:
+            _activar_auto_vacuum(conn, ruta)
         conn.execute(_ESQUEMA)
         # Migración: las preguntas tal como quedaron en el editor (JSON),
         # para poder "Reabrir" una conversión y corregirla. Las entradas
@@ -182,6 +185,30 @@ def _crear_o_migrar() -> None:
         conn.execute(_ESQUEMA_PERFILES)
         conn.execute(_ESQUEMA_AJUSTES)
         conn.commit()
+
+
+def _activar_auto_vacuum(conn: sqlite3.Connection, ruta: Path) -> None:
+    """Las bases creadas antes de que existiera `auto_vacuum` no devuelven el espacio de lo que se
+    borra (la poda del Historial): el archivo solo crece. Se activa UNA vez con un VACUUM, que
+    reescribe el archivo y por eso se hace solo con espacio de sobra en disco y sin dañar nada si
+    falla (la app arranca igual). Una base que ya lo tiene no se toca."""
+    try:
+        if conn.execute("PRAGMA auto_vacuum").fetchone()[0] != 0:
+            return
+        tam = ruta.stat().st_size if ruta.exists() else 0
+        if tam > _MAX_BYTES_VACUUM:
+            logger.info("Base de %s bytes: no se reescribe para activar auto_vacuum (demasiado grande para hacerlo al arrancar)", tam)
+            return
+        libre = shutil.disk_usage(ruta.parent).free
+        if libre < tam * 2 + 50 * 1024 * 1024:
+            logger.warning("Sin espacio para reescribir la base y activar auto_vacuum: se intentará en otro arranque")
+            return
+        conn.commit()
+        conn.execute("PRAGMA auto_vacuum = INCREMENTAL")
+        conn.execute("VACUUM")          # sin esto el cambio de auto_vacuum no se aplica
+        logger.info("auto_vacuum activado en la base existente (%s bytes)", tam)
+    except (sqlite3.Error, OSError):
+        logger.warning("No se pudo activar auto_vacuum en la base existente", exc_info=True)
 
 
 def _respaldar_antes_de_migrar(conn: sqlite3.Connection, ruta: Path) -> None:

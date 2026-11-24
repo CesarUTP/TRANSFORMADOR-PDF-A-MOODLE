@@ -214,7 +214,7 @@ export async function generateXml() {
     // Se usa directamente lo que se acaba de enviar (con el `points`
     // real de cada pregunta) para el resumen — una sola fuente de verdad, y
     // el resumen final siempre coincide exactamente con el XML generado. De
-    // la cabecera X-Question-Stats solo se leen la escala y los avisos.
+    // la cabecera X-Question-Stats solo se leen los avisos.
     const disposition = res.headers.get('Content-Disposition');
     // El nombre real (con tildes) viene en filename*=UTF-8''…; filename="…"
     // es solo una versión ASCII de respaldo.
@@ -242,16 +242,8 @@ export async function generateXml() {
     // Después de guardar el nombre del archivo: el resumen lo muestra, y
     // si se calculaba antes salía un "•" suelto al final de la frase.
     updateSuccessStats(questions);
-    // Moodle solo admite pesos enteros en «Completar»: si hizo falta, todos
-    // los puntos se multiplicaron por el mismo factor (la nota final no
-    // cambia). Se avisa para que el total distinto en Moodle no sorprenda.
-    const escala = Number(stats.escala) || 1;
     const historialGuardado = stats.historial_guardado !== false;
-    // Sin Historial, el toast de más abajo taparía este: entonces va en el recuadro.
-    if (escala > 1 && historialGuardado) {
-      showToast(`En Moodle cada pregunta valdrá ${escala} veces sus puntos (no admite decimales en «Completar»). La nota final no cambia.`, 'info');
-    }
-    mostrarAvisosDelXml(stats, escala);
+    mostrarAvisosDelXml(stats);
     const dlLabel = document.getElementById('btn-download-label');
     if (dlLabel) dlLabel.textContent = 'Descargar Moodle XML';
     showPanel('success');
@@ -278,13 +270,10 @@ export async function generateXml() {
 // Avisos no bloqueantes que trae la respuesta: los del constructor de XML
 // (`avisos`, lista de textos) y, si no se guardó en el Historial, su motivo.
 // Van en un recuadro junto al resumen; se vacía y oculta si no hay ninguno.
-function mostrarAvisosDelXml(stats, escala) {
+function mostrarAvisosDelXml(stats) {
   const box = document.getElementById('success-avisos');
   if (!box) return;
   const textos = avisosDelXml(stats);
-  if (escala > 1 && stats.historial_guardado === false) {
-    textos.push(`En Moodle cada pregunta valdrá ${escala} veces sus puntos (no admite decimales en «Completar»). La nota final no cambia.`);
-  }
   if (!textos.length) { box.style.display = 'none'; box.textContent = ''; return; }
   box.innerHTML = `<i data-lucide="alert-triangle"></i>
     <div style="min-width:0;">

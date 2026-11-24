@@ -1,67 +1,71 @@
 /**
  * puntos-ui.js — panel "Distribuir puntos" (el cálculo vive en js/puntos.js).
+ *
+ * Dos formas de repartir:
+ *   · «Igual para todas»: el total del examen se divide en partes iguales entre las preguntas.
+ *   · «Según el tipo»:    el docente escribe cuántos puntos vale CADA pregunta de cada tipo y el total del
+ *                         examen es la suma (10 de opción múltiple a 2 pts + 5 de completar a 5 pts = 45 pts).
  */
 import { _openCollapsiblePanel, togglePanel } from './paneles.js';
 import { renderEditor, syncParseResultFromDOM } from './tarjetas.js';
 import { estado } from '../estado.js';
-import { autoDistributePoints, fmtPoints } from '../puntos.js';
+import { aplicarPuntosPorTipo, autoDistributePoints, fmtPoints, puntajeValido, puntosPorTipo, sumaDePuntos } from '../puntos.js';
 import { showToast } from '../ui/toast.js';
 
 // ── Panel "Distribuir puntos" ──────────────────────────────────────────
 export function togglePointsToolMenu() {
-  if (togglePanel('points-tool-panel', 'flex')) updatePointsWeightPreview();
+  if (togglePanel('points-tool-panel', 'flex')) actualizarVistaPorTipo();
 }
 
-// Puntos totales del examen: SIEMPRE los que el docente escribió al
-// subir el archivo (nunca un 100 asumido) — un único lugar del que
-// leerlos, para que el panel, la vista previa y el contador no puedan
-// quedar diciendo cosas distintas.
+// Puntos totales del examen: los que el docente escribió al subir el archivo o,
+// después de «Según el tipo», la suma que salió de ahí (nunca un 100 asumido) —
+// un único lugar del que leerlos, para que el panel, la vista previa y el
+// contador no puedan quedar diciendo cosas distintas.
 export function _editorTotalPoints() {
   const t = estado.currentUploadMetadata ? Number(estado.currentUploadMetadata.total_points) : NaN;
   return Number.isFinite(t) && t > 0 ? t : 0;
 }
-// Formato corto y sin ceros de relleno (2.50 → "2.5", 20.00 → "20").
 
-// Lee los pesos escritos en el panel "Por tipo". Es la ÚNICA lectura de
-// esos inputs: la vista previa y el botón "Aplicar" la comparten a
-// propósito, porque antes cada una interpretaba distinto un campo vacío
-// (la vista previa lo tomaba como 0 y "Aplicar" como 1), así que el
-// reparto que se aplicaba no era el que la vista previa había
-// prometido. Un campo vacío o con basura vale 1 (peso neutro); un 0
-// escrito a propósito sí se respeta.
-function readTypeWeights() {
-  const weights = {};
-  document.querySelectorAll('.points-weight-input').forEach(inp => {
-    const v = parseFloat(inp.value);
-    weights[inp.dataset.type] = Number.isFinite(v) && v >= 0 ? v : 1;
+// Lee lo que el docente escribió en «Según el tipo»: { tipo: número | null } (null = vacío o no válido: ese
+// tipo no se toca). Es la ÚNICA lectura de esos campos: la vista previa y el botón «Aplicar» la comparten a
+// propósito, para que lo que se aplica sea exactamente lo que la vista previa prometió.
+function leerPuntosPorTipo() {
+  const porTipo = {};
+  document.querySelectorAll('.points-type-input').forEach(inp => {
+    const v = inp.value.trim() === '' ? NaN : Number(inp.value);
+    porTipo[inp.dataset.type] = puntajeValido(v) ? v : null;
   });
-  return weights;
+  return porTipo;
 }
 
-// Cambia entre "Equitativo" (sin configuración) y "Por tipo" (muestra
-// el peso editable de cada tipo presente) — no aplica nada todavía,
-// solo decide qué hace el botón "Aplicar".
+// Cambia entre "Igual para todas" y "Según el tipo" (muestra los puntos de cada tipo)
+// — no aplica nada todavía, solo decide qué hace el botón "Aplicar".
 let _pointsToolMode = 'byType';
 
 export function setPointsToolMode(mode) {
   _pointsToolMode = mode;
   const equalBtn = document.getElementById('points-mode-equal');
   const byTypeBtn = document.getElementById('points-mode-byType');
-  const weightsEditor = document.getElementById('points-weights-editor');
+  const editor = document.getElementById('points-weights-editor');
   if (equalBtn) { equalBtn.className = 'btn btn-sm ' + (mode === 'equal' ? 'btn-primary' : 'btn-ghost'); equalBtn.setAttribute('aria-pressed', mode === 'equal'); equalBtn.style.flex = '1'; }
   if (byTypeBtn) { byTypeBtn.className = 'btn btn-sm ' + (mode === 'byType' ? 'btn-primary' : 'btn-ghost'); byTypeBtn.setAttribute('aria-pressed', mode === 'byType'); byTypeBtn.style.flex = '1'; }
-  if (weightsEditor) weightsEditor.style.display = (mode === 'byType') ? 'flex' : 'none';
+  if (editor) editor.style.display = (mode === 'byType') ? 'flex' : 'none';
+  const ayudaTipo = document.getElementById('points-help-byType');
+  const ayudaIgual = document.getElementById('points-help-equal');
+  if (ayudaTipo) ayudaTipo.hidden = mode !== 'byType';
+  if (ayudaIgual) ayudaIgual.hidden = mode !== 'equal';
 }
 
-// renderEditor() reconstruye la barra con «Según el tipo» y los pesos por
-// defecto. Esto deja el panel como el docente lo tenía: el modo elegido y los
-// pesos que escribió (`pesos`: tipo → texto del campo) en los tipos que siguen
-// presentes. Sin esto, el botón resaltado decía una cosa y «Aplicar» hacía otra.
-export function sincronizarPanelPuntos(pesos = {}) {
+// renderEditor() reconstruye la barra con «Según el tipo» y los puntos de hoy. Esto deja el
+// panel como el docente lo tenía: el modo elegido y lo que escribió (`escritos`: tipo →
+// texto del campo) en los tipos que siguen presentes. Sin esto, el botón resaltado decía
+// una cosa y «Aplicar» hacía otra.
+export function sincronizarPanelPuntos(escritos = {}) {
   setPointsToolMode(_pointsToolMode);
-  document.querySelectorAll('.points-weight-input').forEach(inp => {
-    if (Object.hasOwn(pesos, inp.dataset.type)) inp.value = pesos[inp.dataset.type];
+  document.querySelectorAll('.points-type-input').forEach(inp => {
+    if (Object.hasOwn(escritos, inp.dataset.type)) inp.value = escritos[inp.dataset.type];
   });
+  actualizarVistaPorTipo();
 }
 
 // Al abrir OTRO examen el panel vuelve a su estado de fábrica.
@@ -69,47 +73,58 @@ export function reiniciarPanelPuntos() {
   _pointsToolMode = 'byType';
 }
 
-// Botón "Aplicar": recalcula el puntaje de TODAS las preguntas según el
-// modo elegido. Reemplaza los valores puestos a mano, así que el aviso
-// ofrece "Deshacer" (antes solo había una advertencia en letra de 11,5px).
+// Botón "Aplicar": fija el puntaje de TODAS las preguntas según el modo elegido. Reemplaza los
+// valores puestos a mano, así que el aviso ofrece "Deshacer" (restaura también el total del examen).
 export function applyPointsDistribution() {
-  // Los pesos que el docente acaba de escribir viven en inputs que
-  // renderEditor() va a reconstruir desde cero más abajo — hay que
-  // leerlos ANTES de perderlos, y guardarlos para volver a pintarlos
-  // en el panel ya aplicado (si no, el panel se veía "reiniciado" al
-  // pulsar Aplicar, como si no hubiera pasado nada).
+  // Lo escrito vive en inputs que renderEditor() va a reconstruir desde cero más abajo —
+  // hay que leerlo ANTES de perderlo (renderEditor lo vuelve a poner por su cuenta).
   const mode = _pointsToolMode;
-  const weights = readTypeWeights();
+  const porTipo = leerPuntosPorTipo();
 
   syncParseResultFromDOM();
-  const totalPoints = _editorTotalPoints();
-  if (!totalPoints) {
-    showToast('No hay un total de puntos definido para este examen', 'error');
-    return;
+  const questions = estado.currentParseResult.questions;
+  const anteriores = questions.map(q => q.points);
+  const totalAntes = _editorTotalPoints();
+  let totalNuevo = totalAntes;
+
+  if (mode === 'equal') {
+    if (!totalAntes) {
+      showToast('No hay un total de puntos definido para este examen', 'error');
+      return;
+    }
+    autoDistributePoints(questions, totalAntes, 'equal');
+  } else {
+    if (!Object.values(porTipo).some(v => v !== null)) {
+      showToast('Escribe cuántos puntos vale cada tipo de pregunta', 'error');
+      return;
+    }
+    totalNuevo = aplicarPuntosPorTipo(questions, porTipo);
+    if (!(totalNuevo > 0)) {
+      questions.forEach((q, i) => { q.points = anteriores[i]; });
+      showToast('El examen no puede valer 0 puntos: escribe al menos un tipo con puntos', 'error');
+      return;
+    }
+    if (estado.currentUploadMetadata) estado.currentUploadMetadata.total_points = totalNuevo;
   }
-  const anteriores = estado.currentParseResult.questions.map(q => q.points);
-  autoDistributePoints(estado.currentParseResult.questions, totalPoints, mode, weights);
   renderEditor(estado.currentParseResult);
 
-  // Reabre el panel con el mismo modo y los mismos pesos que el
-  // docente acababa de configurar, para que vea de inmediato el
-  // resultado sobre las tarjetas de abajo en vez de que el panel se
-  // cierre solo y parezca que no pasó nada.
+  // Reabre el panel con el mismo modo y lo mismo que el docente acababa de escribir,
+  // para que vea de inmediato el resultado sobre las tarjetas de abajo en vez de que
+  // el panel se cierre solo y parezca que no pasó nada.
   setPointsToolMode(mode);
-  document.querySelectorAll('.points-weight-input').forEach(inp => {
-    if (inp.dataset.type in weights) inp.value = weights[inp.dataset.type];
-  });
-  updatePointsWeightPreview();
+  actualizarVistaPorTipo();
   const panel = document.getElementById('points-tool-panel');
   if (panel && !panel.classList.contains('panel-open')) _openCollapsiblePanel(panel, 'flex');
 
   // El aviso dice el resultado concreto y permite volver atrás.
-  showToast(
-    `${fmtPoints(totalPoints)} pts repartidos entre ${estado.currentParseResult.questions.length} preguntas`,
-    'info',
-    { accion: { texto: 'Deshacer', alPulsar: () => {
+  const texto = mode === 'equal'
+    ? `${fmtPoints(totalNuevo)} pts repartidos entre ${questions.length} preguntas`
+    : `El examen ahora vale ${fmtPoints(totalNuevo)} pts${Math.abs(totalNuevo - totalAntes) > 0.009 ? ` (antes ${fmtPoints(totalAntes)})` : ''}`;
+  showToast(texto, 'info', {
+    accion: { texto: 'Deshacer', alPulsar: () => {
       syncParseResultFromDOM();
       estado.currentParseResult.questions.forEach((q, i) => { if (i < anteriores.length) q.points = anteriores[i]; });
+      if (estado.currentUploadMetadata && totalAntes) estado.currentUploadMetadata.total_points = totalAntes;
       renderEditor(estado.currentParseResult);
       showToast('Se restauraron los puntos anteriores', 'info');
       return document.querySelector('[data-accion="applyPointsDistribution"]');
@@ -134,43 +149,40 @@ export function updatePointsAssignedLabel() {
   label.title = off ? 'La suma de los puntos no coincide con el total del examen' : '';
 }
 
-// Vista previa en vivo del panel "Por tipo": mientras el docente
-// escribe un peso, se calcula al instante cuánto le tocaría a cada
-// pregunta de ese tipo CON LOS PESOS ACTUALES — sin tocar todavía el
-// puntaje real de ninguna pregunta (eso solo pasa al pulsar Aplicar).
-// Así se ve de inmediato, por ejemplo, que si un tipo se lleva todo el
-// peso los demás quedan en 0, en vez de tener que adivinar y aplicar
-// para recién enterarse.
-export function updatePointsWeightPreview() {
-  const previews = document.querySelectorAll('.points-weight-preview');
-  if (!previews.length) return;
-  const totalPoints = _editorTotalPoints();
-  // La vista previa no reimplementa la fórmula: corre el MISMO
-  // autoDistributePoints() que el botón "Aplicar", pero sobre una copia
-  // de juguete (solo el tipo de cada tarjeta) para no tocar ninguna
-  // pregunta de verdad. Así es imposible que prometa un reparto y luego
-  // se aplique otro.
-  const mock = [...document.querySelectorAll('#editor-questions-container .editor-card')]
-    .map(card => ({ type: card.dataset.qtype }));
-  if (!mock.length || !totalPoints) {
-    previews.forEach(el => { el.textContent = '—'; });
-    return;
+// Vista previa en vivo de «Según el tipo»: mientras el docente escribe cuánto vale cada
+// pregunta de un tipo, se muestra al instante el subtotal de ese tipo y el total del examen
+// — sin tocar todavía el puntaje real de ninguna pregunta (eso solo pasa al pulsar Aplicar).
+// No reimplementa la cuenta: corre el MISMO puntosPorTipo() que usa «Aplicar», así es
+// imposible que prometa un total y luego se aplique otro.
+export function actualizarVistaPorTipo() {
+  const subtotales = document.querySelectorAll('.points-type-sub');
+  const linea = document.getElementById('points-type-total');
+  if (!subtotales.length) return;
+  const tarjetas = [...document.querySelectorAll('#editor-questions-container .editor-card')];
+  const items = tarjetas.map(card => ({
+    type: card.dataset.qtype,
+    huecos: card.dataset.qtype === 'cloze' ? Math.max(1, card.querySelectorAll('.cloze-blank-card').length) : 0,
+    actual: parseFloat(card.querySelector('.q-points')?.value) || 0,
+  }));
+  const porTipo = leerPuntosPorTipo();
+  const puntos = puntosPorTipo(items, porTipo);
+  const suma = {};
+  const sube = {};          // «Completar» con más espacios que puntos: Moodle da al menos 1 por espacio
+  items.forEach((it, i) => {
+    suma[it.type] = (suma[it.type] || 0) + puntos[i];
+    if (it.type === 'cloze' && porTipo.cloze !== null && puntos[i] > Math.round(porTipo.cloze)) sube.cloze = true;
+  });
+  subtotales.forEach(el => {
+    const t = el.dataset.type;
+    el.textContent = porTipo[t] === null
+      ? 'sin cambio'
+      : `= ${fmtPoints(Math.round((suma[t] || 0) * 100) / 100)} pts${sube[t] ? '*' : ''}`;
+  });
+  if (linea) {
+    const total = sumaDePuntos(puntos);
+    const ahora = _editorTotalPoints();
+    linea.textContent = `Total del examen: ${fmtPoints(total)} pts`
+      + (ahora && Math.abs(total - ahora) > 0.009 ? ` (ahora ${fmtPoints(ahora)})` : '')
+      + (sube.cloze ? '. * Completar vale puntos enteros, al menos uno por espacio.' : '');
   }
-  autoDistributePoints(mock, totalPoints, _pointsToolMode, readTypeWeights());
-  const range = {};
-  mock.forEach(q => {
-    const r = range[q.type] || (range[q.type] = { min: q.points, max: q.points });
-    r.min = Math.min(r.min, q.points);
-    r.max = Math.max(r.max, q.points);
-  });
-  previews.forEach(el => {
-    const r = range[el.dataset.type];
-    if (!r) { el.textContent = '—'; return; }
-    // El reparto de céntimos sobrantes puede dejar 0.01 de diferencia
-    // dentro de un mismo tipo — se muestra el rango en vez de un valor
-    // único que no sería cierto para todas.
-    el.textContent = r.min === r.max
-      ? `${fmtPoints(r.min)} pts c/u`
-      : `${fmtPoints(r.min)}–${fmtPoints(r.max)} pts c/u`;
-  });
 }

@@ -10,6 +10,7 @@ Generates XML that conforms to the Moodle XML Question Format spec:
 import html
 import logging
 import re
+import unicodedata
 from typing import Dict, List, Optional
 
 from config import (
@@ -20,7 +21,7 @@ from config import (
     DEFAULT_MATCHING_STEM,
 )
 from models import QuestionStats
-from answer_matching import RespuestaNoResuelta, find_cloze_brackets
+from answer_matching import OPCION_POSICIONAL, RespuestaNoResuelta, find_cloze_brackets, miles_ambiguo, sin_separador_de_miles
 from modelo import (
     Clave, Hueco, HuecoClave, Pregunta, PreguntaCloze, PreguntaEssay, PreguntaMatching, PreguntaMultichoice,
     PreguntaNumerical, PreguntaShortanswer, PreguntaTruefalse, huecos_de_cloze,
@@ -83,6 +84,14 @@ def cdata(text: str) -> str:
     return f"<![CDATA[{text}]]>"
 
 
+def cdata_texto_plano(text: str) -> str:
+    """Texto PLANO (la respuesta de una respuesta corta) en una sección CDATA, SIN escapes HTML.
+    Moodle compara lo que escribe el estudiante con este texto tal cual: «O'Higgins» o «AT&T» con
+    escapes (&#x27;, &amp;) quedaban guardados con esas letras y nunca coincidían. Lo único que
+    no cabe en un CDATA es «]]>»: se parte en dos secciones."""
+    return "<![CDATA[" + _sin_control(str(text)).replace("]]>", "]]]]><![CDATA[>") + "]]>"
+
+
 def texto_html(text: str) -> str:
     """Enunciado/retroalimentación como HTML: escapa, y convierte los
     saltos de línea del enunciado (código, listas propias) en <br> y los
@@ -96,11 +105,10 @@ def texto_html(text: str) -> str:
 
 
 def strip_accents(s: str) -> str:
-    return (s.replace('á', 'a').replace('é', 'e').replace('í', 'i')
-             .replace('ó', 'o').replace('ú', 'u')
-             .replace('Á', 'A').replace('É', 'E').replace('Í', 'I')
-             .replace('Ó', 'O').replace('Ú', 'U')
-             .replace('ñ', 'n').replace('Ñ', 'N'))
+    """Quita tildes y diéresis («pingüino» → «pinguino», «ñ» → «n»): descompone en Unicode y descarta
+    las marcas combinadas. Antes solo cubría á é í ó ú ñ y dejaba fuera la «ü»."""
+    return unicodedata.normalize("NFC", "".join(
+        c for c in unicodedata.normalize("NFD", s) if not unicodedata.combining(c)))
 
 
 def _pesos_cloze(n_huecos: int, peso_total: Optional[int]) -> List[int]:
@@ -114,9 +122,6 @@ def _pesos_cloze(n_huecos: int, peso_total: Optional[int]) -> List[int]:
     return [base + (1 if i < resto else 0) for i in range(n_huecos)]
 
 
-_ESCALAS = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30, 40, 50, 70, 100, 200, 500, 1000)
-
-
 def _nota_de(p: Pregunta, grades: Dict[str, float]) -> float:
     """<defaultgrade> de una pregunta: su puntaje propio del editor o, si no
     llegó, el reparto por peso de tipo."""
@@ -124,45 +129,16 @@ def _nota_de(p: Pregunta, grades: Dict[str, float]) -> float:
     return puntos if puntos is not None else grades.get(p.tipo, 1.0)
 
 
-def _plan_puntos(preguntas: List[Pregunta], grades: Dict[str, float]) -> tuple:
-    """(escala, [<defaultgrade> final de cada pregunta]) para que el total y el
-    valor de cada pregunta en Moodle coincidan con el editor.
+def _plan_puntos(preguntas: List[Pregunta], grades: Dict[str, float]) -> List[float]:
+    """<defaultgrade> de cada pregunta: EXACTAMENTE los puntos del editor.
 
-    Moodle IGNORA el <defaultgrade> de «Completar»: vale la suma de los
-    pesos (enteros) de sus huecos. Para que valga lo mismo que en el editor:
-      1. Se busca el factor más chico (1, 2, 3…) que multiplicado por TODOS
-         los puntos deja cada «Completar» casi entero (≤ 0,5 % de error) y
-         con al menos 1 por hueco. Multiplicar todo por igual no cambia la
-         nota final: Moodle la calcula sobre el total.
-      2. El pequeño resto de redondear esos pesos se reparte entre las
-         demás preguntas, así el total en Moodle es exactamente el del
-         editor × factor (ej. 100 → 100, no 102,9).
-    """
-    def n_huecos(p: Pregunta) -> int:
-        return max(1, len(find_cloze_brackets(p.text or "")))
-
-    notas = [_nota_de(p, grades) for p in preguntas]
-    es_cloze = [isinstance(p, PreguntaCloze) and not p.tiene_error for p in preguntas]
-    casos = [(notas[i], n_huecos(p)) for i, p in enumerate(preguntas) if es_cloze[i] and notas[i] > 0]
-
-    def cabe(k: int, tolerancia: float) -> bool:
-        return all(n * k >= h and abs(round(n * k) - n * k) <= tolerancia * n * k for n, h in casos)
-
-    escala = next((k for k in _ESCALAS if cabe(k, 0.005)), None)
-    if escala is None:
-        escala = next((k for k in _ESCALAS if cabe(k, 0.06)), 1)
-    finales = [round(n * escala, 7) for n in notas]
-
-    huecos_de = {i: n_huecos(p) for i, p in enumerate(preguntas) if es_cloze[i] and finales[i] > 0}
-    suma_resto = sum(v for i, v in enumerate(finales) if i not in huecos_de)
-    if huecos_de and suma_resto > 0:
-        suma_cloze = sum(max(huecos_de[i], round(finales[i])) for i in huecos_de)
-        factor = (sum(finales) - suma_cloze) / suma_resto
-        if 0.95 <= factor <= 1.05:
-            for i in range(len(finales)):
-                if i not in huecos_de:
-                    finales[i] = round(finales[i] * factor, 7)
-    return escala, finales
+    Antes (hasta la 2.8) se multiplicaban todos los puntos por un factor para
+    que los huecos de «Completar» (pesos enteros en Moodle) salieran exactos:
+    un examen de 100 puntos con un «Completar» decimal llegaba a Moodle con 700.
+    Ahora el editor reparte puntos ENTEROS a «Completar» (mínimo uno por hueco),
+    y si aun así llega una con decimales o con menos puntos que huecos, el XML
+    no toca nada: se avisa (_avisar_puntos_cloze) de lo que Moodle le dará."""
+    return [round(float(_nota_de(p, grades)), 7) for p in preguntas]
 
 
 def _html_fuera_de_huecos(texto: str, inicio_de_linea: bool) -> str:
@@ -412,6 +388,56 @@ def _avisar_reparto_fracciones(stats: QuestionStats, num: int, correctas: int, i
         logger.warning(aviso)
 
 
+def _reparto_desigual_cloze(raw_text: str, grade_val: float) -> Optional[List[int]]:
+    """Pesos de los huecos de un «Completar» cuando NO son todos iguales (p. ej. 19 puntos en
+    3 huecos = 7, 6 y 6: Moodle solo admite pesos enteros, así que los primeros huecos se
+    quedan con el punto que sobra). None si se reparten por igual."""
+    huecos = max(1, len(find_cloze_brackets(raw_text)))
+    if grade_val <= 0 or huecos < 2:
+        return None
+    pesos = _pesos_cloze(huecos, round(grade_val))
+    return pesos if len(set(pesos)) > 1 else None
+
+
+def _punto_valido(v) -> bool:
+    """¿Es un puntaje usable? Un número finito y no negativo (un booleano no es un puntaje)."""
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and v == v and v not in (float("inf"), float("-inf")) and v >= 0
+
+
+def _avisar_puntos_no_validos(stats: QuestionStats, questions: List[dict], preguntas: List[Pregunta],
+                              notas: List[float]) -> None:
+    """Avisa de las preguntas cuyo puntaje no se pudo usar y recibieron el reparto por tipo en su lugar
+    (antes se sustituía en silencio): un valor negativo, que no es un número, infinito, o la falta del
+    puntaje en una pregunta cuando las demás sí lo traen (el total del examen ya no es el del docente)."""
+    if len(questions) != len(preguntas):
+        return
+    antes = len(stats.avisos)
+    hay_validos = any(_punto_valido(q.get("points")) for q in questions if isinstance(q, dict))
+    malos, ausentes = [], []
+    for q, p, nota in zip(questions, preguntas, notas):
+        if not isinstance(q, dict):
+            continue
+        v = q.get("points")
+        if v is None:
+            if hay_validos:
+                ausentes.append((p.num, nota))
+        elif not _punto_valido(v):
+            malos.append((p.num, v, nota))
+    if malos:
+        detalle = "; ".join(f"la {n}: {str(v)[:20]!r} → {nota:g}" for n, v, nota in malos[:4])
+        stats.avisos.append(
+            f"{len(malos)} pregunta(s) traen un puntaje que no sirve (negativo o que no es un número) y recibieron el "
+            f"reparto por tipo en su lugar ({detalle}{'…' if len(malos) > 4 else ''}). El total del examen puede no ser el "
+            f"que fijaste: revisa los puntos en el editor.")
+    if ausentes:
+        detalle = ", ".join(f"{n}" for n, _ in ausentes[:8])
+        stats.avisos.append(
+            f"{len(ausentes)} pregunta(s) no traían puntaje (la {detalle}{'…' if len(ausentes) > 8 else ''}) y recibieron el "
+            f"reparto por tipo. El total del examen puede no ser el que fijaste: revisa los puntos en el editor.")
+    for a in stats.avisos[antes:]:
+        logger.warning(a)
+
+
 def _avisar_puntos_cloze(stats: QuestionStats, num: int, raw_text: str, grade_val: float) -> None:
     """Avisa (sin bloquear) cuando una pregunta de «Completar» valdrá en
     Moodle distinto que en el editor. Moodle ignora <defaultgrade> y suma los
@@ -472,11 +498,14 @@ def build_xml(
     if grades is None:
         grades = {t: 1.0 for t in TYPE_WEIGHTS}
     stats = QuestionStats()
+    miles_dudosos: List[tuple] = []  # numéricas con «1,000»: ¿mil o uno con tres decimales?
+    sin_mezclar: List[int] = []      # multichoice con opciones que dependen de su posición
+    desiguales: List[tuple] = []     # («Completar» cuyos puntos no se parten por igual entre sus huecos)
     category = sanear_categoria(category)
     # Cada dict pasa al modelo tipado (modelo.py) junto con su entrada de la clave.
     preguntas = preguntas_desde_dicts(questions, answer_key)
-    escala, notas_finales = _plan_puntos(preguntas, grades)
-    stats.escala = escala
+    notas_finales = _plan_puntos(preguntas, grades)
+    _avisar_puntos_no_validos(stats, questions, preguntas, notas_finales)
     xml_parts: List[str] = []
     xml_parts.append('<?xml version="1.0" encoding="UTF-8"?>')
     xml_parts.append('<quiz>')
@@ -551,7 +580,12 @@ def build_xml(
             xml_parts.extend(_questiontext(f"<p>{texto_html(stem)}</p>", p, name))
             xml_parts.append(f'    <defaultgrade>{grade_val}</defaultgrade>')
             xml_parts.append(f'    <penalty>{MULTICHOICE_PENALTY}</penalty>')
-            xml_parts.append('    <shuffleanswers>1</shuffleanswers>')
+            # «Todas las anteriores», «A y B»…: si Moodle mezcla las opciones, esas dejan de tener sentido
+            # (el aviso del editor ya lo decía, pero el XML mezclaba igual). Esa pregunta no se mezcla.
+            posicional = any(OPCION_POSICIONAL.search(str(t)) for t in options.values())
+            if posicional:
+                sin_mezclar.append(num)
+            xml_parts.append(f'    <shuffleanswers>{0 if posicional else 1}</shuffleanswers>')
             xml_parts.append(f'    <single>{"true" if is_single else "false"}</single>')
             xml_parts.append('    <answernumbering>abc</answernumbering>')
 
@@ -699,6 +733,9 @@ def build_xml(
                                          round(grade_val) if grade_val > 0 else None, True,
                                          p.respuesta.huecos if p.respuesta is not None else None)
             _avisar_puntos_cloze(stats, num, raw_text, grade_val)
+            _desigual = _reparto_desigual_cloze(raw_text, grade_val)
+            if _desigual:
+                desiguales.append((num, _desigual))
 
             xml_parts.append('  <question type="cloze">')
             xml_parts.append(f'    <name><text>{esc(name)}</text></name>')
@@ -738,8 +775,10 @@ def build_xml(
             # cualquier texto): una respuesta que sea literalmente "*" (o lo
             # contenga) debe escaparse a "\*", si no acepta cualquier cosa.
             respuesta_sa = correct_answer.replace('*', '\\*')
-            xml_parts.append('    <answer fraction="100">')
-            xml_parts.append(f'      <text>{cdata(esc(respuesta_sa))}</text>')
+            # Texto plano, como lo escribe el propio Moodle al exportar (format="plain_text"): la
+            # respuesta va tal cual, sin escapes HTML.
+            xml_parts.append('    <answer fraction="100" format="plain_text">')
+            xml_parts.append(f'      <text>{cdata_texto_plano(respuesta_sa)}</text>')
             xml_parts.append(f'      <feedback><text>{cdata(FEEDBACK_CORRECT)}</text></feedback>')
             xml_parts.append('    </answer>')
 
@@ -752,8 +791,8 @@ def build_xml(
             # para aceptar más de una grafía de la misma respuesta.
             unaccented = strip_accents(respuesta_sa)
             if unaccented != respuesta_sa:
-                xml_parts.append('    <answer fraction="100">')
-                xml_parts.append(f'      <text>{cdata(esc(unaccented))}</text>')
+                xml_parts.append('    <answer fraction="100" format="plain_text">')
+                xml_parts.append(f'      <text>{cdata_texto_plano(unaccented)}</text>')
                 xml_parts.append(f'      <feedback><text>{cdata(FEEDBACK_CORRECT)}</text></feedback>')
                 xml_parts.append('    </answer>')
 
@@ -775,9 +814,14 @@ def build_xml(
             # XML, y Moodle no entiende la coma como separador decimal.
             valor_numerico = p.valor_numerico()
             if valor_numerico is None:
+                sugerido = sin_separador_de_miles(correct_answer)
                 raise RespuestaNoResuelta(
                     f"Pregunta {num} (numerical): la respuesta '{correct_answer[:40]}' no es un número válido."
+                    + (f" Parece llevar separador de miles: escríbelo sin él (por ejemplo {sugerido})." if sugerido else "")
                 )
+            ambiguo = miles_ambiguo(correct_answer)
+            if ambiguo:
+                miles_dudosos.append((num, correct_answer.strip(), ambiguo))
             xml_parts.append('    <answer fraction="100">')
             xml_parts.append(f'      <text>{esc(valor_numerico)}</text>')
             xml_parts.append('      <tolerance>0</tolerance>')
@@ -785,6 +829,37 @@ def build_xml(
             xml_parts.append('    </answer>')
             xml_parts.append('  </question>')
             stats.numerical += 1
+
+    if miles_dudosos:
+        ejemplos = "; ".join(f"la {n} («{t}» se guardó como {leido}, no como {alterno})" for n, t, (leido, alterno) in miles_dudosos[:3])
+        aviso = (
+            f"{len(miles_dudosos)} pregunta(s) numérica(s) tienen un número que puede leerse de dos maneras: {ejemplos}"
+            f"{'…' if len(miles_dudosos) > 3 else ''}. La coma o el punto se tomaron como decimal; si querías decir otra cosa, "
+            f"escribe el número sin separador de miles. Moodle compara el número exacto (tolerancia 0)."
+        )
+        stats.avisos.append(aviso)
+        logger.warning(aviso)
+
+    if sin_mezclar:
+        aviso = (
+            f"{len(sin_mezclar)} pregunta(s) de opción múltiple tienen una opción que depende de su posición "
+            f"(«todas las anteriores», «A y B»…): en Moodle NO se mezclan sus opciones "
+            f"(la {', '.join(map(str, sin_mezclar[:8]))}{'…' if len(sin_mezclar) > 8 else ''}). Si prefieres mezclarlas, "
+            f"cambia esa opción por un texto que no dependa de las demás."
+        )
+        stats.avisos.append(aviso)
+        logger.warning(aviso)
+
+    if desiguales:
+        # Un solo aviso para todas: con el reparto automático son la mayoría de las de «Completar».
+        ejemplos = "; ".join(f"la {n}: {', '.join(map(str, w))}" for n, w in desiguales[:3])
+        aviso = (
+            f"En {len(desiguales)} pregunta(s) de «Completar» los puntos no se reparten por igual entre sus espacios "
+            f"(Moodle solo admite puntos enteros por espacio; los primeros se quedan con el punto que sobra): {ejemplos}"
+            f"{'…' if len(desiguales) > 3 else ''}. El total de cada pregunta no cambia."
+        )
+        stats.avisos.append(aviso)
+        logger.warning(aviso)
 
     xml_parts.append('</quiz>')
     return "\n".join(xml_parts), stats

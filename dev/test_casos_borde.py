@@ -356,6 +356,147 @@ def _():
     assert key[1]["answer"] == "cuatro" and key[2]["answer"] == "uno" and key[3]["answer"] == "dos", key
 
 
+# ── Clave en una tabla «Nº  Tipo  Respuesta correcta»: el modelo copia la fila completa ──
+PREG_MC = {"tipo": "multichoice", "enunciado": "¿Cuál es la lectura más adecuada?",
+           "opciones": opts(("Los interesados son muy exigentes, y conviene pedirles un solo correo.", False),
+                            ("La planificación no cubrió lo que necesitan, y hay que revisar el plan.", False),
+                            ("Hay demasiada comunicación planificada.", False))}
+
+
+@caso("clave = solo la 3.ª columna (el texto de la opción, con comas): clave del documento, confianza alta")
+def _():
+    v, sk, _x, key = convertir({**PREG_MC, "clave_texto": "La planificación no cubrió lo que necesitan, y hay que revisar el plan."})
+    assert v and key[1].get("from_key") and key[1]["answer"].startswith("La planificación"), key
+
+
+@caso("clave = la FILA completa «1   múltiple   texto»: también se reconoce como clave del documento")
+def _():
+    v, sk, _x, key = convertir({**PREG_MC, "clave_texto": "1   múltiple        La planificación no cubrió lo que necesitan, y hay que revisar el plan."})
+    assert v and key[1].get("from_key") and key[1]["answer"].startswith("La planificación"), (v, sk, key)
+
+
+@caso("clave = «2 multiple texto» y «12  Múltiple  texto» (sin tilde, mayúscula, otro número)")
+def _():
+    for fila in ("2 multiple La planificación no cubrió lo que necesitan, y hay que revisar el plan.",
+                 "12  Múltiple  La planificación no cubrió lo que necesitan, y hay que revisar el plan."):
+        v, sk, _x, key = convertir({**PREG_MC, "clave_texto": fila})
+        assert v and key[1].get("from_key"), (fila, key)
+
+
+@caso("respuesta corta con la fila completa: queda solo la respuesta («Ruido»), no «21 respuestacorta Ruido»")
+def _():
+    for fila in ("21   respuestacorta        Ruido", "21 respuesta corta Ruido", "21 shortanswer Ruido"):
+        v, sk, _x, key = convertir({"tipo": "shortanswer", "enunciado": "¿Cómo se llama?", "clave_texto": fila})
+        assert v and key[1]["answer"] == "Ruido", (fila, key)
+
+
+@caso("una respuesta que EMPIEZA con una palabra de tipo no se recorta (sin número delante)")
+def _():
+    for resp in ("Ensayo", "Completar el formulario", "Múltiple de dos", "Cloze test", "Numérico"):
+        v, sk, _x, key = convertir({"tipo": "shortanswer", "enunciado": "¿Qué?", "clave_texto": resp})
+        assert v and key[1]["answer"] == resp, (resp, key)
+
+
+@caso("emparejamiento con la fila completa «3 emparejamiento 1-b, 2-a»")
+def _():
+    v, sk, _x, key = convertir({"tipo": "matching", "enunciado": "Relaciona.", "clave_texto": "3 emparejamiento 1-b, 2-a",
+                               "items_izquierda": ["Oro", "Plata"], "items_derecha": ["Ag", "Au"]})
+    assert v and key[1]["answer"] == "1-b; 2-a" and key[1].get("from_key"), key
+
+
+@caso("«N. texto» y la letra sola siguen funcionando como antes")
+def _():
+    v, sk, _x, key = convertir({**PREG_MC, "clave_texto": "1. La planificación no cubrió lo que necesitan, y hay que revisar el plan."})
+    assert v and key[1].get("from_key"), key
+    v, sk, _x, key = convertir({**PREG_MC, "clave_texto": "b"})
+    assert v and key[1].get("from_key") and key[1]["answer"].startswith("La planificación"), key
+
+# ── La IA dejó clave_texto vacío y el documento SÍ trae la tabla RESPUESTAS: se copia de la tabla ──
+from schema_adapter import rellenar_claves_desde_tabla  # noqa: E402
+from parser import parse_answer_key  # noqa: E402
+
+TABLA = """RESPUESTAS
+Nº  Tipo            Respuesta correcta
+1   múltiple        La planificación no cubrió lo que necesitan, y hay que revisar el plan.
+2   respuestacorta  Ruido
+3   ensayo          respuesta abierta, se califica manualmente
+"""
+
+
+def payload_vacio(**cambios):
+    p1 = {**BASE, "orden": 1, "tipo": "multichoice", "enunciado": "¿Cuál?",
+          "opciones": opts(("Los interesados son muy exigentes.", False),
+                           ("La planificación no cubrió lo que necesitan, y hay que revisar el plan.", True))}
+    p2 = {**BASE, "orden": 2, "tipo": "shortanswer", "enunciado": "¿Cómo se llama?", "respuesta_texto": "Ruido"}
+    p3 = {**BASE, "orden": 3, "tipo": "essay", "enunciado": "Explica."}
+    return {"es_examen": True, "preguntas": [p1, p2, p3], **cambios}
+
+
+@caso("clave vacía + tabla del documento: se copia y las respuestas pasan a «clave del documento»")
+def _():
+    pl = payload_vacio()
+    assert rellenar_claves_desde_tabla(pl, parse_answer_key(TABLA)) == 2
+    assert pl["preguntas"][0]["clave_texto"].startswith("La planificación") and pl["preguntas"][1]["clave_texto"] == "Ruido"
+    assert pl["preguntas"][2]["clave_texto"] == "", "el ensayo no lleva clave"
+    questions, key = adapt(pl)
+    assert key[1].get("from_key") and key[1]["answer"].startswith("La planificación"), key
+    assert key[2]["answer"] == "Ruido"
+
+
+@caso("la clave del documento MANDA: si la IA marcó otra opción, gana la de la tabla")
+def _():
+    pl = payload_vacio()
+    pl["preguntas"][0]["opciones"] = opts(("Los interesados son muy exigentes.", True),
+                                         ("La planificación no cubrió lo que necesitan, y hay que revisar el plan.", False))
+    rellenar_claves_desde_tabla(pl, parse_answer_key(TABLA))
+    _q, key = adapt(pl)
+    assert key[1]["answer"].startswith("La planificación") and key[1].get("from_key"), key
+
+
+@caso("nunca pisa un clave_texto que la IA sí copió")
+def _():
+    pl = payload_vacio(); pl["preguntas"][1]["clave_texto"] = "Silencio"
+    assert rellenar_claves_desde_tabla(pl, parse_answer_key(TABLA)) == 1
+    assert pl["preguntas"][1]["clave_texto"] == "Silencio"
+
+
+@caso("numeración que no cuadra: no se toca nada (la IA devolvió menos preguntas que filas tiene la tabla)")
+def _():
+    pl = payload_vacio(); pl["preguntas"].pop(1)
+    assert rellenar_claves_desde_tabla(pl, parse_answer_key(TABLA)) == 0
+    assert all(not q["clave_texto"] for q in pl["preguntas"])
+
+
+@caso("el tipo de una fila no coincide con su pregunta: no se toca nada (evita poner la clave en otra pregunta)")
+def _():
+    pl = payload_vacio(); pl["preguntas"][1]["tipo"] = "multichoice"
+    assert rellenar_claves_desde_tabla(pl, parse_answer_key(TABLA)) == 0
+
+
+@caso("sin tabla RESPUESTAS (o tabla vacía): no hace nada, como antes")
+def _():
+    assert rellenar_claves_desde_tabla(payload_vacio(), parse_answer_key("Pregunta 1:\n¿Qué?\nA. uno")) == 0
+    assert rellenar_claves_desde_tabla(payload_vacio(), {}) == 0
+    assert rellenar_claves_desde_tabla({"es_examen": True, "preguntas": []}, parse_answer_key(TABLA)) == 0
+
+
+@caso("filas de la tabla repetidas o con huecos (1, 3): no se toca nada")
+def _():
+    tabla = "RESPUESTAS\n1   múltiple   La planificación no cubrió lo que necesitan, y hay que revisar el plan.\n3   ensayo   abierta\n"
+    assert rellenar_claves_desde_tabla(payload_vacio(), parse_answer_key(tabla)) == 0
+
+
+@caso("por el flujo completo (pipeline._finalize_structured): con el texto del documento sale «documento / alta»; sin él, «IA»")
+def _():
+    import copy as _copy
+    import pipeline  # noqa: E402
+    sin = pipeline._finalize_structured("p.txt", _copy.deepcopy(payload_vacio()), 3, [], None)
+    con = pipeline._finalize_structured("p.txt", _copy.deepcopy(payload_vacio()), 3, [], None, texto_documento=TABLA)
+    origen = lambda r: [q["data"].get("origen_respuesta") for q in r["questions"] if q["type"] != "essay"]
+    assert origen(sin) == ["ia", "ia"], origen(sin)
+    assert origen(con) == ["documento", "documento"], origen(con)
+    assert [q["data"].get("confianza") for q in con["questions"] if q["type"] != "essay"] == ["alta", "alta"]
+
 print()
 print("TODO OK" if not fallos else f"{len(fallos)} FALLAN: {fallos}")
 sys.exit(1 if fallos else 0)

@@ -78,7 +78,7 @@ def examen_extra() -> tuple:
         {"num": 3, "type": "truefalse", "data": {"stem": "La Tierra es plana", "images": [img("t.png", _png(300, 200))]}},
         {"num": 4, "type": "matching", "data": {"stem": "Une", "col_a": {"1": "Uno \\(\\sqrt{3}\\)", "2": "Dos", "3": "Tres", "4": "Cuatro"},
          "col_b": {"a": "Alfa", "b": "Beta", "c": "Gamma", "d": "Delta", "e": "Épsilon"}}},
-        {"num": 5, "type": "cloze", "data": {"text": "El agua es [A: H₂O / CO₂ / NaCl] y hierve a [B: 100 / 90 / 120] grados; su símbolo es [C: H2O].",
+        {"num": 5, "type": "cloze", "data": {"text": "El agua es [A: H₂O / CO₂ / NaCl] y hierve a [B: 100 / 90 / 120] grados; su símbolo es [C: H2O / H3O].",
          "images": [img("c.png", _png(200, 100))]}},
         {"num": 6, "type": "essay", "data": {"stem": "Desarrolla el tema " + "largo " * 40, "feedback": "Debe mencionar tres puntos."}},
         {"num": 7, "type": "shortanswer", "data": {"stem": "Capital de Panamá"}},

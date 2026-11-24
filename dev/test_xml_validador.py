@@ -235,6 +235,122 @@ ok(stats.avisos == [], "puntos normales: sin avisos")
 ok(dos_clozes(3)[0][0]["points"] == 3 and build_xml(*dos_clozes(3), grades=compute_grades(dos_clozes(3)[0], 100))[1].avisos == [],
    "un punto por hueco exacto: sin avisos")
 
+print("Completar: un espacio con una sola opción se rechaza; los puntos desiguales entre espacios se avisan")
+def cloze_uno(texto, clave):
+    return [q(1, "cloze", {"text": texto})], {1: {"type": "cloze", "answer": clave}}
+for texto, clave, esperado in (
+    ("La capital es [A: Roma]", "A. Roma", "una sola opción"),
+    ("[A: uno / dos] y [B: tres]", "A. uno; B. tres", "[B] tiene una sola opción"),
+    ("La capital es [A: ]", "A. x", "vacío"),
+):
+    qs1, ak1 = cloze_uno(texto, clave)
+    errs = validate_questions(qs1, ak1).errors
+    ok(any(esperado in e for e in errs), f"«{texto}»: se rechaza ({esperado})")
+qs1, ak1 = cloze_uno("[A: Roma / Lima]", "A. Roma")
+ok(validate_questions(qs1, ak1).is_valid, "dos opciones: se acepta")
+
+qs, ak = dos_clozes(19)
+_, stats = build_xml(qs, ak, grades=compute_grades(qs, 100))
+ok(len(stats.avisos) == 1 and "la 1: 7, 6, 6" in stats.avisos[0] and "no cambia" in stats.avisos[0], f"19 puntos en 3 espacios: un aviso con el reparto 7, 6, 6 ({stats.avisos})")
+qs, ak = dos_clozes(18)
+_, stats = build_xml(qs, ak, grades=compute_grades(qs, 100))
+ok(stats.avisos == [], "18 puntos en 3 espacios (6, 6, 6): sin avisos")
+
+print("Respuesta corta: la variante sin tildes cubre todas las del español")
+from xml_builder import strip_accents  # noqa: E402
+for _con, _sin in (("Fotosíntesis", "Fotosintesis"), ("pingüino", "pinguino"), ("PINGÜINO", "PINGUINO"), ("niño", "nino"),
+                   ("Ñandú", "Nandu"), ("lingüística", "linguistica"), ("café", "cafe"), ("ÁÉÍÓÚ", "AEIOU"), ("sin tildes", "sin tildes"), ("x²", "x²")):
+    ok(strip_accents(_con) == _sin, f"«{_con}» → «{strip_accents(_con)}»")
+
+print("Respuesta corta: la respuesta va como texto plano, sin escapes HTML (Moodle la compara tal cual)")
+def respuestas_cortas(respuesta):
+    qs = [{"num": 1, "type": "shortanswer", "data": {"stem": "¿Quién?"}}]
+    ak = {1: {"type": "shortanswer", "answer": respuesta}}
+    xml, _ = build_xml(qs, ak, grades=compute_grades(qs, 10))
+    raiz = etree.fromstring(xml.encode("utf-8"))                     # el XML es válido
+    return [(a.get("fraction"), a.get("format"), a.findtext("text")) for a in raiz.iter("answer")], xml
+for resp in ("O'Higgins", "AT&T", "R&D", "x < y", 'dijo "hola"', "a]]>b", "Panamá", "2 * 3", "H₂O"):
+    filas, xml = respuestas_cortas(resp)
+    esperado = resp.replace("*", "\\*")
+    ok(filas[0] == ("100", "plain_text", esperado), f"«{resp}»: Moodle recibe exactamente «{filas[0][2]}»")
+    ok("&#x27;" not in xml and "&amp;amp;" not in xml and "&amp;T" not in xml.split("<answer", 1)[1], f"«{resp}»: sin entidades dentro del CDATA")
+filas, _ = respuestas_cortas("Panamá")
+ok([f[2] for f in filas] == ["Panamá", "Panama"], "la variante sin tildes sigue como segunda respuesta válida")
+
+print("Puntos no válidos: se avisa (antes se sustituían en silencio por el reparto por tipo)")
+def examen_puntos(puntos):
+    qs = [{**q(i + 1, "multichoice", {"stem": f"p{i}", "options": {"A": "x", "B": "y"}}), "points": v} for i, v in enumerate(puntos)]
+    for qq, v in zip(qs, puntos):
+        if v == "AUSENTE":
+            del qq["points"]
+    ak = {i + 1: {"type": "multichoice", "answer": "A"} for i in range(len(puntos))}
+    return build_xml(qs, ak, grades=compute_grades(qs, 30))
+_, st = examen_puntos([10, 10, 10])
+ok(st.avisos == [], "puntos válidos: sin avisos")
+_, st = examen_puntos([0, 10, 20])
+ok(st.avisos == [], "0 es un puntaje válido: sin avisos")
+_, st = examen_puntos([10, -5, 10])
+ok(len(st.avisos) == 1 and "la 2: '-5'" in st.avisos[0] and "reparto por tipo" in st.avisos[0], f"un puntaje negativo se avisa ({st.avisos})")
+_, st = examen_puntos([10, "abc", float("nan"), float("inf"), True])
+ok(len(st.avisos) == 1 and st.avisos[0].startswith("4 pregunta(s)"), f"texto, NaN, infinito y booleano: un aviso que cuenta 4 ({st.avisos[0][:60]})")
+_, st = examen_puntos([10, "AUSENTE", 10])
+ok(len(st.avisos) == 1 and "no traían puntaje (la 2)" in st.avisos[0], f"una pregunta sin puntaje cuando las demás sí lo traen se avisa ({st.avisos})")
+_, st = examen_puntos(["AUSENTE", "AUSENTE"])
+ok(st.avisos == [], "ninguna trae puntaje (se usa el reparto por tipo, como siempre): sin avisos")
+xml_neg, _ = examen_puntos([10, -5, 10])
+ok(re.findall(r"<defaultgrade>([\d.]+)</defaultgrade>", xml_neg)[1] != "-5.0", "el XML no lleva nunca un puntaje negativo")
+
+print("Opción múltiple: las que dependen de su posición («todas las anteriores») no se mezclan en Moodle")
+from answer_matching import OPCION_POSICIONAL  # noqa: E402
+def mc_xml(opciones, respuesta="A"):
+    qs = [q(1, "multichoice", {"stem": "¿Cuál?", "options": opciones})]
+    ak = {1: {"type": "multichoice", "answer": respuesta}}
+    return build_xml(qs, ak, grades=compute_grades(qs, 10))
+for opciones, debe in (
+    ({"A": "Uno", "B": "Dos", "C": "Todas las anteriores"}, False),
+    ({"A": "Uno", "B": "Dos", "C": "A y B"}, False),
+    ({"A": "Uno", "B": "Ninguna de las anteriores"}, False),
+    ({"A": "Ambas son verdaderas", "B": "Ninguna"}, False),
+    ({"A": "def", "B": "class", "C": "import"}, True),       # «def» NO es «D e F»
+    ({"A": "Mercurio", "B": "Venus", "C": "Marte"}, True),
+):
+    xml, st = mc_xml(opciones)
+    mezcla = "<shuffleanswers>1</shuffleanswers>" in xml
+    ok(mezcla == debe, f"{list(opciones.values())}: {'se mezcla' if mezcla else 'NO se mezcla'}")
+    ok(bool(st.avisos) == (not debe), f"…{'sin aviso' if debe else 'con un aviso que lo dice'}")
+_, st = mc_xml({"A": "Uno", "B": "Dos", "C": "Todas las anteriores"})
+ok("la 1" in st.avisos[0] and "NO se mezclan" in st.avisos[0], f"el aviso dice qué preguntas ({st.avisos[0][:80]}…)")
+for t in ("def", "bed", "bee", "dye", "age", "Python", "H2O"):
+    ok(not OPCION_POSICIONAL.search(t), f"«{t}» no es una opción posicional")
+for t in ("A y B", "B, C", "A e I", "C o D", "A,B", "la opción C", "Todas las anteriores", "Ambas"):
+    ok(OPCION_POSICIONAL.search(t), f"«{t}» sí lo es")
+
+print("Numérica: «1,000» es ambiguo (mil o uno con tres decimales) y el separador de miles se explica")
+from answer_matching import miles_ambiguo, sin_separador_de_miles  # noqa: E402
+for _txt, _esperado in (("1,000", ("1.000", "1000")), ("1.000", ("1.000", "1000")), ("12,345", ("12.345", "12345")), ("-3.141", ("-3.141", "-3141")),
+                        ("999,999", ("999.999", "999999")), ("+1,500", ("+1.500", "+1500")),
+                        ("0,500", None), ("0.001", None), ("3,5", None), ("3.14", None), ("1000", None), ("1234,567", None), ("1,00", None), ("9.8", None), ("", None), ("abc", None)):
+    ok(miles_ambiguo(_txt) == _esperado, f"miles_ambiguo({_txt!r}) = {miles_ambiguo(_txt)}")
+for _txt, _esperado in (("1,234.5", "1234.5"), ("1.234,5", "1234.5"), ("1,234,567", "1234567"), ("12.345.678", "12345678"), ("1.234.567,89", "1234567.89"),
+                        ("1,000", None), ("3,5", None), ("1234", None), ("1,2345", None), ("abc", None)):
+    ok(sin_separador_de_miles(_txt) == _esperado, f"sin_separador_de_miles({_txt!r}) = {sin_separador_de_miles(_txt)}")
+
+def numerica(resp):
+    qs = [q(1, "numerical", {"stem": "¿Cuánto?"})]
+    ak = {1: {"type": "numerical", "answer": resp}}
+    return qs, ak
+qs, ak = numerica("1,000")
+xml, st = build_xml(qs, ak, grades=compute_grades(qs, 10))
+ok("<text>1.000</text>" in xml and len(st.avisos) == 1 and "«1,000» se guardó como 1.000, no como 1000" in st.avisos[0] and "tolerancia 0" in st.avisos[0],
+   f"«1,000»: se guarda como 1.000 y se AVISA ({st.avisos[:1]})")
+for ok_txt in ("3,5", "1000", "0,500", "9.807"[:1] + "." + "8", "-12"):
+    _, st = build_xml(*numerica(ok_txt), grades=compute_grades(numerica(ok_txt)[0], 10))
+    ok(st.avisos == [], f"«{ok_txt}»: sin avisos")
+r = validate_questions(*numerica("1,234.5"))
+ok(not r.is_valid and "no es un número válido" in r.errors[0] and "(por ejemplo 1234.5)" in r.errors[0], f"«1,234.5» se rechaza y dice cómo escribirlo ({r.errors[:1]})")
+r = validate_questions(*numerica("abc"))
+ok(not r.is_valid and "separador de miles" not in r.errors[0], "un texto cualquiera se rechaza sin la pista de miles")
+
 print()
 print("TODO OK" if not fallas else f"{fallas} FALLA(S)")
 sys.exit(1 if fallas else 0)

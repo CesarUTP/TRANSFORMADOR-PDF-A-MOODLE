@@ -31,10 +31,17 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.14"
-      - name: Dependencias
+      # Se instala EXACTAMENTE lo que se compila: el lock con huellas SHA-256 (--require-hashes rechaza
+      # cualquier paquete alterado o que falte). Antes se instalaba requirements.txt, que no fija las
+      # dependencias indirectas, así que el CI podía probar versiones distintas de las del instalador.
+      # El lock ya trae pywebview (la ventana, que prueba dev/test_seguridad.py) y PyInstaller.
+      - name: Dependencias (el lock con huellas, igual que al compilar)
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r backend/requirements.txt -r dev/requirements-dev.txt "pywebview==6.2.1"
+          python -m pip install --require-hashes -r requirements-build.lock
+          python -m pip install -r dev/requirements-dev.txt
+      - name: Dependencias fijadas coherentes (requirements.txt y lock)
+        run: python dev/comprobar_dependencias.py
       - name: Casos borde (marcas, clave, XML)
         if: ${{ !cancelled() }}
         run: python dev/test_casos_borde.py

@@ -245,8 +245,7 @@ export function detalleDeError(detail, respaldo = '') {
 
 // Textos de aviso que trae X-Question-Stats al generar el XML: los del
 // constructor (`avisos`) y, si no se pudo guardar en el Historial, su motivo
-// (primero). Si además se escalaron los puntos de «Completar» y el aviso de
-// la escala no puede ir en su toast (lo taparía el del Historial), va aquí.
+// (primero).
 export function avisosDelXml(stats) {
   const s = stats && typeof stats === 'object' ? stats : {};
   const textos = (Array.isArray(s.avisos) ? s.avisos : []).filter(t => typeof t === 'string' && t.trim());

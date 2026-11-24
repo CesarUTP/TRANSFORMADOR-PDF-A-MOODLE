@@ -15,6 +15,7 @@ import { clozeBuildTextAndAnswer } from './cloze.js';
 import { autoGrowTextarea } from './tarjetas.js';
 import { crearIconos } from '../util.js';
 import { abiertasPorDefecto, recortar } from './plegado-logica.js';
+import { resumenDeFilas } from './emparejamiento-logica.js';
 export { MAX_ABIERTAS, abiertasPorDefecto, recortar } from './plegado-logica.js';
 
 // ── Estado de cada tarjeta ──────────────────────────────────────────────
@@ -111,8 +112,8 @@ export function resumenDe(card, { largoEnunciado = 140, largoRespuesta = 70 } = 
   } else if (tipo === 'numerical') {
     respuesta = _valor(card, '.q-nu-answer'); falta = !respuesta;
   } else if (tipo === 'matching') {
-    const n = card.querySelectorAll('.matching-pair-row').length;
-    respuesta = n === 1 ? '1 pareja' : `${n} parejas`;
+    respuesta = resumenDeFilas(card.querySelectorAll('.matching-pair-row:not([data-distractor])').length,
+      card.querySelectorAll('.matching-pair-row[data-distractor]').length);
   } else if (tipo === 'essay') {
     respuesta = 'respuesta abierta';
   } else if (tipo === 'cloze') {

@@ -13,6 +13,8 @@ from collections import Counter
 from typing import List
 from PIL import Image
 
+from pdfium_cerrojo import CERROJO as CERROJO_PDFIUM
+
 # pdfminer (debajo de pdfplumber) avisa "CropBox missing from /Page,
 # defaulting to MediaBox" por cada página de cada lectura: es normal en PDFs
 # exportados desde Word/Docs, usa el tamaño completo de la página (lo
@@ -63,7 +65,8 @@ def _render(page, dpi: int = 200) -> Image.Image:
     escala = dpi / 72
     if ancho * alto * escala * escala > MAX_PIXELES_RENDER:
         dpi = max(1, int(72 * (MAX_PIXELES_RENDER / (ancho * alto)) ** 0.5))
-    return page.to_image(resolution=dpi).original
+    with CERROJO_PDFIUM:        # PDFium no es segura entre hilos (ver pdfium_cerrojo.py)
+        return page.to_image(resolution=dpi).original
 
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:

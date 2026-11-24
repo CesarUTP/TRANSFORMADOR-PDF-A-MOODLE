@@ -35,8 +35,10 @@ from PIL import Image
 
 import confianza
 import imagenes
+from config import FEEDBACK_CORRECT, FEEDBACK_INCORRECT
 from schema_adapter import adapt
 from validator import partition_questions
+from xml_builder import strip_accents
 
 logger = logging.getLogger(__name__)
 
@@ -159,9 +161,10 @@ def _delimitador_vale(previo: str) -> bool:
     return not (previo.endswith("\\") or previo.endswith("&") or previo.endswith("&amp;"))
 
 
-def _partir_hueco(cuerpo: str) -> List[Tuple[str, bool]]:
+def _partir_hueco(cuerpo: str, retro: Optional[List[bool]] = None) -> List[Tuple[str, bool]]:
     """Cuerpo de un hueco de opciones → [(texto, correcta)]. Quita la retroalimentación (#…),
-    las marcas «=» / «%n%» y los escapes («\\}» y «\\#»), y decodifica las entidades."""
+    las marcas «=» / «%n%» y los escapes («\\}» y «\\#»), y decodifica las entidades.
+    Si `retro` es una lista, se le agrega True cuando alguna opción traía retroalimentación."""
     opciones: List[str] = []
     actual = ""
     for ch in cuerpo + "~":
@@ -174,6 +177,8 @@ def _partir_hueco(cuerpo: str) -> List[Tuple[str, bool]]:
     for o in opciones:
         corte = next((i for i, c in enumerate(o) if c == "#" and _delimitador_vale(o[:i])), None)
         if corte is not None:
+            if retro is not None and o[corte + 1:].strip():
+                retro.append(True)
             o = o[:corte]
         correcta = False
         if o.startswith("="):
@@ -192,7 +197,7 @@ def _es_hueco_de_opciones(etiqueta: str) -> bool:
     return e.startswith(("MC", "MR", "MULTICHOICE", "MULTIRESPONSE")) and not e.startswith(("MW",))
 
 
-def _cloze_a_payload(html_texto: str, formato: str) -> Optional[Tuple[str, List[Dict[str, Any]]]]:
+def _cloze_a_payload(html_texto: str, formato: str, retro: Optional[List[bool]] = None) -> Optional[Tuple[str, List[Dict[str, Any]]]]:
     """(enunciado con [A], [B]…, huecos) o None si algún hueco no es de opciones (respuesta corta, numérico)."""
     huecos: List[Dict[str, Any]] = []
     trozos: List[str] = []
@@ -200,7 +205,7 @@ def _cloze_a_payload(html_texto: str, formato: str) -> Optional[Tuple[str, List[
     for m in _HUECO.finditer(html_texto):
         if not _es_hueco_de_opciones(m.group(2)):
             return None
-        opciones = _partir_hueco(m.group(3))
+        opciones = _partir_hueco(m.group(3), retro)
         if not opciones:
             return None
         letra = chr(65 + len(huecos))
@@ -227,6 +232,72 @@ def _respuestas(qn) -> List[Tuple[str, float]]:
     return [(html_a_texto(_texto_de(a, ""), a.get("format") or "html"), _fraccion(a)) for a in qn.findall("answer")]
 
 
+# Moodle da una fracción (% de la nota) a cada respuesta; aquí «correcta» es la de 100 %.
+_CIEN = 99.99
+
+
+def _numero(texto: Optional[str]) -> Optional[float]:
+    try:
+        return float((texto or "").strip().replace(",", "."))
+    except ValueError:
+        return None
+
+
+def _cita(texto: str) -> str:
+    texto = " ".join(texto.split())
+    return f"«{texto[:30]}{'…' if len(texto) > 30 else ''}»"
+
+
+def _avisar_perdidas(qn, num: int, tipo: str, avisos: List[str]) -> None:
+    """Avisa de lo que Moodle guarda en la pregunta y el editor NO conserva (al exportar de nuevo
+    el XML sale sin eso): crédito parcial, respuestas alternativas, tolerancia numérica y
+    retroalimentación propia de cada opción. No avisa de lo que genera esta misma aplicación
+    (la variante sin tildes de una respuesta corta; «¡Correcto!» e «Incorrecto.»)."""
+    resp = qn.findall("answer")
+    if not resp:
+        return
+    datos = [(html_a_texto(_texto_de(a, ""), a.get("format") or "html"), _fraccion(a), a) for a in resp]
+
+    if tipo == "multichoice":
+        unica = (qn.findtext("single") or "true").strip().lower() != "false"
+        if unica:
+            parciales = [(t, f) for t, f, _ in datos if 0 < f < _CIEN]
+            if parciales:
+                t, f = parciales[0]
+                avisos.append(
+                    f"La pregunta {num} da crédito parcial a {len(parciales)} opción(es) (p. ej. {_cita(t)} vale {f:g} %): "
+                    "aquí solo cuenta como correcta la que vale 100 %, las demás quedan como incorrectas."
+                    + ("" if any(f >= _CIEN for _, f, _ in datos) else " Ninguna vale 100 %: revisa cuál es la correcta."))
+        else:
+            positivas = {round(f, 1) for _, f, _ in datos if f > 0}
+            if len(positivas) > 1 and not positivas <= {10.0, 5.0}:
+                avisos.append(
+                    f"La pregunta {num} reparte la nota entre sus respuestas correctas con porcentajes distintos "
+                    f"({', '.join(f'{x:g} %' for x in sorted(positivas, reverse=True))}): al exportar se repartirá por partes iguales.")
+    elif tipo in ("shortanswer", "numerical"):
+        principal = next((t for t, f, _ in datos if f >= _CIEN and t.strip() and t.strip() != "*"), None)
+        propias = {principal.strip().lower(), strip_accents(principal).strip().lower()} if principal is not None else set()
+        otras = [t for t, f, _ in datos if f > 0 and t.strip() and t.strip() != "*" and t.strip().lower() not in propias]
+        if otras:
+            avisos.append(
+                f"La pregunta {num} acepta {len(otras)} respuesta(s) más en Moodle (p. ej. {_cita(otras[0])}): "
+                "solo se importa la principal.")
+        if tipo == "numerical":
+            tol = [t for t in (_numero(a.findtext("tolerance")) for _, f, a in datos if f > 0) if t]
+            if tol:
+                avisos.append(f"La pregunta {num} tiene una tolerancia de ±{max(tol):g}: no se conserva, "
+                              "al exportar la respuesta se tomará exacta.")
+
+    if tipo in ("multichoice", "truefalse", "shortanswer", "numerical"):
+        propios = {FEEDBACK_CORRECT.strip(), FEEDBACK_INCORRECT.strip()}
+        con_retro = [r for r in (html_a_texto(_texto_de(a, "feedback"), _formato_de(a, "feedback")) for _, _, a in datos)
+                     if r.strip() and r.strip() not in propios]
+        if con_retro:
+            avisos.append(
+                f"La pregunta {num} tiene retroalimentación propia en {len(con_retro)} opción(es) ({_cita(con_retro[0])}): "
+                "no se importa, al exportar cada opción llevará «¡Correcto!» o «Incorrecto.».")
+
+
 def _pregunta_a_payload(qn, num: int, avisos: List[str]):
     """(payload, imágenes) o (None, motivo) si el tipo no se puede editar."""
     tipo = qn.get("type") or ""
@@ -243,21 +314,28 @@ def _pregunta_a_payload(qn, num: int, avisos: List[str]):
         resp = _respuestas(qn)
         if not resp:
             return None, "no tiene respuestas"
+        unica = (qn.findtext("single") or "true").strip().lower() != "false"
+        _avisar_perdidas(qn, num, tipo, avisos)
+        # Respuesta única: correcta solo la de 100 %. Varias respuestas: Moodle reparte el 100 % entre
+        # las correctas (50 + 50, 33,3 × 3…), así que cuenta toda fracción positiva.
         return {**base, "tipo": "multichoice", "opciones": [
-            {"letra_original": "", "texto": t, "correcta": f > 0} for t, f in resp]}, imgs
+            {"letra_original": "", "texto": t, "correcta": (f >= _CIEN if unica else f > 0)} for t, f in resp]}, imgs
     if tipo == "truefalse":
         resp = _respuestas(qn)
-        verdadera = next((t.strip().lower() for t, f in resp if f > 0), "")
+        _avisar_perdidas(qn, num, tipo, avisos)
+        verdadera = next((t.strip().lower() for t, f in resp if f >= _CIEN), "")
         valor = {"true": "Verdadero", "verdadero": "Verdadero", "false": "Falso", "falso": "Falso"}.get(verdadera)
         if valor is None:
             return {**base, "tipo": "truefalse", "respuesta_texto": "", "respuesta_marcada": False}, imgs
         return {**base, "tipo": "truefalse", "respuesta_texto": valor}, imgs
     if tipo == "shortanswer":
-        resp = [t for t, f in _respuestas(qn) if f > 0 and t.strip() and t.strip() != "*"]
+        _avisar_perdidas(qn, num, tipo, avisos)
+        resp = [t for t, f in _respuestas(qn) if f >= _CIEN and t.strip() and t.strip() != "*"]
         return {**base, "tipo": "shortanswer", "respuesta_texto": resp[0] if resp else "",
                 "respuesta_marcada": bool(resp)}, imgs
     if tipo == "numerical":
-        resp = [t for t, f in _respuestas(qn) if f > 0 and t.strip()]
+        _avisar_perdidas(qn, num, tipo, avisos)
+        resp = [t for t, f in _respuestas(qn) if f >= _CIEN and t.strip()]
         return {**base, "tipo": "numerical", "respuesta_texto": resp[0] if resp else "",
                 "respuesta_marcada": bool(resp)}, imgs
     if tipo == "essay":
@@ -279,10 +357,14 @@ def _pregunta_a_payload(qn, num: int, avisos: List[str]):
             return None, "no tiene parejas"
         return {**base, "tipo": "matching", "items_izquierda": izquierda, "items_derecha": derecha, "parejas": parejas}, imgs
     if tipo in ("cloze", "multianswer"):  # en el XML se llama «cloze»; «multianswer» es su nombre interno
-        convertido = _cloze_a_payload(crudo, fmt)
+        retro: List[bool] = []
+        convertido = _cloze_a_payload(crudo, fmt, retro)
         if convertido is None:
             return None, ("completar con espacios de respuesta corta o numérica (aquí solo se editan los espacios con opciones)")
         texto, huecos = convertido
+        if retro:
+            avisos.append(f"La pregunta {num} tiene retroalimentación propia en sus huecos (el texto después de «#»): "
+                          "no se importa.")
         return {**base, "tipo": "cloze", "enunciado": texto, "huecos": huecos}, imgs
     return None, _NO_SOPORTADOS.get(tipo, f"de un tipo que esta aplicación no edita («{tipo or 'desconocido'}»)")
 

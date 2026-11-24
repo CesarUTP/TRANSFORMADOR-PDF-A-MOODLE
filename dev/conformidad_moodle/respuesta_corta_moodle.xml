@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<quiz>
+  <question type="category">
+    <category><text>$course$/PRUEBA-respuesta-corta (borrar)</text></category>
+  </question>
+  <question type="shortanswer">
+    <name><text>P1</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P01 · ¿Cómo se apellidaba el libertador chileno Bernardo?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0</defaultgrade>
+    <usecase>0</usecase>
+    <answer fraction="100" format="plain_text">
+      <text><![CDATA[O'Higgins]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+  </question>
+  <question type="shortanswer">
+    <name><text>P2</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P02 · ¿Cómo se llama la compañía telefónica estadounidense fundada por Bell?</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0</defaultgrade>
+    <usecase>0</usecase>
+    <answer fraction="100" format="plain_text">
+      <text><![CDATA[AT&T]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+  </question>
+  <question type="shortanswer">
+    <name><text>P3</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P03 · ¿Cuál es la capital de la República de Panamá? (con y sin tilde)</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0</defaultgrade>
+    <usecase>0</usecase>
+    <answer fraction="100" format="plain_text">
+      <text><![CDATA[Panamá]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="100" format="plain_text">
+      <text><![CDATA[Panama]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+  </question>
+  <question type="shortanswer">
+    <name><text>P4</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P04 · Ave que no vuela y vive en la Antártida (con y sin diéresis)</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0</defaultgrade>
+    <usecase>0</usecase>
+    <answer fraction="100" format="plain_text">
+      <text><![CDATA[pingüino]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+    <answer fraction="100" format="plain_text">
+      <text><![CDATA[pinguino]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+  </question>
+  <question type="shortanswer">
+    <name><text>P5</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P05 · Escribe exactamente: dijo &quot;hola&quot; (con comillas)</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0</defaultgrade>
+    <usecase>0</usecase>
+    <answer fraction="100" format="plain_text">
+      <text><![CDATA[dijo "hola"]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+  </question>
+  <question type="shortanswer">
+    <name><text>P6</text></name>
+    <questiontext format="html">
+      <text><![CDATA[<p>P06 · Escribe exactamente: x &lt; y</p>]]></text>
+    </questiontext>
+    <defaultgrade>1.0</defaultgrade>
+    <usecase>0</usecase>
+    <answer fraction="100" format="plain_text">
+      <text><![CDATA[x < y]]></text>
+      <feedback><text><![CDATA[¡Correcto!]]></text></feedback>
+    </answer>
+  </question>
+</quiz>

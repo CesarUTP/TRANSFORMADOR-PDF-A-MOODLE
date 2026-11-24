@@ -1,0 +1,42 @@
+# Auditoría de dependencias: busca vulnerabilidades CONOCIDAS en lo que se instala y se compila
+# (requirements-build.lock, con todas las dependencias indirectas).
+#
+# Va aparte de las pruebas a propósito: una vulnerabilidad nueva aparece cuando alguien la publica,
+# no cuando alguien cambia el código, y no debe poner en rojo cada commit. Corre cada semana, al
+# tocar las dependencias y a mano (pestaña Actions → Auditoría de dependencias → Run workflow).
+# Si falla, la salida lista el paquete, el aviso y la versión que lo arregla: se sube la versión en
+# backend/requirements.txt, se regenera el lock (ver dev/comprobar_dependencias.py) y se corren las pruebas.
+name: Auditoría de dependencias
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"      # lunes, 06:17 UTC
+  workflow_dispatch:
+  push:
+    branches: [main, colaboracion]
+    paths:
+      - requirements-build.lock
+      - requirements-build.in
+      - backend/requirements.txt
+      - .github/workflows/auditoria.yml
+
+permissions:
+  contents: read
+
+jobs:
+  auditoria:
+    name: pip-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Acciones fijadas a un commit exacto (igual que en pruebas.yml).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Instalar pip-audit
+        run: python -m pip install pip-audit==2.10.1
+      - name: Buscar vulnerabilidades conocidas en el lock
+        run: pip-audit --require-hashes --disable-pip -r requirements-build.lock

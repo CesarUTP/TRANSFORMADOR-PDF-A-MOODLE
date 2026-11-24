@@ -3,8 +3,17 @@ backend/venv/
 __pycache__/
 *.pyc
 
-# Datos en tiempo de ejecución (historial de conversiones del usuario)
-data/*.db
+# Datos en tiempo de ejecución del repo de desarrollo: historial (.db), clave cifrada
+# (clave.dat) y todo lo demás que la app escriba ahí. Nunca se versiona.
+data/
+
+# Huellas SHA-256 de los instaladores (dev/huellas_instaladores.py): se suben al release, no al repositorio
+dist-huellas/
+
+# Material local que no es parte de la app (CLAUDE.md: «Nunca commitear»)
+.agents/
+videos/
+.impeccable/
 
 # Builds
 build/

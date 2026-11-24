@@ -19,3 +19,20 @@ Qué debe verse en la vista previa de cada pregunta:
 | P08 | numérica | 60 |
 | P09 | ensayo | cuadro de texto libre |
 | P10 | imagen en base64 y fórmula | cuadrado rojo visible; `x² + 1` con MathJax; en la retroalimentación `3² + 1 = 10` |
+
+## Respuesta corta con caracteres difíciles (2.9)
+
+Generado por `dev/generar_conformidad_respuesta_corta.py` → `respuesta_corta_moodle.xml` (6 preguntas, categoría
+«PRUEBA-respuesta-corta (borrar)»). Hasta la 2.8 la respuesta se escribía con escapes HTML (`O&#x27;Higgins`,
+`AT&amp;T`) y, si Moodle compara el texto tal cual, el estudiante que escribía `O'Higgins` quedaba mal.
+**Sin confirmar en un Moodle real.** Importa el archivo, abre la vista previa de cada pregunta, escribe la respuesta
+y pulsa «Comprobar»: debe aceptarla.
+
+| Pregunta | Escribe | Debe |
+|---|---|---|
+| P01 | `O'Higgins` | aceptarla |
+| P02 | `AT&T` | aceptarla |
+| P03 | `Panamá` y también `Panama` | aceptar las dos |
+| P04 | `pingüino` y también `pinguino` | aceptar las dos |
+| P05 | `dijo "hola"` | aceptarla |
+| P06 | `x < y` | aceptarla |
