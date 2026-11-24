@@ -1,5 +1,5 @@
 """
-huellas_instaladores.py — la huella SHA-256 de los instaladores, para publicarla en el release (2.9).
+huellas_instaladores.py — la huella SHA-256 de los instaladores, para publicarla en el release (3.0).
 
     python dev/huellas_instaladores.py                       # los instaladores de siempre, si existen
     python dev/huellas_instaladores.py ruta/Catedra.dmg …    # los que se indiquen

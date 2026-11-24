@@ -1,5 +1,5 @@
 """
-comprobar_dependencias.py — las dependencias fijadas dicen lo mismo en todos lados (2.9).
+comprobar_dependencias.py — las dependencias fijadas dicen lo mismo en todos lados (3.0).
 
     python dev/comprobar_dependencias.py
 

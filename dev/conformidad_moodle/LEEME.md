@@ -20,7 +20,7 @@ Qué debe verse en la vista previa de cada pregunta:
 | P09 | ensayo | cuadro de texto libre |
 | P10 | imagen en base64 y fórmula | cuadrado rojo visible; `x² + 1` con MathJax; en la retroalimentación `3² + 1 = 10` |
 
-## Respuesta corta con caracteres difíciles (2.9)
+## Respuesta corta con caracteres difíciles (3.0)
 
 Generado por `dev/generar_conformidad_respuesta_corta.py` → `respuesta_corta_moodle.xml` (6 preguntas, categoría
 «PRUEBA-respuesta-corta (borrar)»). Hasta la 2.8 la respuesta se escribía con escapes HTML (`O&#x27;Higgins`,

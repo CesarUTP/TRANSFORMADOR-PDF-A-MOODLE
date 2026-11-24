@@ -1,5 +1,5 @@
 {
-  "version": "2.8",
+  "version": "3.0",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Versión 2.8: exporta el examen también en Word (.docx editable) con lo mismo que el PDF: mismas preguntas, opciones y clave. Elige PDF, Word o los dos en un ZIP, también con versiones. Avisa de la privacidad de la clave gratuita de Gemini."
+  "notas": "Versión 3.0: en «Según el tipo» escribes cuánto vale cada pregunta y el total es la suma; «Completar» vale puntos enteros. Opciones de más en emparejamientos, avisos de lo que Moodle recibiría distinto y lectura más fiable de la clave del documento."
 }

@@ -3,7 +3,7 @@ generar_conformidad_respuesta_corta.py — XML de PRUEBA (respuesta corta con ca
 
     PYTHONUTF8=1 backend/venv/bin/python dev/generar_conformidad_respuesta_corta.py
 
-Escribe dev/conformidad_moodle/respuesta_corta_moodle.xml. Desde la 2.9 la respuesta de una respuesta corta se
+Escribe dev/conformidad_moodle/respuesta_corta_moodle.xml. Desde la 3.0 la respuesta de una respuesta corta se
 escribe como texto plano, sin escapes HTML (antes «O'Higgins» salía como «O&#x27;Higgins» y no coincidía con lo que
 escribía el estudiante). Las pruebas automáticas comprueban el XML; esto es para confirmar en un Moodle REAL que
 la respuesta se acepta. Ver dev/conformidad_moodle/LEEME.md.
