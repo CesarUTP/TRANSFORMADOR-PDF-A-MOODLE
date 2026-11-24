@@ -142,6 +142,26 @@ guardar("quiz2_integrales.pdf", "Quiz-2-Calculo", 20, calc["id"], "Quiz 2", 10, 
 guardar("final_calculo.docx", "Final-Calculo", 100, calc["id"], "Examen final", 30, "Final")
 guardar("examen_viejo.pdf", "mis-preguntas", 50, None, None, 8, "Examen")
 
+# Un quiz pequeño con lo que trajo la 3.0 (opciones de más, varias correctas, un número ambiguo y un «Completar»), armado
+# importando un XML de Moodle: así sus datos tienen exactamente la forma que tienen para una persona de verdad.
+def _sub(izq: str, der: str) -> str:
+    return f'<subquestion format="html"><text><![CDATA[{izq}]]></text><answer><text><![CDATA[{der}]]></text></answer></subquestion>'
+
+XML_NOVEDADES = ("<quiz>"
+    '<question type="matching"><name><text>P1</text></name><questiontext format="html"><text><![CDATA[<p>Relaciona cada país con su capital.</p>]]></text></questiontext>'
+    '<defaultgrade>4</defaultgrade>' + _sub("Perú", "Lima") + _sub("Chile", "Santiago") + _sub("", "Bogotá") + _sub("", "Quito") + "</question>"
+    '<question type="multichoice"><name><text>P2</text></name><questiontext format="html"><text><![CDATA[<p>Elige los planetas rocosos del sistema solar.</p>]]></text></questiontext>'
+    '<defaultgrade>4</defaultgrade><single>false</single><answer fraction="50"><text>Mercurio</text></answer><answer fraction="50"><text>Venus</text></answer>'
+    '<answer fraction="-50"><text>Júpiter</text></answer><answer fraction="-50"><text>Saturno</text></answer></question>'
+    '<question type="numerical"><name><text>P3</text></name><questiontext format="html"><text><![CDATA[<p>¿Cuántos metros tiene un kilómetro?</p>]]></text></questiontext>'
+    '<defaultgrade>2</defaultgrade><answer fraction="100"><text>1,000</text><tolerance>0</tolerance></answer></question>'
+    '<question type="cloze"><name><text>P4</text></name><questiontext format="html"><text><![CDATA[<p>El Canal de Panamá une el océano {1:MULTICHOICE:=Atlántico~Índico} con el {1:MULTICHOICE:=Pacífico~Ártico} y tiene {1:MULTICHOICE:=tres~cinco~siete} juegos de esclusas.</p>]]></text></questiontext>'
+    "<defaultgrade>3</defaultgrade></question></quiz>")
+import importar_xml  # noqa: E402
+_nov = importar_xml.importar_xml(XML_NOVEDADES.encode("utf-8"), "quiz3_novedades.xml")
+database.save_conversion("quiz3_novedades.pdf", "Quiz-3-Geografia", 13.0, "<quiz/>",
+                         json.dumps({"questions": _nov["questions"], "answer_key": _nov["answer_key"]}, ensure_ascii=False), geo["id"], "Quiz 3")
+
 if __name__ == "__main__":
     import uvicorn
     import main  # noqa: E402

@@ -57,7 +57,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
 <section class="portada">
   <div style="display:flex;align-items:center;gap:6mm;"><div style="width:26mm;height:26mm;"><svg style="width:100%;height:100%;"><use href="#logo-principal"/></svg></div><div><div class="t" style="font-size:34pt;">Cátedra</div><div style="font-size:11.5pt;color:#cbd5e1;max-width:105mm;line-height:1.4;">Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.</div></div></div>
   <div><div class="ey" style="color:var(--celeste);">Manual de usuario</div><h1 class="t" style="font-size:44pt;line-height:1.08;">De tu examen a Moodle y al papel, paso a paso.</h1><p style="font-size:12pt;color:#cbd5e1;margin-top:6mm;max-width:130mm;">Todo lo que necesitas para convertir, revisar, imprimir y ordenar tus evaluaciones, sin conocimientos técnicos.</p></div>
-  <div style="display:flex;justify-content:space-between;font-size:9pt;color:#94a3b8;"><span>Para Cátedra 2.8 · octubre de 2026</span><span>Windows y macOS</span></div>
+  <div style="display:flex;justify-content:space-between;font-size:9pt;color:#94a3b8;"><span>Para Cátedra 3.0 · noviembre de 2026</span><span>Windows y macOS</span></div>
 </section>
 
 <!-- CONTENIDO -->
@@ -146,7 +146,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <ol class="pasos">
     <li><b>Arrastra el archivo</b> a la zona punteada, o haz clic para buscarlo. Acepta <span class="chip">.PDF</span> <span class="chip">.DOCX</span> <span class="chip">.TXT</span> y <span class="chip">.XML</span>.</li>
     <li><b>Categoría Moodle:</b> el nombre de la carpeta donde quedarán las preguntas en el banco de Moodle. Por defecto, <i>mis-preguntas</i>.</li>
-    <li><b>Puntaje total del examen:</b> cuántos puntos vale todo el examen (por defecto, 100). Cátedra lo reparte entre las preguntas y tú puedes cambiarlo después.</li>
+    <li><b>Puntaje total del examen:</b> cuántos puntos vale todo el examen (por defecto, 100). Cátedra lo reparte entre las preguntas y tú puedes cambiarlo después; incluso puedes escribir cuánto vale cada tipo de pregunta y el total pasa a ser la suma (ver «Los puntos»).</li>
     <li><b>Materia</b> <i>(opcional)</i>: elige una de tus materias o crea una nueva. Así el examen queda guardado en su espacio de <span class="btn">Mis materias</span>.</li>
     <li><b>Actividad</b> <i>(opcional)</i>: por ejemplo «Parcial 1» o «Quiz 2».</li>
   </ol>
@@ -213,12 +213,29 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <h4 style="margin-top:0;">Los filtros</h4>
   <div class="dos" style="align-items:start;">
     <div><p><span class="btn">Mostrar</span> deja ver solo un tipo de pregunta, <b>Revisar primero</b> (respuestas propuestas por la IA o con confianza baja que aún no tocaste) o <b>Posibles problemas</b>. Las preguntas ocultas igualmente se incluyen en el XML.</p>
-    <p><b>Posibles problemas</b> son avisos que Cátedra detecta sin IA: preguntas repetidas o casi repetidas, opciones iguales y opciones que dependen de las demás («todas las anteriores»; Moodle mezcla el orden y dejarían de tener sentido). Son avisos: no bloquean nada.</p></div>
+    <p><b>Posibles problemas</b> son avisos que Cátedra detecta sin IA: preguntas repetidas o casi repetidas, opciones iguales, opciones que dependen de las demás («todas las anteriores»; Moodle mezcla el orden y dejarían de tener sentido, por eso esas preguntas no se mezclan), una respuesta numérica ambigua («1,000» puede ser mil o uno con tres decimales) y una pregunta de «Completar» con puntos decimales (Moodle solo admite enteros). Son avisos: no bloquean nada.</p></div>
     <figure class="fig" style="margin:0;"><img src="{{IMG:04-filtro.png}}" alt="Menú Mostrar con los filtros"><figcaption><b>Mostrar.</b> Filtra por tipo, <i>Revisar primero</i> o <i>Posibles problemas</i>.</figcaption></figure>
   </div>
   <h4>Los puntos</h4>
-  <p>El botón <span class="btn">Puntos</span> muestra cuánto suman las preguntas frente al total del examen (en ámbar si no coinciden). Al abrirlo puedes repartir el total <b>Igual para todas</b>, o elegir <b>Según el tipo</b> y escribir cuántos puntos vale <b>cada pregunta</b> de cada tipo: el total del examen es la suma (10 de opción múltiple a 2 puntos y 5 de completar a 5 puntos valen 45). Las de <i>Completar</i> valen puntos enteros, al menos uno por espacio. También puedes cambiar los puntos de cada pregunta a mano.</p>
-  <figure class="fig estrecha"><img src="{{IMG:05-puntos.png}}" alt="Panel para repartir los puntos"><figcaption><b>Puntos.</b> Reparto igual o según el tipo, con los puntos de cada pregunta de cada tipo; <i>Aplicar a todas las preguntas</i> lo confirma.</figcaption></figure>
+  <p>El botón <span class="btn">Puntos</span> muestra cuánto suman las preguntas frente al total del examen (en ámbar si no coinciden). Al abrirlo eliges cómo repartir los puntos:</p>
+  <ul>
+    <li><b>Igual para todas</b> divide el total del examen en partes iguales entre todas las preguntas.</li>
+    <li><b>Según el tipo</b> te deja escribir cuántos puntos vale <b>cada pregunta</b> de cada tipo. El total del examen es la <b>suma</b>: 10 preguntas de opción múltiple a 2 puntos y 5 de completar a 5 puntos valen 20 + 25 = 45. Cada fila muestra cuántas preguntas hay de ese tipo, el subtotal y, abajo, el total del examen. Si las preguntas de un tipo hoy valen distinto, su campo queda vacío («varía») y ese tipo no se toca hasta que escribas algo.</li>
+  </ul>
+  <p>Con <span class="btn">Aplicar a todas las preguntas</span> los puntos pasan a las preguntas y, con <b>Según el tipo</b>, el total del examen se actualiza a la suma; <span class="btn">Deshacer</span> lo devuelve todo. Las preguntas de <b>Completar</b> valen siempre puntos enteros, al menos uno por espacio, porque Moodle no admite decimales en sus espacios. También puedes cambiar los puntos de cada pregunta a mano.</p>
+  <figure class="fig estrecha"><img src="{{IMG:05-puntos.png}}" alt="Panel para repartir los puntos según el tipo"><figcaption><b>Puntos.</b> (1) Puntos de cada pregunta de un tipo. (2) El subtotal de ese tipo. (3) El total del examen, que es la suma. (4) <i>Aplicar a todas las preguntas</i> lo confirma.</figcaption></figure>
+  <h4>Lo que cada tipo de pregunta te muestra</h4>
+  <p>Algunas preguntas traen un detalle o un aviso propio dentro de su tarjeta; no bloquean nada, solo te dicen qué recibirá Moodle.</p>
+  <ul>
+    <li><b>Emparejamiento con opciones de más.</b> <span class="btn">Agregar opción de más</span> añade una opción de la Columna B que no es la pareja de ningún concepto, para que no se adivine por descarte. Aparece con borde discontinuo, sin concepto en la Columna A, y se conserva al exportar.</li>
+    <li><b>Opción múltiple con varias correctas.</b> Una nota recuerda que, en Moodle, cada opción incorrecta que el estudiante marque <b>resta puntos</b> (la nota de la pregunta no baja de 0).</li>
+    <li><b>Numérica.</b> Moodle compara el número <b>exacto</b> (tolerancia 0): si la respuesta es 9,8, quien escriba 9,81 queda mal. Escríbelo sin separador de miles; si pones «1,000», un aviso ámbar te dice que Moodle lo recibirá como 1.000 (un decimal) y no como mil.</li>
+    <li><b>Completar.</b> Cada espacio necesita al menos dos opciones, y la pregunta vale puntos enteros.</li>
+  </ul>
+  <div class="dos" style="align-items:start;">
+    <figure class="fig" style="margin:0;"><img src="{{IMG:05b-opciones-de-mas.png}}" alt="Emparejamiento con dos opciones de más"><figcaption><b>Opciones de más.</b> (1) Filas sin concepto en la Columna A. (2) El botón que las agrega.</figcaption></figure>
+    <figure class="fig" style="margin:0;"><img src="{{IMG:05c-avisos.png}}" alt="Pregunta numérica con el aviso de separador de miles"><figcaption><b>Un aviso de la tarjeta.</b> (1) El aviso ámbar. (2) La nota de que Moodle compara el número exacto.</figcaption></figure>
+  </div>
   <h4>Si te equivocas</h4>
   <ul>
     <li><b>Deshacer:</b> al borrar una pregunta o aplicar un reparto de puntos aparece un aviso abajo con el botón <span class="btn">Deshacer</span> (dura unos segundos).</li>
@@ -273,6 +290,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <li>Pulsa <span class="btn">Generar XML</span>. El archivo nuevo se llama <span class="mono">&lt;nombre&gt;_editado.xml</span>.</li>
   </ol>
   <div class="aviso importante"><span class="et">Importante</span><p>Cátedra entiende los 7 tipos de pregunta que genera. Las que no reconoce (calculadas, arrastrar y soltar…) quedan entre las <b>«preguntas no incluidas»</b>, con su motivo, y no pasan al XML nuevo.</p></div>
+  <div class="aviso consejo"><span class="et">Lo que no se conserva</span><p>Si tu XML trae algo que el editor no guarda (crédito parcial a una opción, respuestas alternativas en una respuesta corta, tolerancia en una numérica o retroalimentación propia de cada opción), Cátedra te avisa arriba. Al generar el XML nuevo esas cosas no se incluyen; las demás se conservan. Un XML que generó la propia Cátedra se vuelve a abrir sin avisos.</p></div>
 </section>
 
 <section id="g-moodle" data-titulo="Importar el XML en Moodle">
@@ -449,6 +467,14 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <li><b>Cuadros con X</b>, donde cada fila se une con la columna marcada: se convierten en emparejamiento.</li>
     <li><b>Sin respuesta marcada:</b> Cátedra no la inventa; la pregunta queda señalada para que la completes (o la sugiera la IA, si tú lo pides y lo aceptas).</li>
   </ul>
+  <p>Si el documento trae una tabla <b>RESPUESTAS</b> al final (Nº, tipo y respuesta correcta) y la IA no copió la clave de alguna pregunta, Cátedra la lee de la tabla; esas respuestas salen como «clave del documento», no como «interpretadas por la IA».</p>
+  <table><tr><th style="width:24%">Tipo</th><th>Lo que conviene saber</th></tr>
+    <tr><td>Opción múltiple</td><td>Con varias respuestas correctas, cada incorrecta que el estudiante marque resta puntos (la nota no baja de 0). Las preguntas con una opción que depende de otras («todas las anteriores», «A y B») no se mezclan en Moodle.</td></tr>
+    <tr><td>Emparejamiento</td><td>La Columna B puede llevar opciones de más (distractores) que no son pareja de ningún concepto.</td></tr>
+    <tr><td>Completar</td><td>Puntos enteros, al menos uno por espacio; cada espacio necesita dos opciones o más. Si los puntos no se reparten por igual entre los espacios (por ejemplo 19 en 3), los primeros se quedan con el punto que sobra y Cátedra lo avisa.</td></tr>
+    <tr><td>Respuesta corta</td><td>Moodle no distingue mayúsculas y Cátedra también acepta la respuesta sin tildes (por ejemplo «pingüino» y «pinguino»). La respuesta se escribe tal cual, con apóstrofos o &amp; incluidos.</td></tr>
+    <tr><td>Numérica</td><td>Moodle compara el número exacto (tolerancia 0). Escríbelo sin separador de miles: 1000, no 1,000 ni 1.000; la coma y el punto se toman como decimal.</td></tr>
+  </table>
   <h3>Límites y números útiles</h3>
   <table><tr><th style="width:52%">Qué</th><th>Límite</th></tr>
     <tr><td>Exámenes guardados en el Historial</td><td>300 (o 400 MB); aviso al llegar al 85 %</td></tr>
@@ -461,7 +487,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <tr><td>Renglones por pregunta de ensayo (PDF)</td><td>de 2 a 24</td></tr></table>
 </section>
 
-<section>
+<section style="break-before:page;">
   <h3 style="margin-top:0;">Atajos de teclado</h3>
   <p>Funcionan mientras revisas, sin estar escribiendo en un campo.</p>
   <table><tr><th style="width:24%">Tecla</th><th>Qué hace</th></tr>
@@ -494,7 +520,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <h3 style="margin-top:3mm;">Qué hace la IA y qué no</h3>
   <div class="dos">
     <div class="tarj"><h4>La IA hace</h4><ul><li>Ordena la estructura de tu documento en preguntas y opciones.</li><li>Si tú lo pides: sugiere una respuesta que falta, escribe retroalimentación, mejora la redacción.</li></ul></div>
-    <div class="tarj"><h4>Cátedra hace (en código)</h4><ul><li>Lee las marcas de respuesta (color, subrayado, ✓…).</li><li>Valida que el examen sea aceptado por Moodle.</li><li>Arma el XML, el PDF, el Word y las versiones.</li><li>Detecta preguntas repetidas.</li></ul></div>
+    <div class="tarj"><h4>Cátedra hace (en código)</h4><ul><li>Lee las marcas de respuesta (color, subrayado, ✓…).</li><li>Valida que el examen sea aceptado por Moodle.</li><li>Arma el XML, el PDF, el Word y las versiones.</li><li>Detecta preguntas repetidas.</li><li>Copia la clave de la tabla RESPUESTAS de tu documento cuando la IA no la copió.</li><li>Avisa de lo que Moodle recibiría distinto de lo que ves (puntos, números ambiguos, opciones que dependen de otras).</li></ul></div>
   </div>
   <div class="aviso importante"><span class="et">Un principio</span><p><b>La clave o la marca de tu documento manda.</b> Si tu examen no marca la respuesta, Cátedra no la inventa. Y todo lo que propone la IA queda visible, marcado y editable: nada se decide a tus espaldas.</p></div>
   <h3>Origen y confianza de una respuesta</h3>
@@ -524,6 +550,10 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <tr><td>«La aplicación perdió su conexión interna segura»</td><td>Cierra Cátedra y vuelve a abrirla.</td></tr>
     <tr><td>La clave de Gemini no se acepta</td><td>Cópiala de nuevo desde Google AI Studio, sin espacios al inicio ni al final, y comprueba tu conexión a internet: Cátedra la verifica con Google antes de guardarla.</td></tr>
     <tr><td><span class="btn">Generar XML</span> no avanza</td><td>Hay preguntas <b style="color:#d31b44;">en rojo</b> (incompletas). El panel de la derecha dice cuántas son; usa <span class="tecla">I</span> para ir a la siguiente y complétala.</td></tr>
+    <tr><td>Un espacio de «Completar» tiene una sola opción</td><td><span class="btn">Generar XML</span> no avanza: cada espacio necesita al menos dos opciones (la correcta y otra). Agrega la que falta en la pregunta.</td></tr>
+    <tr><td>Un aviso dice que «1,000» puede ser 1000 o 1.000</td><td>Es un aviso, no un error: Moodle recibirá 1.000 (un decimal). Si querías mil, escríbelo sin separador: 1000.</td></tr>
+    <tr><td>Casi todas las respuestas dicen «Interpretada por la IA — revisar»</td><td>Si tu documento trae una tabla <b>RESPUESTAS</b>, Cátedra la lee y marca esas respuestas como «clave del documento». Si siguen apareciendo así, revisa que la tabla esté al final, con una fila por pregunta (número, tipo y respuesta) y tantas filas como preguntas.</td></tr>
+    <tr><td>El examen vale más o menos de lo que escribiste</td><td>Con <b>Según el tipo</b> el total es la suma de lo que escribiste en cada tipo. El botón <span class="btn">Puntos</span> dice cuánto suma ahora y <span class="btn">Deshacer</span> devuelve lo anterior.</td></tr>
     <tr><td>Una pregunta no trae su respuesta</td><td>Márcala tú, o pulsa <span class="btn">Sugerir respuesta con IA</span> y decide si la aceptas.</td></tr>
     <tr><td>Faltan preguntas respecto de tu documento</td><td>Mira «Preguntas que no se pudieron incluir» arriba de la lista: recupéralas con <i>Añadir con lo ya extraído</i> o agrégalas con <span class="btn">Añadir pregunta</span>.</td></tr>
     <tr><td>Cerraste la ventana sin generar el XML</td><td>Al volver a abrir Cátedra pulsa <span class="btn">Retomar revisión</span>.</td></tr>
@@ -538,7 +568,8 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <div class="ey">8 · Mantenimiento</div><h2>Actualizar, desinstalar y glosario</h2>
   <div class="dos" style="margin-top:3mm;">
     <div class="tarj"><h3 class="tj">Actualizar</h3><p>Abre <span class="btn">Acerca de</span>: ahí ves tu versión y, con <span class="btn">Buscar actualizaciones</span>, si hay una nueva. Si la hay, el botón <span class="btn">Descargar</span> te lleva a la página de la versión para bajar el instalador. Cátedra también te avisa sola al abrirse. Tus exámenes, materias y perfiles se conservan.</p>
-    <p style="font-size:9.3pt;color:var(--pizarra);">Al abrir una versión nueva por primera vez puede actualizar tu base de datos y dejar una copia de seguridad previa.</p></div>
+    <p style="font-size:9.3pt;color:var(--pizarra);">Al abrir una versión nueva por primera vez puede actualizar tu base de datos y dejar una copia de seguridad previa. Si tu base de datos viene de una versión antigua, la 3.0 la reordena una sola vez para recuperar espacio; no se pierde nada.</p>
+    <p><b>Comprueba tu descarga.</b> Cada versión publica la <b>huella SHA-256</b> de sus instaladores (en las notas de la página de la versión y en el archivo <span class="mono">SHA256SUMS.txt</span>). En macOS escribe <span class="mono">shasum -a 256 Catedra.dmg</span> en Terminal; en Windows, <span class="mono">certutil -hashfile Catedra_Setup.exe SHA256</span>. Tiene que dar exactamente el mismo valor: si no, no instales ese archivo.</p></div>
     <div class="tarj"><h3 class="tj">Desinstalar</h3><p><b>Windows:</b> desde «Aplicaciones» o «Agregar o quitar programas». El desinstalador te pregunta si también quieres borrar tu historial y tu clave guardados; la respuesta por defecto es <b>No</b>.</p><p><b>macOS:</b> arrastra Catedra desde Aplicaciones a la Papelera. Para borrar también tus datos, elimina la carpeta <span class="mono">ConversorMoodleXML</span> de <span class="mono">~/Library/Application Support/</span>.</p></div>
   </div>
   <h3>Glosario</h3>
@@ -549,10 +580,13 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <tr><td><b>Cloze / Completar</b></td><td>Pregunta con espacios para completar dentro del texto, cada uno con sus opciones o su respuesta.</td></tr>
     <tr><td><b>Confianza</b></td><td>Qué tan segura fue la lectura de una respuesta: alta, media o baja.</td></tr>
     <tr><td><b>Gemini / clave de API</b></td><td>La IA de Google que ordena las preguntas, y la contraseña personal con que Cátedra la usa a tu nombre.</td></tr>
+    <tr><td><b>Huella (SHA-256)</b></td><td>Un código que identifica un archivo exacto: sirve para comprobar que el instalador que descargaste es el que se publicó.</td></tr>
     <tr><td><b>Materia</b></td><td>Un espacio de Cátedra que agrupa los exámenes de una asignatura.</td></tr>
     <tr><td><b>Moodle XML</b></td><td>El formato de archivo que Moodle sabe importar al banco de preguntas.</td></tr>
+    <tr><td><b>Opción de más (distractor)</b></td><td>Una opción de la Columna B de un emparejamiento que no es la pareja de ningún concepto, para que no se adivine por descarte.</td></tr>
     <tr><td><b>Origen</b></td><td>De dónde salió la respuesta de una pregunta: documento, marca, IA, tú o sugerencia.</td></tr>
     <tr><td><b>Perfil de encabezado</b></td><td>Un conjunto guardado de institución, logos, indicaciones y formato para los PDF y Word.</td></tr>
+    <tr><td><b>Tolerancia</b></td><td>Cuánto puede alejarse una respuesta numérica de la correcta y seguir valiendo. En Cátedra es siempre 0: debe coincidir exacto.</td></tr>
     <tr><td><b>Versión (de un examen)</b></td><td>Un parcial sorteado a partir de un examen grande, con su propia clave.</td></tr></table>
   <p style="margin-top:6mm;font-size:9.4pt;color:var(--pizarra);">Cátedra es obra de los ingenieros César González y Vicente Urriola. Moodle es una marca registrada de Moodle Pty Ltd. Google y Gemini son marcas de Google LLC. Cátedra es independiente: no está afiliada, patrocinada ni respaldada por ellas. Este manual se regenera con <span class="mono">dev/generar_manual_usuario.py</span>.</p>
 </section>

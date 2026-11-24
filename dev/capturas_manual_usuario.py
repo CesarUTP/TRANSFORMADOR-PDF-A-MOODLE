@@ -126,7 +126,7 @@ def recargar(page, c):
 
 
 def main() -> None:
-    id_original = Path("/tmp/catedra_demo_original_id.txt").read_text(encoding="utf-8").strip()
+    id_original = Path(os.environ.get("ID_ORIGINAL_DEMO", "/tmp/catedra_demo_original_id.txt")).read_text(encoding="utf-8").strip()
     with sync_playwright() as pw:
         navegador = pw.chromium.launch(channel="chrome", headless=True)
         contexto = navegador.new_context(viewport={"width": ANCHO, "height": ALTO}, device_scale_factor=ESCALA, locale="es-PA", color_scheme="light")
@@ -160,7 +160,12 @@ def main() -> None:
         # reparto de puntos
         page.click("[data-accion='togglePointsToolMenu']")
         c.esperar(500)
-        c.foto("05-puntos.png", clip=c.alrededor("[data-accion='togglePointsToolMenu']", 400, 70, 1000, 430))
+        # «Según el tipo» (3.0): el docente escribe cuánto vale cada pregunta de un tipo y ve el total al instante (sin aplicarlo).
+        page.fill(".points-type-input[data-type=multichoice]", "3")
+        c.esperar(400)
+        c.foto("05-puntos.png", [(".points-type-input[data-type=multichoice]", 1), (".points-type-sub[data-type=multichoice]", 2, "der", 0, -6),
+                                 ("#points-type-total", 3, "izq", -22, 0), ("[data-accion='applyPointsDistribution']", 4)],
+               clip=c.alrededor("[data-accion='togglePointsToolMenu']", 400, 70, 890, 520))
         page.click("[data-accion='togglePointsToolMenu']")
         # pregunta sin respuesta: «Sugerir respuesta con IA»
         tarjeta4 = page.locator(".editor-card").nth(3)
@@ -170,6 +175,21 @@ def main() -> None:
             tarjeta4.locator("[data-accion='alternarTarjeta']").first.click()
             c.esperar(700)
         c.foto("06-sin-respuesta.png", [(".editor-card:nth-of-type(4) [data-accion='sugerirRespuesta']", 1)], elemento=".editor-card:nth-of-type(4)")
+
+        print("2b. Lo nuevo de la 3.0: opciones de más y avisos de la tarjeta")
+        recargar(page, c)
+        abrir_examen(page, c, "Geografía", "quiz3_novedades.pdf")
+        c.esperar(1500)
+        page.evaluate("document.querySelectorAll('.editor-card').forEach((t, i) => { t.id = 'tj' + i; })")
+        for k in (0, 2):                       # emparejamiento y numérica, ABIERTAS (la que tiene un aviso ya se abre sola: no se alterna)
+            page.evaluate("(k) => { const t = document.getElementById('tj' + k); if (t.dataset.abierta === undefined) t.querySelector(\"[data-accion='alternarTarjeta']\").click(); }", k)
+            c.esperar(600)
+        page.evaluate("document.getElementById('tj0').scrollIntoView({block:'center'})")
+        c.esperar(500)
+        c.foto("05b-opciones-de-mas.png", [("#tj0 .matching-distractor-row", 1), ("#tj0 [data-accion='addMatchingDistractorRow']", 2, "der", 0, -4)], elemento="#tj0 .matching-box")
+        page.evaluate("document.getElementById('tj2').scrollIntoView({block:'center'})")
+        c.esperar(500)
+        c.foto("05c-avisos.png", [("#tj2 .card-calidad", 1, "izq", -26, 0), ("#tj2 .q-nu-answer ~ .card-note", 2, "izq", -26, -4)], elemento="#tj2")
 
         print("3. Revisar con el original (PDF de ejemplo en la memoria de la app)")
         page.evaluate("""async (id) => {

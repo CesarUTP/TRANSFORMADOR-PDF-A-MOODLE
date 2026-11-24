@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cátedra: del examen que ya tienes, a Moodle y al papel</title>
+  <meta name="description" content="Cátedra convierte tus exámenes en PDF, Word o TXT a Moodle XML, los imprime en PDF o Word con su clave, saca varias versiones y los ordena por materia. Una app de escritorio para docentes.">
+  <meta name="theme-color" content="#1e3a5f">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_PA">
+  <meta property="og:title" content="Cátedra: del examen que ya tienes, a Moodle y al papel">
+  <meta property="og:description" content="Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.">
+  <meta property="og:image" content="https://cesarutp.github.io/TRANSFORMADOR-PDF-A-MOODLE/landing%20page/img/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="img/favicon.png">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="preload" href="fonts/outfit-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/hanken-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="estilos.css">
+  <script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+  <a class="saltar" href="#apertura">Saltar al contenido</a>
+
+  <div class="escritorio">
+    <header class="barra">
+      <a class="barra__marca" href="#top" aria-label="Cátedra, inicio">
+        <img src="img/icono.svg" alt="" width="38" height="38">
+        Cátedra
+      </a>
+      <nav aria-label="Enlaces del proyecto">
+        <ul class="barra__enlaces">
+          <li><a href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/blob/main/docs/manual-usuario/Catedra-Manual-de-Usuario.pdf" rel="noopener">Manual<span class="solo-ancho"> de usuario</span></a></li>
+          <li><a href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE" rel="noopener">GitHub</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div class="escritorio__rejilla" id="top">
+      <main class="hoja">
+
+        <!-- Encabezado: el de los exámenes que Cátedra imprime -->
+        <header class="encabezado">
+          <img class="encabezado__logo encabezado__logo--icono" src="img/icono.svg" alt="Símbolo de Cátedra: una C ámbar con tres viñetas" width="84" height="84">
+          <div>
+            <p class="encabezado__nombre">Cátedra</p>
+            <p class="encabezado__lema">Tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel.</p>
+          </div>
+          <img class="encabezado__logo encabezado__logo--robot" src="img/robot.webp" alt="El robot ayudante de Cátedra, saludando" width="84" height="84">
+        </header>
+
+
+        <!-- Apertura: titular y pregunta 1 -->
+        <section class="intro" id="apertura" aria-labelledby="titular">
+          <h1 id="titular"><span class="linea">Del examen que ya tienes,</span> <span class="linea">a Moodle y al papel.</span></h1>
+          <p class="entradilla">Sube tu examen en PDF, Word o TXT, o un XML de Moodle que ya tengas. Cátedra lo ordena en preguntas, tú lo revisas con tu original al lado y lo exportas como Moodle XML, como PDF o Word listo para imprimir o en varias versiones.</p>
+
+          <div class="descarga-rapida">
+            <a class="boton" href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest" data-dl-boton rel="noopener">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+              <span data-dl-texto>Descargar desde GitHub</span>
+            </a>
+            <p class="descarga__meta" data-dl-meta></p>
+            <p class="descarga__aviso" data-dl-aviso hidden></p>
+          </div>
+
+          <div class="pregunta">
+            <p class="enunciado"><span class="num">1.</span>¿Qué necesitas hacer con tu examen?<small>Marque todas las que correspondan.</small></p>
+            <ul class="opciones" id="opciones-apertura">
+              <li style="--i:0">
+                <span class="casilla" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1"/></svg></span>
+                <div><a href="#paso-exporta"><span>Llevarlo a Moodle</span></a><p>Moodle XML con los siete tipos de pregunta, sus puntos y sus respuestas.</p></div>
+              </li>
+              <li style="--i:1">
+                <span class="casilla" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1"/></svg></span>
+                <div><a href="#paso-exporta"><span>Imprimirlo</span></a><p>PDF o Word con tu encabezado, tus logos y su clave; o folleto con hoja de respuestas.</p></div>
+              </li>
+              <li style="--i:2">
+                <span class="casilla" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1"/></svg></span>
+                <div><a href="#parejas"><span>Sacar varias versiones</span></a><p>De un banco grande, hasta 12 parciales distintos, cada uno con su clave.</p></div>
+              </li>
+              <li style="--i:3">
+                <span class="casilla" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1"/></svg></span>
+                <div><a href="#parejas"><span>Ordenarlo por materia</span></a><p>Todos tus exámenes en un lugar, para reabrirlos, descargarlos o imprimirlos de nuevo.</p></div>
+              </li>
+            </ul>
+            <p class="clave">Respuesta: <mark>todas las anteriores</mark>.</p>
+          </div>
+
+          <figure class="figura">
+            <div class="figura__marco"><img src="img/figura-original.webp" width="1380" height="936" alt="Ventana de revisión de Cátedra: la pregunta 3 recortada de su página original, y debajo la respuesta que propone la app con las marcas «Interpretada por la IA, revisar» y «Confianza baja»." fetchpriority="high"></div>
+            <figcaption><b>Figura 1.</b> La revisión con el original: la pregunta junto a su página, con la respuesta que propone Cátedra y qué tanto confiar en ella. Datos de ejemplo.</figcaption>
+          </figure>
+
+          <div class="frente">
+            <dl class="cuadro">
+              <div><dt>Programa:</dt><dd>Cátedra</dd></div>
+              <div><dt>Versión:</dt><dd data-version>última en GitHub</dd></div>
+              <div><dt>Sistema:</dt><dd data-sistemas>macOS (chip Apple)</dd></div>
+              <div><dt>Tamaño:</dt><dd data-tamano>—</dd></div>
+            </dl>
+            <p class="facilitador"><span><b>Facilitador:</b> tú</span><span><b>Actividad:</b> presentación de Cátedra</span></p>
+
+            <section class="indicaciones" aria-labelledby="t-indicaciones">
+              <h2 id="t-indicaciones">Indicaciones generales</h2>
+              <ul>
+                <li>Cátedra no inventa preguntas ni respuestas: lo que tu documento no trae queda señalado.</li>
+                <li>La IA ayuda a ordenar el examen; tú revisas cada pregunta antes de exportar.</li>
+                <li>Tu archivo se procesa en tu equipo: a la IA solo va el texto extraído y, si hace falta, imágenes de algunas páginas. Sin cuenta, sin cookies y sin analítica.</li>
+              </ul>
+            </section>
+          </div>
+        </section>
+
+        <!-- I parte -->
+        <section class="parte" id="como-funciona" aria-labelledby="t-como">
+          <h2 id="t-como">Cómo funciona</h2>
+          <p class="indicacion"><b>Indicación:</b> siga los pasos en el orden en que ocurren.</p>
+
+          <ol class="pasos">
+            <li class="paso paso--sube" id="paso-sube">
+              <div class="paso__texto">
+                <div class="paso__cabeza"><span class="paso__num" aria-hidden="true">1</span><h3>Sube tu documento</h3></div>
+                <p>Arrástralo o búscalo en tu equipo: PDF, Word, TXT o un XML de Moodle. No necesita un formato especial; basta con que las preguntas estén numeradas o separadas.</p>
+                <p class="paso__nota">Un PDF escaneado se lee como imagen (hasta 15 páginas) y todas sus respuestas quedan con confianza baja, para que las verifiques.</p>
+              </div>
+              <figure class="figura">
+                <div class="figura__marco"><img src="img/paso-sube.webp" width="1270" height="500" loading="lazy" alt="Pantalla inicial de Cátedra: una zona para arrastrar el examen, con los formatos PDF, DOCX, TXT y XML."></div>
+                <figcaption><b>Figura 2.</b> Arrastra tu examen aquí.</figcaption>
+              </figure>
+            </li>
+
+            <li class="paso paso--revisa" id="paso-revisa">
+              <div class="paso__texto">
+                <div class="paso__cabeza"><span class="paso__num" aria-hidden="true">2</span><h3>Revisa con tu original al lado</h3></div>
+                <p>Cada pregunta indica su página: ábrela y compárala con lo que Cátedra leyó. Las respuestas que tu documento marca (color, subrayado, marca de verificación) las resuelve el código; lo que interpreta la IA queda señalado.</p>
+                <dl class="leyenda">
+                  <div><dt><span class="marca-ia marca-ia--pagina"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>Pág. 3</span></dt><dd>En qué página de tu PDF está la pregunta.</dd></div>
+                  <div><dt><span class="marca-ia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Interpretada por la IA, revisar</span></dt><dd>La IA ordenó esta parte: confírmala.</dd></div>
+                  <div><dt><span class="marca-ia"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16.5v.01"/></svg>Confianza baja</span></dt><dd>Mírala primero.</dd></div>
+                </dl>
+              </div>
+              <figure class="figura">
+                <div class="figura__marco"><img src="img/paso-revisa.webp" width="1235" height="550" loading="lazy" alt="Pantalla de revisión: una fila por pregunta con su tipo y su respuesta, y a la derecha un mapa del examen con las preguntas incompletas y las que conviene revisar."></div>
+                <figcaption><b>Figura 3.</b> La revisión: una fila por pregunta; la que pide atención se abre sola y muestra de dónde salió y qué tanto confiar. Datos de ejemplo.</figcaption>
+              </figure>
+            </li>
+
+            <li class="paso paso--exporta" id="paso-exporta">
+              <div class="paso__texto">
+                <div class="paso__cabeza"><span class="paso__num" aria-hidden="true">3</span><h3>Exporta lo que necesites</h3></div>
+                <ul class="salidas">
+                  <li><span><b>Moodle XML</b>, para importarlo desde el banco de preguntas de tu curso, con los puntos que tú decidas.</span></li>
+                  <li><span><b>PDF con su clave</b>, o folleto, hoja de respuestas y clave, con tu encabezado y tus logos.</span></li>
+                  <li><span><b>Word editable</b> con exactamente lo mismo que el PDF, para cambiarlo antes de imprimir.</span></li>
+                  <li><span><b>Un ZIP con varias versiones</b>, cada una con su propia clave.</span></li>
+                  <li><span><b>Puntos a tu manera</b>: escribes cuánto vale cada pregunta de cada tipo y el total del examen es la suma.</span></li>
+                  <li><span><b>Puntos enteros</b> en el PDF, si prefieres calificar sin decimales. El XML conserva los del editor.</span></li>
+                </ul>
+              </div>
+              <figure class="figura">
+                <div class="figura__marco"><img src="img/paso-exporta.webp" width="800" height="568" loading="lazy" alt="Pantalla de exportar en PDF: datos del examen y qué incluir a la izquierda, y la vista previa de la página a la derecha."></div>
+                <figcaption><b>Figura 4.</b> La vista previa del PDF, página por página, con tu encabezado. Datos de ejemplo.</figcaption>
+              </figure>
+            </li>
+          </ol>
+        </section>
+
+        <!-- II parte -->
+        <section class="parte" id="verdadero-falso" aria-labelledby="t-vf">
+          <h2 id="t-vf">Verdadero o falso: la IA, tus datos y tus puntos</h2>
+          <p class="indicacion"><b>Indicación:</b> marque la respuesta correcta. Aquí la IA no decide por ti.</p>
+
+          <ol class="vf">
+            <li>
+              <span class="vf__num">1.</span>
+              <div>
+                <p class="vf__afirmacion">Cátedra inventa las respuestas que tu documento no trae.</p>
+                <div class="vf__burbujas"><span class="burbuja"><i></i>Verdadero</span><span class="burbuja burbuja--marcada"><i></i>Falso</span></div>
+                <p class="vf__explicacion"><b>Sin marca, la pregunta queda señalada.</b> Si quieres, puedes pedir una sugerencia a la IA: solo se aplica si la aceptas, y se queda marcada como «Sugerida por IA».</p>
+              </div>
+            </li>
+            <li>
+              <span class="vf__num">2.</span>
+              <div>
+                <p class="vf__afirmacion">Tus exámenes se guardan en una cuenta en la nube.</p>
+                <div class="vf__burbujas"><span class="burbuja"><i></i>Verdadero</span><span class="burbuja burbuja--marcada"><i></i>Falso</span></div>
+                <p class="vf__explicacion"><b>No hay cuenta, ni cookies, ni analítica.</b> Tu archivo se procesa en tu equipo; a la IA solo se envía el texto extraído y, cuando hace falta, imágenes de algunas páginas.</p>
+              </div>
+            </li>
+            <li>
+              <span class="vf__num">3.</span>
+              <div>
+                <p class="vf__afirmacion">Puedes revisar y exportar sin conexión a internet.</p>
+                <div class="vf__burbujas"><span class="burbuja burbuja--marcada"><i></i>Verdadero</span><span class="burbuja"><i></i>Falso</span></div>
+                <p class="vf__explicacion"><b>Solo hace falta conexión</b> para que la IA ordene las preguntas y para buscar actualizaciones.</p>
+              </div>
+            </li>
+            <li>
+              <span class="vf__num">4.</span>
+              <div>
+                <p class="vf__afirmacion">Necesitas una clave de la IA de Google (Gemini).</p>
+                <div class="vf__burbujas"><span class="burbuja burbuja--marcada"><i></i>Verdadero</span><span class="burbuja"><i></i>Falso</span></div>
+                <p class="vf__explicacion"><b>Google ofrece un nivel sin costo, con límites de uso</b> (consúltalo en AI Studio). Cátedra te explica cómo conseguirla la primera vez que la abres y la guarda cifrada en tu equipo.</p>
+              </div>
+            </li>
+            <li>
+              <span class="vf__num">5.</span>
+              <div>
+                <p class="vf__afirmacion">Los puntos enteros del PDF cambian el XML de Moodle.</p>
+                <div class="vf__burbujas"><span class="burbuja"><i></i>Verdadero</span><span class="burbuja burbuja--marcada"><i></i>Falso</span></div>
+                <p class="vf__explicacion"><b>El XML conserva los puntos del editor.</b> Solo el PDF los reparte en enteros, con el mismo total, para calificar en papel sin redondeos.</p>
+              </div>
+            </li>
+            <li>
+              <span class="vf__num">6.</span>
+              <div>
+                <p class="vf__afirmacion">Cátedra te avisa cuando algo llegaría a Moodle distinto de lo que ves.</p>
+                <div class="vf__burbujas"><span class="burbuja burbuja--marcada"><i></i>Verdadero</span><span class="burbuja"><i></i>Falso</span></div>
+                <p class="vf__explicacion"><b>Son avisos, no bloqueos.</b> Por ejemplo: «Completar» vale puntos enteros, un número como «1,000» puede ser mil o uno con tres decimales, y una opción como «todas las anteriores» no se mezcla en Moodle.</p>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <!-- III parte -->
+        <section class="parte" id="parejas" aria-labelledby="t-parejas">
+          <h2 id="t-parejas">Emparejamiento: qué resuelve cada función</h2>
+          <p class="indicacion"><b>Indicación:</b> relacione cada necesidad con lo que hace Cátedra. Como en tus exámenes, la segunda columna va mezclada.</p>
+
+          <div class="parejas-caja" id="parejas-caja">
+          <ol class="parejas">
+            <li class="pareja">
+              <p class="necesidad" style="--fa:1"><span class="parejas__letra">1.</span><span>Tengo un examen de 100 preguntas y quiero tres parciales.</span></p>
+              <p class="capacidad" style="--fb:5"><span class="parejas__letra">e)</span><span><b>Versiones</b>Hasta 12 parciales de un banco, en un ZIP, cada uno con su clave.</span></p>
+            </li>
+            <li class="pareja">
+              <p class="necesidad" style="--fa:2"><span class="parejas__letra">2.</span><span>Mis exámenes están repartidos por todas partes.</span></p>
+              <p class="capacidad" style="--fb:1"><span class="parejas__letra">a)</span><span><b>Mis materias</b>Una biblioteca por materia, con todo lo que exportaste.</span></p>
+            </li>
+            <li class="pareja">
+              <p class="necesidad" style="--fa:3"><span class="parejas__letra">3.</span><span>Debo imprimirlo con el membrete de mi facultad.</span></p>
+              <p class="capacidad" style="--fb:4"><span class="parejas__letra">d)</span><span><b>Perfiles de encabezado</b>Institución, logos, márgenes y tipo de letra a tu gusto.</span></p>
+            </li>
+            <li class="pareja">
+              <p class="necesidad" style="--fa:4"><span class="parejas__letra">4.</span><span>Quiero calificar en papel sin decimales.</span></p>
+              <p class="capacidad" style="--fb:2"><span class="parejas__letra">b)</span><span><b>Puntos enteros</b>El PDF reparte los puntos sin decimales y con el mismo total.</span></p>
+            </li>
+            <li class="pareja">
+              <p class="necesidad" style="--fa:5"><span class="parejas__letra">5.</span><span>No sé por dónde empezar.</span></p>
+              <p class="capacidad" style="--fb:6"><span class="parejas__letra">f)</span><span><b>Un robot ayudante</b>Te explica cada pantalla, paso a paso.</span></p>
+            </li>
+            <li class="pareja">
+              <p class="necesidad" style="--fa:6"><span class="parejas__letra">6.</span><span>Quiero que cada tipo de pregunta valga lo que yo decida.</span></p>
+              <p class="capacidad" style="--fb:3"><span class="parejas__letra">c)</span><span><b>Puntos según el tipo</b>Escribes cuánto vale cada pregunta de cada tipo y el total es la suma.</span></p>
+            </li>
+          </ol>
+          <svg class="uniones" aria-hidden="true" focusable="false"></svg>
+          </div>
+
+          <div class="tipos-franja">
+            <p>Y entiende los siete tipos de pregunta de Moodle:</p>
+            <ul class="tipos">
+              <li style="--c:var(--t-multiple)">Opción múltiple</li>
+              <li style="--c:var(--t-vf)">Verdadero/Falso</li>
+              <li style="--c:var(--t-pareo)">Emparejamiento</li>
+              <li style="--c:var(--t-completar)">Completar</li>
+              <li style="--c:var(--t-ensayo)">Ensayo</li>
+              <li style="--c:var(--t-corta)">Respuesta corta</li>
+              <li style="--c:var(--t-numerica)">Numérica</li>
+            </ul>
+          </div>
+
+          <div class="figuras-apiladas">
+            <figure class="figura">
+              <div class="figura__marco"><img src="img/versiones.webp" width="790" height="660" loading="lazy" alt="Pantalla de versiones: cuatro pestañas (Versión A a D) con sus puntos y la vista previa de una versión."></div>
+              <figcaption><b>Figura 5.</b> Versiones: cada pestaña con su suma de puntos y su vista previa. Datos de ejemplo.</figcaption>
+            </figure>
+            <figure class="figura">
+              <div class="figura__marco"><img src="img/materias.webp" width="800" height="420" loading="lazy" alt="Mis materias: tarjetas de materias con su número de exámenes."></div>
+              <figcaption><b>Figura 6.</b> Mis materias, con todo lo que exportaste en cada una. Datos de ejemplo.</figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <!-- IV parte -->
+        <section class="parte" id="antes" aria-labelledby="t-antes">
+          <h2 id="t-antes">Antes de descargar</h2>
+          <p class="indicacion"><b>Indicación:</b> lea lo que sigue; es lo que preguntan los docentes antes de instalar.</p>
+
+          <div class="faq">
+            <details>
+              <summary>¿Qué necesito para empezar?</summary>
+              <div class="faq__respuesta">
+                <p>Una computadora con <b>macOS con chip Apple (M1 o posterior)</b> o con <b>Windows</b>, tus exámenes y una clave de la API de Gemini, la IA de Google.</p>
+                <p>La clave se consigue en <a href="https://aistudio.google.com/apikey" rel="noopener">Google AI Studio</a>. Cátedra te guía la primera vez, la comprueba con Google y la guarda cifrada en tu equipo.</p>
+              </div>
+            </details>
+            <details>
+              <summary>¿Y si mi Mac es Intel?</summary>
+              <div class="faq__respuesta">
+                <p>No: la versión para macOS está compilada para chip Apple (M1 o posterior). Si no sabes cuál tienes, abre el menú Apple → «Acerca de este Mac» y mira «Chip» o «Procesador».</p>
+              </div>
+            </details>
+            <details>
+              <summary>¿Qué aviso de seguridad voy a ver al abrirla?</summary>
+              <div class="faq__respuesta">
+                <p>Cátedra aún no está firmada con un certificado de Apple ni de Microsoft, así que tu sistema puede mostrar un aviso la primera vez. Descárgala siempre desde esta página o desde GitHub.</p>
+                <ul>
+                  <li><b>macOS:</b> abre Ajustes del Sistema → Privacidad y seguridad y elige «Abrir de todos modos».</li>
+                  <li><b>Windows:</b> si aparece «Windows protegió su PC», pulsa «Más información» y luego «Ejecutar de todas formas».</li>
+                </ul>
+              </div>
+            </details>
+            <details>
+              <summary>¿Cómo sé que lo que descargué es el archivo original?</summary>
+              <div class="faq__respuesta">
+                <p>Cada versión publica la <b>huella SHA-256</b> de sus instaladores, en las notas de la versión y en el archivo <code>SHA256SUMS.txt</code>. Si la calculas en tu equipo y da el mismo valor, el archivo es exactamente el que se publicó.</p>
+                <ul>
+                  <li><b>macOS:</b> en Terminal, <code>shasum -a 256 Catedra.dmg</code>.</li>
+                  <li><b>Windows:</b> en el Símbolo del sistema, <code>certutil -hashfile Catedra_Setup.exe SHA256</code>.</li>
+                </ul>
+                <p>Si el valor no coincide, no instales ese archivo.</p>
+              </div>
+            </details>
+            <details>
+              <summary>¿Qué se envía a Google y es privado?</summary>
+              <div class="faq__respuesta">
+                <p>Tu archivo se procesa en tu equipo. A Google solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas.</p>
+                <p>Con la clave <b>gratuita</b> de Gemini, según los términos de Google, lo que se envía puede usarse para mejorar sus productos y personas de Google pueden revisarlo; con el plan de pago (facturación activada en tu cuenta de Google) no. Si tus exámenes son confidenciales, activa la facturación.</p>
+              </div>
+            </details>
+            <details>
+              <summary>¿Se conecta con Moodle?</summary>
+              <div class="faq__respuesta">
+                <p>No directamente. Cátedra genera el archivo Moodle XML y tú lo importas desde el banco de preguntas de tu curso. Es una herramienta independiente: no es de Moodle ni lo pretende.</p>
+              </div>
+            </details>
+            <details>
+              <summary>¿Dónde pido ayuda?</summary>
+              <div class="faq__respuesta">
+                <p>El <a href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/blob/main/docs/manual-usuario/Catedra-Manual-de-Usuario.pdf" rel="noopener">Manual de usuario (PDF)</a> explica cada paso con capturas. Si algo no funciona, cuéntalo en <a href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/issues" rel="noopener">GitHub</a>.</p>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <!-- Descarga -->
+        <section class="parte" id="descarga" aria-labelledby="t-descarga">
+          <h2 id="t-descarga">Descarga Cátedra</h2>
+          <p class="indicacion"><b>Indicación:</b> marque su sistema.</p>
+
+          <fieldset class="sistemas">
+            <legend class="solo-lectores">Sistema operativo</legend>
+            <label class="sistema">
+              <input type="radio" name="so" value="mac" checked>
+              <span><b>macOS</b><small>Chip Apple (M1 o posterior) · archivo .dmg<span data-estado-mac></span></small></span>
+            </label>
+            <label class="sistema">
+              <input type="radio" name="so" value="win">
+              <span><b>Windows</b><small>Instalador .exe<span data-estado-win></span></small></span>
+            </label>
+          </fieldset>
+
+          <div class="descarga">
+            <a class="boton" href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest" data-dl-boton rel="noopener">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+              <span data-dl-texto>Descargar desde GitHub</span>
+            </a>
+            <p class="descarga__meta" data-dl-meta></p>
+            <p class="descarga__aviso" data-dl-aviso hidden></p>
+            <p class="descarga__enlaces">
+              <a href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases" rel="noopener">Notas de cada versión</a>
+              <a href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/blob/main/docs/manual-usuario/Catedra-Manual-de-Usuario.pdf" rel="noopener">Manual de usuario (PDF)</a>
+            </p>
+          </div>
+
+          <p class="fin"><span>Fin de la hoja.</span><span>Antes de entregar, revise sus respuestas.</span></p>
+        </section>
+      </main>
+
+      <!-- Hoja de respuestas: navegación y descarga, siempre a la vista -->
+      <aside class="respuestas" aria-label="Hoja de respuestas">
+        <h2>Hoja de respuestas</h2>
+        <nav aria-label="Partes de la página">
+          <ol>
+            <li><a href="#apertura" data-parte="apertura"><i></i>Qué necesitas</a></li>
+            <li><a href="#como-funciona" data-parte="como-funciona"><i></i>Cómo funciona</a></li>
+            <li><a href="#verdadero-falso" data-parte="verdadero-falso"><i></i>IA, datos y puntos</a></li>
+            <li><a href="#parejas" data-parte="parejas"><i></i>Qué resuelve cada función</a></li>
+            <li><a href="#antes" data-parte="antes"><i></i>Antes de descargar</a></li>
+            <li><a href="#descarga" data-parte="descarga"><i></i>Descarga</a></li>
+          </ol>
+        </nav>
+        <a class="boton boton--lleno" href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest" data-dl-boton rel="noopener">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+          <span data-dl-texto>Descargar desde GitHub</span>
+        </a>
+        <p class="respuestas__meta" data-dl-meta></p>
+        <a class="respuestas__otro" href="#descarga" data-dl-otro>Otro sistema</a>
+      </aside>
+    </div>
+
+    <footer class="pie">
+      <ul class="pie__enlaces">
+        <li><a href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE" rel="noopener">Código en GitHub</a></li>
+        <li><a href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases" rel="noopener">Versiones</a></li>
+        <li><a href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/blob/main/docs/manual-usuario/Catedra-Manual-de-Usuario.pdf" rel="noopener">Manual de usuario</a></li>
+        <li><a href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/blob/main/docs/identidad/Catedra-Manual-de-Identidad-Visual.pdf" rel="noopener">Manual de identidad visual</a></li>
+        <li><a href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/issues" rel="noopener">Reportar un problema</a></li>
+      </ul>
+      <p>Cátedra es independiente de Moodle; Moodle es una marca de Moodle Pty Ltd. Las capturas de esta página usan datos de ejemplo. Tipografías Outfit y Hanken Grotesk, con licencia SIL OFL.</p>
+    </footer>
+  </div>
+
+  <!-- Barra de descarga para pantallas estrechas -->
+  <div class="barra-descarga" data-barra-descarga aria-label="Descargar Cátedra">
+    <p class="barra-descarga__texto"><b>Cátedra</b><span data-dl-meta></span></p>
+    <a class="boton" href="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest" data-dl-boton rel="noopener"><span data-dl-texto>Descargar</span></a>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
