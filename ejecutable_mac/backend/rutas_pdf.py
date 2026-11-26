@@ -43,6 +43,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+class TextoParte(BaseModel):
+    """Lo que el docente escribió para una parte del examen ("" = lo automático)."""
+    nombre: str = Field("", max_length=exportar_pdf.LIMITE_NOMBRE_PARTE)
+    indicacion: str = Field("", max_length=exportar_pdf.LIMITE_INDICACION_PARTE)
+
+
 class DatosPortada(BaseModel):
     """Lo que el docente escribe en el diálogo «Exportar examen en PDF»."""
     institucion: str = Field("", max_length=exportar_pdf.LIMITE_CAMPO)
@@ -71,6 +77,12 @@ class DatosPortada(BaseModel):
     puntos_por_pregunta: bool = True
     puntos_enteros: bool = False      # el diálogo lo manda activado por defecto; una llamada sin él conserva los puntos tal cual
     renglones_ensayo: int = Field(6, ge=exportar_pdf.RENGLONES_MIN, le=exportar_pdf.RENGLONES_MAX)
+    # Recuadro para el procedimiento y, con «Partes», el orden y los textos de cada una.
+    procedimiento_numerica: bool = False
+    procedimiento_corta: bool = False
+    renglones_procedimiento: int = Field(4, ge=exportar_pdf.RENGLONES_MIN, le=exportar_pdf.RENGLONES_MAX)
+    orden_partes: List[str] = Field(default_factory=list, max_length=len(exportar_pdf.NOMBRE_PARTE))
+    textos_partes: Dict[str, TextoParte] = Field(default_factory=dict, max_length=len(exportar_pdf.NOMBRE_PARTE))
     # Logos en base64 (el diálogo los reduce antes de enviarlos); "" = sin logo.
     logo_izquierdo: str = Field("", max_length=exportar_pdf.LIMITE_LOGO)
     logo_derecho: str = Field("", max_length=exportar_pdf.LIMITE_LOGO)
@@ -88,10 +100,16 @@ FORMATOS = ("pdf", "word", "ambos")
 MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 
+def _partes_validas(d) -> bool:
+    """El orden y los textos solo hablan de tipos de pregunta que existen, y el orden no repite ninguno."""
+    tipos = set(exportar_pdf.NOMBRE_PARTE)
+    return set(d.orden_partes) <= tipos and len(set(d.orden_partes)) == len(d.orden_partes) and set(d.textos_partes) <= tipos
+
+
 def _opciones_validas(d: DatosPortada) -> None:
     if (d.contenido not in exportar_pdf.CONTENIDOS or d.papel not in exportar_pdf.PAPELES or d.margenes not in exportar_pdf.MARGENES
             or d.fuente_titulos not in exportar_pdf.FUENTES or d.fuente_preguntas not in exportar_pdf.FUENTES
-            or d.rotulo_docente not in exportar_pdf.ROTULOS or d.formato not in FORMATOS):
+            or d.rotulo_docente not in exportar_pdf.ROTULOS or d.formato not in FORMATOS or not _partes_validas(d)):
         raise HTTPException(status_code=422, detail="Opciones de exportación no válidas.")
 
 
@@ -103,7 +121,10 @@ def _datos_examen(d: DatosPortada, titulo_respaldo: str, version: str = "") -> e
         fuente_titulos=d.fuente_titulos, tam_titulos=d.tam_titulos, fuente_preguntas=d.fuente_preguntas, tam_preguntas=d.tam_preguntas,
         campos_estudiante=d.campos_estudiante, rotulo_docente=d.rotulo_docente, partes=d.partes, mezclar=d.mezclar,
         puntos_por_pregunta=d.puntos_por_pregunta, puntos_enteros=d.puntos_enteros, renglones_ensayo=d.renglones_ensayo,
-        logo_izquierdo=d.logo_izquierdo, logo_derecho=d.logo_derecho)
+        logo_izquierdo=d.logo_izquierdo, logo_derecho=d.logo_derecho,
+        procedimiento_numerica=d.procedimiento_numerica, procedimiento_corta=d.procedimiento_corta,
+        renglones_procedimiento=d.renglones_procedimiento, orden_partes=list(d.orden_partes),
+        textos_partes={t: x.model_dump() for t, x in d.textos_partes.items()})
 
 
 def _exportar_sync(req: ExportarPdfRequest, clave: Dict[int, Any]):
@@ -283,7 +304,7 @@ def _vista_previa_sync(req: ExportarPdfRequest, clave: Dict[int, Any], pagina: i
             doc.close()
     salida = io.BytesIO()
     imagen.save(salida, "PNG", optimize=False)
-    return salida.getvalue(), n
+    return salida.getvalue(), n, r.partes_automaticas
 
 
 @router.post("/api/vista_previa_pdf")
@@ -294,8 +315,10 @@ async def api_vista_previa_pdf(req: ExportarPdfRequest, pagina: int = Query(1, g
         raise HTTPException(status_code=422, detail="Las claves de answer_key deben ser enteros.")
     req.filename = _nombre_nfc(req.filename)
     try:
-        png, paginas = await run_in_threadpool(_vista_previa_sync, req, clave, pagina)
-        return Response(content=png, media_type="image/png", headers={"X-PDF-Paginas": str(paginas), "Cache-Control": "no-store"})
+        png, paginas, partes = await run_in_threadpool(_vista_previa_sync, req, clave, pagina)
+        # X-PDF-Partes: lo que cada parte dice por sí sola (JSON en ASCII, para ir en una cabecera)
+        return Response(content=png, media_type="image/png",
+                        headers={"X-PDF-Paginas": str(paginas), "X-PDF-Partes": json.dumps(partes), "Cache-Control": "no-store"})
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
@@ -330,6 +353,12 @@ class PerfilPdf(BaseModel):
     puntos_por_pregunta: bool = True
     puntos_enteros: bool = True        # los perfiles nuevos (y los viejos, al leerlos) usan puntos enteros
     renglones_ensayo: int = Field(6, ge=exportar_pdf.RENGLONES_MIN, le=exportar_pdf.RENGLONES_MAX)
+    # Recuadro para el procedimiento y, con «Partes», el orden y los textos de cada una.
+    procedimiento_numerica: bool = False
+    procedimiento_corta: bool = False
+    renglones_procedimiento: int = Field(4, ge=exportar_pdf.RENGLONES_MIN, le=exportar_pdf.RENGLONES_MAX)
+    orden_partes: List[str] = Field(default_factory=list, max_length=len(exportar_pdf.NOMBRE_PARTE))
+    textos_partes: Dict[str, TextoParte] = Field(default_factory=dict, max_length=len(exportar_pdf.NOMBRE_PARTE))
 
 
 def _nombre_perfil(nombre: str) -> str:
@@ -365,7 +394,7 @@ def api_guardar_perfil_pdf(nombre: str, body: PerfilPdf):
     n = _nombre_perfil(nombre)
     if (body.rotulo_docente not in exportar_pdf.ROTULOS or body.papel not in exportar_pdf.PAPELES
             or body.margenes not in exportar_pdf.MARGENES or body.fuente_titulos not in exportar_pdf.FUENTES
-            or body.fuente_preguntas not in exportar_pdf.FUENTES):
+            or body.fuente_preguntas not in exportar_pdf.FUENTES or not _partes_validas(body)):
         raise HTTPException(status_code=422, detail="El perfil trae opciones no válidas.")
     if not _perfiles(save_perfil, n, body.model_dump_json()):
         raise HTTPException(status_code=422, detail=f"Ya hay {MAX_PERFILES} perfiles guardados: borra alguno para crear otro.")

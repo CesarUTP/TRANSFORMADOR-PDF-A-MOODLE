@@ -19,6 +19,7 @@ import { MENSAJE_LOGO_INVALIDO, logoArchivoValido, reducirLogo } from './logo-im
 import { abrirModal, cerrarModal } from './modales.js';
 import { showToast } from './toast.js';
 import { crearPuntosPdf } from './puntos-pdf.js';
+import { crearPartesPdf } from './partes-pdf.js';
 import { crearVersiones } from './versiones.js';
 import {
   ACTIVIDADES, RENGLONES_MAX, RENGLONES_MIN, aplicarPerfil, avisosDelPdf, cuerpoPdf, datosDePerfil, enteroEn, fechaLegible,
@@ -45,7 +46,12 @@ let perfiles = [];
 const logos = { logo_izquierdo: '', logo_derecho: '' };
 const vista = { abierta: false, pagina: 1, paginas: 1, url: null, temporizador: null, controlador: null };
 /** Las versiones del examen (2.5): su sección, sus pestañas y sus puntos viven en versiones.js. */
-const versiones = crearVersiones({ alCambiar: () => cambioEnFormulario(), enteros: () => form.elements.puntos_enteros.checked });
+const versiones = crearVersiones({
+  alCambiar: () => cambioEnFormulario(), enteros: () => form.elements.puntos_enteros.checked,
+  ordenPartes: () => partesPdf.leer().orden_partes,
+});
+/** El orden de las partes y sus textos (3.1). */
+const partesPdf = crearPartesPdf({ alCambiar: () => cambioEnFormulario(), alReordenar: () => versiones.repintar() });
 /** Los puntos enteros del PDF de un examen sin versiones (2.7): su panel y su copia de los puntos. */
 const puntosPdf = crearPuntosPdf({ alCambiar: () => cambioEnFormulario() });
 
@@ -78,12 +84,16 @@ function llenarPerfil(v) {
   f.tam_titulos.value = v.tam_titulos;
   f.tam_preguntas.value = v.tam_preguntas;
   f.renglones_ensayo.value = v.renglones_ensayo;
+  f.renglones_procedimiento.value = v.renglones_procedimiento;
+  f.procedimiento_numerica.checked = v.procedimiento_numerica;
+  f.procedimiento_corta.checked = v.procedimiento_corta;
   f.campos_estudiante.checked = v.campos_estudiante;
   f.partes.checked = v.partes;
   f.mezclar.checked = v.mezclar;
   f.puntos_por_pregunta.checked = v.puntos_por_pregunta;
   f.puntos_enteros.checked = v.puntos_enteros;
   Object.keys(LADOS).forEach(k => mostrarLogo(k, v[k]));
+  partesPdf.llenar(v.orden_partes, v.textos_partes);
 }
 
 /** Lo que hay escrito ahora en el diálogo (la fecha va ya con su nombre de mes). */
@@ -97,7 +107,9 @@ function leer() {
     tam_titulos: f.tam_titulos.value, tam_preguntas: f.tam_preguntas.value,   // valoresIniciales() los valida (7–20 pt) al enviar
     renglones_ensayo: f.renglones_ensayo.value, campos_estudiante: f.campos_estudiante.checked, partes: f.partes.checked,
     mezclar: f.mezclar.checked, puntos_por_pregunta: f.puntos_por_pregunta.checked, puntos_enteros: f.puntos_enteros.checked,
-  }, logos);
+    renglones_procedimiento: f.renglones_procedimiento.value, procedimiento_numerica: f.procedimiento_numerica.checked,
+    procedimiento_corta: f.procedimiento_corta.checked,
+  }, partesPdf.leer(), logos);
   return datos;
 }
 
@@ -107,7 +119,10 @@ function problemaDe(datos) {
     return 'El tamaño de la letra debe estar entre 7 y 20 puntos.';
   }
   if (enteroEn(datos.renglones_ensayo, RENGLONES_MIN, RENGLONES_MAX) === null) {
-    return `Los renglones por ensayo deben ser un número entero entre ${RENGLONES_MIN} y ${RENGLONES_MAX}.`;
+    return `El alto del recuadro de ensayo debe ser un número entero de ${RENGLONES_MIN} a ${RENGLONES_MAX} renglones.`;
+  }
+  if (enteroEn(datos.renglones_procedimiento, RENGLONES_MIN, RENGLONES_MAX) === null) {
+    return `El alto del recuadro de procedimiento debe ser un número entero de ${RENGLONES_MIN} a ${RENGLONES_MAX} renglones.`;
   }
   return '';
 }
@@ -240,7 +255,7 @@ function perfilElegido() {
   llenarPerfil(aplicarPerfil(valoresIniciales(leer()), p.datos));
   aplicarDocente();
   mostrarError('');
-  cambioEnFormulario();
+  versiones.repintar();          // el perfil puede traer otro orden de partes (repintar avisa del cambio)
 }
 
 function abrirNombreDePerfil() {
@@ -368,6 +383,7 @@ async function refrescarVista(pagina = vista.pagina) {
     img.src = url;
     img.hidden = false;
     estadoEl.textContent = '';
+    try { partesPdf.sugerir(JSON.parse(res.headers.get('X-PDF-Partes') || '[]')); } catch (_) { /* sin sugerencias */ }
     actualizarBarraDeVista();
   } catch (err) {
     if (err && err.name === 'AbortError') return;
@@ -385,6 +401,7 @@ function actualizarPuntos() {
 /** Todo cambio del formulario: actualiza los resúmenes y la línea de abajo, y rehace la vista previa. */
 function cambioEnFormulario() {
   actualizarResumenes();
+  partesPdf.activar();
   actualizarPuntos();
   actualizarPie();
   if (vista.abierta) {
@@ -410,8 +427,10 @@ export function abrirExportarPdf(origen = null) {
   mostrarError('');
   ocupado(false);
   cerrarNombreDePerfil();
+  partesPdf.abrir(examen);
   versiones.abrir(examen);
   puntosPdf.abrir(examen);
+  partesPdf.activar();
   vista.abierta = true;
   vista.pagina = 1;
   soltarImagenDeVista();
@@ -511,6 +530,7 @@ async function exportar(e) {
 }
 
 export function iniciarExportarPdf() {
+  partesPdf.iniciar();
   $('pdf-actividades').replaceChildren(...ACTIVIDADES.map(a => Object.assign(document.createElement('option'), { value: a })));
   form.addEventListener('submit', exportar);
   form.addEventListener('input', cambioEnFormulario);

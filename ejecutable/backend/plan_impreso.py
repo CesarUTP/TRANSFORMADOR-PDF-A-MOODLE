@@ -38,6 +38,7 @@ from config import DEFAULT_MATCHING_STEM
 from modelo import (
     Pregunta, PreguntaCloze, PreguntaEssay, PreguntaMatching, PreguntaMultichoice,
     PreguntaNumerical, PreguntaShortanswer, PreguntaTruefalse, preguntas_desde_dicts,
+    tramos_compartidos,
 )
 from xml_builder import compute_grades
 
@@ -48,6 +49,8 @@ MARGENES = {"normal": (2.5, 2.5, 3.0, 3.0), "estrechos": (1.27, 1.27, 1.27, 1.27
             "moderados": (2.54, 2.54, 1.91, 1.91), "anchos": (2.54, 2.54, 5.08, 5.08)}
 LIMITE_CAMPO = 160
 LIMITE_INSTRUCCIONES = 1500
+MAX_COMPARTIDO = 20_000                 # caracteres de un enunciado compartido
+LIMITE_NOMBRE_PARTE, LIMITE_INDICACION_PARTE = 80, 500
 LIMITE_VERSION = 20                     # «A», «B»… o un nombre corto
 LIMITE_LOGO = 2_000_000                 # caracteres base64 (~1,5 MB) por logo
 ROTULOS = {"facilitador": "FACILITADOR", "docente": "DOCENTE", "profesor": "PROFESOR"}
@@ -74,7 +77,8 @@ GRIS = "#555555"
 GRIS_CLARO = "#b8b8b8"
 PASO_BURBUJAS = 19                      # separación de las burbujas de la hoja de respuestas
 PASO_HUECOS = 24                        # alto de cada línea de «Huecos» de la hoja de respuestas
-PASO_RENGLONES = 22                     # alto de cada renglón de desarrollo
+PASO_RENGLONES = 22                     # el alto del recuadro de desarrollo se pide en «renglones» de esta medida
+GROSOR_RECUADRO = 0.8                   # el marco del recuadro de desarrollo
 LADO_CASILLA = 8.5
 
 
@@ -99,7 +103,7 @@ class DatosExamen:
     rotulo_docente: str = "facilitador"      # ROTULOS
     puntos_por_pregunta: bool = True         # False: el examen no dice cuánto vale cada pregunta (solo cada parte y el total)
     puntos_enteros: bool = False             # True: el PDF solo admite puntos enteros (si llega un decimal, se rechaza: nunca se redondea aquí)
-    renglones_ensayo: int = 6                # renglones de cada respuesta de desarrollo
+    renglones_ensayo: int = 6                # alto del recuadro de cada respuesta de desarrollo, en renglones
     mezclar: bool = True                     # mezclar las opciones y la Columna B: que la clave no forme un patrón
     fuente_titulos: str = "dejavu"           # FUENTES: títulos, encabezados e indicaciones
     tam_titulos: float = 11.0                # tamaño (pt) del encabezado; lo demás de ese grupo es proporcional
@@ -108,6 +112,12 @@ class DatosExamen:
     partes: bool = True                      # agrupar por tipo: «I PARTE: …» con su indicación y su valor
     logo_izquierdo: str = ""                 # imagen en base64 ("" = sin logo)
     logo_derecho: str = ""
+    procedimiento_numerica: bool = False     # un recuadro para el procedimiento en las preguntas numéricas…
+    procedimiento_corta: bool = False        # … y en las de respuesta corta
+    renglones_procedimiento: int = 4         # alto de ese recuadro, en renglones
+    orden_partes: List[str] = field(default_factory=list)       # tipos en el orden pedido; los demás, detrás y como salen
+    # {tipo: {"nombre": …, "indicacion": …}}: lo que el docente escribió para una parte ("" = lo automático)
+    textos_partes: Dict[str, Dict[str, str]] = field(default_factory=dict)
 
 
 class PuntosNoEnteros(ValueError):
@@ -224,9 +234,9 @@ class TablaHuecos:
 
 
 @dataclass
-class Renglones:
-    n: int
-    paso: float = PASO_RENGLONES
+class Recuadro:
+    """El espacio de una respuesta de desarrollo: una celda en blanco con marco, de `alto` pt."""
+    alto: float
 
 
 @dataclass
@@ -315,6 +325,8 @@ class Plan:
     secciones: List[Seccion]
     preguntas: int
     avisos: List[str]
+    # [{tipo, nombre, indicacion}] automáticos de las partes del examen (la pantalla los muestra como sugerencia)
+    partes_automaticas: List[Dict[str, str]] = field(default_factory=list)
 
 
 # ── Texto: de lo que escribió el docente al marcado de un párrafo ───────────
@@ -436,6 +448,8 @@ def estilos(sangria: float, tam_titulos: float, tam_preguntas: float) -> Dict[st
         "base": base,
         "enunciado": replace(base, sangria=sangria, vineta_negrita=True, antes=11, despues=3),
         "ayuda": p(8.5, 11, cursiva=True, color=GRIS, despues=3),
+        "compartido_titulo": replace(base, negrita=True, antes=14, despues=3),
+        "compartido": replace(base, sangria=sangria, despues=2),
         "opcion": base,
         "parte": e(10.5, 14, negrita=True, antes=16, despues=2),
         "aviso_folleto": e(9, 12, negrita=True, alinear=1, color=GRIS),
@@ -473,11 +487,14 @@ class _Armador:
         self.fp = FUENTES.get(datos.fuente_preguntas, FUENTES["dejavu"])[0]
         self.H = min(TAM_MAX, max(TAM_MIN, float(datos.tam_titulos))) if datos.tam_titulos == datos.tam_titulos else 11.0
         self.Q = min(TAM_MAX, max(TAM_MIN, float(datos.tam_preguntas))) if datos.tam_preguntas == datos.tam_preguntas else 10.0
-        self.renglones = min(RENGLONES_MAX, max(RENGLONES_MIN, int(datos.renglones_ensayo)))
+        renglones = min(RENGLONES_MAX, max(RENGLONES_MIN, int(datos.renglones_ensayo)))
+        self.alto_ensayo = renglones * PASO_RENGLONES
+        self.alto_procedimiento = min(RENGLONES_MAX, max(RENGLONES_MIN, int(datos.renglones_procedimiento))) * PASO_RENGLONES
         self.est = estilos(self.sangria, self.H, self.Q)
         self.txt = Texto((self.fe, self.fp))
         self.imagenes_fallidas: List[int] = []
         self.logos_fallidos: List[str] = []
+        self.compartidos_partidos: List[str] = []   # enunciados compartidos que salieron en más de un bloque
         self.folleto = False                  # True mientras se arma el folleto: preguntas sin espacio para responder
         actividad, materia = _campo(datos.actividad, LIMITE_CAMPO), _campo(datos.materia, LIMITE_CAMPO)
         self.titulo = " · ".join(x for x in (actividad, materia) if x) or _campo(datos.titulo_respaldo, LIMITE_CAMPO) or "Examen"
@@ -497,15 +514,56 @@ class _Armador:
             return ""
         return f" <font size='{self.Q * 0.8:.1f}' color='{GRIS}'>({_pts(puntos)})</font>"
 
-    def _imagenes(self, p: Pregunta, n: int) -> list:
+    def _imagenes(self, p: Pregunta, n: int, omitir: frozenset = frozenset()) -> list:
         out = []
         for im in p.images or []:
+            if im.b64 in omitir:
+                continue                          # ya salió con el enunciado compartido
             f = imagen_desde_b64(im.b64, im.mime, self.ancho - self.sangria, 7.5 * cm)
             if f is None:
                 self.imagenes_fallidas.append(n)
             else:
                 out += [Espacio(3), f, Espacio(3)]
         return out
+
+    # ---- enunciado compartido ----
+    @staticmethod
+    def _imagenes_comunes(grupo: List[Pregunta]) -> frozenset:
+        """Las imágenes que llevan TODAS las preguntas de un grupo de dos o más: son del enunciado compartido
+        (el código o la figura de la que se pregunta) y se imprimen una sola vez, con él."""
+        if len(grupo) < 2:
+            return frozenset()
+        comunes = {im.b64 for im in grupo[0].images or [] if im.b64}
+        for p in grupo[1:]:
+            comunes &= {im.b64 for im in p.images or []}
+        return frozenset(comunes)
+
+    def _bloque_compartido(self, texto: str, primero: int, ultimo: int, grupo: List[Pregunta], comunes: frozenset) -> list:
+        """«Con base en el siguiente enunciado, responda las preguntas 1 a 5», el enunciado y sus imágenes. Los
+        números son los IMPRESOS (cambian si se agrupa por tipo o en una versión)."""
+        if primero == ultimo:
+            cuales = f"la pregunta {primero}"
+        else:
+            cuales = f"las preguntas {primero} {'y' if ultimo == primero + 1 else 'a'} {ultimo}"
+        out: list = [self._p(f"Con base en el siguiente enunciado, responda {cuales}:", "compartido_titulo"),
+                     self._p(self.txt.marcado(_campo_largo(texto, MAX_COMPARTIDO)), "compartido")]
+        if comunes:
+            propias = [im for im in grupo[0].images or [] if im.b64 in comunes]
+            for im in propias:
+                f = imagen_desde_b64(im.b64, im.mime, self.ancho - self.sangria, 7.5 * cm)
+                if f is None:
+                    self.imagenes_fallidas.append(primero)
+                else:
+                    out.append(Sangrado([Espacio(3), f, Espacio(3)], self.sangria))
+        return out
+
+    # ---- recuadro del procedimiento ----
+    def _con_procedimiento(self, tipo: Optional[str]) -> bool:
+        return ((tipo == "numerical" and self.datos.procedimiento_numerica)
+                or (tipo == "shortanswer" and self.datos.procedimiento_corta))
+
+    def _procedimiento(self) -> list:
+        return [self._p("Procedimiento:", "ayuda"), Recuadro(self.alto_procedimiento)]
 
     # ---- orden en que se IMPRIMEN las opciones (y por tanto la clave) ----
     def _opciones_impresas(self, p: PreguntaMultichoice) -> List[Tuple[str, str, bool]]:
@@ -562,9 +620,11 @@ class _Armador:
         return TablaPareo(filas)
 
     # ---- una pregunta del examen (sin respuestas) ----
-    def pregunta(self, n: int, p: Pregunta, puntos: float, ayudas: bool = True) -> Grupo:
+    def pregunta(self, n: int, p: Pregunta, puntos: float, ayudas: bool = True,
+                 omitir: frozenset = frozenset()) -> Grupo:
+        """`omitir`: imágenes (base64) que ya se imprimieron con el enunciado compartido."""
         if self.folleto:
-            return self._pregunta_folleto(n, p, puntos, ayudas)
+            return self._pregunta_folleto(n, p, puntos, ayudas, omitir)
         if isinstance(p, PreguntaMultichoice):
             letras, _ = p.resolver_correctas()
             varias = len(letras) > 1
@@ -573,30 +633,33 @@ class _Armador:
                 dentro.append(self._p("Selecciona todas las que correspondan." if varias else "Selecciona una.", "ayuda"))
             for letra, texto, _ok in self._opciones_impresas(p):
                 dentro.append(Opcion("cuadrada" if varias else "redonda", f"<b>{self.txt.marcado(letra)})</b> {self.txt.marcado(texto)}"))
-            return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n) + [Sangrado(dentro, self.sangria)])
+            return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n, omitir) + [Sangrado(dentro, self.sangria)])
 
         if isinstance(p, PreguntaTruefalse):
-            return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n)
+            return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n, omitir)
                          + [Sangrado([Opcion("redonda", "Verdadero"), Opcion("redonda", "Falso")], self.sangria)])
 
         if isinstance(p, PreguntaMatching):
             dentro = ([self._p("Escribe en cada espacio la letra de la Columna B que corresponde.", "ayuda")] if ayudas else [])
             dentro.append(self._tabla_pareo(p, False))
-            return Grupo([self._enunciado(n, p.stem or DEFAULT_MATCHING_STEM, puntos)] + self._imagenes(p, n)
+            return Grupo([self._enunciado(n, p.stem or DEFAULT_MATCHING_STEM, puntos)] + self._imagenes(p, n, omitir)
                          + [Sangrado(dentro, self.sangria)])
 
         if isinstance(p, PreguntaCloze):
-            return self._cloze(n, p, puntos, ayudas)
+            return self._cloze(n, p, puntos, ayudas, omitir)
 
         if isinstance(p, PreguntaEssay):
-            return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n)
-                         + [Sangrado([Espacio(4), Renglones(self.renglones)], self.sangria)])
+            return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n, omitir)
+                         + [Sangrado([Espacio(4), Recuadro(self.alto_ensayo)], self.sangria)])
 
-        # respuesta corta y numérica: una línea
-        return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n)
-                     + [Sangrado([Espacio(4), self._p("Respuesta: " + "_" * 38)], self.sangria)])
+        # respuesta corta y numérica: una línea (y, si se pidió, antes un recuadro para el procedimiento)
+        dentro = [Espacio(4)]
+        if self._con_procedimiento(p.tipo):
+            dentro += self._procedimiento() + [Espacio(8)]
+        dentro.append(self._p("Respuesta: " + "_" * 38))
+        return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n, omitir) + [Sangrado(dentro, self.sangria)])
 
-    def _pregunta_folleto(self, n: int, p: Pregunta, puntos: float, ayudas: bool) -> Grupo:
+    def _pregunta_folleto(self, n: int, p: Pregunta, puntos: float, ayudas: bool, omitir: frozenset = frozenset()) -> Grupo:
         """La pregunta del folleto: solo para leer. No lleva casillas ni rayas (se responde en la hoja de respuestas)."""
         if isinstance(p, PreguntaMultichoice):
             varias = len(p.resolver_correctas()[0]) > 1
@@ -605,14 +668,14 @@ class _Armador:
                 dentro.append(self._p("Selecciona todas las que correspondan." if varias else "Selecciona una.", "ayuda"))
             dentro += [Parrafo(self.est["opcion_folleto"], self.txt.marcado(texto), vineta=f"{self.txt.marcado(letra)})")
                        for letra, texto, _ok in self._opciones_impresas(p)]
-            return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n) + [Sangrado(dentro, self.sangria)])
+            return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n, omitir) + [Sangrado(dentro, self.sangria)])
         if isinstance(p, PreguntaMatching):
-            return Grupo([self._enunciado(n, p.stem or DEFAULT_MATCHING_STEM, puntos)] + self._imagenes(p, n)
+            return Grupo([self._enunciado(n, p.stem or DEFAULT_MATCHING_STEM, puntos)] + self._imagenes(p, n, omitir)
                          + [Sangrado([self._tabla_pareo(p, True)], self.sangria)])
         if isinstance(p, PreguntaCloze):
-            return self._cloze(n, p, puntos, ayudas)
+            return self._cloze(n, p, puntos, ayudas, omitir)
         # verdadero/falso, respuesta corta, numérica y desarrollo: solo el enunciado
-        return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n))
+        return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n, omitir))
 
     @staticmethod
     def _orden_hueco(p: PreguntaCloze, h) -> List[int]:
@@ -630,7 +693,7 @@ class _Armador:
     def _letra_opcion(i: int) -> str:
         return "abcdefghijklmnopqrstuvwxyz"[i] if i < 26 else str(i + 1)
 
-    def _cloze(self, n: int, p: PreguntaCloze, puntos: float, ayudas: bool = True) -> Grupo:
+    def _cloze(self, n: int, p: PreguntaCloze, puntos: float, ayudas: bool = True, omitir: frozenset = frozenset()) -> Grupo:
         """Un «Completar» en papel, como el cloze de opción múltiple de los exámenes: en el texto cada espacio es
         «(1) ____» y debajo, UNA LISTA POR ESPACIO con sus opciones lettered a), b), c)… (una por línea si son
         largas, en una sola línea si son cortas). El estudiante escribe la letra elegida en el espacio. Un espacio
@@ -666,7 +729,7 @@ class _Armador:
                                       else "En los espacios con opciones escribe la letra elegida; en los demás, la respuesta.", "ayuda"))
             dentro.append(TablaHuecos(filas))
             cuerpo = [Sangrado(dentro, self.sangria)]
-        return Grupo([enunciado] + self._imagenes(p, n) + cuerpo)
+        return Grupo([enunciado] + self._imagenes(p, n, omitir) + cuerpo)
 
     # ---- una entrada de la clave ----
     def entrada_clave(self, n: int, p: Pregunta, puntos: float) -> Grupo:
@@ -763,19 +826,22 @@ class _Armador:
                 con_opciones = len(h.opciones) >= 2
                 items.append((f"({k})", self.txt.plano(self._valor_cloze(p, h)) if llena else None, 1.7 * cm if con_opciones else 5.5 * cm))
             return [self._huecos(n, items)]
+        # en la clave no hay recuadro: solo la respuesta
+        recuadro = ([Sangrado([Espacio(2)] + self._procedimiento() + [Espacio(6)], self.sangria)]
+                    if not llena and self._con_procedimiento(p.tipo) else [])
         if isinstance(p, PreguntaNumerical):
             v = (p.valor_numerico() or p.respuesta_texto.strip()) if llena and not p.sin_respuesta else None
-            return [self._huecos(n, [("", self.txt.plano(v) if v else None, 5 * cm)])]
+            return [self._huecos(n, [("", self.txt.plano(v) if v else None, 5 * cm)])] + recuadro
         if isinstance(p, PreguntaShortanswer):
             v = p.respuesta_texto.strip() if llena and not p.sin_respuesta else None
-            return [self._huecos(n, [("", self.txt.plano(v) if v else None, None)])]
+            return [self._huecos(n, [("", self.txt.plano(v) if v else None, None)])] + recuadro
         if isinstance(p, PreguntaEssay):
             if llena:
                 texto = f"<b>{n}.</b> <i>Respuesta abierta: se califica a mano.</i>"
                 if (p.feedback or "").strip():
                     texto += f" <i>Orientación:</i> {self.txt.marcado(p.feedback.strip())}"
                 return [self._p(texto, "pequeno"), Espacio(4)]
-            return [self._p(f"<b>{n}.</b>", "pequeno"), Renglones(self.renglones), Espacio(4)]
+            return [self._p(f"<b>{n}.</b>", "pequeno"), Espacio(3), Recuadro(self.alto_ensayo), Espacio(4)]
         return [self._p(f"<b>{n}.</b>", "pequeno")]
 
     def _burbujas(self, n: int, p: Pregunta, llena: bool) -> Burbujas:
@@ -830,7 +896,23 @@ class _Armador:
         grupos: Dict[str, List[Tuple[Pregunta, float]]] = {}
         for p, pts in pares:
             grupos.setdefault(p.tipo or "", []).append((p, pts))
-        return list(grupos.items())
+        orden = [t for t in self.datos.orden_partes]
+        # sorted es estable: los tipos que no están en el orden pedido van detrás, como aparecen en el examen
+        return sorted(grupos.items(), key=lambda g: orden.index(g[0]) if g[0] in orden else len(orden))
+
+    def _texto_propio(self, tipo: Optional[str], cual: str) -> str:
+        """El nombre o la indicación que el docente escribió para esa parte ("" = lo automático)."""
+        propios = self.datos.textos_partes.get(tipo or "") or {}
+        limite = LIMITE_NOMBRE_PARTE if cual == "nombre" else LIMITE_INDICACION_PARTE
+        return _campo(propios.get(cual, ""), limite)
+
+    def partes_automaticas(self) -> List[Dict[str, str]]:
+        """Lo que diría cada parte si el docente no escribiera nada (para sugerírselo en la pantalla)."""
+        folleto, self.folleto = self.folleto, self.datos.contenido == "folleto_hoja_clave"
+        out = [{"tipo": t, "nombre": NOMBRE_PARTE.get(t, "PREGUNTAS"), "indicacion": self._indicacion(t, g)}
+               for t, g in self.partes() if t is not None]
+        self.folleto = folleto
+        return out
 
     def _indicacion(self, tipo: Optional[str], grupo: List[Tuple[Pregunta, float]]) -> str:
         """Lo que el estudiante debe hacer en una parte, según el tipo (y, en opción múltiple y «Completar»,
@@ -854,10 +936,11 @@ class _Armador:
             return ("ESCRIBA EN CADA ESPACIO LA LETRA DE LA OPCIÓN QUE COMPLETA CORRECTAMENTE EL ENUNCIADO." if solo_opciones else
                     "ESCRIBA EN CADA ESPACIO CON OPCIONES LA LETRA DE LA OPCIÓN QUE COMPLETA CORRECTAMENTE EL ENUNCIADO; "
                     "EN LOS DEMÁS, ESCRIBA LA RESPUESTA.")
+        muestre = " MUESTRE SU PROCEDIMIENTO EN EL RECUADRO." if self._con_procedimiento(tipo) else ""
         if tipo == "shortanswer":
-            return "ESCRIBA EN LA LÍNEA LA RESPUESTA CORTA A CADA PREGUNTA."
+            return "ESCRIBA EN LA LÍNEA LA RESPUESTA CORTA A CADA PREGUNTA." + muestre
         if tipo == "numerical":
-            return "ESCRIBA EN LA LÍNEA EL VALOR NUMÉRICO QUE RESPONDE CADA PREGUNTA."
+            return "ESCRIBA EN LA LÍNEA EL VALOR NUMÉRICO QUE RESPONDE CADA PREGUNTA." + muestre
         if tipo == "essay":
             return "DESARROLLE SU RESPUESTA EN EL ESPACIO PROVISTO."
         return ""
@@ -879,10 +962,11 @@ class _Armador:
             solo_opciones = all(len(h.opciones) >= 2 for q, _ in grupo if isinstance(q, PreguntaCloze) for h in q.huecos())
             return (f"ESCRIBA {hoja} LA LETRA DE LA OPCIÓN QUE COMPLETA CORRECTAMENTE CADA ESPACIO." if solo_opciones else
                     f"ESCRIBA {hoja} LA LETRA DE LA OPCIÓN QUE COMPLETA CADA ESPACIO CON OPCIONES; EN LOS DEMÁS, ESCRIBA LA RESPUESTA.")
+        muestre = " MUESTRE ALLÍ SU PROCEDIMIENTO." if self._con_procedimiento(tipo) else ""
         if tipo == "shortanswer":
-            return f"ESCRIBA {hoja} LA RESPUESTA CORTA A CADA PREGUNTA."
+            return f"ESCRIBA {hoja} LA RESPUESTA CORTA A CADA PREGUNTA." + muestre
         if tipo == "numerical":
-            return f"ESCRIBA {hoja} EL VALOR NUMÉRICO QUE RESPONDE CADA PREGUNTA."
+            return f"ESCRIBA {hoja} EL VALOR NUMÉRICO QUE RESPONDE CADA PREGUNTA." + muestre
         if tipo == "essay":
             return f"DESARROLLE SU RESPUESTA EN EL ESPACIO DE LA HOJA DE RESPUESTAS."
         return ""
@@ -901,18 +985,25 @@ class _Armador:
             return "ESCRIBA EN CADA RAYA LA LETRA DE LA COLUMNA B."
         if tipo == "cloze":
             return "ESCRIBA EN CADA RAYA LA LETRA DE LA OPCIÓN ESCOGIDA (O LA RESPUESTA, EN LOS ESPACIOS SIN OPCIONES)."
+        muestre = " MUESTRE SU PROCEDIMIENTO EN EL RECUADRO." if self._con_procedimiento(tipo) else ""
         if tipo == "shortanswer":
-            return "ESCRIBA LA RESPUESTA EN LA RAYA."
+            return "ESCRIBA LA RESPUESTA EN LA RAYA." + muestre
         if tipo == "numerical":
-            return "ESCRIBA EL VALOR NUMÉRICO EN LA RAYA."
+            return "ESCRIBA EL VALOR NUMÉRICO EN LA RAYA." + muestre
         if tipo == "essay":
-            return "DESARROLLE SU RESPUESTA EN LOS RENGLONES."
+            return "DESARROLLE SU RESPUESTA DENTRO DEL RECUADRO."
         return ""
 
     def _titulo_parte(self, i: int, tipo: Optional[str], grupo, con_indicacion: bool, hoja: bool = False) -> Parrafo:
         valor = _pts(sum(pts for _, pts in grupo)).upper()
-        nombre = NOMBRE_PARTE.get(tipo or "", "PREGUNTAS")
-        ind = (self._indicacion_hoja(tipo, grupo) if hoja else self._indicacion(tipo, grupo)) if con_indicacion else ""
+        nombre = self._texto_propio(tipo, "nombre") or NOMBRE_PARTE.get(tipo or "", "PREGUNTAS")
+        # La indicación del docente va en el examen o el folleto; la hoja de respuestas explica cómo rellenarla.
+        if not con_indicacion:
+            ind = ""
+        elif hoja:
+            ind = self._indicacion_hoja(tipo, grupo)
+        else:
+            ind = self._texto_propio(tipo, "indicacion") or self._indicacion(tipo, grupo)
         texto = f"{ROMANOS[min(i, len(ROMANOS) - 1)]} PARTE: {nombre}" + (f": {ind}" if ind else "") + f" VALOR: {valor}"
         return self._p(self.txt.marcado(texto), "parte")
 
@@ -1038,15 +1129,30 @@ class _Armador:
             salida = []
             n = 0
             self.folleto = folleto
+            vistos: set = set()
             for i, (tipo, grupo) in enumerate(self.partes()):
                 mixto = tipo == "multichoice" and len({len(q.resolver_correctas()[0]) > 1 for q, _ in grupo}) > 1
                 titulo = [self._titulo_parte(i, tipo, grupo, True)] if tipo is not None else []
-                for p, pts in grupo:
+                # Los grupos con enunciado compartido se miran DENTRO de cada parte: así el título de la parte va
+                # antes, y un grupo con preguntas de varios tipos repite el enunciado en cada parte (y se avisa).
+                solo = [p for p, _ in grupo]
+                compartidos: Dict[int, list] = {}
+                omitir: Dict[int, frozenset] = {}
+                for a_, b_, texto in tramos_compartidos(solo):
+                    comunes = self._imagenes_comunes(solo[a_:b_])
+                    compartidos[a_] = self._bloque_compartido(texto, n + a_ + 1, n + b_, solo[a_:b_], comunes)
+                    for k in range(a_, b_):
+                        omitir[k] = comunes
+                    if texto in vistos:
+                        self.compartidos_partidos.append(texto)
+                    vistos.add(texto)
+                for k, (p, pts) in enumerate(grupo):
                     n += 1
-                    q = self.pregunta(n, p, pts, ayudas=(tipo is None or mixto))
-                    # El título de la parte viaja DENTRO del bloque de su primera pregunta: nunca queda solo
-                    # al final de una hoja con la parte empezando en la siguiente.
-                    salida.append(Grupo(titulo + q.hijos) if titulo else q)
+                    q = self.pregunta(n, p, pts, ayudas=(tipo is None or mixto), omitir=omitir.get(k, frozenset()))
+                    # El título de la parte y el enunciado compartido viajan DENTRO del bloque de su primera
+                    # pregunta: nunca quedan solos al final de una hoja.
+                    delante = titulo + compartidos.get(k, [])
+                    salida.append(Grupo(delante + q.hijos) if delante else q)
                     titulo = []
             self.folleto = False
             return salida
@@ -1094,6 +1200,11 @@ class _Armador:
             n = self.txt.sin_glifo
             avisos.append(f"{n} carácter{'es' if n != 1 else ''} que la fuente del PDF no tiene se escribió como «?» "
                           "(por ejemplo, emojis).")
+        for texto in dict.fromkeys(self.compartidos_partidos):
+            inicio = " ".join(texto.split())
+            inicio = inicio if len(inicio) <= 50 else inicio[:49].rstrip() + "…"
+            avisos.append(f"El enunciado compartido «{inicio}» sale más de una vez porque sus preguntas no quedan "
+                          "seguidas. Para que salga una sola, déjelas juntas y del mismo tipo, o desactive «Agrupar por tipo».")
         if self.logos_fallidos:
             avisos.append("No se pudo usar el logo " + " ni el ".join(sorted(set(self.logos_fallidos))) + ": se omitió.")
         if self.imagenes_fallidas:
@@ -1125,4 +1236,5 @@ def construir_plan(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[s
     return Plan(datos=datos, geo=a.geo, estilos=a.est, fuente_e=a.fe, fuente_p=a.fp,
                 clave_fuente_e=datos.fuente_titulos, clave_fuente_p=datos.fuente_preguntas,
                 tam_titulos=a.H, tam_preguntas=a.Q, titulo=a.titulo, meta=meta, secciones=secciones,
-                preguntas=len(preguntas), avisos=a.avisos())
+                preguntas=len(preguntas), avisos=a.avisos(),
+                partes_automaticas=a.partes_automaticas() if datos.partes else [])

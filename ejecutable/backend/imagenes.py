@@ -434,6 +434,27 @@ _MAX_CADENA = 3       # preguntas seguidas que comparten una imagen
 _CERCA_LINEAS = 8     # sin marca de la IA: la siguiente empieza a ≤ 8 líneas
 
 
+def _contexto(q: Dict[str, Any]) -> str:
+    """El enunciado compartido de la pregunta ("" si no tiene)."""
+    return str((q.get("data") or {}).get("contexto") or "").strip()
+
+
+def _copia_de_imagenes(origen: Dict[str, Any], q: Dict[str, Any]) -> List[Dict[str, str]]:
+    return [{**im, "name": f"pregunta{q['num']}-{n}.{im['name'].rsplit('.', 1)[1]}"}
+            for n, im in enumerate(origen["data"]["images"][:MAX_POR_PREGUNTA], 1)]
+
+
+def _es_del_enunciado_compartido(lineas: List[Linea], img: ImagenUbicada, arriba, abajo: Dict[str, Any]) -> bool:
+    """La imagen está DENTRO del enunciado compartido que presenta la pregunta de abajo: ese texto empieza después
+    de la pregunta de arriba (`arriba` = (posición, pregunta) o None) y antes de la imagen."""
+    texto = _contexto(abajo)
+    if not texto or (arriba is not None and _contexto(arriba[1]) == texto):
+        return False
+    inicio = _normalizar(texto.split("\n")[0])
+    return any(l.pos < img.inicio and (arriba is None or l.pos > arriba[0]) and _empieza(_normalizar(l.texto), inicio)
+               for l in lineas)
+
+
 def _compartir(questions: List[Dict[str, Any]], inicios: List[Optional[int]]) -> int:
     """Copia la imagen a las preguntas encadenadas (ver 3b del docstring)."""
     copias = 0
@@ -456,10 +477,10 @@ def _compartir(questions: List[Dict[str, Any]], inicios: List[Optional[int]]) ->
         elif not ia:
             cadena = 0
             continue
-        if cadena >= _MAX_CADENA:
+        # Un grupo con enunciado compartido comparte su imagen entre todas sus preguntas, sin tope.
+        if cadena >= _MAX_CADENA and not (_contexto(q) and _contexto(q) == _contexto(prev)):
             continue
-        d["images"] = [{**im, "name": f"pregunta{q['num']}-{n}.{im['name'].rsplit('.', 1)[1]}"}
-                       for n, im in enumerate(dp["images"][:MAX_POR_PREGUNTA], 1)]
+        d["images"] = _copia_de_imagenes(prev, q)
         cadena += 1
         copias += 1
     return copias
@@ -597,6 +618,7 @@ def _asignar(questions: List[Dict[str, Any]], ub: Ubicaciones, omitidas: Optiona
                       key=lambda t: (t[0], t[1]))
     inicios_pos = {pos for pos, _, _ in ubicadas}
     asignadas = 0
+    de_grupo: List[Dict[str, Any]] = []     # primeras preguntas cuya imagen es del enunciado compartido
     for img in ub.imagenes:
         # 1.º la pregunta que empieza en el mismo renglón que la imagen.
         destino = next((q for pos, _, q in ubicadas if img.inicio <= pos <= img.fin), None)
@@ -610,7 +632,10 @@ def _asignar(questions: List[Dict[str, Any]], ub: Ubicaciones, omitidas: Optiona
             cand_arriba = (arriba[-1][1] if arriba and not _es_de_otra(
                 ub.lineas, arriba[-1][0], img.inicio, arriba[-1][1], inicios_pos) else None)
             cand_abajo = abajo[0][1] if abajo and _pegada(ub.lineas, img.fin, abajo[0][0]) else None
-            if cand_arriba and cand_abajo:
+            if abajo and _es_del_enunciado_compartido(ub.lineas, img, arriba[-1] if arriba else None, abajo[0][1]):
+                destino = abajo[0][1]
+                de_grupo.append(destino)
+            elif cand_arriba and cand_abajo:
                 destino = _elegir(cand_arriba, cand_abajo)
             elif cand_arriba:
                 destino = cand_arriba
@@ -639,6 +664,13 @@ def _asignar(questions: List[Dict[str, Any]], ub: Ubicaciones, omitidas: Optiona
         nombre = f"pregunta{destino['num']}-{len(lista) + 1}.{cod['ext']}"
         lista.append({"name": nombre, "mime": MIMES[cod["ext"]], "b64": cod["b64"]})
         asignadas += 1
+    for primera in {id(q): q for q in de_grupo}.values():
+        k = next(k for k, q in enumerate(questions) if q is primera)
+        for q in questions[k + 1:]:
+            if _contexto(q) != _contexto(primera):
+                break
+            if primera["data"].get("images") and not q["data"].get("images"):
+                q["data"]["images"] = _copia_de_imagenes(primera, q)
     if asignadas:
         n = _compartir(questions, inicios)
         if n:

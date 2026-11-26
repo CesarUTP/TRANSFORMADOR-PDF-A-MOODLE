@@ -52,7 +52,8 @@ function firma(q) {
   const base = q.type === 'cloze' ? String(d.text || '').replace(/\[[A-Za-z]:[^\]]*\]/g, ' ') : String(d.stem || '');
   const opciones = q.type === 'multichoice' ? Object.values(d.options || {}).map(normalizar).sort().join(' ')
     : q.type === 'matching' ? Object.values(d.col_a || {}).map(normalizar).sort().join(' ') : '';
-  return { base, opciones };
+  // Preguntas de enunciados compartidos DISTINTOS no son repetidas aunque pregunten lo mismo de cada uno.
+  return { base, opciones, contexto: normalizar(d.contexto) };
 }
 
 const ANTERIORES = /\b(?:todas|ninguna|ambas|cualquiera|alguna)\s+(?:de\s+)?(?:las\s+|los\s+)?(?:anteriores|opciones|respuestas|de\s+arriba)\b|\ball of the above\b|\bnone of the above\b/i;
@@ -143,7 +144,7 @@ export function detectarProblemas(questions, answerKey = {}, { conImagen = [] } 
   const opciones = firmas.map(f => palabras(f.opciones));
   for (let i = 0; i < qs.length; i++) {
     for (let j = i + 1; j < qs.length; j++) {
-      if (qs[i].type !== qs[j].type || conImagen[i] || conImagen[j]) continue;
+      if (qs[i].type !== qs[j].type || conImagen[i] || conImagen[j] || firmas[i].contexto !== firmas[j].contexto) continue;
       if (base[i].size < 2 || parecido(base[i], base[j]) < UMBRAL_DUPLICADA) continue;
       if ((opciones[i].size || opciones[j].size) && parecido(opciones[i], opciones[j]) < UMBRAL_DUPLICADA) continue;
       avisos[i].push(`Parece repetida con la pregunta ${qs[j].num}`);

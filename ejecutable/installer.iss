@@ -7,7 +7,7 @@
 ; (PyInstaller) — build_windows.bat hace ambos pasos en orden automáticamente.
 
 #define MyAppName "Cátedra"
-#define MyAppVersion "3.0"
+#define MyAppVersion "3.1"
 #define MyAppPublisher "César González y Vicente Urriola"
 #define MyAppExeName "Catedra.exe"
 

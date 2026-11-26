@@ -15,11 +15,13 @@ import { claveDeOpcionMultiple, letrasCorrectasPorIndice } from './editor/respue
 import * as proc from './editor/procedencia.js';
 import { MAX_ABIERTAS, abiertasPorDefecto, recortar } from './editor/plegado-logica.js';
 import { detectarProblemas, normalizar, similitud } from './editor/calidad.js';
+import { duplicarPregunta, moverGrupo, moverPregunta, movimientosDe, reordenar } from './editor/orden-logica.js';
+import { cambiarRango, contextoDe, crearTramo, heredarContexto, limitesDeTramo, quitarTramo, rotuloDeTramo, tramoEn, tramosCompartidos } from './editor/compartido-logica.js';
 import { datosDeFilas, filasConDistractores, resumenDeFilas } from './editor/emparejamiento-logica.js';
 import { avisoDeMilesAmbiguo, milesAmbiguo, sinSeparadorDeMiles } from './numero-logica.js';
 import { faltaRespuesta } from './validacion.js';
 import { describirSugerencia } from './editor/sugerencias-logica.js';
-import { LIMITE_CAMPO, PERFIL_CAMPOS, aplicarPerfil, datosDePerfil, enteroEn, nombrePerfil, tamanoValido, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, resumenDeDescarga, textoDelBoton, valoresIniciales } from './ui/exportar-pdf-logica.js';
+import { LIMITE_CAMPO, PERFIL_CAMPOS, aplicarPerfil, datosDePerfil, enteroEn, nombrePerfil, tamanoValido, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, resumenDeDescarga, textoDelBoton, valoresIniciales, moverParte, ordenDePartesValido, textosDePartesValidos, tiposEnOrden } from './ui/exportar-pdf-logica.js';
 import { COLORES, activas, archivadas, avisoDeLimite, examenesDe, existeNombre, fechaCorta, filtrarExamenes, formatoBytes, nombreSugerido, normalizar as normalizarMateria, ordenarMaterias, planDelAsistente, sugerirMaterias, textoUso, variableDeColor } from './materias-logica.js';
 import { CLAVE_VISTOS, TOURS, debeOfrecer, leerVistos, marcarVisto, nombreDeTour, pasosVisibles } from './ui/tour-logica.js';
 import { ejemploExamen, iniciales, materiasQueUsan, nombreCopia, nombreOcupado, ordenarPerfiles, resumenEncabezado, resumenFormato } from './perfil-logica.js';
@@ -873,6 +875,139 @@ prueba('original: el chip «Pág. N» es botón solo si hay original en esta ses
   igual(con.includes('data-accion="verOriginal"') && con.includes('ver esta pregunta en el documento original'), true);
   // el de origen sigue siendo informativo
   igual(con.includes('role="img"'), true);
+});
+
+// ── Enunciado compartido (editor/compartido-logica.js) ─────────────────────
+const conCtx = (...textos) => textos.map((c, i) => ({ num: i + 1, type: 'truefalse', data: c === null ? { stem: `P${i + 1}` } : { stem: `P${i + 1}`, contexto: c } }));
+const contextos = qs => qs.map(q => contextoDe(q));
+
+prueba('compartido: las preguntas seguidas con el mismo texto forman un grupo', () => {
+  const qs = conCtx('caso', 'caso', null, 'caso', 'otro');
+  igual(tramosCompartidos(qs), [{ desde: 0, hasta: 1, texto: 'caso' }, { desde: 3, hasta: 3, texto: 'caso' }, { desde: 4, hasta: 4, texto: 'otro' }]);
+  igual([rotuloDeTramo({ desde: 0, hasta: 4 }), rotuloDeTramo({ desde: 0, hasta: 1 }), rotuloDeTramo({ desde: 2, hasta: 2 })],
+    ['Preguntas 1 a 5', 'Preguntas 1 y 2', 'Pregunta 3']);
+});
+prueba('compartido: crear, cambiar el rango sin pisar otro grupo y quitar', () => {
+  const qs = conCtx(null, null, null, 'b', null);
+  const t = crearTramo(qs, 0);
+  igual([t.desde, t.hasta, contextos(qs)], [0, 1, ['', '', null, 'b', null]]);
+  igual(crearTramo(qs, 0), null);
+  igual(limitesDeTramo(qs, t), { minimo: 0, maximo: 2 });
+  cambiarRango(qs, t, 0, 4);
+  igual(contextos(qs), ['', '', '', 'b', null]);
+  cambiarRango(qs, tramoEn(qs, 0), 1, 1);
+  igual(contextos(qs), [null, '', null, 'b', null]);
+  quitarTramo(qs, tramoEn(qs, 3));
+  igual(contextos(qs), [null, '', null, null, null]);
+});
+prueba('compartido: una pregunta insertada en medio del grupo pasa a ser parte de él', () => {
+  const qs = conCtx('caso', null, 'caso');
+  igual(heredarContexto(qs, 1), true);
+  igual(contextos(qs), ['caso', 'caso', 'caso']);
+  const borde = conCtx('caso', null, 'otro');
+  igual(heredarContexto(borde, 1), false);
+});
+prueba('versiones: un grupo con enunciado compartido se mueve junto y en su orden', () => {
+  const qs = conCtx(null, 'caso', 'caso', 'caso', null, null, null, null);
+  const nums = qs.map(q => q.num);
+  for (let semilla = 1; semilla <= 40; semilla++) {
+    for (const partes of [true, false]) {
+      const orden = numsEnOrden({ nums, semilla }, qs, { partes });
+      const i = orden.indexOf(2);
+      igual(orden.slice(i, i + 3), [2, 3, 4]);
+      igual([...orden].sort((a, b) => a - b), nums);
+    }
+  }
+  const parte = numsEnOrden({ nums: [2, 4, 6], semilla: 7 }, qs, { partes: false });
+  igual(parte.indexOf(4), parte.indexOf(2) + 1);
+});
+prueba('calidad: la misma pregunta sobre dos enunciados compartidos distintos no es repetida', () => {
+  const qs = conCtx('caso uno', 'caso dos').map(q => ({ ...q, data: { ...q.data, stem: 'El proyecto es rentable según el caso' } }));
+  igual(detectarProblemas(qs, {}), [[], []]);
+});
+
+// ── Partes del examen y recuadro de procedimiento ──────────────────────────
+const deTipos = (...tipos) => tipos.map((type, i) => ({ num: i + 1, type, data: { stem: `P${i + 1}` } }));
+
+prueba('partes: orden y textos solo de tipos conocidos, y lo vacío no se guarda', () => {
+  igual(ordenDePartesValido(['essay', 'nada', 'essay', 'cloze']), ['essay', 'cloze']);
+  igual(ordenDePartesValido('essay'), []);
+  igual(textosDePartesValidos({ essay: { nombre: '  Ensayo   libre ', indicacion: '' }, cloze: { nombre: ' ', indicacion: ' ' }, otra: { nombre: 'x' } }),
+    { essay: { nombre: 'Ensayo libre', indicacion: '' } });
+  igual(textosDePartesValidos(null), {});
+  const v = valoresIniciales({ orden_partes: ['essay'], textos_partes: { essay: { indicacion: 'a\nb' } }, procedimiento_numerica: true, renglones_procedimiento: '8' });
+  igual([v.orden_partes, v.textos_partes.essay.indicacion, v.procedimiento_numerica, v.procedimiento_corta, v.renglones_procedimiento], [['essay'], 'a b', true, false, 8]);
+  igual(valoresIniciales({ renglones_procedimiento: 99 }).renglones_procedimiento, 4);
+});
+prueba('partes: el orden impreso y mover una parte', () => {
+  const qs = deTipos('multichoice', 'essay', 'multichoice', 'truefalse');
+  igual(tiposEnOrden(qs), ['multichoice', 'essay', 'truefalse']);
+  igual(tiposEnOrden(qs, ['truefalse', 'cloze']), ['truefalse', 'multichoice', 'essay']);
+  igual(moverParte(['multichoice', 'essay', 'truefalse'], ['cloze'], 'essay', -1), ['essay', 'multichoice', 'truefalse', 'cloze']);
+  igual(moverParte(['multichoice', 'essay'], [], 'multichoice', -1), []);
+});
+prueba('partes: un perfil de antes no borra el procedimiento ni los textos que haya puestos', () => {
+  const actuales = valoresIniciales({ procedimiento_numerica: true, orden_partes: ['essay'], textos_partes: { essay: { nombre: 'X' } } });
+  const viejo = aplicarPerfil(actuales, { institucion: 'U' });
+  igual([viejo.institucion, viejo.procedimiento_numerica, viejo.orden_partes, viejo.textos_partes.essay.nombre], ['U', true, ['essay'], 'X']);
+  const nuevo = aplicarPerfil(actuales, { procedimiento_numerica: false, orden_partes: ['cloze'], textos_partes: {} });
+  igual([nuevo.procedimiento_numerica, nuevo.orden_partes, nuevo.textos_partes.essay.nombre], [false, ['cloze'], 'X']);
+});
+prueba('versiones: el orden de las partes manda, sin cambiar el orden dentro de cada una', () => {
+  const qs = deTipos('multichoice', 'essay', 'multichoice', 'essay', 'multichoice');
+  const v = { nums: [1, 2, 3, 4, 5], semilla: 11 };
+  const antes = numsEnOrden(v, qs, { partes: true });
+  const despues = numsEnOrden(v, qs, { partes: true, ordenPartes: ['essay'] });
+  const de = (orden, tipo) => orden.filter(n => qs[n - 1].type === tipo);
+  igual(despues.slice(0, 2).every(n => qs[n - 1].type === 'essay'), true);
+  igual([de(antes, 'essay'), de(antes, 'multichoice')], [de(despues, 'essay'), de(despues, 'multichoice')]);
+  igual(numsEnOrden(v, qs, { partes: true, barajarPreguntas: false, ordenPartes: ['essay'] }), [2, 4, 1, 3, 5]);
+  igual(numsEnOrden(v, qs, { partes: true, barajarPreguntas: false }), [1, 2, 3, 4, 5]);
+  igual(numsEnOrden(v, qs, { partes: false, barajarPreguntas: false, ordenPartes: ['essay'] }), [1, 2, 3, 4, 5]);
+});
+
+// ── Mover y duplicar preguntas (editor/orden-logica.js) ────────────────────
+const stems = qs => qs.map(q => q.data.stem).join(' ');
+const resDe = (...textos) => { const questions = conCtx(...textos); return { questions, answer_key: Object.fromEntries(questions.map(q => [q.num, { de: q.data.stem }])), skipped_questions: [] }; };
+
+prueba('orden: una pregunta suelta se intercambia con su vecina y salta un grupo entero', () => {
+  const qs = conCtx(null, 'g', 'g', null);
+  igual(stems(moverPregunta(qs, 0, 1).orden), 'P2 P3 P1 P4');
+  igual(moverPregunta(qs, 0, 1).nueva, 2);
+  igual(stems(moverPregunta(qs, 3, -1).orden), 'P1 P4 P2 P3');
+  igual(moverPregunta(qs, 0, -1), null);
+  igual(moverPregunta(qs, 3, 1), null);
+});
+prueba('orden: dentro de un grupo se mueve sin salir de él, y el grupo se mueve completo', () => {
+  const qs = conCtx(null, 'g', 'g', null);
+  igual(movimientosDe(qs, 1), { subir: false, bajar: true, enGrupo: true });
+  igual(stems(moverPregunta(qs, 1, 1).orden), 'P1 P3 P2 P4');
+  igual(moverPregunta(qs, 1, -1), null);
+  igual([stems(moverGrupo(qs, 1, -1).orden), moverGrupo(qs, 1, -1).nueva], ['P2 P3 P1 P4', 0]);
+  igual(stems(moverGrupo(qs, 1, 1).orden), 'P1 P4 P2 P3');
+  const dos = conCtx('a', 'a', 'b', 'b');
+  igual(stems(moverGrupo(dos, 2, -1).orden), 'P3 P4 P1 P2');
+  igual(moverGrupo(dos, 0, -1), null);
+});
+prueba('orden: al reordenar, cada clave va con su pregunta y las no incluidas siguen a la suya', () => {
+  const res = resDe(null, null, null);
+  res.skipped_questions = [{ despues_de: 1 }, { despues_de: 0 }, {}];
+  reordenar(res, moverPregunta(res.questions, 0, 1).orden);
+  igual(res.questions.map(q => `${q.num}:${q.data.stem}`), ['1:P2', '2:P1', '3:P3']);
+  igual([res.answer_key[1].de, res.answer_key[2].de, res.answer_key[3].de], ['P2', 'P1', 'P3']);
+  igual(res.skipped_questions.map(s => s.despues_de), [2, 0, undefined]);
+});
+prueba('orden: duplicar copia la pregunta, su clave y su enunciado compartido, justo después', () => {
+  const res = resDe('g', 'g', null);
+  res.skipped_questions = [{ despues_de: 2 }];
+  igual(duplicarPregunta(res, 0), 1);
+  igual(stems(res.questions), 'P1 P1 P2 P3');
+  igual(res.questions.map(q => q.num), [1, 2, 3, 4]);
+  igual(tramosCompartidos(res.questions), [{ desde: 0, hasta: 2, texto: 'g' }]);
+  igual([res.answer_key[2].de, res.answer_key[3].de], ['P1', 'P2']);
+  res.questions[1].data.stem = 'copia';
+  res.answer_key[2].de = 'otra';
+  igual([res.questions[0].data.stem, res.answer_key[1].de, res.skipped_questions[0].despues_de], ['P1', 'P1', 3]);
 });
 
 // ── IA asistida: avisos de calidad sin IA (editor/calidad.js) y sugerencias ────

@@ -85,11 +85,11 @@ def sha(texto: str) -> str:
 # Hashes tomados ANTES de partir formatter.py (1.8). Si cambia un solo
 # carácter de un prompt o del esquema, esto falla: el contenido de los
 # prompts no se toca al refactorizar.
-print("Prompts y esquema: SHA-256 idéntico al de la 1.8")
+print("Prompts y esquema: SHA-256 fijado (el modo JSON cambió con el enunciado compartido; lo demás, como en la 1.8)")
 HASHES = {
     "SYSTEM_PROMPT": "a31f91e140b2f2c48463a3716e757c6965ef9223014d500b54890a5a7227e874",
-    "SYSTEM_PROMPT_JSON": "e9ae65218c9034e2afef436e72c2cb851a60d5561a8a68d502802ee22690d476",
-    "RESPONSE_SCHEMA": "a96327cca175f2c3012c93f52b2aa445dc9d04618d9dff970ff83886a5c28a82",
+    "SYSTEM_PROMPT_JSON": "29637724c572a09ff189b450347751229ede127a4438f025dc1a151e2165a017",
+    "RESPONSE_SCHEMA": "89ede6555f8ded107453ec3cbd675a37288309f881f854cf74ef7762d0380f7c",
     "PREFIJO_FALTANTES": "092bc52283fcdf65819c9121eef23752e0e91fb5c665214c33b8566805aefc44",
     "PROMPT_RETRO": "d92380ddc6c74478deaa134b3e06a7d8ce8524cb2edd5856c3103c7223dd1853",
     "PROMPT_REDACCION": "88f64e6f3b75e2fcfb338c96cd91630b5bd9af6888dd9da5dbf159ac24accaf2",

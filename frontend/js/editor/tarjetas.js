@@ -6,6 +6,9 @@ import { clozeBuildTextAndAnswer, initClozeBuilder, parseClozeSegments, renderCl
 import { scrollToEditorCard } from './panel.js';
 import { abiertasEnOrden, aplicarPlegado } from './plegado.js';
 import { datosDeFilas, filasConDistractores } from './emparejamiento-logica.js';
+import { bloqueCompartidoHtml, prepararCompartidos } from './compartido.js';
+import { heredarContexto, tramosCompartidos } from './compartido-logica.js';
+import { movimientosDe } from './orden-logica.js';
 import { _editorTotalPoints, reiniciarPanelPuntos, sincronizarPanelPuntos } from './puntos-ui.js';
 import { apiFetch } from '../api.js';
 import { imagenesDeTarjeta, imagenesHtml, prepararImagenes } from './imagenes.js';
@@ -221,6 +224,7 @@ export function recoverSkippedQuestion(skippedIdx) {
   // Se inserta y se renumera todo (la clave va por número de pregunta).
   const ak = estado.currentParseResult.answer_key;
   qs.splice(pos, 0, newQ);
+  heredarContexto(qs, pos);          // en medio de un grupo con enunciado compartido, pasa a ser parte de él
   const nuevaClave = {};
   qs.forEach((q, i) => {
     const clave = q === newQ ? claveNueva : ak[q.num];
@@ -574,7 +578,9 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
   // Todas las tarjetas se arman en un solo string y se insertan de una
   // vez (antes se hacía innerHTML += por cada pregunta, que vuelve a
   // parsear todo el contenedor en cada vuelta: lento con 50+ preguntas).
-  const cardsHtml = data.questions.map((q, i) => _cardHtml(q, i, data.answer_key[q.num] || { answer: '' })).join('');
+  // El bloque de un enunciado compartido va justo antes de la primera pregunta de su grupo.
+  const bloques = new Map(tramosCompartidos(data.questions).map(t => [t.desde, bloqueCompartidoHtml(data.questions, t)]));
+  const cardsHtml = data.questions.map((q, i) => (bloques.get(i) || '') + _cardHtml(q, i, data.answer_key[q.num] || { answer: '' }, movimientosDe(data.questions, i))).join('');
 
   // Al vaciar y volver a llenar el contenedor, la página se queda sin altura un instante y el
   // navegador recorta el scroll: con 50 preguntas, borrar la 49 estando en la 50 devolvía la vista a
@@ -597,6 +603,7 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
   // Los campos de texto siempre muestran todo su contenido.
   container.querySelectorAll('.editor-card textarea').forEach(autoGrowTextarea);
   container.querySelectorAll('.cloze-builder').forEach(initClozeBuilder);
+  prepararCompartidos(container, data.questions);
   container.querySelectorAll('.editor-card').forEach(actualizarFormulas);
   prepararImagenes(container);
   _observarAncho(container);
@@ -696,7 +703,20 @@ function _respuestaAlCambiarTipo(oldType, newType, oldAnswer) {
   return oldType === 'essay' ? '' : a;
 }
 
-function _cardHtml(q, i, keyInfo) {
+// Subir, bajar y duplicar. En un enunciado compartido las flechas mueven dentro del grupo.
+function _ordenHtml(N, mov) {
+  const boton = (clase, accion, icono, texto, activo, motivo) => `<button type="button" class="btn btn-icon ${clase}" data-accion="${accion}" data-este
+      aria-label="${texto} la pregunta ${N}" title="${activo ? `${texto} pregunta` : motivo}"${activo ? '' : ' disabled'}>
+      <i data-lucide="${icono}" style="width:15px;height:15px;" aria-hidden="true"></i></button>`;
+  const tope = lado => (mov.enGrupo ? `Es la ${lado} de su enunciado compartido: mueve el grupo con las flechas de su bloque` : `Ya es la ${lado}`);
+  return `<div class="card-orden">
+    ${boton('btn-mover btn-subir', 'subirPregunta', 'arrow-up', 'Subir', mov.subir, tope('primera'))}
+    ${boton('btn-mover btn-bajar', 'bajarPregunta', 'arrow-down', 'Bajar', mov.bajar, tope('última'))}
+    ${boton('btn-duplicar', 'duplicarTarjeta', 'copy', 'Duplicar', true, '')}
+  </div>`;
+}
+
+function _cardHtml(q, i, keyInfo, mov) {
   const needsReview = requiereRevision(q.data);
   const flags = [
     q.data.from_table && _flagBadge('flag-review', 'table-2', 'convertida de tabla', 'El sistema detectó un cuadro en el documento original y lo convirtió en esta pregunta de emparejamiento. Revísala con cuidado antes de generar el XML.'),
@@ -719,6 +739,7 @@ function _cardHtml(q, i, keyInfo) {
       </div>
       <p class="card-resumen"></p>
       <span class="card-estado"></span>
+      ${_ordenHtml(N, mov)}
       <div class="card-meta">
         <input type="number" class="q-points form-input" step="${q.type === 'cloze' ? 1 : 0.01}" min="0" value="${q.points != null ? esc_html(q.points) : ''}" aria-label="Puntos de la pregunta ${N}" title="Puntos que vale esta pregunta" />
         <span class="pts-unit" aria-hidden="true">pts</span>
@@ -844,7 +865,15 @@ function _cardHtml(q, i, keyInfo) {
 
   // En «Completar» el enunciado es el constructor de espacios: las
   // imágenes van debajo de él.
-  return html + (q.type === 'cloze' ? imagenesHtml(q, i, N) : '') + _sugerirHtml(q, N) + _retroalimentacionHtml(q, i, N) + `</article>`;
+  return html + (q.type === 'cloze' ? imagenesHtml(q, i, N) : '') + _sugerirHtml(q, N) + _compartirHtml(N) + _retroalimentacionHtml(q, i, N) + `</article>`;
+}
+
+// Empezar un enunciado compartido por varias preguntas (se oculta en las que ya están en uno).
+function _compartirHtml(N) {
+  return `<button type="button" class="btn btn-ghost btn-sm q-compartir" data-accion="crearCompartido" data-este
+    aria-label="Crear un enunciado compartido desde la pregunta ${N}" title="Un caso o texto del que se preguntan esta y las siguientes">
+    <i data-lucide="text-quote" style="width:14px;height:14px;" aria-hidden="true"></i> <span>Enunciado compartido</span>
+  </button>`;
 }
 
 // «Sugerir respuesta con IA» (2.0): solo se ve cuando a la pregunta le FALTA la respuesta

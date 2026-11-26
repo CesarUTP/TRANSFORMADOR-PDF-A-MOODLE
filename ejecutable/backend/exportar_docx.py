@@ -42,7 +42,7 @@ from reportlab.pdfbase import pdfmetrics
 from plan_impreso import (
     FUENTES, GRIS, GRIS_CLARO, LADO_CASILLA, PASO_BURBUJAS, PASO_HUECOS, Burbujas, CuadroEstudiante, DatosExamen,
     Espacio, Estilo, FilaDocente, Grupo, Huecos, Imagen, LogosCabecera, Opcion, Parrafo, Plan, RejillaBurbujas,
-    Renglones, Sangrado, Seccion, TablaHuecos, TablaPareo, _DIR_FUENTES, construir_plan,
+    Recuadro, Sangrado, Seccion, TablaHuecos, TablaPareo, _DIR_FUENTES, GROSOR_RECUADRO, construir_plan,
 )
 
 # Cómo se llama cada tipo de letra en Word. DejaVu no viene con Word: se incrusta.
@@ -437,8 +437,8 @@ class _Docx:
             self._tabla_pareo(b)
         elif isinstance(b, TablaHuecos):
             self._tabla_huecos(b)
-        elif isinstance(b, Renglones):
-            self._renglones(b)
+        elif isinstance(b, Recuadro):
+            self._recuadro(b)
         elif isinstance(b, RejillaBurbujas):
             self._rejilla(b)
         elif isinstance(b, Huecos):
@@ -531,17 +531,14 @@ class _Docx:
         el.set(qn("w:val"), str(medios_puntos))
         return el
 
-    def _renglones(self, r: Renglones) -> None:
-        """Los renglones de una respuesta de desarrollo: una tabla de filas con su raya (así cada raya sale siempre).
-        Como en el PDF, la 1.ª raya queda a 4 pt del borde de arriba y sobran 4 pt menos que un paso debajo de la última."""
-        ancho = self.geo.ancho - self.geo.sangria
-        alturas = [4.0] + [r.paso] * (r.n - 1) + [r.paso - 4.0]
-        t = self._tabla([ancho], len(alturas), indent=self.cont)
-        for i, (fila, alto) in enumerate(zip(t.rows, alturas)):
-            fila.height, fila.height_rule = Pt(alto), WD_ROW_HEIGHT_RULE.EXACTLY
-            if i < r.n:
-                self._borde(fila.cells[0], bottom=(0.6, GRIS_CLARO))
-            self._vacio(fila.cells[0])
+    def _recuadro(self, r: Recuadro) -> None:
+        """La celda en blanco, con marco, de una respuesta de desarrollo (una tabla de una sola celda)."""
+        t = self._tabla([self.geo.ancho - self.cont], indent=self.cont)
+        fila = t.rows[0]
+        fila.height, fila.height_rule = Pt(r.alto), WD_ROW_HEIGHT_RULE.EXACTLY
+        marco = (GROSOR_RECUADRO, "#000000")
+        self._borde(fila.cells[0], top=marco, left=marco, bottom=marco, right=marco)
+        self._vacio(fila.cells[0])
         self._registrar("t", t)
         self.prev_despues = 0.0
 

@@ -40,10 +40,10 @@ from reportlab.platypus import (
 from reportlab.platypus.doctemplate import LayoutError
 
 from plan_impreso import (  # noqa: F401  (varios se usan desde fuera: rutas y pruebas)
-    CONTENIDOS, FUENTES, GRIS, GRIS_CLARO, LIMITE_CAMPO, LIMITE_INSTRUCCIONES, LIMITE_LOGO, LIMITE_VERSION,
+    CONTENIDOS, FUENTES, GRIS, GRIS_CLARO, GROSOR_RECUADRO, LIMITE_CAMPO, LIMITE_INDICACION_PARTE, LIMITE_INSTRUCCIONES, LIMITE_LOGO, LIMITE_NOMBRE_PARTE, LIMITE_VERSION, NOMBRE_PARTE,
     MARGENES, PAPELES, PASO_BURBUJAS, PASO_HUECOS, RENGLONES_MAX, RENGLONES_MIN, ROTULOS, TAM_MAX, TAM_MIN,
     Burbujas, CuadroEstudiante, DatosExamen, Espacio, Estilo, FilaDocente, Grupo, Huecos, Imagen, LogosCabecera,
-    Opcion, Parrafo, Plan, PuntosNoEnteros, RejillaBurbujas, Renglones, Sangrado, Seccion, TablaHuecos,
+    Opcion, Parrafo, Plan, PuntosNoEnteros, RejillaBurbujas, Recuadro, Sangrado, Seccion, TablaHuecos,
     TablaPareo, construir_plan, revisar_puntos_enteros,
 )
 
@@ -58,6 +58,7 @@ class ResultadoPdf:
     paginas: int
     preguntas: int
     avisos: List[str] = field(default_factory=list)
+    partes_automaticas: List[Dict[str, str]] = field(default_factory=list)
 
 
 # ── Figuras ─────────────────────────────────────────────────────────────────
@@ -82,24 +83,23 @@ class _Casilla(Flowable):
             c.rect(0.4, 0.4, self.lado - 0.8, self.lado - 0.8)
 
 
-class _Renglones(Flowable):
-    """Espacio rayado para una respuesta de desarrollo."""
+class _Recuadro(Flowable):
+    """La celda en blanco, con marco, donde se escribe una respuesta de desarrollo."""
 
-    def __init__(self, n: int, paso: float = 22):
+    def __init__(self, alto: float):
         super().__init__()
-        self.n, self.paso = n, paso
+        self.alto = alto
 
     def wrap(self, aw, ah):
         self.ancho = aw
-        return aw, self.n * self.paso
+        return aw, self.alto
 
     def draw(self):
         c = self.canv
-        c.setStrokeColor(_GRIS_CLARO)
-        c.setLineWidth(0.6)
-        for i in range(self.n):
-            y = self.paso * (i + 1) - 4
-            c.line(0, y, self.ancho, y)
+        c.setStrokeColor(colors.black)
+        c.setLineWidth(GROSOR_RECUADRO)
+        medio = GROSOR_RECUADRO / 2
+        c.rect(medio, medio, self.ancho - GROSOR_RECUADRO, self.alto - GROSOR_RECUADRO)
 
 
 class _Lienzo(canvas.Canvas):
@@ -265,8 +265,8 @@ class _Dibujante:
                                        ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 5),
                                        ("BOTTOMPADDING", (0, 0), (-1, -1), 5), ("LINEBELOW", (0, 0), (-1, -2), 0.4, _GRIS_CLARO)]))
             return [tabla]
-        if isinstance(b, Renglones):
-            return [_Renglones(b.n, b.paso)]
+        if isinstance(b, Recuadro):
+            return [_Recuadro(b.alto)]
         if isinstance(b, RejillaBurbujas):
             fp = self.nombres["p"]
             celdas = [[_Burbujas(x.num, x.letras, x.redonda, x.marcadas, fp) if x is not None else "" for x in fila] for fila in b.celdas]
@@ -376,4 +376,5 @@ def generar_pdf(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[str,
         except LayoutError:
             if simple:
                 raise
-    return ResultadoPdf(pdf=pdf, paginas=paginas, preguntas=plan.preguntas, avisos=plan.avisos)
+    return ResultadoPdf(pdf=pdf, paginas=paginas, preguntas=plan.preguntas, avisos=plan.avisos,
+                        partes_automaticas=plan.partes_automaticas)

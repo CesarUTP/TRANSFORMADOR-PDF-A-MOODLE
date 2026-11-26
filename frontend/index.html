@@ -490,7 +490,7 @@
             <section class="guia-sec">
               <h3>Qué acepta</h3>
               <ul class="guia-lista">
-                <li><strong>Pruebas, parciales y quices</strong> en PDF, Word o TXT, con preguntas de opción múltiple, verdadero/falso, emparejamiento, completar, ensayo, respuesta corta o numérica. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas.</li>
+                <li><strong>Pruebas, parciales y quices</strong> en PDF, Word o TXT, con preguntas de opción múltiple, verdadero/falso, emparejamiento, completar, ensayo, respuesta corta o numérica. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas. Si un mismo caso o texto sirve para varias preguntas («responda las preguntas 1 a 5»), también se conserva.</li>
                 <li><strong>Un XML de Moodle que ya tengas</strong> (uno de esta aplicación o exportado de tu banco de preguntas): se abre en el editor para corregirlo y volver a generarlo. No usa IA. Las preguntas que el editor no entiende (calculadas, arrastrar y soltar…) quedan entre las «no incluidas», con su motivo. Lo que el editor no conserva (crédito parcial a una opción, respuestas alternativas, tolerancia numérica o retroalimentación propia de cada opción) se avisa.</li>
                 <li><strong>Imágenes y fórmulas.</strong> Las imágenes llegan a Moodle dentro de su pregunta; en la revisión puedes quitarlas, moverlas o agregar las tuyas («Agregar imagen» o soltando el archivo sobre la pregunta). Las fórmulas se escriben en LaTeX, entre <code class="inline">\(</code> y <code class="inline">\)</code>, con vista previa.</li>
                 <li><strong>Retroalimentación opcional.</strong> Si el examen trae la justificación, se copia sola; si no, escríbela, pídesela a la IA con «Escribir con IA» o déjala vacía. «Mejorar redacción» corrige ortografía y claridad sin cambiar datos, código ni fórmulas. Ves la propuesta y solo se aplica si pulsas «Aceptar».</li>
@@ -568,6 +568,8 @@
                 <li><strong>Posibles problemas:</strong> avisos que la app detecta sin IA: preguntas repetidas o casi repetidas, opciones iguales, una opción que depende de las demás («todas las anteriores», «A y B») —Moodle <em>mezcla</em> el orden de las opciones y dejaría de tener sentido— emparejamientos o espacios con elementos repetidos, una respuesta numérica ambigua («1,000» puede ser mil o uno con tres decimales) y una pregunta de «Completar» con puntos decimales (Moodle solo admite enteros). Son avisos: no bloquean nada.</li>
                 <li><strong>Sugerir respuesta con IA:</strong> aparece solo en las preguntas a las que les falta la respuesta. La IA propone una (con su motivo), tú decides: <em>Aceptar</em> o <em>Descartar</em>, y puedes <em>Deshacer</em>. Gasta tu cuota de Gemini.</li>
                 <li><strong>Puntos:</strong> muestra cuánto suman frente al total del examen (en ámbar si no coinciden). Al abrirlo eliges cómo repartirlos: <em>Igual para todas</em> divide el total del examen entre todas las preguntas; <em>Según el tipo</em> te deja escribir cuántos puntos vale <strong>cada pregunta</strong> de cada tipo, y el total del examen es la suma (10 de opción múltiple a 2 puntos y 5 de completar a 5 puntos valen 45). Si las preguntas de un tipo hoy valen distinto, su campo queda vacío («varía») y ese tipo no se toca hasta que escribas algo. Las preguntas de <em>Completar</em> valen puntos <strong>enteros</strong>, al menos uno por espacio, porque Moodle no admite decimales en sus espacios. Al aplicar puedes <em>Deshacer</em>; también puedes cambiar los puntos de cada pregunta a mano.</li>
+                <li><strong>Enunciado compartido:</strong> cuando de un mismo caso, texto o situación salen varias preguntas. Si el documento lo dice («del siguiente enunciado responda las preguntas 1 a 5»), la IA intenta reconocerlo; revísalo. También puedes crearlo con <em>Enunciado compartido</em> en la primera pregunta, escribir el texto y elegir <em>de la pregunta … a la …</em>. No escribas los números de las preguntas: se agregan solos. En el PDF y el Word sale una sola vez antes del grupo; en Moodle va dentro de cada pregunta, para que se entienda aunque se mezclen.</li>
+                <li><strong>Mover y duplicar:</strong> las flechas de cada pregunta la suben o la bajan y el botón de al lado la duplica (la copia queda justo después, con su respuesta y sus puntos: revisa el total). Las preguntas de un enunciado compartido se mueven dentro de su grupo; el grupo completo, con las flechas de su bloque. Con un filtro puesto, las flechas se esconden.</li>
                 <li><strong>Opciones de más en un emparejamiento:</strong> <em>Agregar opción de más</em> añade una opción de la Columna B que no es la pareja de ningún concepto, para que no se adivine por descarte. Aparece con borde discontinuo y se conserva al exportar.</li>
                 <li><strong>Preguntas que no se pudieron incluir:</strong> aparecen arriba en una sola línea; ábrela con <em>Ver motivos</em>. Si a una solo le falta la respuesta, usa <em>Añadir con lo ya extraído</em> y márcala tú.</li>
                 <li><strong>Añadir pregunta:</strong> al final de la lista, si faltó alguna del documento, de cualquiera de los 7 tipos.</li>
@@ -613,8 +615,11 @@
                 <li><strong>Formato del archivo:</strong> <em>PDF</em> (listo para imprimir), <em>Word</em> (un .docx editable, con estilos de párrafo con nombre, tablas y «Página X de Y») o <em>PDF y Word</em> en un ZIP. Los dos salen del mismo plan: mismas preguntas, mismo orden de las opciones, misma clave y mismo formato; en Word la paginación puede variar un poco. La vista previa es la del PDF.</li>
                 <li><strong>Encabezado:</strong> institución, facultad, departamento, hasta dos logos, materia, actividad, grupo, fecha, nombre del docente e indicaciones generales, con el cuadro de nombre, cédula, grupo y fecha.</li>
                 <li><strong>Partes:</strong> las preguntas se agrupan por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con su indicación para el estudiante y su valor.</li>
+                <li><strong>Enunciado compartido:</strong> sale una sola vez, con «responda las preguntas … a …» según la numeración impresa. En las versiones, sus preguntas se mueven juntas. Si el grupo mezcla tipos y está activado <em>Partes</em>, se repite en cada parte y la app lo avisa.</li>
                 <li><strong>Opciones mezcladas:</strong> en los documentos la clave suele ir en orden (1-a, 2-b, 3-c…) y en papel eso delata las respuestas. La app baraja las opciones y la Columna B de los emparejamientos; la clave usa siempre las letras impresas.</li>
-                <li><strong>Formato:</strong> papel Carta, Legal o A4; márgenes como los de Word; tipo de letra (DejaVu Sans, Arial o Times New Roman) y tamaño por separado para los títulos y para las preguntas; renglones por ensayo; mostrar o no el valor de cada pregunta.</li>
+                <li><strong>Formato:</strong> papel Carta, Legal o A4; márgenes como los de Word; tipo de letra (DejaVu Sans, Arial o Times New Roman) y tamaño por separado para los títulos y para las preguntas; alto del recuadro en blanco donde se contesta cada ensayo; mostrar o no el valor de cada pregunta.</li>
+                <li><strong>Espacio para el procedimiento:</strong> si lo activas (en <em>Formato</em>), las preguntas numéricas o de respuesta corta llevan un recuadro en blanco con marco antes de la respuesta; en folleto y hoja de respuestas va en la hoja.</li>
+                <li><strong>Orden e indicaciones de las partes:</strong> en <em>Partes del examen</em> cambias qué parte va primero y, si quieres, escribes tu propio nombre e indicación; lo que dejes vacío se escribe solo. El número de la parte y su valor son automáticos. Se recuerdan para el próximo examen y se guardan en los perfiles de encabezado.</li>
                 <li><strong>La clave</strong> imprime la letra Y el texto de cada respuesta, porque Moodle mezcla las opciones.</li>
               </ul>
             </section>
@@ -1060,8 +1065,12 @@ Ahora convierte el examen adjunto a este formato.</pre>
                     </select>
                   </div>
                   <div class="form-group">
-                    <label class="field-label" for="pe-renglones">Renglones por ensayo</label>
+                    <label class="field-label" for="pe-renglones">Alto del recuadro de ensayo (renglones)</label>
                     <input type="number" id="pe-renglones" class="form-input" min="2" max="24" step="1" value="6">
+                  </div>
+                  <div class="form-group">
+                    <label class="field-label" for="pe-renglones-proc">Alto del recuadro de procedimiento (renglones)</label>
+                    <input type="number" id="pe-renglones-proc" class="form-input" min="2" max="24" step="1" value="4">
                   </div>
                 </div>
                 <div class="pdf-subgrupo">
@@ -1080,6 +1089,8 @@ Ahora convierte el examen adjunto a este formato.</pre>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-puntos"> <span><strong>Mostrar cuánto vale cada pregunta</strong></span></label>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-enteros"> <span><strong>Puntos enteros</strong><small>El PDF usa solo números enteros, con el mismo total. El Moodle XML no cambia.</small></span></label>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-campos"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>
+                <label class="pdf-opcion"><input type="checkbox" id="pe-proc-numerica"> <span>Recuadro de procedimiento en las preguntas numéricas</span></label>
+                <label class="pdf-opcion"><input type="checkbox" id="pe-proc-corta"> <span>Recuadro de procedimiento en las de respuesta corta</span></label>
               </div>
             </details>
 
@@ -1461,8 +1472,12 @@ Ahora convierte el examen adjunto a este formato.</pre>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label class="field-label" for="pdf-renglones">Renglones por ensayo</label>
+                  <label class="field-label" for="pdf-renglones">Alto del recuadro de ensayo (renglones)</label>
                   <input type="number" id="pdf-renglones" name="renglones_ensayo" class="form-input" min="2" max="24" step="1" value="6">
+                </div>
+                <div class="form-group">
+                  <label class="field-label" for="pdf-renglones-proc">Alto del recuadro de procedimiento (renglones)</label>
+                  <input type="number" id="pdf-renglones-proc" name="renglones_procedimiento" class="form-input" min="2" max="24" step="1" value="4">
                 </div>
               </div>
               <div class="pdf-subgrupo">
@@ -1490,6 +1505,23 @@ Ahora convierte el examen adjunto a este formato.</pre>
               <label class="pdf-opcion"><input type="checkbox" name="puntos_por_pregunta"> <span><strong>Mostrar cuánto vale cada pregunta</strong><small>Si lo desmarcas, el examen solo dice el valor de cada parte y el total; la clave sí conserva el valor de cada pregunta.</small></span></label>
               <label class="pdf-opcion"><input type="checkbox" name="puntos_enteros"> <span><strong>Puntos enteros</strong><small>El PDF usa solo números enteros (7 pts en vez de 6,67) para calificar sin redondeos. Mantiene el total y no cambia el Moodle XML: allí los puntos siguen como en el editor.</small></span></label>
               <label class="pdf-opcion"><input type="checkbox" name="campos_estudiante"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>
+              <div class="pdf-subgrupo" id="pdf-grupo-procedimiento">
+                <span class="field-label">Espacio para el procedimiento</span>
+                <label class="pdf-opcion"><input type="checkbox" name="procedimiento_numerica"> <span><strong>En las preguntas numéricas</strong><small>Un recuadro en blanco con marco, antes de la respuesta, para que el estudiante muestre su trabajo.</small></span></label>
+                <label class="pdf-opcion"><input type="checkbox" name="procedimiento_corta"> <span><strong>En las de respuesta corta</strong></span></label>
+              </div>
+            </div>
+          </details>
+
+          <details class="pdf-seccion" id="pdf-sec-partes">
+            <summary><span>Partes del examen</span><small id="pdf-resumen-partes"></small></summary>
+            <div class="pdf-seccion-cuerpo">
+              <p class="field-hint" id="pdf-partes-apagadas" hidden>Para ordenar las partes y cambiar sus textos, activa <strong>Dividir el examen en partes</strong> (en Formato).</p>
+              <div id="pdf-partes-cuerpo">
+                <p class="field-hint pdf-pista">Cambia el orden con las flechas. Lo que dejes vacío lo escribe Cátedra; el número de la parte y su valor se ponen solos. En folleto y hoja de respuestas, tu indicación sale en el folleto y la hoja conserva la que explica cómo rellenarla.</p>
+                <ol class="partes-lista" id="pdf-partes-lista"></ol>
+                <button type="button" id="btn-pdf-partes-auto" class="btn btn-ghost btn-sm">Volver al orden y los textos automáticos</button>
+              </div>
             </div>
           </details>
 

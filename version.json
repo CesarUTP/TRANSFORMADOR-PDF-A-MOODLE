@@ -1,5 +1,5 @@
 {
-  "version": "3.0",
+  "version": "3.1",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Versión 3.0: en «Según el tipo» escribes cuánto vale cada pregunta y el total es la suma; «Completar» vale puntos enteros. Opciones de más en emparejamientos, avisos de lo que Moodle recibiría distinto y lectura más fiable de la clave del documento."
+  "notas": "Versión 3.1: un enunciado compartido para varias preguntas, mover y duplicar preguntas, desarrollo en un recuadro con marco, espacio para el procedimiento en numéricas y respuesta corta, y orden e indicaciones propias de cada parte del PDF y el Word."
 }

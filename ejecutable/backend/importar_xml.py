@@ -38,7 +38,7 @@ import imagenes
 from config import FEEDBACK_CORRECT, FEEDBACK_INCORRECT
 from schema_adapter import adapt
 from validator import partition_questions
-from xml_builder import strip_accents
+from xml_builder import strip_accents, CLASE_CONTEXTO
 
 logger = logging.getLogger(__name__)
 
@@ -298,15 +298,28 @@ def _avisar_perdidas(qn, num: int, tipo: str, avisos: List[str]) -> None:
                 "no se importa, al exportar cada opción llevará «¡Correcto!» o «Incorrecto.».")
 
 
+_CONTEXTO = re.compile(r'''^\s*<div\b[^>]*\bclass\s*=\s*["'][^"']*\b''' + CLASE_CONTEXTO
+                       + r'''\b[^"']*["'][^>]*>(.*?)</div>''', re.I | re.S)
+
+
+def _separar_contexto(html_texto: str) -> Tuple[str, str]:
+    """(enunciado compartido, el resto del HTML) de una pregunta que exportó esta aplicación; ("", todo) si no lo trae."""
+    m = _CONTEXTO.match(html_texto)
+    if not m:
+        return "", html_texto
+    return html_a_texto(m.group(1)), html_texto[m.end():]
+
+
 def _pregunta_a_payload(qn, num: int, avisos: List[str]):
     """(payload, imágenes) o (None, motivo) si el tipo no se puede editar."""
     tipo = qn.get("type") or ""
     fmt = _formato_de(qn, "questiontext")
-    crudo = _texto_de(qn, "questiontext")
+    contexto, crudo = _separar_contexto(_texto_de(qn, "questiontext"))
     enunciado = html_a_texto(crudo, fmt)
     base: Dict[str, Any] = {
         "orden": num, "enunciado": enunciado, "respuesta_marcada": True, "confianza": "alta",
         "retroalimentacion": html_a_texto(_texto_de(qn, "generalfeedback"), _formato_de(qn, "generalfeedback")),
+        "enunciado_compartido": contexto,
     }
     imgs = _imagenes_de(qn, crudo, num, avisos)
 

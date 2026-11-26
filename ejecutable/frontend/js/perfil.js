@@ -221,6 +221,8 @@ function llenarEditor(nombre, d) {
   $('pe-fuente-titulos').value = d.fuente_titulos; $('pe-tam-titulos').value = d.tam_titulos;
   $('pe-fuente-preguntas').value = d.fuente_preguntas; $('pe-tam-preguntas').value = d.tam_preguntas;
   $('pe-renglones').value = d.renglones_ensayo;
+  $('pe-renglones-proc').value = d.renglones_procedimiento;
+  $('pe-proc-numerica').checked = d.procedimiento_numerica; $('pe-proc-corta').checked = d.procedimiento_corta;
   $('pe-mezclar').checked = d.mezclar; $('pe-partes').checked = d.partes;
   $('pe-puntos').checked = d.puntos_por_pregunta; $('pe-enteros').checked = d.puntos_enteros; $('pe-campos').checked = d.campos_estudiante;
   Object.keys(LADOS).forEach(k => mostrarLogo(k, d[k]));
@@ -233,6 +235,8 @@ function leerEditor() {
     instrucciones: $('pe-instrucciones').value, papel: $('pe-papel').value, margenes: $('pe-margenes').value,
     fuente_titulos: $('pe-fuente-titulos').value, tam_titulos: $('pe-tam-titulos').value,
     fuente_preguntas: $('pe-fuente-preguntas').value, tam_preguntas: $('pe-tam-preguntas').value,
+    renglones_procedimiento: $('pe-renglones-proc').value, procedimiento_numerica: $('pe-proc-numerica').checked,
+    procedimiento_corta: $('pe-proc-corta').checked,
     renglones_ensayo: $('pe-renglones').value, mezclar: $('pe-mezclar').checked, partes: $('pe-partes').checked,
     puntos_por_pregunta: $('pe-puntos').checked, puntos_enteros: $('pe-enteros').checked, campos_estudiante: $('pe-campos').checked,
     ...logosEd,
@@ -241,7 +245,8 @@ function leerEditor() {
 
 function problemaDelEditor(d) {
   if (tamanoValido(d.tam_titulos) === null || tamanoValido(d.tam_preguntas) === null) return 'El tamaño de la letra debe estar entre 7 y 20 puntos.';
-  if (enteroEn(d.renglones_ensayo, RENGLONES_MIN, RENGLONES_MAX) === null) return `Los renglones por ensayo deben ser un número entero entre ${RENGLONES_MIN} y ${RENGLONES_MAX}.`;
+  if (enteroEn(d.renglones_ensayo, RENGLONES_MIN, RENGLONES_MAX) === null) return `El alto del recuadro de ensayo debe ser un número entero de ${RENGLONES_MIN} a ${RENGLONES_MAX} renglones.`;
+  if (enteroEn(d.renglones_procedimiento, RENGLONES_MIN, RENGLONES_MAX) === null) return `El alto del recuadro de procedimiento debe ser un número entero de ${RENGLONES_MIN} a ${RENGLONES_MAX} renglones.`;
   return '';
 }
 

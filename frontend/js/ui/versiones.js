@@ -19,7 +19,7 @@ const fmt = n => String(Math.round(Number(n) * 100) / 100).replace('.', ',');
 const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
 /** `enteros()`: ¿está activada «Puntos enteros»? (los puntos de cada versión salen en enteros, sin tocar los del examen). */
-export function crearVersiones({ alCambiar, enteros = () => false }) {
+export function crearVersiones({ alCambiar, enteros = () => false, ordenPartes = () => [] }) {
   let examen = null;
   let plan = null;
   let versiones = [];          // lo sorteado: [{ etiqueta, nums, semilla, puntos }]
@@ -30,7 +30,7 @@ export function crearVersiones({ alCambiar, enteros = () => false }) {
   const tipos = () => (examen ? resumenPorTipo(examen.questions) : []);
   const activa = () => !!examen && $('pdf-ver-activar').checked;
   const listas = () => activa() && versiones.length > 0 && !desfasado;
-  const opciones = datos => ({ partes: !datos || datos.partes !== false, barajarPreguntas: $('pdf-ver-barajar').checked, enteros: enteros() });
+  const opciones = datos => ({ partes: !datos || datos.partes !== false, barajarPreguntas: $('pdf-ver-barajar').checked, enteros: enteros(), ordenPartes: ordenPartes() });
   const objetivo = () => Number($('pdf-ver-objetivo').value);
 
   // ── El plan (lo que el docente pide) ────────────────────────────────────

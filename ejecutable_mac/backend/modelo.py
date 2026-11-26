@@ -416,6 +416,7 @@ _PREGUNTA_POR_CLAVE = {c.clave: c for c in _CAMPOS_PREGUNTA}
 
 # Orden canónico de "data" (el mismo en que schema_adapter los armaba).
 _CAMPOS_DATA = (
+    Campo("contexto", "contexto", _es_str),
     Campo("stem", "stem", _es_str),
     Campo("options", "options", _es_dict, _copia, solo="multichoice"),
     Campo("col_a", "col_a", _es_dict, _copia, solo="matching"),
@@ -450,6 +451,9 @@ class Pregunta:
 
     num: Optional[int] = None
     tipo: Optional[str] = None
+    # Enunciado compartido («Del siguiente caso responda las preguntas…»): las preguntas SEGUIDAS con el mismo
+    # texto forman un grupo (ver tramos_compartidos). El número de las preguntas no se escribe: lo pone quien imprime.
+    contexto: Optional[str] = None
     stem: Optional[str] = None                 # enunciado (todos menos cloze)
     text: Optional[str] = None                 # enunciado con huecos (cloze)
     feedback: Optional[str] = None             # retroalimentación opcional
@@ -641,6 +645,29 @@ _CLASES: Dict[str, type] = {
         PreguntaEssay, PreguntaShortanswer, PreguntaNumerical,
     )
 }
+
+
+# ── Enunciado compartido ────────────────────────────────────────────────────
+
+def texto_compartido(p: Pregunta) -> str:
+    """El enunciado compartido de la pregunta ("" si no tiene)."""
+    return (p.contexto or "").strip()
+
+
+def tramos_compartidos(preguntas: List[Pregunta]) -> List[Tuple[int, int, str]]:
+    """[(primero, siguiente al último, texto)] de cada grupo de preguntas SEGUIDAS con el mismo enunciado
+    compartido, en el orden de la lista. Las que no tienen ninguno no aparecen."""
+    out: List[Tuple[int, int, str]] = []
+    i = 0
+    while i < len(preguntas):
+        texto = texto_compartido(preguntas[i])
+        j = i + 1
+        if texto:
+            while j < len(preguntas) and texto_compartido(preguntas[j]) == texto:
+                j += 1
+            out.append((i, j, texto))
+        i = j
+    return out
 
 
 # ── Listas de preguntas ↔ (questions, answer_key) ───────────────────────────

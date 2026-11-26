@@ -21,6 +21,8 @@ import { applyPointsDistribution, setPointsToolMode, togglePointsToolMenu, updat
 import { agregarImagen, iniciarArrastreImagenes, imagenElegida, moverImagenA, moverImagenAnterior, moverImagenSiguiente, quitarImagen } from './editor/imagenes.js';
 import { actualizarFormulas, addMatchingPairRow, addMatchingDistractorRow, notaVariasCorrectas, addNewQuestion, changeQuestionType, deleteQuestionCard, generarRetroalimentacion, mejorarEnunciado, recoverSkippedQuestion, removeMatchingPairRow } from './editor/tarjetas.js';
 import { estado, suscribir } from './estado.js';
+import { cambiarRangoCompartido, crearCompartido, quitarCompartido, registrarCompartidos } from './editor/compartido.js';
+import { bajarGrupo, bajarPregunta, duplicarTarjeta, subirGrupo, subirPregunta } from './editor/orden.js';
 import { abrirAsistente, abrirBiblioteca, abrirMateria, abrirSinMateria, abrirTodos, bibliotecaRaiz, borrarElegidos, borrarExamenDeLista, descargarExamen, editarMateria, elegirTodos, escapeEnBiblioteca, guardarOrganizar, iniciarBiblioteca, marcarExamen, moverElegidos, nuevaMateria, nuevoExamenEnMateria, organizarExamen, quitarSeleccion, reabrirExamen } from './biblioteca.js';
 import { exportarPdfHistorial } from './historial.js';
 import { iniciarMaterias } from './materias.js';
@@ -57,7 +59,7 @@ suscribir(() => {
 // ACCIONES[nombre] con: data-arg (texto), data-arg-n (número), data-este (el
 // propio elemento) o nada. Solo las funciones de esta lista: un atributo
 // inyectado no puede llamar a otra cosa.
-const ACCIONES = { iniciarTour, borrarPerfilEnc, duplicarPerfilEnc, editarPerfilEnc, nuevoPerfilEnc, predeterminadoPerfilEnc, borrarElegidos, elegirTodos, abrirAsistente, abrirBiblioteca, abrirMateria, abrirSinMateria, abrirTodos, bibliotecaRaiz, borrarExamenDeLista, descargarExamen, editarMateria, guardarOrganizar, marcarExamen, moverElegidos, nuevaMateria, nuevoExamenEnMateria, organizarExamen, quitarSeleccion, reabrirExamen, abrirExportarPdf, exportarPdfHistorial, sugerirRespuesta, verOriginal, alternarTarjeta, alternarTodas, addMatchingPairRow, addMatchingDistractorRow, notaVariasCorrectas, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, changeQuestionType, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDiscardReview, deleteQuestionCard, generarRetroalimentacion, generateXml, jumpToNextFlagged, openHelp, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, resetAll, selectFilter, setPointsToolMode, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
+const ACCIONES = { bajarGrupo, bajarPregunta, duplicarTarjeta, subirGrupo, subirPregunta, cambiarRangoCompartido, crearCompartido, quitarCompartido, iniciarTour, borrarPerfilEnc, duplicarPerfilEnc, editarPerfilEnc, nuevoPerfilEnc, predeterminadoPerfilEnc, borrarElegidos, elegirTodos, abrirAsistente, abrirBiblioteca, abrirMateria, abrirSinMateria, abrirTodos, bibliotecaRaiz, borrarExamenDeLista, descargarExamen, editarMateria, guardarOrganizar, marcarExamen, moverElegidos, nuevaMateria, nuevoExamenEnMateria, organizarExamen, quitarSeleccion, reabrirExamen, abrirExportarPdf, exportarPdfHistorial, sugerirRespuesta, verOriginal, alternarTarjeta, alternarTodas, addMatchingPairRow, addMatchingDistractorRow, notaVariasCorrectas, agregarImagen, imagenElegida, mejorarEnunciado, moverImagenA, moverImagenAnterior, moverImagenSiguiente, addNewQuestion, applyPointsDistribution, changeQuestionType, clozeAddOption, clozeInsertBlank, clozeRemoveBlank, clozeRemoveOption, clozeToggleMulti, confirmDiscardReview, deleteQuestionCard, generarRetroalimentacion, generateXml, jumpToNextFlagged, openHelp, recoverSkippedQuestion, quitarImagen, removeMatchingPairRow, resetAll, selectFilter, setPointsToolMode, toggleAddQuestionMenu, toggleFilterMenu, togglePointsToolMenu, toggleRailGrid };
 
 function _ejecutarAccion(el, nombre) {
   if (!Object.hasOwn(ACCIONES, nombre)) return;
@@ -208,6 +210,7 @@ window.addEventListener('pagehide', () => {
 });
 
 iniciarArrastreImagenes(document.getElementById('editor-questions-container'));
+registrarCompartidos(document.getElementById('editor-questions-container'));
 registrarPlegado(document.getElementById('editor-questions-container'));
 iniciarOriginal();
 iniciarExportarPdf();

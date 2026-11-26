@@ -21,6 +21,52 @@ export const RENGLONES_MAX = 24;
 export const TAM_MIN = 7;
 export const TAM_MAX = 20;
 export const ROTULOS = ['facilitador', 'docente', 'profesor'];
+/** Las partes del examen: un tipo de pregunta cada una (mismo nombre que en backend/plan_impreso.py). */
+export const TIPOS_PARTE = ['multichoice', 'truefalse', 'matching', 'cloze', 'essay', 'shortanswer', 'numerical'];
+export const NOMBRES_PARTE = {
+  multichoice: 'SELECCIÓN MÚLTIPLE', truefalse: 'VERDADERO O FALSO', matching: 'EMPAREJAMIENTO', cloze: 'COMPLETAR',
+  essay: 'DESARROLLO', shortanswer: 'RESPUESTA CORTA', numerical: 'RESPUESTA NUMÉRICA',
+};
+export const LIMITE_NOMBRE_PARTE = 80;
+export const LIMITE_INDICACION_PARTE = 500;
+
+/** Un orden de partes válido: tipos conocidos, sin repetir. */
+export function ordenDePartesValido(v) {
+  return Array.isArray(v) ? [...new Set(v.filter(t => TIPOS_PARTE.includes(t)))] : [];
+}
+
+/** { tipo: { nombre, indicacion } } solo con tipos conocidos y con lo que de verdad hay escrito. */
+export function textosDePartesValidos(v) {
+  const out = {};
+  if (!v || typeof v !== 'object') return out;
+  for (const t of TIPOS_PARTE) {
+    const x = Object.hasOwn(v, t) ? v[t] : null;
+    if (!x || typeof x !== 'object') continue;
+    const nombre = limpiarCampo(x.nombre, LIMITE_NOMBRE_PARTE);
+    const indicacion = limpiarCampo(x.indicacion, LIMITE_INDICACION_PARTE);
+    if (nombre || indicacion) out[t] = { nombre, indicacion };
+  }
+  return out;
+}
+
+/**
+ * Los tipos presentes en el examen en el orden en que se imprimen las partes: primero los del orden pedido y
+ * detrás los demás, como aparecen (la misma regla que el servidor).
+ */
+export function tiposEnOrden(questions, orden = []) {
+  const presentes = [...new Set((questions || []).map(q => q.type))];
+  const lugar = t => (orden.includes(t) ? orden.indexOf(t) : orden.length);
+  return presentes.map((t, i) => ({ t, i })).sort((a, b) => lugar(a.t) - lugar(b.t) || a.i - b.i).map(x => x.t);
+}
+
+/** El orden que resulta de mover un tipo (dir -1 o 1) entre los presentes; los ausentes se recuerdan detrás. */
+export function moverParte(presentes, orden, tipo, dir) {
+  const i = presentes.indexOf(tipo), j = i + dir;
+  if (i < 0 || j < 0 || j >= presentes.length) return orden;
+  const nuevos = [...presentes];
+  [nuevos[i], nuevos[j]] = [nuevos[j], nuevos[i]];
+  return [...nuevos, ...orden.filter(t => !nuevos.includes(t))];
+}
 /** Cómo se llama cada opción (para los resúmenes). */
 export const ROTULOS_NOMBRES = { facilitador: 'FACILITADOR', docente: 'DOCENTE', profesor: 'PROFESOR' };
 export const PAPELES_NOMBRES = { carta: 'Carta', legal: 'Legal', a4: 'A4' };
@@ -29,11 +75,12 @@ export const FUENTES_NOMBRES = { dejavu: 'DejaVu Sans', arial: 'Arial', times: '
 export const ACTIVIDADES = ['Parcial', 'Quiz', 'Prueba corta', 'Examen final', 'Taller', 'Evaluación diagnóstica'];
 
 /** Lo que se recuerda entre exámenes (no la fecha: cambia cada vez). */
-const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'formato', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas', 'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'puntos_enteros', 'renglones_ensayo'];
+const GUARDADOS = ['institucion', 'facultad', 'departamento', 'rotulo_docente', 'logo_izquierdo', 'logo_derecho', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones', 'contenido', 'formato', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas', 'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'puntos_enteros', 'renglones_ensayo', 'procedimiento_numerica', 'procedimiento_corta', 'renglones_procedimiento', 'orden_partes', 'textos_partes'];
 
 const VACIOS = {
   institucion: '', facultad: '', departamento: '', rotulo_docente: 'facilitador', logo_izquierdo: '', logo_derecho: '', materia: '', docente: '', actividad: '', grupo: '', fecha: '', instrucciones: '', version: '',
   contenido: 'examen_y_clave', formato: 'pdf', papel: 'carta', margenes: 'moderados', fuente_titulos: 'dejavu', tam_titulos: 11, fuente_preguntas: 'dejavu', tam_preguntas: 10, campos_estudiante: true, partes: true, mezclar: true, puntos_por_pregunta: true, puntos_enteros: true, renglones_ensayo: 6,
+  procedimiento_numerica: false, procedimiento_corta: false, renglones_procedimiento: 4,
 };
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -54,7 +101,8 @@ export function enteroEn(v, min, max) {
 /** Lo que guarda un perfil de encabezado: el encabezado y el formato, NO lo propio de cada examen. */
 export const PERFIL_CAMPOS = ['institucion', 'facultad', 'departamento', 'docente', 'rotulo_docente', 'instrucciones',
   'logo_izquierdo', 'logo_derecho', 'papel', 'margenes', 'fuente_titulos', 'tam_titulos', 'fuente_preguntas',
-  'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'puntos_enteros', 'renglones_ensayo'];
+  'tam_preguntas', 'campos_estudiante', 'partes', 'mezclar', 'puntos_por_pregunta', 'puntos_enteros', 'renglones_ensayo',
+  'procedimiento_numerica', 'procedimiento_corta', 'renglones_procedimiento', 'orden_partes', 'textos_partes'];
 
 /** Los datos de un perfil (validados campo por campo; lo que falte toma su valor de siempre). */
 export function datosDePerfil(datos) {
@@ -64,7 +112,14 @@ export function datosDePerfil(datos) {
 
 /** Los datos del diálogo con un perfil aplicado: materia, actividad, grupo, fecha y «qué incluir» no cambian. */
 export function aplicarPerfil(actuales, perfil) {
-  return { ...actuales, ...datosDePerfil(perfil) };
+  const datos = datosDePerfil(perfil);
+  // Los perfiles de antes no hablaban del procedimiento ni de las partes: no deben borrar lo que haya puesto.
+  for (const k of ['procedimiento_numerica', 'procedimiento_corta', 'renglones_procedimiento']) {
+    if (!perfil || perfil[k] === undefined) delete datos[k];
+  }
+  if (!datos.orden_partes.length) delete datos.orden_partes;
+  if (!Object.keys(datos.textos_partes).length) delete datos.textos_partes;
+  return { ...actuales, ...datos };
 }
 
 /** El nombre de un perfil: una línea, sin «/» ni «\», de 1 a 60 caracteres; '' si no sirve. */
@@ -108,7 +163,7 @@ export function fechaLegible(iso) {
  * por campo (lo guardado pudo editarse a mano o venir de otra versión).
  */
 export function valoresIniciales(guardado) {
-  const out = { ...VACIOS };
+  const out = { ...VACIOS, orden_partes: [], textos_partes: {} };
   if (!guardado || typeof guardado !== 'object') return out;
   for (const k of ['institucion', 'facultad', 'departamento', 'materia', 'docente', 'actividad', 'grupo']) {
     if (typeof guardado[k] === 'string') out[k] = limpiarCampo(guardado[k]);
@@ -137,6 +192,13 @@ export function valoresIniciales(guardado) {
   if (typeof guardado.puntos_enteros === 'boolean') out.puntos_enteros = guardado.puntos_enteros;   // sin dato (perfil viejo): activada
   const r = enteroEn(guardado.renglones_ensayo, RENGLONES_MIN, RENGLONES_MAX);
   if (r !== null) out.renglones_ensayo = r;
+  for (const k of ['procedimiento_numerica', 'procedimiento_corta']) {
+    if (typeof guardado[k] === 'boolean') out[k] = guardado[k];
+  }
+  const rp = enteroEn(guardado.renglones_procedimiento, RENGLONES_MIN, RENGLONES_MAX);
+  if (rp !== null) out.renglones_procedimiento = rp;
+  out.orden_partes = ordenDePartesValido(guardado.orden_partes);
+  out.textos_partes = textosDePartesValidos(guardado.textos_partes);
   return out;
 }
 

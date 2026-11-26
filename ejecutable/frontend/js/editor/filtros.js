@@ -2,6 +2,7 @@
  * filtros.js — filtro por tipo de pregunta y «Revisar primero».
  */
 import { buildReviewRail, refreshQuestionIssues } from './panel.js';
+import { actualizarVisibilidadCompartidos } from './compartido.js';
 import { _closeCollapsiblePanel, togglePanel } from './paneles.js';
 import { FILTRO_PROBLEMAS, FILTRO_REVISAR, coincideConFiltro } from './procedencia.js';
 import { QUESTION_TYPE_DEFS, QUESTION_TYPE_LABEL_MAP, autoGrowTextarea } from './tarjetas.js';
@@ -86,6 +87,10 @@ function filterQuestionsByType(type) {
     card.style.display = show ? '' : 'none';
     if (show && wasHidden) card.querySelectorAll('textarea').forEach(autoGrowTextarea);
   });
+  actualizarVisibilidadCompartidos();
+  // Con un filtro puesto las vecinas pueden estar ocultas: las flechas de mover se esconden.
+  const contenedor = document.getElementById('editor-questions-container');
+  if (contenedor) contenedor.dataset.filtrado = type === 'all' ? '' : '1';
   // El botón plegado muestra el filtro activo (ej. "Ensayo (3)").
   const labelEl = document.getElementById('filter-current-label');
   if (labelEl) labelEl.textContent = label;

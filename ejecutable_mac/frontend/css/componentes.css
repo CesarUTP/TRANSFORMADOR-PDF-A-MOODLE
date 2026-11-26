@@ -1117,6 +1117,16 @@ strong.txt-fuerte { color: var(--color-text); }
 .pdf-logo.con-logo .pdf-logo-vista img { display: block; }
 .pdf-logo-boton { cursor: pointer; }
 .pdf-pista { margin-top: 2px; }
+/* «Partes del examen»: una fila por parte, con su número, su nombre, las flechas y su indicación. */
+.partes-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.parte-fila { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.parte-cab { display: flex; align-items: center; gap: 8px; }
+.parte-num { min-width: 28px; font-weight: 800; color: var(--color-text-muted); }
+.parte-cab .parte-nombre { flex: 1; min-width: 0; margin: 0; }
+.parte-cab .btn-icon:disabled { opacity: 0.35; cursor: default; }
+.parte-fila .parte-indicacion { resize: vertical; }
+.parte-copiar { align-self: flex-start; font-size: var(--text-sm); }
+.parte-copiar[hidden] { display: none; }
 .pdf-form .field-error { margin-top: 0; }
 .pdf-form .field-error[hidden] { display: none; }
 @media (max-width: 560px) { .pdf-logos { grid-template-columns: 1fr; } }

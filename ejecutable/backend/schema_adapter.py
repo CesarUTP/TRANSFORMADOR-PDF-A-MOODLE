@@ -378,6 +378,45 @@ def rellenar_claves_desde_tabla(payload: dict, tabla: dict) -> int:
     return rellenadas
 
 
+MAX_CONTEXTO = 20_000
+
+
+def _compartidos(raw_qs: List[dict]) -> List[Tuple[str, bool]]:
+    """Por cada pregunta, (su enunciado compartido, ¿es la única de su grupo?). El modelo lo escribe UNA vez, en la
+    primera pregunta del grupo («enunciado_compartido»), y marca las siguientes («sigue_enunciado_compartido»)."""
+    textos: List[str] = []
+    vigente = ""
+    for i, q in enumerate(raw_qs):
+        propio = _text(q.get("enunciado_compartido"))[:MAX_CONTEXTO]
+        if propio:
+            vigente = propio
+        elif q.get("sigue_enunciado_compartido") is not True:
+            # Una pregunta que recuperó un reintento no sabe de grupos: no corta el grupo si la que sigue continúa.
+            siguiente = next((o for o in raw_qs[i + 1:] if not o.get("_rescatada")), None)
+            if not (q.get("_rescatada") and siguiente is not None and siguiente.get("sigue_enunciado_compartido") is True):
+                vigente = ""
+        textos.append(vigente)
+    return [(t, bool(t) and not (i > 0 and textos[i - 1] == t) and not (i + 1 < len(textos) and textos[i + 1] == t))
+            for i, t in enumerate(textos)]
+
+
+def _poner_contexto(p: Pregunta, contexto: str, solo: bool) -> None:
+    """Anota el enunciado compartido. Si el modelo lo repitió al principio del enunciado, se quita de allí; y si
+    ninguna otra pregunta lo comparte, no es un grupo: vuelve a ser parte del enunciado (no se pierde nada)."""
+    es_cloze = p.tipo == "cloze"
+    texto = (p.text if es_cloze else p.stem) or ""
+    if texto.startswith(contexto) and texto[len(contexto):].strip():
+        texto = texto[len(contexto):].strip()
+    if solo:
+        texto = f"{contexto}\n{texto}".strip()
+    else:
+        p.contexto = contexto
+    if es_cloze:
+        p.text = texto
+    else:
+        p.stem = texto
+
+
 def adapt(payload: dict) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]]]:
     """
     Convierte la respuesta del modelo en (questions, answer_key).
@@ -386,6 +425,7 @@ def adapt(payload: dict) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]
     """
     raw_qs = sorted(payload.get("preguntas") or [], key=lambda q: (q.get("orden") or 0))
     preguntas: List[Pregunta] = []
+    compartidos = _compartidos(raw_qs)
 
     for num, q in enumerate(raw_qs, start=1):
         qtype = q.get("tipo")
@@ -420,6 +460,9 @@ def adapt(payload: dict) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]
         # La pregunta pasa por el modelo tipado (modelo.py): los campos que
         # se agregan abajo son atributos, y al final se vuelve al dict de siempre.
         p = Pregunta.desde_dict({"num": num, "type": qtype, "data": data})
+        contexto, solo = compartidos[num - 1]
+        if contexto:
+            _poner_contexto(p, contexto, solo)
 
         # REGLA 11: imagen ilegible y sin respuesta → el validador reconoce
         # este marcador y da el motivo específico ("revisa la imagen a

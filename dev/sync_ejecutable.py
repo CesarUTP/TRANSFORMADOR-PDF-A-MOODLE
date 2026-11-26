@@ -122,6 +122,7 @@ PRUEBAS = (
     "test_exportar_docx.py",
     "test_materias.py",
     "test_versiones.py",
+    "test_enunciado_compartido.py",
     "comprobar_dependencias.py",
 )
 

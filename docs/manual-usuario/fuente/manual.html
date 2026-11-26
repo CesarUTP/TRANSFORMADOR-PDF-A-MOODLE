@@ -236,6 +236,10 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <figure class="fig" style="margin:0;"><img src="{{IMG:05b-opciones-de-mas.png}}" alt="Emparejamiento con dos opciones de más"><figcaption><b>Opciones de más.</b> (1) Filas sin concepto en la Columna A. (2) El botón que las agrega.</figcaption></figure>
     <figure class="fig" style="margin:0;"><img src="{{IMG:05c-avisos.png}}" alt="Pregunta numérica con el aviso de separador de miles"><figcaption><b>Un aviso de la tarjeta.</b> (1) El aviso ámbar. (2) La nota de que Moodle compara el número exacto.</figcaption></figure>
   </div>
+  <h4>Mover y duplicar preguntas</h4>
+  <p>Las flechas de cada pregunta la suben o la bajan; el botón de al lado la duplica, con su respuesta y sus puntos, justo después (revisa el total). Las preguntas de un enunciado compartido se mueven dentro de su grupo, y el grupo completo con las flechas de su bloque. Con un filtro puesto, las flechas se esconden.</p>
+  <h4>Un enunciado para varias preguntas</h4>
+  <p>Cuando de un mismo caso, texto o situación salen varias preguntas («del siguiente enunciado responda las preguntas 1 a 5»), Cátedra intenta reconocerlo al convertir; revísalo. También puedes crearlo: pulsa <span class="btn">Enunciado compartido</span> en la primera pregunta, escribe el texto y elige <i>de la pregunta … a la …</i>. No escribas los números: se agregan solos. En el PDF y el Word sale <b>una sola vez</b> antes del grupo; en Moodle va <b>dentro de cada pregunta</b>, para que se entienda aunque se mezclen.</p>
   <h4>Si te equivocas</h4>
   <ul>
     <li><b>Deshacer:</b> al borrar una pregunta o aplicar un reparto de puntos aparece un aviso abajo con el botón <span class="btn">Deshacer</span> (dura unos segundos).</li>
@@ -334,9 +338,11 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <li><b>Papel:</b> Carta, Legal o A4. <b>Márgenes:</b> como los de Word (normales, estrechos, moderados o anchos).</li>
     <li><b>Tipo de letra y tamaño</b> por separado para los títulos y para las preguntas (DejaVu Sans, Arial o Times New Roman; de 7 a 20 pt).</li>
     <li><b>Mezclar el orden de las opciones:</b> en los documentos la clave suele ir en orden (1-a, 2-b, 3-c…) y en papel eso delata las respuestas. Cátedra baraja las opciones y la Columna B de los emparejamientos; la clave usa siempre las letras impresas.</li>
-    <li><b>Dividir el examen en partes:</b> agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con su indicación y su valor.</li>
-    <li><b>Mostrar cuánto vale cada pregunta</b> (o solo el valor de cada parte), cuadro de nombre y calificación, y <b>renglones por ensayo</b>.</li>
+    <li><b>Dividir el examen en partes:</b> agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con su indicación y su valor. Si un enunciado compartido tiene preguntas de varios tipos, se repite en cada parte (Cátedra lo avisa).</li>
+    <li><b>Mostrar cuánto vale cada pregunta</b> (o solo el valor de cada parte), cuadro de nombre y calificación, y <b>alto del recuadro de ensayo</b> (una celda en blanco con marco).</li>
     <li><b>Puntos enteros:</b> el PDF usa solo números enteros (7 pts en vez de 6,67), con el mismo total, para calificar sin redondeos. Está activada de fábrica; ve «Puntos enteros en el PDF» más abajo.</li>
+    <li><b>Espacio para el procedimiento:</b> un recuadro en blanco con marco antes de la respuesta, en las preguntas numéricas, en las de respuesta corta o en ambas.</li>
+    <li><b>Partes del examen:</b> cambia el orden de las partes y, si quieres, escribe tu propio nombre e indicación para cada una; lo que dejes vacío se escribe solo, y el número y el valor son automáticos.</li>
   </ul>
   <h4>El Word</h4>
   <p>Con <b>Word (.docx)</b> recibes el mismo examen en un archivo que puedes <b>editar</b> antes de imprimir: cambiar un texto, quitar una pregunta, ajustar el formato. Dice <b>exactamente lo mismo que el PDF</b>: las mismas preguntas, el mismo orden de las opciones, las mismas letras y la misma clave, porque los dos salen del mismo plan.</p>
@@ -484,7 +490,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
     <tr><td>Páginas de un PDF escaneado que se leen como imagen</td><td>15</td></tr>
     <tr><td>Tamaño del archivo que se puede procesar</td><td>unos 40 MB</td></tr>
     <tr><td>Tamaño de letra del PDF</td><td>de 7 a 20 pt</td></tr>
-    <tr><td>Renglones por pregunta de ensayo (PDF)</td><td>de 2 a 24</td></tr></table>
+    <tr><td>Alto del recuadro de ensayo, en renglones</td><td>de 2 a 24</td></tr></table>
 </section>
 
 <section style="break-before:page;">

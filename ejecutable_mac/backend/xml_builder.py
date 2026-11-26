@@ -25,7 +25,7 @@ from answer_matching import OPCION_POSICIONAL, RespuestaNoResuelta, find_cloze_b
 from modelo import (
     Clave, Hueco, HuecoClave, Pregunta, PreguntaCloze, PreguntaEssay, PreguntaMatching, PreguntaMultichoice,
     PreguntaNumerical, PreguntaShortanswer, PreguntaTruefalse, huecos_de_cloze,
-    preguntas_desde_dicts,
+    preguntas_desde_dicts, texto_compartido,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,6 +72,10 @@ _ESCAPE_CLOZE = {"\\": "&#92;", "~": "&#126;", "#": "\\#", "}": "\\}"}
 
 def _sin_control(text: str) -> str:
     return _CONTROL_INVALIDO.sub("", text)
+
+
+# La clase del bloque HTML con el enunciado compartido.
+CLASE_CONTEXTO = "catedra-enunciado-compartido"
 
 
 def esc(text: str) -> str:
@@ -328,6 +332,14 @@ def _questiontext(html_text: str, p: Pregunta, name: str) -> List[str]:
     src="@@PLUGINFILE@@/nombre"> en el texto y el archivo en base64 dentro
     de <questiontext> (<file ... encoding="base64">). Sus nombres y
     contenido ya vienen validados (validator.py → imagenes.errores_imagenes)."""
+    contexto = texto_compartido(p)
+    if contexto:
+        # El enunciado compartido va DENTRO de cada pregunta del grupo: así se entiende aunque Moodle las mezcle
+        # o elija al azar. La clase permite recuperarlo al volver a importar el XML (importar_xml.py).
+        bloque = texto_html(contexto)
+        if isinstance(p, PreguntaCloze):
+            bloque = bloque.replace("{", "&#123;")     # una «{1:MC:…}» en el texto no es un espacio de completar
+        html_text = f'<div class="{CLASE_CONTEXTO}"><p>{bloque}</p></div>{html_text}'
     imagenes = p.images or []
     html_imgs = "".join(
         f'<p><img src="@@PLUGINFILE@@/{_campo(im.name, "name")}" alt="{esc("Imagen de " + name)}"></p>'

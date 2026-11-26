@@ -56,6 +56,12 @@ def _s(v: Any, limite: int = 4000) -> str:
     return str(v if v is not None else "").strip()[:limite]
 
 
+def _lineas_compartido(data: Dict[str, Any]) -> List[str]:
+    """El enunciado compartido, si lo hay: sin él la IA no sabría de qué se pregunta."""
+    contexto = _s(data.get("contexto"))
+    return ["Enunciado compartido con otras preguntas: " + contexto] if contexto else []
+
+
 def texto_pregunta(q: Dict[str, Any], respuesta: Any) -> str:
     """La pregunta en texto legible para la IA."""
     tipo = q.get("type")
@@ -63,6 +69,7 @@ def texto_pregunta(q: Dict[str, Any], respuesta: Any) -> str:
     r = respuesta.get("answer") if isinstance(respuesta, dict) else respuesta
     r = _s(r, 2000)
     lineas = [f"PREGUNTA ({_TIPO_ES.get(tipo, tipo)})"]
+    lineas += _lineas_compartido(data)
 
     if tipo == "cloze":
         lineas.append("Texto con espacios [letra: opciones]: " + _s(data.get("text")))
@@ -427,6 +434,7 @@ def _texto_sugerir(q: Dict[str, Any], respuesta: Any) -> str:
     tipo = q.get("type")
     data = q.get("data") or {}
     lineas = [f"PREGUNTA ({_TIPO_ES.get(tipo, tipo)})"]
+    lineas += _lineas_compartido(data)
     if tipo == "cloze":
         lineas.append("Texto con espacios [A], [B]…: " + re.sub(r"\[([A-Za-z]):[^\]]*\]", r"[\1]", _s(data.get("text"))))
         for h in _huecos_de(q, respuesta)[:20]:

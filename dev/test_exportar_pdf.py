@@ -36,6 +36,7 @@ import database  # noqa: E402
 
 database.get_db_path = lambda: TMP / "datos" / "data" / "exams_history.db"  # ANTES de importar main
 
+import docx  # noqa: E402
 import pdfplumber  # noqa: E402
 import pypdfium2 as pdfium  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -44,6 +45,7 @@ from reportlab.pdfbase.ttfonts import TTFontFile  # noqa: E402
 
 import xml_fidelity as xf  # noqa: E402  (apaga el logging)
 import test_xml_baseline as base  # noqa: E402
+import exportar_docx  # noqa: E402
 import exportar_pdf as ep  # noqa: E402
 import latex_texto as lt  # noqa: E402
 import main  # noqa: E402
@@ -465,7 +467,7 @@ with pdfplumber.open(io.BytesIO(rfa.pdf)) as d:
     ws2 = [w for pg in d.pages for w in pg.extract_words() if w["text"] in ("FACILITADOR:", "CALIFICACIÓN:")]
 ok(len(ws2) >= 2, "el facilitador y la calificación siguen en el encabezado con tamaños grandes")
 
-print("   Puntos por pregunta y renglones del ensayo")
+print("   Puntos por pregunta y recuadro del ensayo")
 pp = [mc(1, "PTS-MC", ["a", "b"], [0])[0], {"num": 2, "type": "truefalse", "data": {"stem": "PTS-TF"}}]
 pk = {1: {"type": "multichoice", "answer": "A"}, 2: {"type": "truefalse", "answer": "Verdadero"}}
 pp[0]["points"], pp[1]["points"] = 3, 2
@@ -479,13 +481,78 @@ ok("(3 pts)" in cl_ and "(2 pts)" in cl_, "la clave sí conserva el valor de cad
 fo = plano(texto_de(pdf_de(pp, pk, contenido="folleto_hoja_clave", puntos_por_pregunta=False).pdf).split("HOJA DE RESPUESTAS")[0])
 ok("(3 pts)" not in fo, "también el folleto")
 ens = [{"num": 1, "type": "essay", "data": {"stem": "RENG-ENSAYO"}}]
-def rayas(n_):
-    with pdfplumber.open(io.BytesIO(pdf_de(ens, {1: {"type": "essay", "answer": ""}}, contenido="solo_examen", renglones_ensayo=n_, campos_estudiante=False).pdf)) as d_:
-        return sum(1 for ln in d_.pages[0].lines if abs(ln["x1"] - ln["x0"]) > 200)
-ok(rayas(6) == 6 and rayas(3) == 3 and rayas(12) == 12, f"los renglones del ensayo son los que se piden ({rayas(3)}, {rayas(6)}, {rayas(12)})")
-with pdfplumber.open(io.BytesIO(pdf_de(ens, {1: {"type": "essay", "answer": ""}}, contenido="folleto_hoja_clave", renglones_ensayo=4, campos_estudiante=False).pdf)) as d_:
-    ok(sum(1 for pg in d_.pages for ln in pg.lines if abs(ln["x1"] - ln["x0"]) > 200 and pg.page_number == 2) == 4, "la hoja de respuestas usa el mismo número de renglones")
+def recuadros(n_, contenido="solo_examen", pagina=0):
+    """Los rectángulos anchos de una página: (alto en pt, ancho en pt) de cada celda de desarrollo."""
+    with pdfplumber.open(io.BytesIO(pdf_de(ens, {1: {"type": "essay", "answer": ""}}, contenido=contenido, renglones_ensayo=n_, campos_estudiante=False).pdf)) as d_:
+        pg = d_.pages[pagina]
+        return ([(round(r["height"]), round(r["width"])) for r in pg.rects if r["width"] > 200],
+                sum(1 for ln in pg.lines if abs(ln["x1"] - ln["x0"]) > 200))
+for n_ in (3, 6, 12):
+    cajas, rayas_ = recuadros(n_)
+    ok(len(cajas) == 1 and abs(cajas[0][0] - (n_ * 22 - 1)) <= 1 and rayas_ == 0, f"el ensayo es un recuadro de {n_} renglones de alto, sin rayas ({cajas})")
+cajas_h = recuadros(4, "folleto_hoja_clave", 1)[0]
+ok(len(cajas_h) == 1 and abs(cajas_h[0][0] - 87) <= 1, f"la hoja de respuestas lleva el mismo recuadro ({cajas_h})")
 ok(len(pdf_de(ens, {1: {"type": "essay", "answer": ""}}, renglones_ensayo=500).pdf) > 500, "un número absurdo se acota en vez de romper")
+
+print("   Recuadro para el procedimiento")
+proc_q = [{"num": 1, "type": "numerical", "data": {"stem": "PROC-NUM"}}, {"num": 2, "type": "shortanswer", "data": {"stem": "PROC-CORTA"}}]
+proc_k = {1: {"type": "numerical", "answer": "42"}, 2: {"type": "shortanswer", "answer": "malla"}}
+
+
+def cajas(**kw):
+    """Alto de cada recuadro ancho, página por página."""
+    kw.setdefault("campos_estudiante", False)
+    with pdfplumber.open(io.BytesIO(pdf_de(proc_q, proc_k, **kw).pdf)) as d_:
+        return [[round(r["height"]) for r in pg.rects if r["width"] > 200] for pg in d_.pages]
+
+
+ok(cajas(contenido="solo_examen") == [[]], "sin pedirlo no hay recuadro (como siempre)")
+ok(cajas(contenido="solo_examen", procedimiento_numerica=True) == [[87]], "en las numéricas, 4 renglones de alto")
+ok(cajas(contenido="solo_examen", procedimiento_numerica=True, procedimiento_corta=True, renglones_procedimiento=6) == [[131, 131]],
+   "en las dos y con el alto pedido")
+con_p = plano(texto_de(pdf_de(proc_q, proc_k, contenido="solo_examen", procedimiento_numerica=True).pdf))
+ok(con_p.count("Procedimiento:") == 1 and con_p.index("PROC-NUM") < con_p.index("Procedimiento:") < con_p.index("Respuesta:")
+   and "MUESTRE SU PROCEDIMIENTO" in con_p, "etiqueta, recuadro antes de la respuesta e indicación")
+hoja = cajas(contenido="folleto_hoja_clave", procedimiento_numerica=True, procedimiento_corta=True)
+ok(hoja == [[], [87, 87], []], f"folleto sin recuadro, la hoja con él y la clave sin él ({hoja})")
+ok(cajas(contenido="solo_clave", procedimiento_numerica=True) == [[]], "la clave sola no lleva recuadro")
+
+print("   Orden y textos de las partes")
+part_q = [mc(1, "PARTE-MC", ["a", "b"], [0])[0], {"num": 2, "type": "essay", "data": {"stem": "PARTE-ENSAYO"}},
+          {"num": 3, "type": "truefalse", "data": {"stem": "PARTE-VF"}}]
+part_k = {1: {"type": "multichoice", "answer": "A"}, 2: {"type": "essay", "answer": ""}, 3: {"type": "truefalse", "answer": "Falso"}}
+
+
+def examen_de(**kw):
+    return plano(texto_de(pdf_de(part_q, part_k, contenido="solo_examen", campos_estudiante=False, **kw).pdf))
+
+
+base_p = examen_de()
+ok(base_p.index("PARTE-MC") < base_p.index("PARTE-ENSAYO") < base_p.index("PARTE-VF"), "sin orden pedido, como aparecen")
+t_ = examen_de(orden_partes=["truefalse", "essay"])
+ok(t_.index("PARTE-VF") < t_.index("PARTE-ENSAYO") < t_.index("PARTE-MC") and "I PARTE: VERDADERO O FALSO" in t_
+   and "III PARTE: SELECCIÓN MÚLTIPLE" in t_, "el orden pedido manda; lo no pedido va detrás y se numera solo")
+ok("1. PARTE-VF" in t_ and "3. PARTE-MC" in t_, "las preguntas se numeran en el orden impreso")
+prop = {"essay": {"nombre": "Casos <prácticos> & más", "indicacion": "Responda con sus palabras, máximo 10 líneas."}}
+t_ = examen_de(textos_partes=prop)
+ok("II PARTE: Casos <prácticos> & más: Responda con sus palabras, máximo 10 líneas. VALOR:" in " ".join(t_.split()),
+   "nombre e indicación propios, tal como se escribieron, con su número y su valor")
+ok("MARQUE CON UNA X" in t_, "las demás partes siguen automáticas")
+ok("DESARROLLE" not in t_, "…y la propia reemplaza a la automática")
+fhc = plano(texto_de(pdf_de(part_q, part_k, contenido="folleto_hoja_clave", textos_partes=prop).pdf))
+fol, _, resto = fhc.partition("HOJA DE RESPUESTAS Escriba")
+ok(" ".join(fhc.split()).count("máximo 10 líneas") == 1 and "DENTRO DEL RECUADRO" in " ".join(fhc.split()),
+   "la indicación propia sale en el folleto; la hoja explica cómo rellenarla")
+ok(" ".join(fhc.split()).count("Casos <prácticos> & más") == 3, "el nombre propio sale en folleto, hoja y clave")
+ok(examen_de(partes=False, orden_partes=["truefalse"], textos_partes=prop) == examen_de(partes=False), "sin partes, nada de esto cambia el examen")
+auto = pdf_de(part_q, part_k, contenido="solo_examen", textos_partes=prop, orden_partes=["essay"]).partes_automaticas
+ok([a["tipo"] for a in auto] == ["essay", "multichoice", "truefalse"] and auto[0]["nombre"] == "DESARROLLO"
+   and auto[0]["indicacion"].startswith("DESARROLLE"), "se informan los textos automáticos, aunque haya propios")
+w_ = exportar_docx.generar_docx(part_q, part_k, 20, ep.DatosExamen(contenido="solo_examen", textos_partes=prop, orden_partes=["essay"],
+                                                                   campos_estudiante=False))
+wt = "\n".join(p.text for p in docx.Document(io.BytesIO(w_.docx)).paragraphs)
+ok("I PARTE: Casos <prácticos> & más: Responda con sus palabras" in wt and wt.index("PARTE-ENSAYO") < wt.index("PARTE-MC"),
+   "el Word dice lo mismo")
 
 print("5. Imágenes, fórmulas y texto raro")
 # ══════════════════════════════════════════════════════════════════════════
@@ -590,6 +657,21 @@ ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"tam_preguntas": 5}},
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"fuente_titulos": "times", "tam_titulos": 12.5, "fuente_preguntas": "arial", "tam_preguntas": 10}}, headers=H).status_code == 200, "tipo de letra y tamaños válidos: 200")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"renglones_ensayo": 1}}, headers=H).status_code == 422 and cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"renglones_ensayo": 99}}, headers=H).status_code == 422, "renglones fuera de 2 a 24: 422")
 ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"puntos_por_pregunta": False, "renglones_ensayo": 10}}, headers=H).status_code == 200, "sin puntos por pregunta y 10 renglones: 200")
+con_partes = {"orden_partes": ["essay"], "textos_partes": {"essay": {"nombre": "Casos"}}, "procedimiento_numerica": True}
+ok(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": con_partes}, headers=H).status_code == 200, "orden, textos y procedimiento: 200")
+malos = [{"orden_partes": ["otra"]}, {"orden_partes": ["essay", "essay"]}, {"textos_partes": {"otra": {}}},
+         {"textos_partes": {"essay": {"nombre": "x" * 81}}}, {"textos_partes": {"essay": {"indicacion": "x" * 501}}},
+         {"renglones_procedimiento": 99}]
+ok(all(cli.post("/api/exportar_pdf", json={**cuerpo, "datos": m}, headers=H).status_code == 422 for m in malos), "partes u opciones no válidas: 422")
+vp = cli.post("/api/vista_previa_pdf", json={**cuerpo, "datos": con_partes}, headers=H)
+sug = json.loads(vp.headers["x-pdf-partes"])
+ok(vp.status_code == 200 and sug and sug[0]["tipo"] == "essay" if any(q["type"] == "essay" for q in qs) else vp.status_code == 200 and sug,
+   "la vista previa informa los textos automáticos de cada parte")
+ok(cli.put("/api/perfiles_pdf/Con%20partes", json={"institucion": "U", **con_partes}, headers=H).status_code == 200
+   and next(p for p in cli.get("/api/perfiles_pdf", headers=H).json() if p["nombre"] == "Con partes")["datos"]["textos_partes"]["essay"]["nombre"] == "Casos",
+   "un perfil guarda el orden, los textos y el procedimiento")
+ok(cli.put("/api/perfiles_pdf/Malo", json={"orden_partes": ["otra"]}, headers=H).status_code == 422, "…y rechaza tipos que no existen")
+cli.delete("/api/perfiles_pdf/Con%20partes", headers=H)
 # Puntos enteros (2.7): el servidor NO redondea; si se pidieron enteros y llega un decimal, lo rechaza y dice cuáles.
 con_decimales = {**cuerpo, "questions": [{**q, "points": 6.67} for q in qs]}
 r_dec = cli.post("/api/exportar_pdf", json={**con_decimales, "datos": {"puntos_enteros": True}}, headers=H)

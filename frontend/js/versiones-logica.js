@@ -13,6 +13,7 @@
  */
 import { autoDistributePoints } from './puntos.js';
 import { repartirEnteros } from './puntos-pdf.js';
+import { tramosCompartidos } from './editor/compartido-logica.js';
 
 export const MAX_VERSIONES = 12;
 export const MODOS = ['aleatorio', 'por_tipo'];
@@ -205,13 +206,33 @@ export function preguntasRepetidas(versiones) {
   return [...veces.values()].filter(k => k > 1).length;
 }
 
+/**
+ * Las preguntas de un enunciado compartido se mueven JUNTAS y en su orden: [[num, num…], [num]…].
+ * El grupo es el del examen original (preguntas seguidas con el mismo texto), aunque la versión lleve solo algunas.
+ */
+function enBloques(nums, porNum) {
+  const bloques = [];
+  for (const n of nums) {
+    const { grupo } = porNum.get(n);
+    const ultimo = bloques[bloques.length - 1];
+    if (grupo !== null && ultimo && ultimo.grupo === grupo) ultimo.nums.push(n);
+    else bloques.push({ grupo, nums: [n] });
+  }
+  return bloques.map(b => b.nums);
+}
+
 /** El orden en que se imprimen las preguntas de una versión (el mismo en la vista previa y en el PDF). */
-export function numsEnOrden(version, questions, { partes = true, barajarPreguntas = true } = {}) {
-  const porNum = new Map(questions.map((q, i) => [q.num, { q, i }]));
+export function numsEnOrden(version, questions, { partes = true, barajarPreguntas = true, ordenPartes = [] } = {}) {
+  const grupoEn = new Map();
+  for (const t of tramosCompartidos(questions)) {
+    if (!t.texto.trim()) continue;
+    for (let i = t.desde; i <= t.hasta; i++) grupoEn.set(i, t.desde);
+  }
+  const porNum = new Map(questions.map((q, i) => [q.num, { q, i, grupo: grupoEn.has(i) ? grupoEn.get(i) : null }]));
   const propias = version.nums.filter(n => porNum.has(n)).sort((a, b) => porNum.get(a).i - porNum.get(b).i);
-  if (!barajarPreguntas) return propias;
   const azar = crearAzar(version.semilla);
-  if (!partes) return barajar(propias, azar);
+  const revolver = nums => (barajarPreguntas ? barajar(enBloques(nums, porNum), azar).flat() : nums);
+  if (!partes) return revolver(propias);
   // Con partes, cada tipo es una parte: el orden de las partes es el del examen y se baraja dentro de cada una.
   const tipos = [];
   const grupos = new Map();
@@ -220,7 +241,12 @@ export function numsEnOrden(version, questions, { partes = true, barajarPregunta
     if (!grupos.has(t)) { grupos.set(t, []); tipos.push(t); }
     grupos.get(t).push(n);
   }
-  return tipos.flatMap(t => barajar(grupos.get(t), azar));
+  // Se baraja en el orden del examen (así cambiar el orden de las partes no cambia el de sus preguntas).
+  const listos = new Map(tipos.map(t => [t, revolver(grupos.get(t))]));
+  if (!barajarPreguntas && !ordenPartes.length) return propias;
+  const lugar = t => (ordenPartes.includes(t) ? ordenPartes.indexOf(t) : ordenPartes.length);
+  const ordenados = [...tipos].sort((a, b) => lugar(a) - lugar(b));   // estable, como en el servidor
+  return ordenados.flatMap(t => listos.get(t));
 }
 
 // ── Puntos ─────────────────────────────────────────────────────────────────

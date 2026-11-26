@@ -216,6 +216,8 @@ RESPONSE_SCHEMA: dict = {
                         "enum": ["multichoice", "truefalse", "matching", "cloze",
                                  "essay", "shortanswer", "numerical"],
                     },
+                    "enunciado_compartido": {"type": "string"},
+                    "sigue_enunciado_compartido": {"type": "boolean"},
                     "enunciado": {"type": "string"},
                     "opciones": {"type": "array", "items": _OPCION_SCHEMA},
                     "items_izquierda": {"type": "array", "items": {"type": "string"}},
@@ -258,7 +260,7 @@ RESPONSE_SCHEMA: dict = {
                 # las opciones fuera y escribía la respuesta como texto
                 # libre ("c) Ambas"). Los que no aplican al tipo van vacíos
                 # ([] / "" / false / 0).
-                "required": ["orden", "tipo", "enunciado", "opciones", "items_izquierda",
+                "required": ["orden", "tipo", "enunciado_compartido", "sigue_enunciado_compartido", "enunciado", "opciones", "items_izquierda",
                              "items_derecha", "parejas", "huecos", "clave_texto", "respuesta_texto",
                              "retroalimentacion", "respuesta_marcada", "origen_tabla", "comparte_imagen_anterior", "pagina", "confianza"],
             },
@@ -318,6 +320,12 @@ Todos los campos van SIEMPRE presentes; los que no aplican al tipo de la
 pregunta van vacíos ([] en listas, "" en textos, false, 0).
 - orden: tu numeración limpia y secuencial (1, 2, 3...) — ver REGLA 7.
 - tipo: multichoice | truefalse | matching | cloze | essay | shortanswer | numerical.
+- enunciado_compartido / sigue_enunciado_compartido: SOLO cuando el
+  documento presenta un material común (un caso, un texto, una tabla, un
+  código o una situación) para DOS O MÁS preguntas seguidas, normalmente con
+  una instrucción como "Del siguiente enunciado responda las preguntas 1 a 5"
+  o "Lea el caso y conteste las siguientes preguntas". Ver REGLA 15. En todos
+  los demás casos: "" y false.
 - enunciado: el texto de la pregunta, COMPLETO (si el enunciado contiene su
   propia lista, ej. "Considera las afirmaciones: A. ... B. ...", esa lista
   es parte del enunciado y va entera aquí — no son las opciones).
@@ -468,6 +476,14 @@ REGLA 14 — VARIAS PREGUNTAS BAJO UN MISMO NÚMERO (preguntas encadenadas):
 - Ejemplo: "15. ¿Cuántos errores en total tiene el código? / 6 / Escribe cuáles son los errores" son DOS preguntas: una numerical ("¿Cuántos errores en total tiene el código?", respuesta 6) y una essay ("Escribe cuáles son los errores"). NO las unas en un solo enunciado.
 - Solo sepáralas cuando cada parte se responde por separado. Una pregunta con varias oraciones de contexto, o "Explica y da un ejemplo" (una sola respuesta), sigue siendo UNA pregunta.
 - Si la primera usa una imagen del documento (código, figura), las siguientes que hablan del mismo material también la necesitan: comparte_imagen_anterior=true en cada una de las siguientes.
+
+REGLA 15 — ENUNCIADO COMPARTIDO POR VARIAS PREGUNTAS:
+- En la PRIMERA pregunta del grupo, copia en "enunciado_compartido" el material común COMPLETO y literal, con sus saltos de línea. NO incluyas la frase que solo dice qué preguntas lo usan ni sus números ("responda de la pregunta 1 a la 5"): la aplicación la escribe con la numeración correcta. Si esa frase trae además condiciones o datos ("suponga que la tasa es 8 %"), esos sí se copian.
+- En las demás preguntas del mismo grupo: "enunciado_compartido" vacío y "sigue_enunciado_compartido": true.
+- "enunciado" lleva SOLO lo propio de cada pregunta: no repitas ahí el material común. Cada pregunta del grupo conserva su propio tipo, opciones y respuesta.
+- El grupo termina donde el documento lo indica (el rango de preguntas, o un cambio claro de tema): la siguiente pregunta lleva "" y false.
+- NO son enunciado compartido: los títulos de parte ni las indicaciones de cómo responder ("I PARTE: marque la respuesta correcta", valores en puntos), el encabezado del examen, ni el contexto que usa una sola pregunta (ese va entero en su "enunciado").
+- Ante la duda de si varias preguntas comparten un material, NO lo marques como compartido: deja el texto en el enunciado de la pregunta donde aparece.
 """
 
 
