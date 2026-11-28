@@ -49,9 +49,10 @@ export function aplicarSugerencia(card, tipo, sug) {
     const letras = new Set(sug.letras);
     card.querySelectorAll('.q-opt-correct').forEach(cb => { cb.checked = letras.has(cb.dataset.letter); });
   } else if (tipo === 'truefalse') {
-    const sel = card.querySelector('.q-ans');
-    if (!sel) return false;
-    sel.value = sug.respuesta;
+    const botones = [...card.querySelectorAll('.q-ans')];
+    const elegido = botones.find(b => b.value === sug.respuesta);
+    if (!elegido) return false;
+    elegido.checked = true;
   } else if (tipo === 'shortanswer' || tipo === 'numerical') {
     const campo = card.querySelector('.q-sa-answer, .q-nu-answer');
     if (!campo) return false;
@@ -133,7 +134,7 @@ export async function sugerirRespuesta(btn) {
   const card = btn.closest('.editor-card');
   if (!card || btn.disabled) return;
   if (enCurso >= MAX_SIMULTANEAS) {
-    showToast(`Ya hay ${MAX_SIMULTANEAS} peticiones a la IA en curso. Espera a que termine una y vuelve a pulsar.`, 'info');
+    showToast(`Ya hay ${MAX_SIMULTANEAS} peticiones a la IA en curso. Espera a que termine una y vuelve a intentarlo.`, 'info');
     return;
   }
   const pos = tarjetas().indexOf(card);

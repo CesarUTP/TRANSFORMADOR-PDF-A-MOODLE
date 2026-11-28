@@ -48,7 +48,7 @@ MAX_BYTES_IMAGEN = imagenes.MAX_BYTES_IMAGEN
 # Tipos de pregunta que no se pueden editar aquí, con el nombre que ve el docente.
 _NO_SOPORTADOS = {
     "description": "un texto informativo (no es una pregunta)",
-    "calculated": "calculada", "calculatedsimple": "calculada simple", "calculatedmulti": "calculada de opción múltiple",
+    "calculated": "calculada", "calculatedsimple": "calculada simple", "calculatedmulti": "calculada de selección múltiple",
     "ddwtos": "arrastrar y soltar sobre texto", "ddmarker": "arrastrar y soltar sobre una imagen",
     "ddimageortext": "arrastrar y soltar sobre una imagen", "gapselect": "seleccionar palabras que faltan",
     "ordering": "ordenar", "match": "emparejamiento antiguo", "multianswer_unsupported": "completar con respuestas de texto",
@@ -119,8 +119,9 @@ def _tipo_imagen(datos: bytes) -> Optional[str]:
     return None
 
 
-def _imagenes_de(qn, html_texto: str, num: int, avisos: List[str]) -> List[Dict[str, str]]:
-    """Las imágenes de <questiontext> (<file … encoding="base64">) que la pregunta usa, solo PNG y JPEG."""
+def _imagenes_de(qn, html_texto: str, num: int, avisos: List[str], del_enunciado: frozenset = frozenset()) -> List[Dict[str, Any]]:
+    """Las imágenes de <questiontext> (<file … encoding="base64">) que la pregunta usa, solo PNG y JPEG. Las que
+    estaban dentro del enunciado compartido (`del_enunciado`, sus nombres) quedan marcadas como tales."""
     archivos: Dict[str, bytes] = {}
     for f in qn.findall("questiontext/file"):
         nombre = f.get("name") or ""
@@ -148,7 +149,8 @@ def _imagenes_de(qn, html_texto: str, num: int, avisos: List[str]) -> List[Dict[
             break
         salida.append({"name": f"pregunta{num}-{len(salida) + 1}.{ext}",
                        "mime": "image/png" if ext == "png" else "image/jpeg",
-                       "b64": base64.b64encode(datos).decode("ascii")})
+                       "b64": base64.b64encode(datos).decode("ascii"),
+                       **({"compartida": True} if nombre in del_enunciado else {})})
     return salida
 
 
@@ -302,26 +304,30 @@ _CONTEXTO = re.compile(r'''^\s*<div\b[^>]*\bclass\s*=\s*["'][^"']*\b''' + CLASE_
                        + r'''\b[^"']*["'][^>]*>(.*?)</div>''', re.I | re.S)
 
 
-def _separar_contexto(html_texto: str) -> Tuple[str, str]:
-    """(enunciado compartido, el resto del HTML) de una pregunta que exportó esta aplicación; ("", todo) si no lo trae."""
+def _separar_contexto(html_texto: str) -> Tuple[str, str, frozenset]:
+    """(enunciado compartido, el resto del HTML, nombres de sus imágenes) de una pregunta que exportó esta
+    aplicación; ("", todo, ninguno) si no lo trae."""
     m = _CONTEXTO.match(html_texto)
     if not m:
-        return "", html_texto
-    return html_a_texto(m.group(1)), html_texto[m.end():]
+        return "", html_texto, frozenset()
+    return html_a_texto(m.group(1)), html_texto[m.end():], frozenset(re.findall(r"@@PLUGINFILE@@/([^\"'>\s]+)", m.group(1)))
 
 
 def _pregunta_a_payload(qn, num: int, avisos: List[str]):
     """(payload, imágenes) o (None, motivo) si el tipo no se puede editar."""
     tipo = qn.get("type") or ""
     fmt = _formato_de(qn, "questiontext")
-    contexto, crudo = _separar_contexto(_texto_de(qn, "questiontext"))
+    completo = _texto_de(qn, "questiontext")
+    contexto, crudo, del_enunciado = _separar_contexto(completo)
     enunciado = html_a_texto(crudo, fmt)
     base: Dict[str, Any] = {
         "orden": num, "enunciado": enunciado, "respuesta_marcada": True, "confianza": "alta",
         "retroalimentacion": html_a_texto(_texto_de(qn, "generalfeedback"), _formato_de(qn, "generalfeedback")),
         "enunciado_compartido": contexto,
     }
-    imgs = _imagenes_de(qn, crudo, num, avisos)
+    imgs = _imagenes_de(qn, completo, num, avisos, del_enunciado)
+    if any(im.get("compartida") for im in imgs):
+        base["_con_imagen_compartida"] = True      # su grupo se conserva aunque sea de una sola pregunta
 
     if tipo == "multichoice":
         resp = _respuestas(qn)
@@ -376,7 +382,7 @@ def _pregunta_a_payload(qn, num: int, avisos: List[str]):
             return None, ("completar con espacios de respuesta corta o numérica (aquí solo se editan los espacios con opciones)")
         texto, huecos = convertido
         if retro:
-            avisos.append(f"La pregunta {num} tiene retroalimentación propia en sus huecos (el texto después de «#»): "
+            avisos.append(f"La pregunta {num} tiene retroalimentación propia en sus espacios (el texto después de «#»): "
                           "no se importa.")
         return {**base, "tipo": "cloze", "enunciado": texto, "huecos": huecos}, imgs
     return None, _NO_SOPORTADOS.get(tipo, f"de un tipo que esta aplicación no edita («{tipo or 'desconocido'}»)")
@@ -440,6 +446,8 @@ def importar_xml(raw: bytes, filename: str = "importado.xml") -> Dict[str, Any]:
     for q in preguntas:
         if q["num"] in imgs_por_num:
             q["data"]["images"] = imgs_por_num[q["num"]]
+            if any(im.get("compartida") for im in imgs_por_num[q["num"]]):
+                q["data"].setdefault("contexto", "")      # un enunciado compartido que es solo una imagen
         if q["num"] in puntos:
             q["points"] = puntos[q["num"]]
     validas, omitidas = partition_questions(preguntas, clave)

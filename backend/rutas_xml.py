@@ -22,7 +22,7 @@ from database import save_conversion
 from validator import validate_questions
 from xml_builder import build_xml, compute_grades
 from estado_servidor import (
-    ERROR_LOG_PATH, _avisos_para_cabecera, _content_disposition, _detalle_tecnico, _nombre_nfc,
+    ERROR_LOG_PATH, _avisos_para_cabecera, _content_disposition, _detalle_tecnico, _nombre_base, _nombre_nfc,
 )
 
 logger = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any
         # servidor: se dice cuál y se pide corregirlo en la revisión.
         raise HTTPException(status_code=422, detail={
             "message": "Se detectaron errores de validación en las preguntas editadas:",
-            "errors": [f"Una respuesta no identifica UNA opción de la pregunta: {exc}. Corrígela en la revisión."],
+            "errors": [f"Una respuesta no identifica UNA opción de la pregunta: {exc}. Corrígela en el editor."],
         })
 
     # ── 8. Validate XML well-formedness ─────────────────────────────────
@@ -122,7 +122,7 @@ def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any
 
     # ── 8.5 Guardar en historial ─────────────────────────────────────────
     # Junto al XML se guardan las preguntas tal como quedaron en el editor,
-    # para que el docente pueda reabrir la revisión desde el Historial.
+    # para que el docente pueda reabrir la revisión desde Mis materias.
     editor_json = json.dumps(
         {"questions": req.questions, "answer_key": req.answer_key}, ensure_ascii=False
     )
@@ -142,8 +142,8 @@ def _generate_xml_sync(req: GenerateXmlRequest, parsed_answer_key: Dict[int, Any
     except (sqlite3.Error, OSError) as exc:
         logger.exception("No se pudo guardar '%s' en el historial", req.filename)
         aviso_historial = (
-            "El XML se generó bien, pero no se pudo guardar en el Historial de esta aplicación "
-            f"({type(exc).__name__}). Descárgalo ahora: no podrás reabrirlo desde el Historial."
+            "El XML se generó bien, pero no se pudo guardar en Mis materias "
+            f"({type(exc).__name__}). Descárgalo ahora: no podrás reabrirlo desde Mis materias."
         )
     return xml_content, stats, grades, aviso_historial, historial_id
 
@@ -163,8 +163,8 @@ async def api_generate_xml(req: GenerateXmlRequest):
         # ── 9. Return as downloadable file ──────────────────────────────
         # Un XML de Moodle importado y vuelto a generar no debe llamarse igual que el original
         # (se pisaría al guardarlo en la misma carpeta).
-        _origen = Path(req.filename)
-        output_filename = f"{_origen.stem}_editado.xml" if _origen.suffix.lower() == ".xml" else f"{_origen.stem}.xml"
+        base = _nombre_base(req.filename)
+        output_filename = f"{base}_editado.xml" if Path(req.filename).suffix.lower() == ".xml" else f"{base}.xml"
         stats_header = json.dumps({
             "multichoice": stats.multichoice,
             "truefalse":   stats.truefalse,
@@ -205,7 +205,7 @@ async def api_generate_xml(req: GenerateXmlRequest):
         # ahí salía como 500 sin cuerpo y sin rastro en ningún registro.
         logger.exception("Error inesperado generando el XML de '%s'", req.filename)
         raise HTTPException(status_code=500, detail=(
-            "Ocurrió un error inesperado al generar el XML. Tu revisión sigue intacta: vuelve a "
-            f"la revisión e inténtalo de nuevo. Si se repite, envía al desarrollador el registro "
+            "Ocurrió un error inesperado al generar el XML. Tu trabajo sigue intacto: vuelve "
+            f"al editor e inténtalo de nuevo. Si se repite, envía al desarrollador el registro "
             f"«{ERROR_LOG_PATH}». (Detalle técnico: {_detalle_tecnico(exc)})"
         ))

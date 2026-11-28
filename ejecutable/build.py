@@ -104,6 +104,10 @@ cmd = [
     "--collect-all", "reportlab",
     # ── exportar_docx.py (examen en Word, 2.8): python-docx lleva su plantilla en blanco como dato ──
     "--collect-all", "docx",
+    # Fórmulas dibujadas (backend/formulas.py): ziamath y latex2mathml leen fuentes y tablas propias.
+    "--collect-all", "ziamath",
+    "--collect-all", "ziafont",
+    "--collect-all", "latex2mathml",
     "--collect-all", "chardet",
     "--hidden-import", "random",
     "--hidden-import", "unicodedata",

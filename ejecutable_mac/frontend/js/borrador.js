@@ -71,9 +71,15 @@ export function guardarBorradorAhora() {
   if (!document.body.classList.contains('editor-active') || !estado.currentUploadMetadata) return;
   try {
     const cards = document.querySelectorAll('#editor-questions-container .editor-card');
+    const meta = estado.currentUploadMetadata;
+    // Un examen desde cero aún sin preguntas (ni un enunciado escrito) no reemplaza lo que hubiera guardado.
+    const nuevoEnunciado = estado.currentParseResult?.compartido_pendiente;
+    const escrito = !!(nuevoEnunciado?.texto?.trim() || nuevoEnunciado?.images?.length);
+    if (meta.desde_cero && !cards.length && !meta.en_borrador && !escrito) return;
+    meta.en_borrador = true;
     const parse = cards.length ? collectEditorData() : { questions: [], answer_key: {} };
     const prev = estado.currentParseResult || {};
-    ['skipped_questions', 'completeness_notice', 'color_marks_notice', 'escaneado', 'importado', 'original_id'].forEach(k => {
+    ['skipped_questions', 'completeness_notice', 'color_marks_notice', 'escaneado', 'importado', 'original_id', 'compartido_pendiente'].forEach(k => {
       if (prev[k]) parse[k] = prev[k];
     });
     // Las imágenes se separan del texto (ver CLAVE_IMG).
@@ -156,7 +162,13 @@ export function retomarBorrador() {
   abrirEnEditor(d.meta, d.parse);
 }
 
-/** Muestra u oculta el aviso "Tienes una revisión sin terminar" del paso 1. */
+/** { nombre, preguntas } de la revisión guardada, o null si no hay. */
+export function resumenDelBorrador() {
+  const d = _leer();
+  return d ? { nombre: d.meta.filename, preguntas: d.parse.questions.length } : null;
+}
+
+/** Muestra u oculta el aviso "Tienes una revisión sin terminar" de la pantalla de inicio. */
 export function mostrarAvisoBorrador() {
   const banner = document.getElementById('draft-banner');
   if (!banner) return;

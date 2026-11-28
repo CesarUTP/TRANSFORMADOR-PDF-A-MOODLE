@@ -247,7 +247,7 @@ def _aviso_paginas(total: int, enviadas: int, hay_texto: bool) -> Optional[str]:
                 "código en captura, imágenes o marcas de color.")
     return (f"El PDF tiene {total} páginas, pero solo las primeras {enviadas} se pudieron leer como imagen: "
             f"las preguntas de las páginas {enviadas + 1} a {total} NO están en el resultado. "
-            f"Divide el examen en partes de hasta {enviadas} páginas y conviértelas por separado.")
+            f"Divide la evaluación en partes de hasta {enviadas} páginas y conviértelas por separado.")
 
 
 def _adjuntar_original(resultado: Dict[str, Any], raw_bytes: bytes, filename: str) -> Dict[str, Any]:
@@ -567,7 +567,7 @@ def finalize_parse_response(
         raise HTTPException(
             status_code=422,
             detail={
-                "message": "Error de estructura en el examen:",
+                "message": "Error de estructura en la evaluación:",
                 "errors": [
                     "No se encontró la sección RESPUESTAS o no pudo parsearse ninguna respuesta.",
                     "Verifica que el archivo contenga la sección 'RESPUESTAS' con el formato correcto."
@@ -862,9 +862,9 @@ def _finalize_common(
         raise HTTPException(
             status_code=422,
             detail={
-                "message": "No se pudo procesar ninguna pregunta del examen:",
+                "message": "No se pudo procesar ninguna pregunta de la evaluación:",
                 "errors": [r for sq in skipped_questions for r in sq["reasons"]] or [
-                    "Ninguna pregunta del documento coincidió con un tipo soportado (opción múltiple, verdadero/falso, emparejamiento o completar)."
+                    "Ninguna pregunta del documento coincidió con un tipo soportado (selección múltiple, verdadero o falso, emparejamiento o completar)."
                 ],
             }
         )

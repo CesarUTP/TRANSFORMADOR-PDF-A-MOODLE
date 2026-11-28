@@ -194,16 +194,19 @@ _CAMPOS_IMAGEN = (
     Campo("name", "name", _es_str),
     Campo("mime", "mime", _es_str),
     Campo("b64", "b64", _es_str),
+    Campo("compartida", "compartida", _es_bool),
 )
 _IMAGEN_POR_CLAVE = {c.clave: c for c in _CAMPOS_IMAGEN}
 
 
 @dataclass
 class Imagen:
-    """Imagen de una pregunta (data["images"]): nombre, tipo y contenido base64."""
+    """Imagen de una pregunta (data["images"]): nombre, tipo y contenido base64. `compartida`: es del enunciado
+    compartido de su grupo (cada pregunta lleva su copia; va con el enunciado)."""
     name: Optional[str] = None
     mime: Optional[str] = None
     b64: Optional[str] = None
+    compartida: Optional[bool] = None
     extra: Dict[str, Any] = field(default_factory=dict)
     _orden: List[str] = field(default_factory=list, repr=False, compare=False)
 
@@ -654,18 +657,27 @@ def texto_compartido(p: Pregunta) -> str:
     return (p.contexto or "").strip()
 
 
+def imagenes_compartidas(p: Pregunta) -> List[Imagen]:
+    """Las imágenes del enunciado compartido que lleva la pregunta (las marcan el editor y la importación)."""
+    return [im for im in p.images or [] if im.compartida]
+
+
 def tramos_compartidos(preguntas: List[Pregunta]) -> List[Tuple[int, int, str]]:
     """[(primero, siguiente al último, texto)] de cada grupo de preguntas SEGUIDAS con el mismo enunciado
-    compartido, en el orden de la lista. Las que no tienen ninguno no aparecen."""
+    compartido (el mismo texto y las mismas imágenes), en el orden de la lista. Las que no tienen ninguno no
+    aparecen; un enunciado puede ser solo una imagen (texto "")."""
+    def clave(p: Pregunta) -> tuple:
+        return (texto_compartido(p), tuple(im.b64 for im in imagenes_compartidas(p)))
+
     out: List[Tuple[int, int, str]] = []
     i = 0
     while i < len(preguntas):
-        texto = texto_compartido(preguntas[i])
+        actual = clave(preguntas[i])
         j = i + 1
-        if texto:
-            while j < len(preguntas) and texto_compartido(preguntas[j]) == texto:
+        if any(actual):
+            while j < len(preguntas) and clave(preguntas[j]) == actual:
                 j += 1
-            out.append((i, j, texto))
+            out.append((i, j, actual[0]))
         i = j
     return out
 

@@ -104,13 +104,13 @@ def startup_event():
     # registro; las pantallas del historial y el guardado avisan por su lado.
     try:
         if init_db() is False:
-            logger.error("No se pudo preparar la base del historial en %s; la app arranca sin historial.", get_db_path())
+            logger.error("No se pudo preparar la base del historial en %s; Cátedra arranca sin historial.", get_db_path())
     except Exception:  # noqa: BLE001
-        logger.exception("No se pudo preparar la base del historial; la app arranca sin historial.")
+        logger.exception("No se pudo preparar la base del historial; Cátedra arranca sin historial.")
     if not seguridad.EN_LAUNCHER:
         # Arrancado a mano (uvicorn, ver README): sin el token en la URL la
         # interfaz no puede usar la API.
-        print(f"\n  Abre la app en: http://127.0.0.1:{SERVER_PORT}/#t={seguridad.TOKEN}\n"
+        print(f"\n  Abre Cátedra en: http://127.0.0.1:{SERVER_PORT}/#t={seguridad.TOKEN}\n"
               "  (si arrancaste uvicorn con otro --port, cambia el número)\n", flush=True)
 
 

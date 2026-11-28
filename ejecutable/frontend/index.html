@@ -44,7 +44,7 @@
 
       <!-- Action Navigation -->
       <nav class="header-nav" aria-label="Navegación principal">
-        <button type="button" id="btn-materias" class="btn-icon-text" aria-label="Abrir Mis materias: tus exámenes convertidos, ordenados por materia" title="Mis materias">
+        <button type="button" id="btn-materias" class="btn-icon-text" aria-label="Abrir Mis materias: tus evaluaciones convertidas, ordenadas por materia" title="Mis materias">
           <i data-lucide="library" class="ico-16"></i>
           <span>Mis materias</span>
         </button>
@@ -52,7 +52,7 @@
           <i data-lucide="book-open" class="ico-16"></i>
           <span>Guía</span>
         </button>
-        <button type="button" id="btn-acerca" class="btn-icon-text" aria-label="Acerca de: versión, API de Gemini, privacidad y avisos legales" title="Acerca de">
+        <button type="button" id="btn-acerca" class="btn-icon-text" aria-label="Acerca de: versión, clave de Gemini, privacidad y avisos legales" title="Acerca de">
           <i data-lucide="info" class="ico-16"></i>
           <span>Acerca de</span>
         </button>
@@ -75,15 +75,15 @@
   <main class="main-wrapper" id="main">
 
     <!-- Stepper Indicator -->
-    <ol class="stepper" aria-label="Pasos del proceso">
+    <ol class="stepper" aria-label="Pasos del proceso" hidden>
       <li class="step-item active" id="step-1-indicator" aria-current="step">
         <div class="step-num" aria-hidden="true">1</div>
-        <span>Cargar y configurar</span>
+        <span id="step-1-texto">Cargar y configurar</span>
       </li>
       <li class="step-line" id="step-line-1" aria-hidden="true"></li>
       <li class="step-item" id="step-2-indicator">
         <div class="step-num" aria-hidden="true">2</div>
-        <span>Revisar preguntas</span>
+        <span id="step-2-texto">Revisar preguntas</span>
       </li>
       <li class="step-line" id="step-line-2" aria-hidden="true"></li>
       <li class="step-item" id="step-3-indicator">
@@ -92,39 +92,83 @@
       </li>
     </ol>
 
-    <!-- ── PANEL 1: UPLOAD & CONFIGURATION ── -->
-    <section id="panel-upload" class="animate-fadeIn" aria-labelledby="upload-heading">
-      <h2 id="upload-heading" class="screen-title sr-only" tabindex="-1">Paso 1: carga tu examen</h2>
+    <!-- ── PANEL 0: ¿CÓMO EMPEZAR? (3.2) ── -->
+    <section id="panel-inicio" class="animate-fadeIn" aria-labelledby="inicio-titulo">
       <!-- Revisión sin terminar (se guarda sola en este equipo). Se
            rellena en borrador.js al abrir la app. -->
-      <div id="draft-banner" role="region" aria-label="Revisión sin terminar">
+      <div id="draft-banner" role="region" aria-label="Evaluación sin terminar">
         <i data-lucide="history" style="width:20px;height:20px;color:var(--color-accent);flex-shrink:0;"></i>
         <div class="draft-text">
-          <p style="font-weight:700;font-size:var(--text-md);margin:0;">Tienes una revisión sin terminar</p>
+          <p style="font-weight:700;font-size:var(--text-md);margin:0;">Tienes una evaluación sin terminar</p>
           <p id="draft-detail" style="font-size:var(--text-sm);color:var(--color-text-muted);margin:0;"></p>
         </div>
         <div class="draft-actions">
-          <button type="button" id="btn-draft-resume" class="btn btn-primary btn-sm">Retomar revisión</button>
+          <button type="button" id="btn-draft-resume" class="btn btn-primary btn-sm">Seguir editando</button>
           <button type="button" id="btn-draft-discard" class="btn btn-ghost btn-sm">Descartar</button>
         </div>
       </div>
 
+      <h2 id="inicio-titulo" class="inicio-titulo" tabindex="-1">¿Cómo quieres empezar?</h2>
+      <p class="inicio-sub">Por cualquiera de los tres caminos llegas al mismo sitio: el editor, y de ahí al Moodle XML y a la evaluación en PDF o Word.</p>
+      <ul class="inicio-opciones">
+        <li>
+          <button type="button" id="inicio-documento" class="inicio-opcion" data-accion="empezarConDocumento">
+            <span class="inicio-icono" aria-hidden="true"><i data-lucide="file-up"></i></span>
+            <span class="inicio-nombre">Convertir un documento</span>
+            <span class="inicio-texto">Ya tienes la evaluación escrita. Cátedra ordena las preguntas y tú las revisas.</span>
+            <span class="inicio-extra"><span class="file-ext">PDF</span><span class="file-ext">WORD</span><span class="file-ext">TXT</span></span>
+            <span class="inicio-ir">Elegir archivo <i data-lucide="arrow-right" aria-hidden="true"></i></span>
+          </button>
+        </li>
+        <li>
+          <button type="button" id="inicio-cero" class="inicio-opcion" data-accion="empezarDesdeCero">
+            <span class="inicio-icono" aria-hidden="true"><i data-lucide="square-pen"></i></span>
+            <span class="inicio-nombre">Crear desde cero</span>
+            <span class="inicio-texto">Escribe tus preguntas directamente en el editor, sin archivos.</span>
+            <span class="inicio-extra"><span class="inicio-dato">7 tipos de pregunta</span></span>
+            <span class="inicio-ir">Abrir el editor <i data-lucide="arrow-right" aria-hidden="true"></i></span>
+          </button>
+        </li>
+        <li>
+          <button type="button" id="inicio-xml" class="inicio-opcion" data-accion="empezarConXml">
+            <span class="inicio-icono" aria-hidden="true"><i data-lucide="file-code-2"></i></span>
+            <span class="inicio-nombre">Editar un Moodle XML</span>
+            <span class="inicio-texto">Abre un XML que ya tengas para corregirlo y volver a generarlo.</span>
+            <span class="inicio-extra"><span class="file-ext">XML</span></span>
+            <span class="inicio-ir">Elegir XML <i data-lucide="arrow-right" aria-hidden="true"></i></span>
+          </button>
+        </li>
+      </ul>
+      <p class="inicio-pie">También puedes arrastrar un archivo aquí, o reabrir una evaluación guardada en <button type="button" class="text-link" data-accion="abrirBiblioteca">Mis materias</button>.</p>
+    </section>
+
+    <!-- ── PANEL 1: CARGAR UN ARCHIVO (documento a convertir o XML a editar) ── -->
+    <section id="panel-upload" class="animate-fadeIn" aria-labelledby="upload-heading" style="display:none;">
+      <div class="carga-cab">
+        <button type="button" id="btn-volver-inicio" class="btn btn-ghost btn-sm" data-accion="volverAlInicio"><i data-lucide="arrow-left" class="ico-14"></i> Volver</button>
+        <div>
+          <h2 id="upload-heading" class="screen-title" tabindex="-1">Convierte tu documento</h2>
+          <p class="screen-sub" id="upload-sub">Cátedra ordena las preguntas y después tú las revisas.</p>
+        </div>
+      </div>
+      <div class="carga-cuerpo">
+      <div class="carga-archivo">
       <!-- Drop Zone -->
-      <div id="drop-zone" role="button" tabindex="0" aria-label="Elegir el examen: arrastra un archivo PDF, Word, TXT o un XML de Moodle, o pulsa para buscarlo" aria-describedby="drop-error">
-        <input type="file" id="file-input" accept=".pdf,.docx,.txt,.xml" style="display:none;"/>
+      <div id="drop-zone" role="button" tabindex="0" aria-label="Elegir la evaluación: arrastra un archivo PDF, Word o TXT, o haz clic para buscarlo" aria-describedby="drop-error">
+        <input type="file" id="file-input" accept=".pdf,.docx,.txt" style="display:none;"/>
         <!-- Con un archivo elegido la zona se pinta de verde y cambia su
              texto (clase .has-file, ver carga.js). -->
         <div class="drop-icon-wrapper">
           <i data-lucide="upload-cloud" class="drop-icon-empty" style="width:34px;height:34px;color:var(--color-accent);"></i>
           <i data-lucide="file-check-2" class="drop-icon-ready" style="width:34px;height:34px;color:var(--color-success);"></i>
         </div>
-        <p class="drop-title" id="drop-title">Arrastra tu examen aquí</p>
-        <p class="drop-sub" id="drop-sub">o haz clic para buscarlo en tu computadora</p>
-        <div style="display:flex;justify-content:center;gap:8px;">
-          <span class="file-ext">.PDF</span>
-          <span class="file-ext">.DOCX</span>
-          <span class="file-ext">.TXT</span>
-          <span class="file-ext" title="Un XML de Moodle que ya tengas: se abre en el editor para corregirlo">.XML</span>
+        <p class="drop-title" id="drop-title">Arrastra tu evaluación aquí</p>
+        <p class="drop-sub" id="drop-sub">o haz clic para buscarlo en tu equipo</p>
+        <div class="drop-formatos" id="drop-formatos">
+          <span class="file-ext" data-modo-de="documento">.PDF</span>
+          <span class="file-ext" data-modo-de="documento">.DOCX</span>
+          <span class="file-ext" data-modo-de="documento">.TXT</span>
+          <span class="file-ext" data-modo-de="xml" hidden>.XML</span>
         </div>
       </div>
       <!-- Formato no soportado: aviso en el mismo lugar, sin sacar al
@@ -153,23 +197,26 @@
         </button>
       </div>
 
+      </div>
+
+      <div class="carga-datos">
       <!-- Config Card -->
-      <div class="glass-card" style="margin-top:24px;padding:24px;">
-        <div class="config-grid">
+      <div class="glass-card carga-tarjeta">
+        <div class="config-grid" id="carga-moodle" data-modo-de="documento">
           <!-- Category -->
           <div class="form-group">
             <label class="field-label" for="category-input">
               <i data-lucide="folder" style="width:14px;height:14px;color:var(--color-accent);"></i>
-              Categoría Moodle
+              Categoría de Moodle
             </label>
-            <input id="category-input" class="form-input" type="text" placeholder="ej: Parcial-Historia-2026" value="mis-preguntas" />
+            <input id="category-input" class="form-input" type="text" placeholder="Ej.: Parcial-Historia-2026" value="mis-preguntas" />
           </div>
 
           <!-- Total Points -->
           <div class="form-group">
             <label class="field-label" for="points-input">
               <i data-lucide="award" style="width:14px;height:14px;color:var(--color-accent);"></i>
-              Puntaje total del examen
+              Puntaje total
             </label>
             <div style="position:relative;">
               <input id="points-input" class="form-input" type="number" min="1" step="0.5" value="100" style="padding-right:50px;" aria-describedby="points-error" />
@@ -192,29 +239,32 @@
           <div class="form-group">
             <label class="field-label" for="actividad-input">
               <i data-lucide="clipboard-list" style="width:14px;height:14px;color:var(--color-accent);"></i>
-              Actividad <span class="opcional">(opcional)</span>
+              Tipo de actividad <span class="opcional">(opcional)</span>
             </label>
-            <input id="actividad-input" class="form-input" type="text" maxlength="160" autocomplete="off" list="actividades-lista" placeholder="ej: Parcial 1" />
+            <input id="actividad-input" class="form-input" type="text" maxlength="160" autocomplete="off" list="actividades-lista" placeholder="Ej.: Parcial 1" />
             <datalist id="actividades-lista"></datalist>
           </div>
         </div>
-        <p id="materia-pista" class="field-hint">Con materia, el examen queda en <button type="button" class="text-link" data-accion="abrirBiblioteca">Mis materias</button> y no se borra solo cuando el Historial se llena.</p>
+        <p id="materia-pista" class="field-hint">Con materia, la evaluación queda en <button type="button" class="text-link" data-accion="abrirBiblioteca">Mis materias</button> y no se borra sola cuando se llena el espacio.</p>
 
       </div>
 
       <!-- Action Button -->
-      <button type="button" id="btn-convert" class="btn btn-success btn-lg btn-block" style="margin-top:20px;" disabled aria-describedby="convert-hint">
+      <button type="button" id="btn-convert" class="btn btn-success btn-lg btn-block" style="margin-top:16px;" disabled aria-describedby="convert-hint">
         <i data-lucide="zap" style="width:20px;height:20px;"></i>
-        Procesar y convertir examen
+        <span id="btn-convert-texto">Procesar y convertir evaluación</span>
       </button>
       <!-- Por qué el botón está deshabilitado (antes no se decía). -->
-      <p id="xml-nota" class="field-hint" style="display:none;text-align:center;margin-top:8px;">Es un XML de Moodle: se abre en el editor tal como está, sin IA y sin gastar cuota. Los puntos salen del propio XML.</p>
-      <p id="convert-hint" class="field-hint" style="text-align:center;margin-top:8px;">Primero elige un archivo PDF, Word, TXT o un XML de Moodle.</p>
+      <p id="xml-nota" class="field-hint carga-pista" data-modo-de="xml" hidden>La categoría y los puntos salen del propio XML.</p>
+      <p id="convert-hint" class="field-hint carga-pista">Primero elige un archivo PDF, Word o TXT.</p>
+      </div>
+      </div>
 
       <!-- Privacy Banner -->
-      <div style="margin-top:16px;text-align:center;font-size:var(--text-sm);color:var(--color-text-subtle);display:flex;align-items:center;justify-content:center;gap:6px;">
-        <i data-lucide="shield-check" style="width:15px;height:15px;color:var(--color-success);flex-shrink:0;"></i>
-        <span>Tu archivo nunca sale de tu equipo. A un servicio de IA solo se envía el texto extraído y, cuando hace falta, imágenes de algunas páginas, para normalizar su formato.</span>
+      <div class="carga-privacidad">
+        <i data-lucide="shield-check" aria-hidden="true"></i>
+        <span data-modo-de="documento">Tu archivo nunca sale de tu equipo. A un servicio de IA solo se envía el texto extraído y, cuando hace falta, imágenes de algunas páginas, para normalizar su formato.</span>
+        <span data-modo-de="xml" hidden>El XML se abre en tu equipo: no se envía nada a ningún servicio de IA.</span>
       </div>
     </section>
 
@@ -224,11 +274,11 @@
         <div style="width:72px;height:72px;background:var(--color-accent-glow);border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;">
           <i data-lucide="loader-2" id="spinner-icon" style="width:36px;height:36px;color:var(--color-accent);animation:spinSlow 0.8s linear infinite;"></i>
         </div>
-        <h2 id="progress-title" class="screen-title" tabindex="-1" style="margin-bottom:8px;">Procesando tu examen…</h2>
+        <h2 id="progress-title" class="screen-title" tabindex="-1" style="margin-bottom:8px;">Procesando tu evaluación…</h2>
         <!-- Solo la etapa se anuncia al lector de pantalla. El cronómetro y
              el conteo cambian varias veces por segundo y NO están dentro
              de ninguna región viva (antes se anunciaban cada segundo). -->
-        <p id="progress-subtitle" role="status" style="font-size:14.5px;color:var(--color-text-muted);margin-bottom:6px;">Leyendo el texto del examen…</p>
+        <p id="progress-subtitle" role="status" style="font-size:14.5px;color:var(--color-text-muted);margin-bottom:6px;">Leyendo el texto de la evaluación…</p>
         <p id="progress-detail" style="font-size:var(--text-sm);color:var(--color-text-subtle);min-height:18px;margin-bottom:22px;font-variant-numeric:tabular-nums;"></p>
 
         <div style="height:8px;background:var(--color-bg);border-radius:var(--radius-full);overflow:hidden;max-width:480px;margin:0 auto;border:1px solid var(--color-border-subtle);">
@@ -258,6 +308,31 @@
         <p class="screen-sub" id="editor-sub">Compara cada pregunta con tu documento: la transcripción puede traer errores o respuestas faltantes. Corrige lo que haga falta y genera el XML cuando esté listo. <button type="button" class="text-link" data-accion="openHelp" data-arg="review">¿Cómo reviso?</button></p>
       </div>
 
+      <!-- Un examen creado desde cero: sus datos se escriben aquí (editor/datos-examen.js). -->
+      <div id="editor-datos" class="glass-card editor-datos" role="group" aria-labelledby="editor-datos-titulo" hidden>
+        <h3 id="editor-datos-titulo">Datos de la evaluación</h3>
+        <div class="form-group editor-datos-nombre">
+          <label class="field-label" for="nuevo-nombre">Nombre de la actividad</label>
+          <input type="text" id="nuevo-nombre" class="form-input" maxlength="120" autocomplete="off" placeholder="Ej.: Parcial 1 de Historia">
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="nuevo-puntos">Puntaje total</label>
+          <input type="number" id="nuevo-puntos" class="form-input" min="1" step="0.5">
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="nuevo-categoria">Categoría de Moodle</label>
+          <input type="text" id="nuevo-categoria" class="form-input" maxlength="120" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="nuevo-materia">Materia <span class="opcional">(opcional)</span></label>
+          <select id="nuevo-materia" class="form-input"><option value="">Sin materia</option></select>
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="nuevo-actividad">Tipo de actividad <span class="opcional">(opcional)</span></label>
+          <input type="text" id="nuevo-actividad" class="form-input" maxlength="160" autocomplete="off" list="actividades-lista" placeholder="Ej.: Parcial 1">
+        </div>
+      </div>
+
       <div id="editor-questions-container"></div>
     </section>
 
@@ -270,7 +345,7 @@
             <i data-lucide="check" style="width:28px;height:28px;color:var(--color-success);"></i>
           </div>
           <div style="min-width:0;">
-            <h2 id="success-title" class="screen-title" tabindex="-1">Tu examen está listo</h2>
+            <h2 id="success-title" class="screen-title" tabindex="-1">Tu evaluación está lista</h2>
             <p id="success-subtitle" style="font-size:var(--text-md);color:var(--color-text-muted);margin-top:2px;overflow-wrap:anywhere;"></p>
           </div>
           </div>
@@ -284,19 +359,19 @@
           </button>
           <button type="button" id="btn-exportar-pdf" class="btn btn-ghost btn-lg" data-accion="abrirExportarPdf">
             <i data-lucide="file-text" class="ico-16"></i>
-            Exportar examen
+            Exportar evaluación
           </button>
           <button type="button" id="btn-back-to-review" class="btn btn-ghost btn-lg">
             <i data-lucide="arrow-left" class="ico-16"></i>
-            Volver a la revisión
+            Volver al editor
           </button>
         </div>
-        <p class="success-next">Siguiente paso: impórtalo en Moodle, en <em>Banco de preguntas → Importar</em>. <button type="button" class="text-link" data-accion="openHelp" data-arg="moodle">Ver cómo, paso a paso</button><br>Para tenerlo en papel o guardar la clave, usa <strong>Exportar examen</strong> (PDF o Word): es un documento de apoyo, lo que se importa a Moodle sigue siendo el XML.</p>
+        <p class="success-next">Siguiente paso: impórtalo en Moodle, en <em>Banco de preguntas → Importar</em>. <button type="button" class="text-link" data-accion="openHelp" data-arg="moodle">Ver cómo, paso a paso</button><br>Para tenerlo en papel o guardar la clave, usa <strong>Exportar evaluación</strong> (PDF o Word): es un documento de apoyo, lo que se importa a Moodle sigue siendo el XML.</p>
 
         <!-- Mis materias: en cuál quedó guardado (se puede cambiar) y, si el Historial se llena, el aviso. -->
         <div id="exito-materia" class="exito-materia" hidden>
           <i data-lucide="library" aria-hidden="true"></i>
-          <label for="exito-materia-sel">Guardado en</label>
+          <label for="exito-materia-sel">Guardada en</label>
           <select id="exito-materia-sel" class="form-input"></select>
           <button type="button" class="text-link" data-accion="abrirBiblioteca">Ver Mis materias</button>
         </div>
@@ -322,7 +397,7 @@
 
         <button type="button" id="btn-reset-success" class="btn btn-ghost btn-block">
           <i data-lucide="refresh-cw" class="ico-16"></i>
-          Convertir otro examen
+          Empezar otra evaluación
         </button>
       </div>
     </section>
@@ -335,7 +410,7 @@
             <i data-lucide="alert-triangle" style="width:24px;height:24px;color:var(--color-error);"></i>
           </div>
           <div style="flex:1;min-width:0;">
-            <h2 id="error-title" class="screen-title" tabindex="-1" style="font-size:var(--text-title);margin:0 0 6px;">No se pudo leer el examen</h2>
+            <h2 id="error-title" class="screen-title" tabindex="-1" style="font-size:var(--text-title);margin:0 0 6px;">No se pudo leer la evaluación</h2>
             <div id="error-message" role="alert" style="font-size:var(--text-md);color:var(--color-text-muted);line-height:1.65;"></div>
           </div>
         </div>
@@ -346,7 +421,7 @@
             <i data-lucide="scan-line" style="width:16px;height:16px;color:var(--color-accent);"></i> ¿Tu PDF es una foto o un documento escaneado?
           </p>
           <p style="font-size:13px;color:var(--color-text-muted);margin:0 0 10px;">
-            Los PDF escaneados no tienen texto que extraer directamente, pero el sistema puede leerlos igual con IA.
+            Los PDF escaneados no tienen texto que extraer directamente, pero Cátedra puede leerlos igual con IA.
           </p>
           <button type="button" id="btn-error-normalize" class="btn btn-primary btn-block" style="margin-bottom:8px;">
             <i data-lucide="sparkles" class="ico-16"></i>
@@ -367,7 +442,7 @@
   </main>
 
   <!-- Panel de revisión: mapa del examen + Generar XML (ver .review-rail) -->
-  <aside id="review-rail" class="review-rail" aria-label="Mapa del examen y acciones">
+  <aside id="review-rail" class="review-rail" aria-label="Mapa de la evaluación y acciones">
     <div class="rail-head">
       <button type="button" class="rail-pos" data-accion="toggleRailGrid" aria-controls="review-rail-grid" aria-expanded="false">
         <span class="rail-pos-long" id="review-progress-label">Pregunta 1 de 1</span>
@@ -377,6 +452,7 @@
       </button>
       <div class="rail-bar" aria-hidden="true"><div id="review-progress-fill"></div></div>
     </div>
+    <p class="rail-vacio" id="rail-vacio">Agrega la primera pregunta para generar el XML.</p>
     <div class="rail-grid-wrap">
       <div class="rail-grid" id="review-rail-grid" role="list" aria-label="Ir a una pregunta"></div>
       <div class="rail-links">
@@ -389,7 +465,7 @@
         <i data-lucide="file-check-2" style="width:17px;height:17px;"></i>
         Generar XML
       </button>
-      <button type="button" id="btn-discard-review" class="btn btn-ghost" data-accion="confirmDiscardReview" aria-label="Descartar esta revisión">
+      <button type="button" id="btn-discard-review" class="btn btn-ghost" data-accion="confirmDiscardReview" aria-label="Descartar esta evaluación">
         <i data-lucide="x" class="ico-15"></i>
         <span class="btn-label">Descartar</span>
       </button>
@@ -424,25 +500,26 @@
 
   <!-- ════════════════════════════ HELP MODAL ════════════════════════════ -->
   <div id="modal-help" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal-box">
+    <div class="modal-box modal-guia">
       <div class="modal-header">
         <h2 class="modal-title" id="modal-title">
           <i data-lucide="book-open" style="width:20px;height:20px;color:var(--color-accent);"></i>
-          Guía del sistema
+          Guía de uso
         </h2>
         <button type="button" id="btn-close-modal" class="btn btn-icon" aria-label="Cerrar la guía" title="Cerrar">
           <i data-lucide="x" class="ico-18"></i>
         </button>
       </div>
 
-      <div class="modal-tabs" role="tablist" aria-label="Secciones de la guía">
+      <div class="guia-marco">
+      <div class="modal-tabs guia-nav" role="tablist" aria-label="Secciones de la guía" aria-orientation="vertical">
         <button type="button" class="modal-tab active" role="tab" id="tab-about" aria-controls="modal-panel-about" aria-selected="true" data-tab="about">
           <i data-lucide="target" class="ico-15"></i>
           ¿Qué es?
         </button>
         <button type="button" class="modal-tab" role="tab" id="tab-review" aria-controls="modal-panel-review" aria-selected="false" tabindex="-1" data-tab="review">
           <i data-lucide="list-checks" class="ico-15"></i>
-          Revisión
+          Editor
         </button>
         <button type="button" class="modal-tab" role="tab" id="tab-extras" aria-controls="modal-panel-extras" aria-selected="false" tabindex="-1" data-tab="extras">
           <i data-lucide="library" class="ico-15"></i>
@@ -458,7 +535,7 @@
         </button>
         <button type="button" class="modal-tab" role="tab" id="tab-moodle" aria-controls="modal-panel-moodle" aria-selected="false" tabindex="-1" data-tab="moodle">
           <i data-lucide="graduation-cap" class="ico-15"></i>
-          Importar
+          Importar en Moodle
         </button>
       </div>
 
@@ -469,19 +546,30 @@
             <section class="guia-sec">
               <h3>Qué es</h3>
               <p class="guia-nota"><i data-lucide="circle-help" class="ico-14" style="vertical-align:-2px;"></i> ¿Primera vez? El <strong>robot ayudante</strong> de la esquina inferior izquierda te explica cada pantalla paso a paso: haz clic en él (o espera a que te ofrezca ayuda) y te muestra para qué sirve cada parte. Puedes repetirlo cuando quieras.</p>
-              <p><strong>Cátedra</strong> es tu espacio para gestionar tus evaluaciones (antes se llamaba «Conversor a Moodle XML»). Una herramienta de escritorio para docentes que lleva tus exámenes de punta a punta: los lee desde el PDF, Word o TXT que ya tienes, los pasa a <strong>Moodle XML</strong> para importarlos en <em>Banco de preguntas → Importar</em>, los puede <strong>imprimir en PDF o Word con su clave</strong>, sacar <strong>varias versiones</strong> de un mismo examen y los guarda <strong>ordenados por materia</strong> para volver a ellos cuando quieras. Tú revisas cada pregunta antes de descargar. No inventa preguntas ni respuestas: solo transcribe lo que ya está en el documento.</p>
+              <p><strong>Cátedra</strong> es tu espacio para gestionar tus evaluaciones (antes se llamaba «Conversor a Moodle XML»). Una herramienta de escritorio para docentes que lleva tus evaluaciones de punta a punta: las lee desde el PDF, Word o TXT que ya tienes, las pasa a <strong>Moodle XML</strong> para importarlas en <em>Banco de preguntas → Importar</em>, las puede <strong>imprimir en PDF o Word con su clave</strong>, sacar <strong>varias versiones</strong> de una misma evaluación y las guarda <strong>ordenadas por materia</strong> para volver a ellas cuando quieras. Tú revisas cada pregunta antes de descargar. No inventa preguntas ni respuestas: solo transcribe lo que ya está en el documento.</p>
+            </section>
+
+            <section class="guia-sec">
+              <h3>Cómo empezar</h3>
+              <p>La primera pantalla pregunta qué quieres hacer. Los tres caminos terminan en el mismo editor.</p>
+              <ul class="guia-caminos">
+                <li><span class="vm-icono" aria-hidden="true"><i data-lucide="file-up"></i></span><span><strong>Convertir un documento</strong> (PDF, Word o TXT): eliges el archivo, la categoría de Moodle, el puntaje total y, si quieres, la materia y el tipo de actividad; la IA ordena las preguntas y tú las revisas.</span></li>
+                <li><span class="vm-icono" aria-hidden="true"><i data-lucide="square-pen"></i></span><span><strong>Crear desde cero:</strong> abre el editor vacío. Arriba escribes el nombre de la actividad, el puntaje total, la categoría, la materia y el tipo de actividad; debajo eliges el tipo de cada pregunta y la escribes. Las preguntas llegan en blanco (Cátedra no pone texto ni respuestas por ti) y el puntaje total se reparte solo entre ellas hasta que cambies algún punto. No usa IA.</span></li>
+                <li><span class="vm-icono" aria-hidden="true"><i data-lucide="file-code-2"></i></span><span><strong>Editar un Moodle XML:</strong> abre un XML que ya tengas, sin IA.</span></li>
+              </ul>
+              <p>También puedes arrastrar el archivo sobre la primera pantalla. Si dejaste una evaluación sin terminar, ahí mismo la retomas.</p>
             </section>
 
             <section class="guia-sec">
               <h3>Qué puedes hacer</h3>
               <ul class="guia-lista">
                 <li><strong>Convertir a Moodle XML</strong> pruebas, parciales y quices de los 7 tipos de pregunta, con imágenes, fórmulas y retroalimentación, validados contra lo que Moodle acepta.</li>
-                <li><strong>Revisar contra el original.</strong> En un PDF, cada pregunta se compara con el recorte de su página, con la respuesta que propone la app, su origen y su confianza. Lo dudoso se marca para que lo veas primero.</li>
+                <li><strong>Revisar contra el original.</strong> En un PDF, cada pregunta se compara con el recorte de su página, con la respuesta que propone Cátedra, su origen y su confianza. Lo dudoso se marca para que lo veas primero.</li>
                 <li><strong>Apoyarte en la IA sin que decida por ti.</strong> Sugerir una respuesta que falta, escribir la retroalimentación, mejorar la redacción y avisar de preguntas repetidas: siempre lo ves antes y solo se aplica si lo aceptas.</li>
                 <li><strong>Corregir un XML que ya tienes.</strong> Abre un Moodle XML (de esta aplicación o de tu banco de preguntas) en el mismo editor, sin IA, y vuelve a generarlo.</li>
-                <li><strong>Imprimir el examen en PDF o en Word.</strong> Con tu institución, logos y datos; con su clave, o como folleto de preguntas más hoja de respuestas y clave. Las opciones se mezclan para que la clave no delate las respuestas. El Word es editable y dice exactamente lo mismo que el PDF.</li>
-                <li><strong>Sacar varias versiones de un examen.</strong> Un examen grande hace de banco: sorteas, por ejemplo, 4 parciales de 25 preguntas (al azar o con tantas de cada tipo), sin repetir preguntas entre versiones, y descargas un ZIP con el PDF y la clave de cada una.</li>
-                <li><strong>Ordenar todo por materia</strong> en <em>Mis materias</em>: cada materia es un espacio con todos sus exámenes, que puedes reabrir, descargar en XML, exportar en PDF o Word o duplicar como punto de partida de uno nuevo.</li>
+                <li><strong>Imprimir la evaluación en PDF o en Word.</strong> Con tu institución, logos y datos; con su clave, o con hoja de respuestas aparte. Cada documento se descarga por separado; el PDF, normal o en modo folleto. Las opciones se mezclan para que la clave no delate las respuestas. El Word es editable y dice exactamente lo mismo que el PDF.</li>
+                <li><strong>Sacar varias versiones de una evaluación.</strong> Una evaluación grande hace de banco: sorteas, por ejemplo, 4 parciales de 25 preguntas (al azar o con tantas de cada tipo), sin repetir preguntas entre versiones, y descargas un ZIP con el PDF y la clave de cada una.</li>
+                <li><strong>Ordenar todo por materia</strong> en <em>Mis materias</em>: cada materia es un espacio con todas sus evaluaciones, que puedes reabrir, descargar en XML, exportar en PDF o Word o duplicar como punto de partida de una nueva.</li>
                 <li><strong>Escribir tus datos una sola vez</strong> en <em>Mi perfil</em>: tu nombre y tus perfiles de encabezado (institución, logos, formato) se aplican solos en cada PDF o Word.</li>
                 <li><strong>Trabajar en privado.</strong> Todo vive en tu equipo: sin cuenta, sin cookies y sin enviar tus archivos a ningún servidor propio. A la IA solo va el texto necesario para ordenar las preguntas.</li>
               </ul>
@@ -490,11 +578,11 @@
             <section class="guia-sec">
               <h3>Qué acepta</h3>
               <ul class="guia-lista">
-                <li><strong>Pruebas, parciales y quices</strong> en PDF, Word o TXT, con preguntas de opción múltiple, verdadero/falso, emparejamiento, completar, ensayo, respuesta corta o numérica. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas. Si un mismo caso o texto sirve para varias preguntas («responda las preguntas 1 a 5»), también se conserva.</li>
-                <li><strong>Un XML de Moodle que ya tengas</strong> (uno de esta aplicación o exportado de tu banco de preguntas): se abre en el editor para corregirlo y volver a generarlo. No usa IA. Las preguntas que el editor no entiende (calculadas, arrastrar y soltar…) quedan entre las «no incluidas», con su motivo. Lo que el editor no conserva (crédito parcial a una opción, respuestas alternativas, tolerancia numérica o retroalimentación propia de cada opción) se avisa.</li>
-                <li><strong>Imágenes y fórmulas.</strong> Las imágenes llegan a Moodle dentro de su pregunta; en la revisión puedes quitarlas, moverlas o agregar las tuyas («Agregar imagen» o soltando el archivo sobre la pregunta). Las fórmulas se escriben en LaTeX, entre <code class="inline">\(</code> y <code class="inline">\)</code>, con vista previa.</li>
-                <li><strong>Retroalimentación opcional.</strong> Si el examen trae la justificación, se copia sola; si no, escríbela, pídesela a la IA con «Escribir con IA» o déjala vacía. «Mejorar redacción» corrige ortografía y claridad sin cambiar datos, código ni fórmulas. Ves la propuesta y solo se aplica si pulsas «Aceptar».</li>
-                <li><strong>PDF escaneados.</strong> Si el PDF es una foto o un escaneo, el sistema lo avisa y ofrece <strong>Leer el PDF con IA</strong>, que lee las páginas como imagen (hasta 15). En ese caso verifica cada respuesta contra el original.</li>
+                <li><strong>Pruebas, parciales y quices</strong> en PDF, Word o TXT, con preguntas de selección múltiple, verdadero o falso, emparejamiento, completar, desarrollo, respuesta corta o numérica. No hace falta un formato especial: basta con que las preguntas estén numeradas o separadas. Si un mismo caso o texto sirve para varias preguntas («responda las preguntas 1 a 5»), también se conserva.</li>
+                <li><strong>Un Moodle XML que ya tengas</strong> (uno de esta aplicación o exportado de tu banco de preguntas): se abre en el editor para corregirlo y volver a generarlo. No usa IA. Las preguntas que el editor no entiende (calculadas, arrastrar y soltar…) quedan entre las «no incluidas», con su motivo. Lo que el editor no conserva (crédito parcial a una opción, respuestas alternativas, tolerancia numérica o retroalimentación propia de cada opción) se avisa.</li>
+                <li><strong>Imágenes y fórmulas.</strong> Las imágenes llegan a Moodle dentro de su pregunta; en el editor puedes quitarlas, moverlas o agregar las tuyas («Agregar imagen» o soltando el archivo sobre la pregunta). Las fórmulas se escriben en LaTeX, entre <code class="inline">\(</code> y <code class="inline">\)</code>, con vista previa.</li>
+                <li><strong>Retroalimentación opcional.</strong> Si la evaluación trae la justificación, se copia sola; si no, escríbela, pídesela a la IA con «Escribir con IA» o déjala vacía. «Mejorar redacción» corrige ortografía y claridad sin cambiar datos, código ni fórmulas. Ves la propuesta y solo se aplica si haces clic en «Aceptar».</li>
+                <li><strong>PDF escaneados.</strong> Si el PDF es una foto o un escaneo, Cátedra lo avisa y ofrece <strong>Leer el PDF con IA</strong>, que lee las páginas como imagen (hasta 15). En ese caso verifica cada respuesta contra el original.</li>
                 <li><strong>No sirve</strong> para presentaciones, apuntes ni listas de vocabulario.</li>
               </ul>
             </section>
@@ -503,16 +591,16 @@
               <h3>Cómo reconoce la respuesta correcta</h3>
               <ul class="guia-lista">
                 <li><strong>Clave de respuestas</strong> al final del documento, con la letra («1. c») o el texto de la opción.</li>
-                <li><strong>Marcas en el propio examen:</strong> texto en color, resaltado, subrayado, negrita, o un ✓ / asterisco junto a la opción. En un PDF digital se leen directamente del archivo, no las adivina la IA.</li>
+                <li><strong>Marcas en la propia evaluación:</strong> texto en color, resaltado, subrayado, negrita, o un ✓ / asterisco junto a la opción. En un PDF digital se leen directamente del archivo, no las adivina la IA.</li>
                 <li><strong>Cuadros con X,</strong> donde cada fila se une con la columna marcada (se convierten en emparejamiento).</li>
-                <li><strong>Sin respuesta marcada:</strong> el sistema no la inventa; la pregunta queda señalada para que la completes. Si quieres, pídele una propuesta a la IA con <strong>Sugerir respuesta con IA</strong>: la ves con su motivo y solo se aplica si la aceptas; queda marcada «Sugerida por IA».</li>
+                <li><strong>Sin respuesta marcada:</strong> Cátedra no la inventa; la pregunta queda señalada para que la completes. Si quieres, pídele una propuesta a la IA con <strong>Sugerir respuesta con IA</strong>: la ves con su motivo y solo se aplica si la aceptas; queda marcada «Sugerida por IA».</li>
               </ul>
             </section>
 
             <section class="guia-sec">
               <h3>Privacidad</h3>
-              <p>Tu archivo se procesa en tu equipo. Al servicio de IA solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas en imágenes o PDF escaneados). El PDF que subes se conserva solo en la memoria de la aplicación mientras está abierta, para mostrártelo al revisar; no se guarda en el Historial ni en ningún archivo. Más detalle en «Acerca de».</p>
-              <p><strong>Ojo con la clave gratuita:</strong> según los términos de la API de Gemini, con el plan gratuito Google puede usar lo que se le envía para mejorar sus productos y personas de Google pueden revisarlo; con el plan de pago (facturación activada en tu cuenta de Google) no. Si tus exámenes son confidenciales, considera activar la facturación.</p>
+              <p>Tu archivo se procesa en tu equipo. Al servicio de IA solo se envía lo necesario para ordenar las preguntas: el texto extraído y, cuando hace falta, imágenes de algunas páginas (código en captura, marcas en imágenes o PDF escaneados). El PDF que subes se conserva solo en la memoria de la aplicación mientras está abierta, para mostrártelo al revisar; no se guarda en Mis materias ni en ningún archivo. Más detalle en «Acerca de».</p>
+              <p><strong>Ojo con la clave gratuita:</strong> según los términos de la API de Gemini, con el plan gratuito Google puede usar lo que se le envía para mejorar sus productos y personas de Google pueden revisarlo; con el plan de pago (facturación activada en tu cuenta de Google) no. Si tus evaluaciones son confidenciales, considera activar la facturación.</p>
             </section>
           </div>
         </div>
@@ -527,11 +615,11 @@
 
             <section class="guia-sec">
               <h3>Revisar con el original</h3>
-              <p>Si tu examen es un PDF, el chip <strong>Pág. N</strong> de cada pregunta es un botón: abre el <strong>recorte de la página</strong> donde está la pregunta, resaltado, y junto a él la respuesta que propone la app con su origen y su confianza (aquí sí ves siempre «Clave del documento» y «Confianza alta»).</p>
+              <p>Si tu evaluación es un PDF, el botón <strong>Pág. N</strong> de cada pregunta abre el <strong>recorte de la página</strong> donde está la pregunta, resaltado, y junto a él la respuesta que propone Cátedra con su origen y su confianza (aquí sí ves siempre «Clave del documento» y «Confianza alta»).</p>
               <ul class="guia-lista">
                 <li>Cambia entre <em>Recorte</em> y <em>Página completa</em>, y acércalo con el zoom. Si no se pudo ubicar la pregunta en la página (dos columnas, escaneado, página girada), se muestra la página completa.</li>
                 <li>Pasa a la pregunta <em>Anterior</em> o <em>Siguiente</em> (<kbd>←</kbd> <kbd>→</kbd>), o a la anterior o siguiente <em>para revisar</em> (<kbd>Mayús</kbd> + <kbd>←</kbd> <kbd>→</kbd>), sin cerrar. <kbd>Esc</kbd> cierra y te deja en la última pregunta que miraste.</li>
-                <li>El original solo está <strong>mientras la aplicación está abierta</strong>: no se guarda en el Historial. Al reabrir un examen desde Mis materias, o con Word o TXT, «Pág. N» solo informa.</li>
+                <li>El original solo está <strong>mientras la aplicación está abierta</strong>: no se guarda en Mis materias. Al reabrir una evaluación desde Mis materias, o con Word o TXT, «Pág. N» solo informa.</li>
                 <li><strong>PDF escaneado</strong> (sin texto): la IA lee las marcas de la imagen y puede reemplazarlas por lo que ella cree correcto, así que todas sus respuestas salen con confianza baja y un aviso arriba. Compara cada una con el original.</li>
               </ul>
             </section>
@@ -565,14 +653,14 @@
               <h3>Herramientas</h3>
               <ul class="guia-lista">
                 <li><strong>Mostrar:</strong> deja ver solo un tipo de pregunta, <em>Revisar primero</em> (respuestas propuestas por la IA o con confianza baja que aún no tocaste) o <em>Posibles problemas</em>. Las preguntas ocultas igual se incluyen en el XML.</li>
-                <li><strong>Posibles problemas:</strong> avisos que la app detecta sin IA: preguntas repetidas o casi repetidas, opciones iguales, una opción que depende de las demás («todas las anteriores», «A y B») —Moodle <em>mezcla</em> el orden de las opciones y dejaría de tener sentido— emparejamientos o espacios con elementos repetidos, una respuesta numérica ambigua («1,000» puede ser mil o uno con tres decimales) y una pregunta de «Completar» con puntos decimales (Moodle solo admite enteros). Son avisos: no bloquean nada.</li>
+                <li><strong>Posibles problemas:</strong> avisos que Cátedra detecta sin IA: preguntas repetidas o casi repetidas, opciones iguales, una opción que depende de las demás («todas las anteriores», «A y B») —Moodle <em>mezcla</em> el orden de las opciones y dejaría de tener sentido— emparejamientos o espacios con elementos repetidos, una respuesta numérica ambigua («1,000» puede ser mil o uno con tres decimales) y una pregunta de «Completar» con puntos decimales (Moodle solo admite enteros). Son avisos: no bloquean nada.</li>
                 <li><strong>Sugerir respuesta con IA:</strong> aparece solo en las preguntas a las que les falta la respuesta. La IA propone una (con su motivo), tú decides: <em>Aceptar</em> o <em>Descartar</em>, y puedes <em>Deshacer</em>. Gasta tu cuota de Gemini.</li>
-                <li><strong>Puntos:</strong> muestra cuánto suman frente al total del examen (en ámbar si no coinciden). Al abrirlo eliges cómo repartirlos: <em>Igual para todas</em> divide el total del examen entre todas las preguntas; <em>Según el tipo</em> te deja escribir cuántos puntos vale <strong>cada pregunta</strong> de cada tipo, y el total del examen es la suma (10 de opción múltiple a 2 puntos y 5 de completar a 5 puntos valen 45). Si las preguntas de un tipo hoy valen distinto, su campo queda vacío («varía») y ese tipo no se toca hasta que escribas algo. Las preguntas de <em>Completar</em> valen puntos <strong>enteros</strong>, al menos uno por espacio, porque Moodle no admite decimales en sus espacios. Al aplicar puedes <em>Deshacer</em>; también puedes cambiar los puntos de cada pregunta a mano.</li>
-                <li><strong>Enunciado compartido:</strong> cuando de un mismo caso, texto o situación salen varias preguntas. Si el documento lo dice («del siguiente enunciado responda las preguntas 1 a 5»), la IA intenta reconocerlo; revísalo. También puedes crearlo con <em>Enunciado compartido</em> en la primera pregunta, escribir el texto y elegir <em>de la pregunta … a la …</em>. No escribas los números de las preguntas: se agregan solos. En el PDF y el Word sale una sola vez antes del grupo; en Moodle va dentro de cada pregunta, para que se entienda aunque se mezclen.</li>
+                <li><strong>Puntos:</strong> muestra cuánto suman frente al total de la evaluación (en ámbar si no coinciden). Al abrirlo eliges cómo repartirlos: <em>Igual para todas</em> divide el total de la evaluación entre todas las preguntas; <em>Según el tipo</em> te deja escribir cuántos puntos vale <strong>cada pregunta</strong> de cada tipo, y el total de la evaluación es la suma (10 de selección múltiple a 2 puntos y 5 de completar a 5 puntos valen 45). Si las preguntas de un tipo hoy valen distinto, su campo queda vacío («varía») y ese tipo no se toca hasta que escribas algo. Las preguntas de <em>Completar</em> valen puntos <strong>enteros</strong>, al menos uno por espacio, porque Moodle no admite decimales en sus espacios. Al aplicar puedes <em>Deshacer</em>; también puedes cambiar los puntos de cada pregunta a mano.</li>
+                <li><strong>Enunciado compartido:</strong> cuando de un mismo caso, texto, figura o situación salen varias preguntas. Se ve como un <em>marco</em>: lo que está dentro va con ese enunciado y lo de fuera son preguntas independientes. Si el documento lo dice («del siguiente enunciado responda las preguntas 1 a 5»), la IA intenta reconocerlo; revísalo. Para crearlo, elige <em>Enunciado compartido</em> entre los tipos de pregunta, escribe el texto y agrégale sus preguntas una a una; con <em>Terminar enunciado compartido</em> vuelves a las preguntas independientes, y <em>Agregar pregunta a este enunciado</em> lo retoma. Con <em>Agregar imagen</em> en su cabecera (o soltándola ahí) adjuntas figuras que salen con el enunciado. La flecha de la cabecera <em>pliega</em> sus preguntas. Si las preguntas ya existen, usa <em>O ponlo en preguntas que ya tienes</em> y elige hasta cuál llega. No escribas los números de las preguntas: se agregan solos. En el PDF y el Word sale una sola vez antes del grupo; en Moodle va dentro de cada pregunta, para que se entienda aunque se mezclen.</li>
                 <li><strong>Mover y duplicar:</strong> las flechas de cada pregunta la suben o la bajan y el botón de al lado la duplica (la copia queda justo después, con su respuesta y sus puntos: revisa el total). Las preguntas de un enunciado compartido se mueven dentro de su grupo; el grupo completo, con las flechas de su bloque. Con un filtro puesto, las flechas se esconden.</li>
-                <li><strong>Opciones de más en un emparejamiento:</strong> <em>Agregar opción de más</em> añade una opción de la Columna B que no es la pareja de ningún concepto, para que no se adivine por descarte. Aparece con borde discontinuo y se conserva al exportar.</li>
-                <li><strong>Preguntas que no se pudieron incluir:</strong> aparecen arriba en una sola línea; ábrela con <em>Ver motivos</em>. Si a una solo le falta la respuesta, usa <em>Añadir con lo ya extraído</em> y márcala tú.</li>
-                <li><strong>Añadir pregunta:</strong> al final de la lista, si faltó alguna del documento, de cualquiera de los 7 tipos.</li>
+                <li><strong>Opciones de más en un emparejamiento:</strong> <em>Agregar opción de más</em> agrega una opción de la Columna B que no es la pareja de ningún concepto, para que no se adivine por descarte. Aparece con borde discontinuo y se conserva al exportar.</li>
+                <li><strong>Preguntas que no se pudieron incluir:</strong> aparecen arriba en una sola línea; ábrela con <em>Ver motivos</em>. Si a una solo le falta la respuesta, usa <em>Agregar con lo ya extraído</em> y márcala tú.</li>
+                <li><strong>Agregar pregunta:</strong> al final de la lista, si faltó alguna del documento, de cualquiera de los 7 tipos o como <em>Enunciado compartido</em>.</li>
               </ul>
             </section>
 
@@ -586,7 +674,7 @@
                 <div><dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Dentro de «Pág. N»: pregunta anterior o siguiente (con <kbd>Mayús</kbd>, la anterior o siguiente para revisar)</dd></div>
                 <div><dt><kbd>I</kbd></dt><dd>Siguiente pregunta incompleta</dd></div>
                 <div><dt><kbd>R</kbd></dt><dd>Siguiente pregunta para revisar</dd></div>
-                <div><dt><kbd>?</kbd></dt><dd>Abrir esta guía en «Revisión»</dd></div>
+                <div><dt><kbd>?</kbd></dt><dd>Abrir esta guía en «Editor»</dd></div>
                 <div><dt><kbd>Esc</kbd></dt><dd>Cerrar ventanas y menús</dd></div>
                 <div><dt><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd></dt><dd>Deshacer lo último (mientras se ve el aviso de abajo)</dd></div>
               </dl>
@@ -596,9 +684,9 @@
               <h3>Si te equivocas</h3>
               <ul class="guia-lista">
                 <li><strong>Deshacer:</strong> al borrar una pregunta o aplicar un reparto de puntos aparece un aviso abajo con el botón <em>Deshacer</em> (dura unos segundos; si pasas el mouse encima, espera).</li>
-                <li><strong>Tu revisión se guarda sola</strong> en este equipo. Si la ventana se cierra, al volver a abrir la app aparece <em>Retomar revisión</em>.</li>
-                <li><strong>Volver a la revisión:</strong> desde la pantalla final puedes regresar a corregir algo y generar el XML de nuevo. <strong>Descartar</strong> pide confirmación antes de borrar la revisión completa.</li>
-                <li><strong>Reabrir un examen:</strong> cada XML generado queda guardado en <em>Mis materias</em>; desde ahí vuelves a su revisión cuando quieras (ver «PDF, Word y materias»).</li>
+                <li><strong>Tu trabajo se guarda solo</strong> en este equipo. Si la ventana se cierra, al volver a abrir Cátedra aparece <em>Seguir editando</em>.</li>
+                <li><strong>Volver al editor:</strong> desde la pantalla final puedes regresar a corregir algo y generar el XML de nuevo. <strong>Descartar</strong> pide confirmación antes de borrar la evaluación completa.</li>
+                <li><strong>Reabrir una evaluación:</strong> cada XML generado queda guardado en <em>Mis materias</em>; desde ahí la reabres en el editor cuando quieras (ver «PDF, Word y materias»).</li>
               </ul>
             </section>
           </div>
@@ -608,52 +696,57 @@
         <div class="tab-panel" id="modal-panel-extras" role="tabpanel" aria-labelledby="tab-extras" tabindex="0">
           <div class="guia">
             <section class="guia-sec">
-              <h3>Exportar el examen en PDF o Word</h3>
-              <p>Con el XML generado, el botón <strong>Exportar examen</strong> (también el botón <em>PDF</em> de cada examen en Mis materias) abre una pantalla con tus datos a la izquierda y la <strong>vista previa</strong> de la página a la derecha, que se rehace al cambiar cualquier dato. Es un documento de apoyo para papel y archivo: sale de las mismas preguntas y la misma clave que el XML, y lo que se importa a Moodle sigue siendo el XML.</p>
+              <h3>Exportar la evaluación en PDF o Word</h3>
+              <p>Con el XML generado, el botón <strong>Exportar evaluación</strong> (también el botón <em>Exportar</em> de cada evaluación en Mis materias) abre una pantalla con las opciones a la izquierda, en cuatro pestañas (<em>Evaluación</em>, <em>Encabezado</em>, <em>Página</em> y <em>Preguntas</em>), y la <strong>vista previa</strong> a la derecha, que se rehace al cambiar cualquier dato. <em>Ampliar</em> la pone a todo el ancho. Es un documento de apoyo para papel y archivo: sale de las mismas preguntas y la misma clave que el XML, y lo que se importa a Moodle sigue siendo el XML.</p>
               <ul class="guia-lista">
-                <li><strong>Qué incluir:</strong> el examen y su clave (la clave va en páginas aparte), solo el examen, solo la clave, o <em>folleto + hoja de respuestas + clave</em>: un folleto de preguntas sin espacios para escribir, una hoja para que el estudiante conteste y la clave, que es esa misma hoja ya llena.</li>
+                <li><strong>¿Cómo contestan los estudiantes?</strong> <em>En la misma evaluación</em> (cada pregunta con su espacio) o <em>en una hoja de respuestas aparte</em>: una hoja de preguntas sin espacios para escribir, una hoja para que el estudiante conteste y la clave, que es esa misma hoja ya llena.</li>
+                <li><strong>Qué imprimir:</strong> al hacer clic en <em>Exportar</em> eliges un documento (evaluación u hoja de preguntas, hoja de respuestas o clave), ves cómo queda y lo descargas; la ventana sigue abierta para el siguiente. Vale igual para el Word.</li>
+                <li><strong>Modo folleto (solo PDF):</strong> pone dos páginas en cada cara de la hoja, en el orden correcto para imprimir a <strong>doble cara volteando por el borde corto</strong>, apilar y doblar por la mitad: queda un librito y ahorra papel. Tiene su propio tamaño de letra (8,5 pt de fábrica). El Word sale siempre normal.</li>
                 <li><strong>Formato del archivo:</strong> <em>PDF</em> (listo para imprimir), <em>Word</em> (un .docx editable, con estilos de párrafo con nombre, tablas y «Página X de Y») o <em>PDF y Word</em> en un ZIP. Los dos salen del mismo plan: mismas preguntas, mismo orden de las opciones, misma clave y mismo formato; en Word la paginación puede variar un poco. La vista previa es la del PDF.</li>
-                <li><strong>Encabezado:</strong> institución, facultad, departamento, hasta dos logos, materia, actividad, grupo, fecha, nombre del docente e indicaciones generales, con el cuadro de nombre, cédula, grupo y fecha.</li>
+                <li><strong>Encabezado:</strong> institución, facultad, departamento, hasta dos logos, materia, tipo de actividad, grupo, fecha, nombre del docente e indicaciones generales, con el cuadro de nombre, cédula, grupo y fecha.</li>
+                <li><strong>Cuadro de puntos por parte</strong> (pestaña <em>Encabezado</em>): en la primera hoja, «PARTE I, II, III… TOTAL» con lo que vale cada una y un renglón para anotar lo obtenido al corregir. Sustituye a la casilla suelta de «Calificación»; con hoja de respuestas aparte va en esa hoja. Necesita <em>Dividir en partes</em>.</li>
                 <li><strong>Partes:</strong> las preguntas se agrupan por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con su indicación para el estudiante y su valor.</li>
-                <li><strong>Enunciado compartido:</strong> sale una sola vez, con «responda las preguntas … a …» según la numeración impresa. En las versiones, sus preguntas se mueven juntas. Si el grupo mezcla tipos y está activado <em>Partes</em>, se repite en cada parte y la app lo avisa.</li>
-                <li><strong>Opciones mezcladas:</strong> en los documentos la clave suele ir en orden (1-a, 2-b, 3-c…) y en papel eso delata las respuestas. La app baraja las opciones y la Columna B de los emparejamientos; la clave usa siempre las letras impresas.</li>
-                <li><strong>Formato:</strong> papel Carta, Legal o A4; márgenes como los de Word; tipo de letra (DejaVu Sans, Arial o Times New Roman) y tamaño por separado para los títulos y para las preguntas; alto del recuadro en blanco donde se contesta cada ensayo; mostrar o no el valor de cada pregunta.</li>
-                <li><strong>Espacio para el procedimiento:</strong> si lo activas (en <em>Formato</em>), las preguntas numéricas o de respuesta corta llevan un recuadro en blanco con marco antes de la respuesta; en folleto y hoja de respuestas va en la hoja.</li>
-                <li><strong>Orden e indicaciones de las partes:</strong> en <em>Partes del examen</em> cambias qué parte va primero y, si quieres, escribes tu propio nombre e indicación; lo que dejes vacío se escribe solo. El número de la parte y su valor son automáticos. Se recuerdan para el próximo examen y se guardan en los perfiles de encabezado.</li>
+                <li><strong>Enunciado compartido:</strong> sale una sola vez, con «responda las preguntas … a …» según la numeración impresa. En las versiones, sus preguntas se mueven juntas. Si el grupo mezcla tipos y está activado <em>Dividir en partes</em>, no se separa: el enunciado y sus imágenes salen una sola vez y debajo van sus preguntas, con una parte por cada tipo; las demás preguntas forman sus propias partes antes o después, según dónde esté el enunciado.</li>
+                <li><strong>Opciones mezcladas:</strong> en los documentos la clave suele ir en orden (1-a, 2-b, 3-c…) y en papel eso delata las respuestas. Cátedra baraja las opciones y la Columna B de los emparejamientos; la clave usa siempre las letras impresas.</li>
+                <li><strong>Página:</strong> papel Carta, Legal o A4; márgenes como los de Word; tipo de letra (DejaVu Sans, Arial o Times New Roman) y tamaño por separado para los títulos y para las preguntas; alto del recuadro en blanco donde se contesta cada pregunta de desarrollo. En <em>Preguntas</em> eliges si se muestra el valor de cada una.</li>
+                <li><strong>Espacio para el procedimiento:</strong> si lo activas (en <em>Página</em>), las preguntas numéricas o de respuesta corta llevan un recuadro en blanco con marco antes de la respuesta; con hoja de respuestas aparte va en la hoja de respuestas.</li>
+                <li><strong>Orden e indicaciones de las partes:</strong> en <em>Preguntas › Partes de la evaluación</em> cambias qué parte va primero, marcas cuáles empiezan <strong>en hoja nueva</strong> y, si quieres, escribes tu propio nombre e indicación; lo que dejes vacío se escribe solo. El número de la parte y su valor son automáticos. Se recuerdan para la próxima evaluación y se guardan en los perfiles de encabezado.</li>
+                <li><strong>Tamaño y posición de las imágenes</strong> (pestaña <em>Preguntas</em>, si la evaluación tiene alguna): cada una pequeña, mediana, grande o <em>a todo el ancho</em>, y alineada a la izquierda, al centro o a la derecha (a todo el ancho ocupa de margen a margen). No cambia la evaluación ni el XML.</li>
+                <li><strong>Fórmulas:</strong> las sencillas salen como texto; las matrices, las integrales y sumas con límites, los límites y las fracciones o raíces compuestas se <strong>dibujan</strong> como en un libro. Una fórmula con un comando que no se reconoce queda escrita tal cual y Cátedra lo avisa: no se adivina.</li>
                 <li><strong>La clave</strong> imprime la letra Y el texto de cada respuesta, porque Moodle mezcla las opciones.</li>
               </ul>
             </section>
 
             <section class="guia-sec">
               <h3>Puntos enteros en el PDF</h3>
-              <p>En papel, un valor como 6,67 complica calificar y deja errores de redondeo. La opción <strong>Puntos enteros</strong> (en <em>Formato</em>, activada de fábrica) hace que el PDF use solo números enteros con el mismo total. <strong>El XML de Moodle no cambia</strong>: allí los puntos siguen como en el editor y Moodle los suma solo.</p>
+              <p>En papel, un valor como 6,67 complica calificar y deja errores de redondeo. La opción <strong>Puntos enteros</strong> (en la pestaña <em>Preguntas</em>, activada de fábrica) hace que el PDF use solo números enteros con el mismo total. <strong>El Moodle XML no cambia</strong>: allí los puntos siguen como en el editor y Moodle los suma solo.</p>
               <ul class="guia-lista">
                 <li><strong>Cómo se reparten:</strong> si se puede, todas las preguntas de un mismo tipo valen lo mismo (por ejemplo 7, 3 y 10 en vez de 6,67, 3,33 y 10). Si no, algunas del mismo tipo valen 1 punto más, y la pantalla te lo dice.</li>
                 <li><strong>Totales que sí cuadran:</strong> cuando no hay reparto en iguales, la pantalla ofrece totales cercanos que sí lo permiten (por ejemplo 90 o 105 en vez de 100). Elegirlos solo cambia el total del PDF.</li>
-                <li><strong>Tú decides:</strong> en <em>Puntos de cada pregunta en el PDF</em> ves cuánto valdrá cada una (y cuánto vale en Moodle) y puedes cambiar cualquiera; el total del PDF será la suma de lo que ves. Si prefieres medios puntos, desactiva la opción (también en tu perfil de encabezado).</li>
+                <li><strong>Tú decides:</strong> en el panel <em>Puntos enteros</em>, encima de la vista previa, ves cuánto valdrá cada una (y cuánto vale en Moodle) y puedes cambiar cualquiera; el total del PDF será la suma de lo que ves. Si prefieres medios puntos, desactiva la opción (también en tu perfil de encabezado).</li>
               </ul>
             </section>
             <section class="guia-sec">
-              <h3>Varias versiones de un examen</h3>
-              <p>Si subiste un examen de, digamos, 100 preguntas, ese examen puede hacer de <strong>banco</strong>: en el XML de Moodle lo usas completo y configuras allí el sorteo al azar; para <strong>papel</strong>, la sección <em>Versiones del examen</em> de la pantalla del PDF saca varios parciales distintos, cada uno con su clave.</p>
+              <h3>Varias versiones de una evaluación</h3>
+              <p>Si subiste una evaluación de, digamos, 100 preguntas, esa evaluación puede hacer de <strong>banco</strong>: en el Moodle XML va completa y configuras allí el sorteo al azar; para <strong>papel</strong>, la sección <em>Versiones de la evaluación</em> (pestaña <em>Evaluación</em>) saca varios parciales distintos, cada uno con su clave.</p>
               <ul class="guia-lista">
                 <li><strong>Cuántas versiones y cuántas preguntas:</strong> «Totalmente al azar» toma, por ejemplo, 25 de las 100 sin mirar el tipo. «Elegir cuántas de cada tipo» detecta los tipos que hay y te deja pedir una cantidad de cada uno (con «Todas», ese tipo queda igual en cada versión).</li>
-                <li><strong>No repetir:</strong> mientras las preguntas alcancen, ninguna sale en dos versiones. Si no alcanzan, se repiten las menos posibles y la app te lo dice antes de sortear.</li>
+                <li><strong>No repetir:</strong> mientras las preguntas alcancen, ninguna sale en dos versiones. Si no alcanzan, se repiten las menos posibles y Cátedra te lo dice antes de sortear.</li>
                 <li><strong>Revisa cada versión:</strong> cada una tiene su pestaña con su vista previa. Puedes sortear de nuevo cuando quieras.</li>
-                <li><strong>Los puntos:</strong> cada versión muestra cuánto suma. Si no es el total que quieres (por ejemplo 100), pulsa <em>Ajustar</em> (según el tipo o en partes iguales) o cambia los puntos pregunta por pregunta. La app no cambia puntos por su cuenta.</li>
-                <li><strong>Qué sale:</strong> un ZIP con un PDF por versión, o un Word, o los dos, según el <em>Formato del archivo</em> (examen y clave, o folleto, hoja y clave, según lo que hayas elegido en «Qué incluir»). Cada archivo dice «VERSIÓN A», «VERSIÓN B»… también en su clave, y la clave de cada versión es la de sus propias preguntas.</li>
+                <li><strong>Los puntos:</strong> cada versión muestra cuánto suma. Si no es el total que quieres (por ejemplo 100), abre <em>Ajustar los puntos</em> y haz clic en <em>Ajustar</em> (según el tipo o en partes iguales) o cambia los puntos pregunta por pregunta. Cátedra no cambia puntos por su cuenta.</li>
+                <li><strong>Qué sale:</strong> un ZIP con un PDF por versión, o un Word, o los dos, según el <em>Formato del archivo</em> (un documento cada vez; el PDF, normal o en modo folleto). Cada archivo dice «VERSIÓN A», «VERSIÓN B»… también en su clave, y la clave de cada versión es la de sus propias preguntas.</li>
               </ul>
             </section>
 
             <section class="guia-sec">
               <h3>Mis materias</h3>
-              <p>El botón <strong>Mis materias</strong> de la cabecera es tu biblioteca: cada materia es un espacio con todos sus exámenes.</p>
+              <p>El botón <strong>Mis materias</strong> de la cabecera es tu biblioteca: cada materia es un espacio con todas sus evaluaciones.</p>
               <ul class="guia-lista">
-                <li><strong>Elige la materia al cargar el examen</strong> (paso 1), con una actividad opcional como «Parcial 1». Puedes cambiarla al terminar, en la pantalla final.</li>
-                <li><strong>Dentro de una materia:</strong> busca, <em>Reabrir</em> la revisión, descarga el XML, exporta el PDF, y con <em>Organizar</em> cambia su materia o su actividad, o bórralo. <strong>Nuevo examen en esta materia</strong> vuelve al paso 1 con ella elegida.</li>
-                <li><strong>Valores por defecto:</strong> cada materia puede traer su perfil de encabezado, su docente y su grupo; la pantalla del PDF los usa al exportar.</li>
-                <li><strong>Sin materia y Todos los exámenes</strong> completan la pantalla. Con <em>Elegir todos</em> puedes mover o borrar muchos de una vez. Un <strong>asistente</strong> propone la materia de los exámenes viejos según su categoría y su nombre; tú decides qué se mueve.</li>
-                <li><strong>Espacio:</strong> se guardan hasta 300 exámenes (400 MB). Al llenarse se borran primero los que <em>no tienen materia</em>, los más antiguos antes; la app avisa al acercarse y muestra cuánto espacio usas. Borrar o archivar una materia no borra sus exámenes.</li>
+                <li><strong>Elige la materia al empezar</strong> (al cargar el archivo o en los datos de una evaluación nueva), con un tipo de actividad opcional como «Parcial 1». Puedes cambiarla al terminar, en la pantalla final.</li>
+                <li><strong>Dentro de una materia:</strong> busca, <em>Reabrir</em> en el editor, descarga el XML, <em>Exportar</em> en PDF o Word, y con <em>Organizar</em> cambia su materia o su tipo de actividad, o bórrala. <strong>Nueva evaluación en esta materia</strong> vuelve a la primera pantalla con ella elegida.</li>
+                <li><strong>Valores predeterminados:</strong> cada materia puede traer su perfil de encabezado, su docente y su grupo; la pantalla de exportar los usa al exportar.</li>
+                <li><strong>Sin materia y Todas las evaluaciones</strong> completan la pantalla. Con <em>Elegir todas</em> puedes mover o borrar muchas de una vez. Un <strong>asistente</strong> propone la materia de las evaluaciones viejas según su categoría y su nombre; tú decides qué se mueve.</li>
+                <li><strong>Espacio:</strong> se guardan hasta 300 evaluaciones (400 MB). Al llenarse se borran primero las que <em>no tienen materia</em>, las más antiguas antes; Cátedra avisa al acercarse y muestra cuánto espacio usas. Borrar o archivar una materia no borra sus evaluaciones.</li>
               </ul>
             </section>
 
@@ -663,7 +756,7 @@
               <ul class="guia-lista">
                 <li><strong>Mis datos:</strong> tu nombre y cómo te llamas en el encabezado (Facilitador, Docente o Profesor).</li>
                 <li><strong>Perfiles de encabezado:</strong> institución, logos, indicaciones generales y formato de impresión, con vista previa. Crea uno por cada institución donde das clase, duplícalo, renómbralo y marca el que más uses como <em>predeterminado</em>.</li>
-                <li><strong>Qué manda:</strong> al exportar, la pantalla empieza con lo de la materia (su perfil, docente y grupo); si no, con tu perfil predeterminado y tus datos; si no, con lo último que escribiste. Siempre puedes cambiarlo en ese examen.</li>
+                <li><strong>Qué manda:</strong> al exportar, la pantalla empieza con lo de la materia (su perfil, docente y grupo); si no, con tu perfil predeterminado y tus datos; si no, con lo último que escribiste. Siempre puedes cambiarlo en esa evaluación.</li>
               </ul>
               <p class="guia-nota">Todo se guarda solo en este equipo.</p>
             </section>
@@ -673,29 +766,29 @@
         <!-- Tab 1: Format -->
         <div class="tab-panel" id="modal-panel-format" role="tabpanel" aria-labelledby="tab-format" tabindex="0">
           <p style="font-size:13.5px;color:var(--color-text-muted);margin-bottom:16px;">
-            <strong class="txt-fuerte">No es obligatorio:</strong> el sistema entiende exámenes con el formato habitual. Úsalo si escribes el examen directamente en un <code class="inline">.txt</code>: preguntas con <code class="inline">Pregunta N:</code> y la sección <code class="inline">RESPUESTAS</code> al final, sin lugar a dudas.
+            <strong class="txt-fuerte">No es obligatorio:</strong> Cátedra entiende evaluaciones con el formato habitual. Úsalo si escribes la evaluación directamente en un <code class="inline">.txt</code>: preguntas con <code class="inline">Pregunta N:</code> y la sección <code class="inline">RESPUESTAS</code> al final, sin lugar a dudas.
           </p>
 
           <div class="pila-14">
             <div class="caja-guia caja-compacta">
-              <span class="type-badge multichoice">1. Opción múltiple</span>
+              <span class="type-badge guia-tipo multichoice"><i data-lucide="list-checks" aria-hidden="true"></i>1. Selección múltiple</span>
               <div class="code-block mt-8">Pregunta 1:
 ¿Cuál es la función principal de un compilador?
 A. Ejecutar código línea por línea
 B. Traducir código fuente a lenguaje máquina
 C. Gestionar la memoria RAM del sistema
 D. Diseñar interfaces gráficas de usuario</div>
-              <p class="nota-pie">No estás limitado a 4 opciones: si tu pregunta tiene 5 o 6, agrega <code class="inline">E.</code>, <code class="inline">F.</code>, etc. — el sistema las reconoce todas. Tampoco tiene que ser una sola respuesta correcta: si la pregunta dice "selecciona todas las que correspondan", el sistema lo detecta automáticamente por cuántas respuestas listes en RESPUESTAS.</p>
+              <p class="nota-pie">No estás limitado a 4 opciones: si tu pregunta tiene 5 o 6, agrega <code class="inline">E.</code>, <code class="inline">F.</code>, etc. — Cátedra las reconoce todas. Tampoco tiene que ser una sola respuesta correcta: si la pregunta dice "selecciona todas las que correspondan", Cátedra lo detecta automáticamente por cuántas respuestas listes en RESPUESTAS.</p>
             </div>
 
             <div class="caja-guia caja-compacta">
-              <span class="type-badge truefalse">2. Verdadero / Falso</span>
+              <span class="type-badge guia-tipo truefalse"><i data-lucide="circle-check" aria-hidden="true"></i>2. Verdadero o falso</span>
               <div class="code-block mt-8">Pregunta 2:
 Afirmación: La arquitectura REST utiliza el protocolo HTTP para comunicarse.</div>
             </div>
 
             <div class="caja-guia caja-compacta">
-              <span class="type-badge matching">3. Emparejamiento</span>
+              <span class="type-badge guia-tipo matching"><i data-lucide="arrow-left-right" aria-hidden="true"></i>3. Emparejamiento</span>
               <div class="code-block mt-8">Pregunta 3:
 Relaciona los patrones de diseño con su categoría.
 
@@ -712,31 +805,31 @@ c. Estructural</div>
             </div>
 
             <div class="caja-guia caja-compacta">
-              <span class="type-badge cloze">4. Completar espacios</span>
+              <span class="type-badge guia-tipo cloze"><i data-lucide="text-cursor-input" aria-hidden="true"></i>4. Completar</span>
               <div class="code-block mt-8">Pregunta 4:
 En Python, la palabra clave para definir una función es [A: def / function / void] y para las clases es [B: class / struct / type].</div>
               <p class="nota-pie">Cada espacio admite <strong>una</strong> respuesta correcta (el caso más común, el estudiante ve un desplegable) o <strong>varias a la vez</strong> si la pregunta pide "selecciona todas las que correspondan" (el estudiante ve casillas de verificación) — se indica en RESPUESTAS, no en la pregunta.</p>
             </div>
 
             <div class="caja-guia caja-compacta">
-              <span class="type-badge essay">5. Ensayo</span>
+              <span class="type-badge guia-tipo essay"><i data-lucide="pencil-line" aria-hidden="true"></i>5. Desarrollo</span>
               <div class="code-block mt-8">Pregunta 5:
 Explica con tus propias palabras las causas principales de la Revolución Francesa.</div>
-              <p class="nota-pie">Pregunta de respuesta abierta — el estudiante escribe libremente y <strong>el docente la califica manualmente en Moodle</strong>, no se autocalifica. Úsala para preguntas de desarrollo, análisis u opinión que el sistema no podría corregir por sí solo.</p>
+              <p class="nota-pie">Pregunta de respuesta abierta — el estudiante escribe libremente y <strong>el docente la califica manualmente en Moodle</strong>, no se autocalifica. Úsala para preguntas de desarrollo, análisis u opinión que Moodle no podría corregir por sí solo.</p>
             </div>
 
             <div class="caja-guia caja-compacta">
-              <span class="type-badge shortanswer">6. Respuesta corta</span>
+              <span class="type-badge guia-tipo shortanswer"><i data-lucide="type" aria-hidden="true"></i>6. Respuesta corta</span>
               <div class="code-block mt-8">Pregunta 6:
 ¿Cómo se llama el proceso mediante el cual las plantas convierten la luz solar en energía?</div>
-              <p class="nota-pie">Para preguntas que esperan una sola palabra o frase corta como respuesta. Moodle la califica comparando el texto, sin distinguir mayúsculas y aceptando la respuesta sin tildes. No acepta otras formas de redactarla: si la respuesta admite variantes, usa Ensayo.</p>
+              <p class="nota-pie">Para preguntas que esperan una sola palabra o frase corta como respuesta. Moodle la califica comparando el texto, sin distinguir mayúsculas y aceptando la respuesta sin tildes. No acepta otras formas de redactarla: si la respuesta admite variantes, usa Desarrollo.</p>
             </div>
 
             <div class="caja-guia caja-compacta">
-              <span class="type-badge numerical">7. Numérica</span>
+              <span class="type-badge guia-tipo numerical"><i data-lucide="hash" aria-hidden="true"></i>7. Numérica</span>
               <div class="code-block mt-8">Pregunta 7:
 ¿Cuánto es 15 multiplicado por 4?</div>
-              <p class="nota-pie">Para preguntas cuya respuesta es un número. En RESPUESTAS va solo el número (ej. "60"), sin palabras ni unidades y <strong>sin separador de miles</strong> (1000, no 1,000 ni 1.000: la coma y el punto se toman como decimal). Moodle compara el número exacto (tolerancia 0).</p>
+              <p class="nota-pie">Para preguntas cuya respuesta es un número. En RESPUESTAS va solo el número (por ejemplo, «60»), sin palabras ni unidades y <strong>sin separador de miles</strong> (1000, no 1,000 ni 1.000: la coma y el punto se toman como decimal). Moodle compara el número exacto (tolerancia 0).</p>
             </div>
 
             <div style="background:var(--color-surface);border:1px solid var(--color-accent);border-radius:var(--radius-md);padding:14px;">
@@ -764,7 +857,7 @@ Nº Tipo Respuesta correcta
         <div class="tab-panel" id="modal-panel-prompt" role="tabpanel" aria-labelledby="tab-prompt" tabindex="0">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
             <p style="font-size:13.5px;color:var(--color-text-muted);flex:1 1 260px;margin:0;">
-              <strong class="txt-fuerte">Alternativa, normalmente no hace falta.</strong> Si el sistema no reconoce bien tu documento, pega estas instrucciones en la IA que prefieras junto con el examen, guarda la respuesta como .txt y súbela en el paso 1.
+              <strong class="txt-fuerte">Alternativa, normalmente no hace falta.</strong> Si Cátedra no reconoce bien tu documento, pega estas instrucciones en la IA que prefieras junto con la evaluación, guarda la respuesta como .txt y súbela con <em>Convertir un documento</em>.
             </p>
             <button type="button" id="btn-copy-prompt" class="btn btn-ghost btn-sm" style="white-space:nowrap;flex-shrink:0;">
               <i data-lucide="copy" id="copy-icon" class="ico-14"></i>
@@ -839,7 +932,7 @@ Nº  Tipo            Respuesta correcta
 4   completar       A. opción correcta del espacio A; B. opción correcta del espacio B
 5   ensayo          (deja una nota breve como "respuesta abierta" — nunca inventes ni resuelvas)
 6   respuestacorta  Texto exacto de la respuesta corta esperada
-7   numerico        Solo el número (ej. "60"), nunca escrito en palabras ni con unidades
+7   numerico        Solo el número (por ejemplo, «60»), nunca escrito en palabras ni con unidades
 
 Ejemplo real de cómo debe verse un emparejamiento completo (nota que el orden NO es alfabético — así es exactamente como debe ir si esa es la correspondencia real del examen original):
 
@@ -865,7 +958,7 @@ Ejemplo real de cómo debe verse un emparejamiento completo (nota que el orden N
 - Si el examen original ya trae la clave en formato "1-c, 2-a, 3-b" o similar, transcríbela tal cual, sin reinterpretarla.
 - Para completar, documenta CADA espacio por separado con el formato "Letra. respuesta"; si hay varios espacios, sepáralos con "; " (ej. "A. respuesta1; B. respuesta2") — no solo el primero. Si un espacio acepta varias respuestas correctas a la vez, sepáralas con " | " dentro de esa misma letra (ej. "A. opción1 | opción3").
 - Para ensayo, NUNCA resuelvas la pregunta ni escribas "SIN_RESPUESTA" — deja una nota breve tipo "respuesta abierta, se califica manualmente" en RESPUESTAS.
-- Para numerico, escribe SOLO el número tal como está en el original (ej. "60"). Si el original lo escribió en palabras o con una unidad, transcríbelo exactamente como aparece, sin convertirlo ni inventar un valor.
+- Para numerico, escribe SOLO el número tal como está en el original (por ejemplo, «60»). Si el original lo escribió en palabras o con una unidad, transcríbelo exactamente como aparece, sin convertirlo ni inventar un valor.
 - Si una pregunta (que no sea ensayo) no tiene respuesta marcada en el original, escribe "SIN_RESPUESTA" en su lugar — nunca la resuelvas tú.
 - No agregues numeración extra, bullets, ni markdown. Solo texto plano.
 - Mantén tildes y caracteres especiales del español (á, é, í, ó, ú, ñ).
@@ -875,62 +968,31 @@ Ahora convierte el examen adjunto a este formato.</pre>
 
         <!-- Tab 3: Import into Moodle -->
         <div class="tab-panel" id="modal-panel-moodle" role="tabpanel" aria-labelledby="tab-moodle" tabindex="0">
-          <p style="font-size:13.5px;color:var(--color-text-muted);margin-bottom:16px;">
-            Ya tienes tu archivo <code class="inline">.xml</code> descargado. Así lo subes a Moodle:
-          </p>
-
-          <div class="pila-14">
-            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
-              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:var(--text-sm);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</span>
-              <div>
-                <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Crea el cuestionario en tu curso</p>
-                <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Dentro de tu curso, activa la edición y agrega una actividad de tipo <strong>Cuestionario</strong> (esto crea el "parcial" o examen donde irán las preguntas). Ponle un nombre y guarda.</p>
-              </div>
-            </div>
-
-            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
-              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:var(--text-sm);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</span>
-              <div>
-                <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Entra al Banco de preguntas</p>
-                <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Desde el menú del curso (o desde el cuestionario que acabas de crear), busca la opción <strong>Banco de preguntas</strong>.</p>
-              </div>
-            </div>
-
-            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
-              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:var(--text-sm);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</span>
-              <div>
-                <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Importa el archivo</p>
-                <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Dentro del Banco de preguntas, ve a la pestaña <strong>Importar</strong>. Elige el formato <strong>"Formato XML de Moodle"</strong>, selecciona tu archivo .xml y presiona Importar. Moodle te mostrará cuántas preguntas se cargaron correctamente.</p>
-              </div>
-            </div>
-
-            <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
-              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-primary);color:#fff;font-size:var(--text-sm);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</span>
-              <div>
-                <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Añade las preguntas al cuestionario</p>
-                <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Las preguntas importadas quedan guardadas en el banco, pero todavía no están dentro del examen. Abre tu cuestionario, entra a "Editar cuestionario" y usa la opción para <strong>agregar preguntas desde el banco</strong> — selecciona las que acabas de importar.</p>
-              </div>
-            </div>
-
-            <div style="background:var(--color-surface);border:1px solid var(--color-success);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;">
-              <span style="width:26px;height:26px;border-radius:50%;background:var(--color-success-solid);color:#fff;font-size:var(--text-sm);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">5</span>
-              <div>
-                <p style="font-weight:700;font-size:14px;margin-bottom:4px;">Termina de configurar y publica</p>
-                <p style="font-size:13px;color:var(--color-text-muted);line-height:1.6;">Ajusta lo que falte del cuestionario: fecha y hora de apertura/cierre, tiempo límite, intentos permitidos y cómo se calcula la nota. Guarda los cambios y el examen queda listo para tus estudiantes.</p>
-              </div>
-            </div>
+          <div class="guia">
+            <section class="guia-sec">
+              <h3>Súbelo a Moodle</h3>
+              <p>Ya tienes tu archivo <code class="inline">.xml</code> descargado. Son cinco pasos.</p>
+              <ol class="guia-pasos">
+              <li><span class="guia-paso-num" aria-hidden="true">1</span><div><h4>Crea el cuestionario en tu curso</h4><p>Dentro de tu curso, activa la edición y agrega una actividad de tipo <strong>Cuestionario</strong> (esto crea el "parcial" o la evaluación donde irán las preguntas). Ponle un nombre y guarda.</p></div></li>
+              <li><span class="guia-paso-num" aria-hidden="true">2</span><div><h4>Entra al Banco de preguntas</h4><p>Desde el menú del curso (o desde el cuestionario que acabas de crear), busca la opción <strong>Banco de preguntas</strong>.</p></div></li>
+              <li><span class="guia-paso-num" aria-hidden="true">3</span><div><h4>Importa el archivo</h4><p>Dentro del Banco de preguntas, ve a la pestaña <strong>Importar</strong>. Elige el formato <strong>"Formato XML de Moodle"</strong>, selecciona tu archivo .xml y haz clic en Importar. Moodle te mostrará cuántas preguntas se cargaron correctamente.</p></div></li>
+              <li><span class="guia-paso-num" aria-hidden="true">4</span><div><h4>Agrega las preguntas al cuestionario</h4><p>Las preguntas importadas quedan guardadas en el banco, pero todavía no están dentro de la evaluación. Abre tu cuestionario, entra a "Editar cuestionario" y usa la opción para <strong>agregar preguntas desde el banco</strong> — selecciona las que acabas de importar.</p></div></li>
+              <li><span class="guia-paso-num" aria-hidden="true">5</span><div><h4>Termina de configurar y publica</h4><p>Ajusta lo que falte del cuestionario: fecha y hora de apertura/cierre, tiempo límite, intentos permitidos y cómo se calcula la nota. Guarda los cambios y la evaluación queda lista para tus estudiantes.</p></div></li>
+              </ol>
+            </section>
           </div>
 
           <div class="callout" style="margin-top:16px;">
             <i data-lucide="file-text"></i>
-            <span><strong>¿Lo quieres también en papel?</strong> En la pantalla final, <em>Exportar examen</em> genera el mismo examen en PDF o Word, listo para imprimir, y su clave de respuestas (en páginas aparte). Es solo un apoyo: a Moodle siempre se importa el XML.</span>
+            <span><strong>¿La quieres también en papel?</strong> En la pantalla final, <em>Exportar evaluación</em> genera la misma evaluación en PDF o Word, lista para imprimir, y su clave de respuestas (en páginas aparte). Es solo un apoyo: a Moodle siempre se importa el XML.</span>
           </div>
 
           <div class="callout" style="margin-top:16px;">
             <i data-lucide="info"></i>
-            <span>Los nombres y la ubicación de los menús cambian según la versión de Moodle de tu institución; lo que no cambia es el orden: crear el cuestionario, importar el XML en el banco de preguntas y añadir esas preguntas al cuestionario.</span>
+            <span>Los nombres y la ubicación de los menús cambian según la versión de Moodle de tu institución; lo que no cambia es el orden: crear el cuestionario, importar el XML en el banco de preguntas y agregar esas preguntas al cuestionario.</span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   </div>
@@ -953,15 +1015,16 @@ Ahora convierte el examen adjunto a este formato.</pre>
         <span class="vp-avatar" id="vp-avatar" aria-hidden="true"></span>
         <div class="vm-cab-texto">
           <h2 id="vp-titulo" class="vm-titulo">Mi perfil</h2>
-          <p class="vm-sub">Tus datos y tus encabezados. Se usan al exportar un examen en PDF o Word, para no escribirlos cada vez. Todo queda guardado solo en este equipo.</p>
+          <p class="vm-sub">Tus datos y tus encabezados. Se usan al exportar una evaluación en PDF o Word, para no escribirlos cada vez. Todo queda guardado solo en este equipo.</p>
         </div>
       </header>
 
-      <section class="vp-seccion" aria-labelledby="vp-datos-titulo">
+      <section class="vp-seccion vp-mis-datos" aria-labelledby="vp-datos-titulo">
+        <div>
         <h3 class="vp-seccion-titulo" id="vp-datos-titulo">Mis datos</h3>
         <form id="vp-form" class="vp-datos" novalidate>
           <div class="form-group">
-            <label class="field-label" for="vp-nombre">Mi nombre en los exámenes</label>
+            <label class="field-label" for="vp-nombre">Mi nombre en las evaluaciones</label>
             <input type="text" id="vp-nombre" class="form-input" maxlength="160" autocomplete="name" placeholder="Ej.: Ing. Ana Pérez">
           </div>
           <div class="form-group">
@@ -974,7 +1037,15 @@ Ahora convierte el examen adjunto a este formato.</pre>
           </div>
           <button type="submit" id="btn-vp-guardar" class="btn btn-primary">Guardar</button>
         </form>
-        <p class="field-hint" id="vp-datos-pista">Sale así en el encabezado: <strong id="vp-ejemplo">FACILITADOR: …</strong>. Una materia puede traer otro nombre (por ejemplo, si das la materia con alguien más).</p>
+        </div>
+        <figure class="vp-vista-datos">
+          <figcaption>Así sale en el encabezado</figcaption>
+          <div class="vp-papel">
+            <div class="vp-papel-cab" id="vp-papel-cab" aria-hidden="true"></div>
+            <div class="vp-papel-linea"><strong id="vp-ejemplo">FACILITADOR: …</strong><span aria-hidden="true">CALIFICACIÓN: ______</span></div>
+          </div>
+          <p class="field-hint" id="vp-datos-pista">La institución sale de tu perfil predeterminado. Una materia puede traer otro nombre (por ejemplo, si la das con alguien más).</p>
+        </figure>
       </section>
 
       <section class="vp-seccion" aria-labelledby="vp-perfiles-titulo">
@@ -1065,7 +1136,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
                     </select>
                   </div>
                   <div class="form-group">
-                    <label class="field-label" for="pe-renglones">Alto del recuadro de ensayo (renglones)</label>
+                    <label class="field-label" for="pe-renglones">Alto del recuadro de desarrollo (renglones)</label>
                     <input type="number" id="pe-renglones" class="form-input" min="2" max="24" step="1" value="6">
                   </div>
                   <div class="form-group">
@@ -1085,31 +1156,33 @@ Ahora convierte el examen adjunto a este formato.</pre>
                   </div>
                 </div>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-mezclar"> <span><strong>Mezclar el orden de las opciones</strong><small>Para que la clave no forme un patrón (1-a, 2-b, 3-c).</small></span></label>
-                <label class="pdf-opcion"><input type="checkbox" id="pe-partes"> <span><strong>Dividir el examen en partes</strong><small>Agrupa las preguntas por tipo, con su indicación y su valor.</small></span></label>
+                <label class="pdf-opcion"><input type="checkbox" id="pe-partes"> <span><strong>Dividir la evaluación en partes</strong><small>Agrupa las preguntas por tipo, con su indicación y su valor.</small></span></label>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-puntos"> <span><strong>Mostrar cuánto vale cada pregunta</strong></span></label>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-enteros"> <span><strong>Puntos enteros</strong><small>El PDF usa solo números enteros, con el mismo total. El Moodle XML no cambia.</small></span></label>
+                <label class="pdf-opcion"><input type="checkbox" id="pe-cuadro"> <span><strong>Cuadro de puntos por parte</strong></span></label>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-campos"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-proc-numerica"> <span>Recuadro de procedimiento en las preguntas numéricas</span></label>
                 <label class="pdf-opcion"><input type="checkbox" id="pe-proc-corta"> <span>Recuadro de procedimiento en las de respuesta corta</span></label>
               </div>
             </details>
 
-            <label class="pdf-opcion"><input type="checkbox" id="pe-predeterminado"> <span><strong>Usar este perfil por defecto</strong><small>Al exportar un examen, la pantalla del PDF empieza con este encabezado. Una materia puede tener otro.</small></span></label>
+            <label class="pdf-opcion"><input type="checkbox" id="pe-predeterminado"> <span><strong>Usar como perfil predeterminado</strong><small>Al exportar una evaluación, la pantalla de exportar empieza con este encabezado. Una materia puede tener otro.</small></span></label>
             <p class="field-error" id="pe-error" role="alert" hidden></p>
           </div>
 
           <aside class="pdf-vista" id="pe-vista" hidden aria-label="Vista previa del encabezado">
-            <div class="pdf-vista-barra"><span>Así sale, con un examen de ejemplo</span></div>
+            <div class="pdf-vista-barra"><span>Así sale, con una evaluación de ejemplo</span></div>
             <div class="pdf-vista-marco">
               <img id="pe-vista-img" alt="Vista previa de la primera página" hidden>
               <p id="pe-vista-estado" class="pdf-vista-estado" role="status"></p>
             </div>
           </aside>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer mat-pie pe-pie">
           <button type="button" id="btn-pe-vista" class="btn btn-ghost" aria-pressed="false" aria-controls="pe-vista"><i data-lucide="eye" class="ico-16"></i> Vista previa</button>
-          <button type="submit" id="btn-pe-guardar" class="btn btn-primary">Guardar perfil</button>
+          <span class="mat-pie-espacio"></span>
           <button type="button" id="btn-pe-cancelar" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" id="btn-pe-guardar" class="btn btn-primary">Guardar perfil</button>
         </div>
       </form>
     </div>
@@ -1138,7 +1211,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
 
   <!-- Crear o editar una materia -->
   <div id="modal-materia" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="mat-titulo">
-    <div class="modal-box modal-sm">
+    <div class="modal-box modal-md">
       <div class="modal-header">
         <h2 class="modal-title" id="mat-titulo">
           <i data-lucide="library" style="width:20px;height:20px;color:var(--color-accent);"></i>
@@ -1159,9 +1232,9 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <div id="mat-colores" class="mat-colores-fila"></div>
           </fieldset>
           <details class="pdf-seccion" id="mat-defectos">
-            <summary><span>Valores por defecto para el PDF</span><small id="mat-resumen-defectos"></small></summary>
+            <summary><span>Valores predeterminados al exportar</span><small id="mat-resumen-defectos"></small></summary>
             <div class="pdf-seccion-cuerpo">
-              <p class="field-hint" style="margin:0 0 10px;">Al exportar un examen de esta materia (PDF o Word), la pantalla ya trae estos datos.</p>
+              <p class="field-hint" style="margin:0 0 10px;">Al exportar una evaluación de esta materia (PDF o Word), la pantalla ya trae estos datos.</p>
               <div class="form-group">
                 <label class="field-label" for="mat-perfil">Perfil de encabezado</label>
                 <select id="mat-perfil" class="form-input"><option value="">Ninguno</option></select>
@@ -1197,7 +1270,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       <div class="modal-header">
         <h2 class="modal-title" id="asi-titulo">
           <i data-lucide="wand-sparkles" style="width:20px;height:20px;color:var(--color-accent);"></i>
-          Ordenar los exámenes sin materia
+          Ordenar las evaluaciones sin materia
         </h2>
         <button type="button" id="btn-asi-cerrar" class="btn btn-icon" aria-label="Cerrar" title="Cerrar">
           <i data-lucide="x" class="ico-18"></i>
@@ -1230,7 +1303,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       </div>
       <div class="modal-body" style="padding:18px 24px 4px;">
         <p id="disclaimer-body" style="font-size:13.5px;line-height:1.7;color:var(--color-text);margin:0;">
-          Detectamos <strong>imágenes incrustadas</strong> en tu documento. El sistema las leerá automáticamente con IA, pero <strong>no es 100% fiable</strong>: es posible que alguna marca o transcripción no se detecte correctamente. Revisa cada pregunta antes de generar el XML.
+          Detectamos <strong>imágenes incrustadas</strong> en tu documento. Cátedra las leerá automáticamente con IA, pero <strong>no es 100% fiable</strong>: es posible que alguna marca o transcripción no se detecte correctamente. Revisa cada pregunta antes de generar el XML.
         </p>
       </div>
       <div class="modal-footer">
@@ -1271,7 +1344,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </div>
         <p id="orig-nota" class="orig-nota" hidden>No se pudo ubicar esta pregunta dentro de la página (dos columnas, escaneado o página girada): se muestra la página completa. Búscala en ella.</p>
         <div class="orig-propuesta">
-          <p class="orig-etiqueta">Respuesta que propone la app</p>
+          <p class="orig-etiqueta">Respuesta que propone Cátedra</p>
           <p id="orig-enunciado" class="orig-enunciado"></p>
           <p id="orig-respuesta" class="orig-respuesta"></p>
           <div id="orig-chips" class="card-procedencia" role="group" aria-label="De dónde sale la respuesta"></div>
@@ -1298,7 +1371,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
   <div id="vista-pdf" class="vista-materias vista-pdf" role="dialog" aria-modal="true" aria-labelledby="pdf-titulo">
     <div class="vm-barra">
       <nav class="vm-migas" aria-label="Dónde estás">
-        <span class="vm-miga" aria-current="page"><i data-lucide="file-text" class="ico-16"></i><span id="pdf-titulo">Exportar examen</span></span>
+        <span class="vm-miga" aria-current="page"><i data-lucide="file-text" class="ico-16"></i><span id="pdf-titulo">Exportar evaluación</span></span>
         <span class="vm-sep" aria-hidden="true">/</span>
         <strong id="pdf-migas-examen"></strong>
       </nav>
@@ -1311,96 +1384,115 @@ Ahora convierte el examen adjunto a este formato.</pre>
     <form id="pdf-form" class="pdf-form vpdf-form" novalidate>
       <div class="vpdf-cuerpo">
         <div class="vpdf-config" id="pdf-config" tabindex="-1">
-          <p class="pdf-intro" id="pdf-examen-nombre"></p>
-
-          <!-- Perfiles: el encabezado y el formato con nombre, para no escribirlos cada vez. -->
-          <div class="pdf-perfil">
-            <label class="field-label" for="pdf-perfil">Perfil de encabezado</label>
-            <div class="pdf-perfil-fila">
-              <select id="pdf-perfil" class="form-input"><option value="">Sin perfil</option></select>
-              <button type="button" id="btn-pdf-perfil-guardar" class="btn btn-ghost btn-sm" title="Guarda el encabezado y el formato de abajo con un nombre"><i data-lucide="save" class="ico-14"></i> Guardar perfil</button>
-              <button type="button" id="btn-pdf-perfil-borrar" class="btn btn-quiet btn-danger-text btn-sm" hidden>Borrar</button>
-            </div>
-            <div class="pdf-perfil-nuevo" id="pdf-perfil-nuevo" hidden>
-              <input type="text" id="pdf-perfil-nombre" class="form-input" maxlength="60" autocomplete="off" placeholder="Nombre del perfil, ej.: UTP Panamá" aria-label="Nombre del perfil">
-              <button type="button" id="btn-pdf-perfil-ok" class="btn btn-primary btn-sm">Guardar</button>
-              <button type="button" id="btn-pdf-perfil-cancelar" class="btn btn-ghost btn-sm">Cancelar</button>
-            </div>
-            <p class="field-hint pdf-pista" id="pdf-perfil-pista">Un perfil guarda el encabezado (institución, logos, indicaciones) y el formato. La materia, la actividad, el grupo y la fecha son de cada examen. Si el nombre ya existe, se reemplaza. Tu nombre y los perfiles se administran en <strong>Mi perfil</strong> (el ícono de arriba a la derecha).</p>
+          <!-- Cuatro pestañas (3.2): lo de cada examen primero; lo que se configura una vez, aparte. -->
+          <div class="vpdf-pestanas" id="pdf-pestanas" role="tablist" aria-label="Opciones de la exportación">
+            <button type="button" role="tab" id="pdf-tab-examen" class="vpdf-pestana" aria-controls="pdf-panel-examen" aria-selected="true">Evaluación</button>
+            <button type="button" role="tab" id="pdf-tab-encabezado" class="vpdf-pestana" aria-controls="pdf-panel-encabezado" aria-selected="false" tabindex="-1">Encabezado</button>
+            <button type="button" role="tab" id="pdf-tab-pagina" class="vpdf-pestana" aria-controls="pdf-panel-pagina" aria-selected="false" tabindex="-1">Página</button>
+            <button type="button" role="tab" id="pdf-tab-preguntas" class="vpdf-pestana" aria-controls="pdf-panel-preguntas" aria-selected="false" tabindex="-1">Preguntas</button>
           </div>
 
-          <fieldset class="pdf-grupo" id="pdf-datos-examen">
-            <legend class="field-label">Datos de este examen</legend>
-            <div class="config-grid">
-              <div class="form-group">
-                <label class="field-label" for="pdf-materia-sel">Materia</label>
-                <select id="pdf-materia-sel" class="form-input"><option value="">Otra: escribirla</option></select>
-                <input type="text" id="pdf-materia" class="form-input pdf-materia-texto" maxlength="160" autocomplete="off" placeholder="Ej.: Diseño de Interfaces" aria-label="Nombre de la materia">
-              </div>
-              <div class="form-group">
-                <label class="field-label" for="pdf-actividad">Tipo de actividad</label>
-                <input type="text" id="pdf-actividad" class="form-input" maxlength="160" autocomplete="off" list="pdf-actividades" placeholder="Ej.: Parcial N.2">
-                <datalist id="pdf-actividades"></datalist>
-              </div>
-              <div class="form-group">
-                <label class="field-label" for="pdf-grupo">Grupo o curso</label>
-                <input type="text" id="pdf-grupo" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: 1IL-131">
-              </div>
-              <div class="form-group">
-                <label class="field-label" for="pdf-fecha">Fecha del examen</label>
-                <input type="date" id="pdf-fecha" class="form-input">
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="pdf-grupo" id="pdf-grupo-incluir">
-            <legend class="field-label">Qué incluir</legend>
-            <label class="pdf-opcion"><input type="radio" name="contenido" value="examen_y_clave"> <span><strong>El examen y su clave</strong><small>La clave va en páginas aparte, al final. Imprime solo las primeras para los estudiantes.</small></span></label>
-            <label class="pdf-opcion"><input type="radio" name="contenido" value="solo_examen"> <span><strong>Solo el examen</strong><small>Sin respuestas: listo para entregar.</small></span></label>
-            <label class="pdf-opcion"><input type="radio" name="contenido" value="folleto_hoja_clave"> <span><strong>Folleto, hoja de respuestas y clave</strong><small>Para repartir: un folleto de preguntas sin espacios para escribir, una hoja de respuestas para llenar (con nombre y calificación) y la clave, que es esa misma hoja ya llena. Cada parte empieza en su propia página.</small></span></label>
-            <label class="pdf-opcion"><input type="radio" name="contenido" value="solo_clave"> <span><strong>Solo la clave</strong><small>Cada respuesta con su letra y su texto, porque Moodle mezcla las opciones.</small></span></label>
-          </fieldset>
-
-          <!-- Formato del archivo (2.8): el PDF o el Word salen del mismo plan y dicen lo mismo. -->
-          <fieldset class="pdf-grupo" id="pdf-grupo-formato">
-            <legend class="field-label">Formato del archivo</legend>
-            <label class="pdf-opcion"><input type="radio" name="formato" value="pdf"> <span><strong>PDF</strong><small>Listo para imprimir. Es lo que ves en la vista previa.</small></span></label>
-            <label class="pdf-opcion"><input type="radio" name="formato" value="word"> <span><strong>Word (.docx)</strong><small>Para editarlo antes de imprimir: cambias el texto, el orden o el formato. Dice lo mismo que el PDF: mismas preguntas, mismo orden de las opciones y misma clave.</small></span></label>
-            <label class="pdf-opcion"><input type="radio" name="formato" value="ambos"> <span><strong>PDF y Word</strong><small>Un ZIP con los dos archivos.</small></span></label>
-            <p class="field-hint pdf-pista" id="pdf-word-aviso" hidden>Si editas el Word, las letras y el orden de las opciones quedan como en el archivo: no lo vuelvas a subir a Cátedra esperando el mismo orden. Con <strong>DejaVu Sans</strong> la letra va incrustada en el archivo (Word de escritorio); Word en línea y Google Docs la cambian por otra parecida.</p>
-          </fieldset>
-
-          <!-- Versiones (2.5): el examen hace de banco y se sortean varios parciales, cada uno con su clave. -->
-          <fieldset class="pdf-grupo" id="pdf-versiones">
-            <legend class="field-label">Versiones del examen</legend>
-            <label class="pdf-opcion"><input type="checkbox" id="pdf-ver-activar"> <span><strong>Sacar varias versiones de este examen</strong><small>Sortea preguntas de este examen, que hace de banco, para armar varios parciales distintos, cada uno con su clave. El XML de Moodle sigue siendo el del examen completo: allí el sorteo lo hace Moodle.</small></span></label>
-            <div class="ver-cuerpo" id="pdf-ver-cuerpo" hidden>
+          <div class="vpdf-panel" id="pdf-panel-examen" role="tabpanel" aria-labelledby="pdf-tab-examen">
+            <fieldset class="pdf-grupo" id="pdf-datos-examen">
+              <legend class="vpdf-titulo">Datos de esta evaluación</legend>
+              <p class="vpdf-nota" id="pdf-examen-nombre"></p>
               <div class="config-grid">
                 <div class="form-group">
-                  <label class="field-label" for="pdf-ver-n">¿Cuántas versiones?</label>
-                  <input type="number" id="pdf-ver-n" class="form-input" min="1" max="12" step="1" value="2">
+                  <label class="field-label" for="pdf-materia-sel">Materia</label>
+                  <select id="pdf-materia-sel" class="form-input"><option value="">Otra: escribirla</option></select>
+                  <input type="text" id="pdf-materia" class="form-input pdf-materia-texto" maxlength="160" autocomplete="off" placeholder="Ej.: Diseño de Interfaces" aria-label="Nombre de la materia">
                 </div>
-                <div class="form-group" id="pdf-ver-total-caja">
-                  <label class="field-label" for="pdf-ver-total">Preguntas en cada versión</label>
-                  <input type="number" id="pdf-ver-total" class="form-input" min="1" step="1" value="1">
+                <div class="form-group">
+                  <label class="field-label" for="pdf-actividad">Tipo de actividad</label>
+                  <input type="text" id="pdf-actividad" class="form-input" maxlength="160" autocomplete="off" list="pdf-actividades" placeholder="Ej.: Parcial N.2">
+                  <datalist id="pdf-actividades"></datalist>
+                </div>
+                <div class="form-group">
+                  <label class="field-label" for="pdf-grupo">Grupo o curso</label>
+                  <input type="text" id="pdf-grupo" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: 1IL-131">
+                </div>
+                <div class="form-group">
+                  <label class="field-label" for="pdf-fecha">Fecha de la evaluación</label>
+                  <input type="date" id="pdf-fecha" class="form-input">
                 </div>
               </div>
-              <div class="ver-modo" role="radiogroup" aria-label="Cómo se sortean">
-                <label class="pdf-opcion"><input type="radio" name="ver_modo" value="aleatorio"> <span><strong>Totalmente al azar</strong><small>Cualquier pregunta del examen, sin mirar de qué tipo es.</small></span></label>
-                <label class="pdf-opcion"><input type="radio" name="ver_modo" value="por_tipo"> <span><strong>Elegir cuántas de cada tipo</strong><small>Por ejemplo, todas las de verdadero o falso, 25 de selección múltiple y 10 de emparejamiento. «Todas» deja ese tipo igual en cada versión.</small></span></label>
-              </div>
-              <div class="ver-tipos" id="pdf-ver-tipos" hidden></div>
-              <label class="pdf-opcion"><input type="checkbox" id="pdf-ver-sin-repetir"> <span><strong>No repetir preguntas entre versiones</strong><small>Mientras alcancen las preguntas del examen, ninguna sale en dos versiones. Si no alcanzan, se repiten las menos posibles y se avisa.</small></span></label>
-              <label class="pdf-opcion"><input type="checkbox" id="pdf-ver-barajar"> <span><strong>Barajar el orden de las preguntas</strong><small>Dentro de cada parte, cada versión las lleva en otro orden. Es independiente del sorteo.</small></span></label>
-              <p class="ver-resumen" id="pdf-ver-resumen" role="status"></p>
-              <ul class="ver-avisos" id="pdf-ver-avisos"></ul>
-              <button type="button" id="btn-pdf-ver-sortear" class="btn btn-primary btn-sm"><i data-lucide="shuffle" class="ico-16"></i> <span id="btn-pdf-ver-sortear-texto">Sortear las versiones</span></button>
-            </div>
-          </fieldset>
+            </fieldset>
 
-          <details class="pdf-seccion" id="pdf-sec-encabezado">
-            <summary><span>Encabezado de la institución</span><small id="pdf-resumen-encabezado"></small></summary>
-            <div class="pdf-seccion-cuerpo">
+            <fieldset class="pdf-grupo" id="pdf-grupo-incluir">
+              <legend class="vpdf-titulo">¿Cómo contestan los estudiantes?</legend>
+              <div class="vpdf-segmentos">
+                <label><input type="radio" name="contenido" value="examen_y_clave"><span>En la misma evaluación</span></label>
+                <label><input type="radio" name="contenido" value="folleto_hoja_clave"><span>En una hoja aparte</span></label>
+              </div>
+              <p class="vpdf-nota" data-pista="contenido" data-valor="examen_y_clave">Cada pregunta lleva su espacio para contestar. Se descargan la evaluación y la clave.</p>
+              <p class="vpdf-nota" data-pista="contenido" data-valor="folleto_hoja_clave" hidden>Se descargan la hoja de preguntas, la hoja de respuestas y la clave ya llena.</p>
+            </fieldset>
+
+            <!-- Formato del archivo (2.8): el PDF o el Word salen del mismo plan y dicen lo mismo. -->
+            <fieldset class="pdf-grupo" id="pdf-grupo-formato">
+              <legend class="vpdf-titulo">Formato del archivo</legend>
+              <div class="vpdf-segmentos">
+                <label><input type="radio" name="formato" value="pdf"><span>PDF</span></label>
+                <label><input type="radio" name="formato" value="word"><span>Word</span></label>
+                <label><input type="radio" name="formato" value="ambos"><span>PDF y Word</span></label>
+              </div>
+              <p class="vpdf-nota" data-pista="formato" data-valor="pdf">Listo para imprimir. Es lo que ves en la vista previa.</p>
+              <p class="vpdf-nota" data-pista="formato" data-valor="word" hidden>Un .docx para editarlo antes de imprimir, con las mismas preguntas, el mismo orden y la misma clave.</p>
+              <p class="vpdf-nota" data-pista="formato" data-valor="ambos" hidden>Un ZIP con el PDF y el Word.</p>
+              <details class="vpdf-aviso" id="pdf-word-aviso" hidden>
+                <summary>Antes de editar el Word</summary>
+                <p>Las letras y el orden de las opciones quedan como en el archivo: no lo vuelvas a subir a Cátedra esperando el mismo orden. Con <strong>DejaVu Sans</strong> la letra va incrustada (Word de escritorio); Word en línea y Google Docs la cambian por otra parecida.</p>
+              </details>
+            </fieldset>
+
+            <!-- Versiones (2.5): el examen hace de banco y se sortean varios parciales, cada uno con su clave. -->
+            <fieldset class="pdf-grupo" id="pdf-versiones">
+              <legend class="vpdf-titulo">Versiones de la evaluación</legend>
+              <label class="pdf-opcion"><input type="checkbox" id="pdf-ver-activar"> <span><strong>Sacar varias versiones de esta evaluación</strong><small>Sortea preguntas de esta evaluación y arma varios parciales, cada uno con su clave. El XML no cambia.</small></span></label>
+              <div class="ver-cuerpo" id="pdf-ver-cuerpo" hidden>
+                <div class="config-grid">
+                  <div class="form-group">
+                    <label class="field-label" for="pdf-ver-n">¿Cuántas versiones?</label>
+                    <input type="number" id="pdf-ver-n" class="form-input" min="1" max="12" step="1" value="2">
+                  </div>
+                  <div class="form-group" id="pdf-ver-total-caja">
+                    <label class="field-label" for="pdf-ver-total">Preguntas en cada versión</label>
+                    <input type="number" id="pdf-ver-total" class="form-input" min="1" step="1" value="1">
+                  </div>
+                </div>
+                <div class="ver-modo" role="radiogroup" aria-label="Cómo se sortean">
+                  <label class="pdf-opcion"><input type="radio" name="ver_modo" value="aleatorio"> <span><strong>Totalmente al azar</strong><small>Cualquier pregunta, sin mirar su tipo.</small></span></label>
+                  <label class="pdf-opcion"><input type="radio" name="ver_modo" value="por_tipo"> <span><strong>Elegir cuántas de cada tipo</strong><small>Cuántas de cada uno. «Todas» deja ese tipo igual en cada versión.</small></span></label>
+                </div>
+                <div class="ver-tipos" id="pdf-ver-tipos" hidden></div>
+                <label class="pdf-opcion"><input type="checkbox" id="pdf-ver-sin-repetir"> <span><strong>No repetir preguntas entre versiones</strong><small>Si no alcanzan, se repiten las menos posibles y se avisa.</small></span></label>
+                <label class="pdf-opcion"><input type="checkbox" id="pdf-ver-barajar"> <span><strong>Barajar el orden de las preguntas</strong><small>Cada versión, en otro orden dentro de cada parte.</small></span></label>
+                <p class="ver-resumen" id="pdf-ver-resumen" role="status"></p>
+                <ul class="ver-avisos" id="pdf-ver-avisos"></ul>
+                <button type="button" id="btn-pdf-ver-sortear" class="btn btn-primary btn-sm"><i data-lucide="shuffle" class="ico-16"></i> <span id="btn-pdf-ver-sortear-texto">Sortear las versiones</span></button>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="vpdf-panel" id="pdf-panel-encabezado" role="tabpanel" aria-labelledby="pdf-tab-encabezado" hidden>
+            <!-- Perfiles: el encabezado y el formato con nombre, para no escribirlos cada vez. -->
+            <div class="pdf-perfil">
+              <label class="vpdf-titulo" for="pdf-perfil">Perfil de encabezado</label>
+              <div class="pdf-perfil-fila">
+                <select id="pdf-perfil" class="form-input"><option value="">Sin perfil</option></select>
+                <button type="button" id="btn-pdf-perfil-guardar" class="btn btn-ghost btn-sm" title="Guarda las pestañas Encabezado, Página y Preguntas con un nombre"><i data-lucide="save" class="ico-14"></i> Guardar</button>
+                <button type="button" id="btn-pdf-perfil-borrar" class="btn btn-quiet btn-danger-text btn-sm" hidden>Borrar</button>
+              </div>
+              <div class="pdf-perfil-nuevo" id="pdf-perfil-nuevo" hidden>
+                <input type="text" id="pdf-perfil-nombre" class="form-input" maxlength="60" autocomplete="off" placeholder="Nombre del perfil. Ej.: UTP Panamá" aria-label="Nombre del perfil">
+                <button type="button" id="btn-pdf-perfil-ok" class="btn btn-primary btn-sm">Guardar</button>
+                <button type="button" id="btn-pdf-perfil-cancelar" class="btn btn-ghost btn-sm">Cancelar</button>
+              </div>
+              <p class="vpdf-nota" id="pdf-perfil-pista">Guarda lo de Encabezado, Página y Preguntas. Se administran en <strong>Mi perfil</strong>.</p>
+            </div>
+
+            <fieldset class="pdf-grupo" id="pdf-sec-encabezado">
+              <legend class="vpdf-titulo">Institución y docente</legend>
               <div class="config-grid">
                 <div class="form-group">
                   <label class="field-label" for="pdf-institucion">Institución</label>
@@ -1410,7 +1502,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
                   <label class="field-label" for="pdf-facultad">Facultad</label>
                   <input type="text" id="pdf-facultad" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Facultad de Ingeniería de Sistemas">
                 </div>
-                <div class="form-group">
+                <div class="form-group vpdf-ancho">
                   <label class="field-label" for="pdf-departamento">Departamento</label>
                   <input type="text" id="pdf-departamento" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Ingeniería de Software">
                 </div>
@@ -1418,33 +1510,49 @@ Ahora convierte el examen adjunto a este formato.</pre>
                   <label class="field-label" for="pdf-docente">Docente</label>
                   <input type="text" id="pdf-docente" class="form-input" maxlength="160" autocomplete="off" placeholder="Ej.: Ing. Ana Pérez">
                 </div>
-              </div>
-              <div class="pdf-subgrupo">
-                <span class="field-label">Logos <span class="opcional">(opcional)</span></span>
-                <div class="pdf-logos">
-                  <div class="pdf-logo" id="pdf-logo-izq-caja">
-                    <div class="pdf-logo-vista"><img id="pdf-logo-izq-vista" alt="Logo izquierdo"></div>
-                    <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo izquierdo<input type="file" id="pdf-logo-izq-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
-                    <button type="button" id="pdf-logo-izq-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
-                  </div>
-                  <div class="pdf-logo" id="pdf-logo-der-caja">
-                    <div class="pdf-logo-vista"><img id="pdf-logo-der-vista" alt="Logo derecho"></div>
-                    <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo derecho<input type="file" id="pdf-logo-der-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
-                    <button type="button" id="pdf-logo-der-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
-                  </div>
+                <div class="form-group">
+                  <label class="field-label" for="pdf-rotulo">El docente se llama</label>
+                  <select id="pdf-rotulo" name="rotulo_docente" class="form-input">
+                    <option value="facilitador">Facilitador</option>
+                    <option value="docente">Docente</option>
+                    <option value="profesor">Profesor</option>
+                  </select>
                 </div>
-                <p class="field-hint pdf-pista">Elige uno o los dos: salen a los lados del título. La imagen se reduce y se guarda solo en este equipo.</p>
               </div>
-              <div class="form-group">
-                <label class="field-label" for="pdf-instrucciones">Indicaciones generales <span class="opcional">(una por línea)</span></label>
-                <textarea id="pdf-instrucciones" class="form-input" rows="3" maxlength="1500" placeholder="Toda respuesta dejada a lápiz no tiene derecho a reclamo.&#10;No se permite ningún dispositivo electrónico."></textarea>
-              </div>
-            </div>
-          </details>
+            </fieldset>
 
-          <details class="pdf-seccion" id="pdf-sec-formato">
-            <summary><span>Formato</span><small id="pdf-resumen-formato"></small></summary>
-            <div class="pdf-seccion-cuerpo">
+            <div class="pdf-subgrupo" id="pdf-grupo-logos">
+              <span class="vpdf-titulo">Logos <span class="opcional">(opcional)</span></span>
+              <div class="pdf-logos">
+                <div class="pdf-logo" id="pdf-logo-izq-caja">
+                  <div class="pdf-logo-vista"><img id="pdf-logo-izq-vista" alt="Logo izquierdo"></div>
+                  <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo izquierdo<input type="file" id="pdf-logo-izq-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+                  <button type="button" id="pdf-logo-izq-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
+                </div>
+                <div class="pdf-logo" id="pdf-logo-der-caja">
+                  <div class="pdf-logo-vista"><img id="pdf-logo-der-vista" alt="Logo derecho"></div>
+                  <label class="btn btn-ghost btn-sm pdf-logo-boton">Logo derecho<input type="file" id="pdf-logo-der-archivo" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+                  <button type="button" id="pdf-logo-der-quitar" class="btn btn-quiet btn-sm" hidden>Quitar</button>
+                </div>
+              </div>
+              <p class="vpdf-nota">Salen a los lados del título. Se guardan solo en este equipo.</p>
+            </div>
+
+            <div class="form-group">
+              <label class="vpdf-titulo" for="pdf-instrucciones">Indicaciones generales <span class="opcional">(una por línea)</span></label>
+              <textarea id="pdf-instrucciones" class="form-input" rows="3" maxlength="1500" placeholder="Toda respuesta dejada a lápiz no tiene derecho a reclamo.&#10;No se permite ningún dispositivo electrónico."></textarea>
+            </div>
+
+            <fieldset class="pdf-grupo" id="pdf-grupo-portada">
+              <legend class="vpdf-titulo">En la primera hoja</legend>
+              <label class="pdf-opcion"><input type="checkbox" name="campos_estudiante"> <span><strong>Datos del estudiante</strong><small>Nombre, cédula, grupo, fecha y calificación.</small></span></label>
+              <label class="pdf-opcion"><input type="checkbox" name="cuadro_puntos"> <span><strong>Cuadro de puntos por parte</strong><small>El valor de cada parte y un renglón para anotar lo obtenido. Necesita «Dividir en partes».</small></span></label>
+            </fieldset>
+          </div>
+
+          <div class="vpdf-panel" id="pdf-panel-pagina" role="tabpanel" aria-labelledby="pdf-tab-pagina" hidden>
+            <fieldset class="pdf-grupo" id="pdf-grupo-hoja">
+              <legend class="vpdf-titulo">Hoja</legend>
               <div class="config-grid">
                 <div class="form-group">
                   <label class="field-label" for="pdf-papel">Papel</label>
@@ -1463,68 +1571,69 @@ Ahora convierte el examen adjunto a este formato.</pre>
                     <option value="anchos">Anchos (2,54 cm · lados 5,08 cm)</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label class="field-label" for="pdf-rotulo">El docente se llama</label>
-                  <select id="pdf-rotulo" name="rotulo_docente" class="form-input">
-                    <option value="facilitador">Facilitador</option>
-                    <option value="docente">Docente</option>
-                    <option value="profesor">Profesor</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="field-label" for="pdf-renglones">Alto del recuadro de ensayo (renglones)</label>
-                  <input type="number" id="pdf-renglones" name="renglones_ensayo" class="form-input" min="2" max="24" step="1" value="6">
-                </div>
-                <div class="form-group">
-                  <label class="field-label" for="pdf-renglones-proc">Alto del recuadro de procedimiento (renglones)</label>
-                  <input type="number" id="pdf-renglones-proc" name="renglones_procedimiento" class="form-input" min="2" max="24" step="1" value="4">
-                </div>
               </div>
-              <div class="pdf-subgrupo">
-                <span class="field-label">Tipo de letra y tamaño</span>
-                <div class="pdf-letra">
-                  <label class="pdf-letra-rotulo" for="pdf-fuente-titulos">Títulos, encabezados e indicaciones</label>
-                  <select id="pdf-fuente-titulos" name="fuente_titulos" class="form-input">
-                <option value="dejavu">DejaVu Sans (predeterminada)</option>
-                <option value="arial">Arial (Liberation Sans)</option>
-                <option value="times">Times New Roman (Liberation Serif)</option>
-                  </select>
-                  <input type="number" id="pdf-tam-titulos" name="tam_titulos" class="form-input" min="7" max="20" step="0.5" value="11" aria-label="Tamaño de los títulos, en puntos">
-                  <label class="pdf-letra-rotulo" for="pdf-fuente-preguntas">Preguntas, opciones y clave</label>
-                  <select id="pdf-fuente-preguntas" name="fuente_preguntas" class="form-input">
-                <option value="dejavu">DejaVu Sans (predeterminada)</option>
-                <option value="arial">Arial (Liberation Sans)</option>
-                <option value="times">Times New Roman (Liberation Serif)</option>
-                  </select>
-                  <input type="number" id="pdf-tam-preguntas" name="tam_preguntas" class="form-input" min="7" max="20" step="0.5" value="10" aria-label="Tamaño de las preguntas, en puntos">
-                </div>
-                <p class="field-hint pdf-pista">Tamaño en puntos (de 7 a 20). Lo demás de cada grupo se ajusta en proporción: con 12 en los títulos y 10 en las preguntas, los encabezados y los títulos de las partes pasan a 12 pt y las preguntas se quedan en 10 pt.</p>
+            </fieldset>
+
+            <fieldset class="pdf-grupo" id="pdf-sec-formato">
+              <legend class="vpdf-titulo">Letra</legend>
+              <div class="pdf-letra">
+                <label class="pdf-letra-rotulo" for="pdf-fuente-titulos">Títulos, encabezados e indicaciones</label>
+                <select id="pdf-fuente-titulos" name="fuente_titulos" class="form-input">
+              <option value="dejavu">DejaVu Sans (predeterminada)</option>
+              <option value="arial">Arial (Liberation Sans)</option>
+              <option value="times">Times New Roman (Liberation Serif)</option>
+                </select>
+                <input type="number" id="pdf-tam-titulos" name="tam_titulos" class="form-input" min="7" max="20" step="0.5" value="11" aria-label="Tamaño de los títulos, en puntos">
+                <label class="pdf-letra-rotulo" for="pdf-fuente-preguntas">Preguntas, opciones y clave</label>
+                <select id="pdf-fuente-preguntas" name="fuente_preguntas" class="form-input">
+              <option value="dejavu">DejaVu Sans (predeterminada)</option>
+              <option value="arial">Arial (Liberation Sans)</option>
+              <option value="times">Times New Roman (Liberation Serif)</option>
+                </select>
+                <input type="number" id="pdf-tam-preguntas" name="tam_preguntas" class="form-input" min="7" max="20" step="0.5" value="10" aria-label="Tamaño de las preguntas, en puntos">
               </div>
-              <label class="pdf-opcion"><input type="checkbox" name="mezclar"> <span><strong>Mezclar el orden de las opciones</strong><small>Baraja las opciones de selección múltiple y la Columna B de los emparejamientos para que la clave no forme un patrón (por ejemplo 1-a, 2-b, 3-c). Las preguntas con «todas las anteriores» o «A y B» conservan su orden. La clave usa las letras impresas.</small></span></label>
-              <label class="pdf-opcion"><input type="checkbox" name="partes"> <span><strong>Dividir el examen en partes</strong><small>Agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con la indicación para el estudiante y el valor de cada parte. Las preguntas del mismo tipo quedan juntas.</small></span></label>
-              <label class="pdf-opcion"><input type="checkbox" name="puntos_por_pregunta"> <span><strong>Mostrar cuánto vale cada pregunta</strong><small>Si lo desmarcas, el examen solo dice el valor de cada parte y el total; la clave sí conserva el valor de cada pregunta.</small></span></label>
-              <label class="pdf-opcion"><input type="checkbox" name="puntos_enteros"> <span><strong>Puntos enteros</strong><small>El PDF usa solo números enteros (7 pts en vez de 6,67) para calificar sin redondeos. Mantiene el total y no cambia el Moodle XML: allí los puntos siguen como en el editor.</small></span></label>
-              <label class="pdf-opcion"><input type="checkbox" name="campos_estudiante"> <span>Cuadro de nombre, cédula, grupo y fecha, y calificación</span></label>
+              <p class="vpdf-nota">Tamaños en puntos, de 7 a 20. Lo demás de cada grupo se ajusta en proporción.</p>
+            </fieldset>
+
+            <fieldset class="pdf-grupo" id="pdf-grupo-espacios">
+              <legend class="vpdf-titulo">Espacio para responder</legend>
+              <div class="vpdf-fila">
+                <label for="pdf-renglones">Alto del recuadro de desarrollo <small>en renglones</small></label>
+                <input type="number" id="pdf-renglones" name="renglones_ensayo" class="form-input" min="2" max="24" step="1" value="6">
+              </div>
               <div class="pdf-subgrupo" id="pdf-grupo-procedimiento">
-                <span class="field-label">Espacio para el procedimiento</span>
-                <label class="pdf-opcion"><input type="checkbox" name="procedimiento_numerica"> <span><strong>En las preguntas numéricas</strong><small>Un recuadro en blanco con marco, antes de la respuesta, para que el estudiante muestre su trabajo.</small></span></label>
-                <label class="pdf-opcion"><input type="checkbox" name="procedimiento_corta"> <span><strong>En las de respuesta corta</strong></span></label>
+                <label class="pdf-opcion"><input type="checkbox" name="procedimiento_numerica"> <span><strong>Procedimiento en las numéricas</strong><small>Un recuadro para mostrar el trabajo, antes de la respuesta.</small></span></label>
+                <label class="pdf-opcion"><input type="checkbox" name="procedimiento_corta"> <span><strong>Procedimiento en las de respuesta corta</strong></span></label>
               </div>
-            </div>
-          </details>
+              <div class="vpdf-fila" id="pdf-fila-procedimiento">
+                <label for="pdf-renglones-proc">Alto del recuadro de procedimiento <small>en renglones</small></label>
+                <input type="number" id="pdf-renglones-proc" name="renglones_procedimiento" class="form-input" min="2" max="24" step="1" value="4">
+              </div>
+            </fieldset>
+          </div>
 
-          <details class="pdf-seccion" id="pdf-sec-partes">
-            <summary><span>Partes del examen</span><small id="pdf-resumen-partes"></small></summary>
-            <div class="pdf-seccion-cuerpo">
-              <p class="field-hint" id="pdf-partes-apagadas" hidden>Para ordenar las partes y cambiar sus textos, activa <strong>Dividir el examen en partes</strong> (en Formato).</p>
+          <div class="vpdf-panel" id="pdf-panel-preguntas" role="tabpanel" aria-labelledby="pdf-tab-preguntas" hidden>
+            <fieldset class="pdf-grupo" id="pdf-grupo-opciones">
+              <legend class="vpdf-titulo">Opciones y puntos</legend>
+              <label class="pdf-opcion"><input type="checkbox" name="mezclar"> <span><strong>Mezclar el orden de las opciones</strong><small>Para que la clave no forme un patrón. «Todas las anteriores» conserva su orden.</small></span></label>
+              <label class="pdf-opcion"><input type="checkbox" name="puntos_por_pregunta"> <span><strong>Mostrar cuánto vale cada pregunta</strong><small>Si no, solo el valor de cada parte y el total.</small></span></label>
+              <label class="pdf-opcion"><input type="checkbox" name="puntos_enteros"> <span><strong>Puntos enteros</strong><small>7 en vez de 6,67, con el mismo total. Solo en el papel: el XML no cambia.</small></span></label>
+            </fieldset>
+
+            <fieldset class="pdf-grupo" id="pdf-sec-partes">
+              <legend class="vpdf-titulo">Partes de la evaluación</legend>
+              <label class="pdf-opcion"><input type="checkbox" name="partes"> <span><strong>Dividir en partes</strong><small>Agrupa por tipo de pregunta, con su indicación y su valor.</small></span></label>
               <div id="pdf-partes-cuerpo">
-                <p class="field-hint pdf-pista">Cambia el orden con las flechas. Lo que dejes vacío lo escribe Cátedra; el número de la parte y su valor se ponen solos. En folleto y hoja de respuestas, tu indicación sale en el folleto y la hoja conserva la que explica cómo rellenarla.</p>
                 <ol class="partes-lista" id="pdf-partes-lista"></ol>
-                <button type="button" id="btn-pdf-partes-auto" class="btn btn-ghost btn-sm">Volver al orden y los textos automáticos</button>
+                <p class="vpdf-nota">Lo que dejes vacío lo escribe Cátedra. <button type="button" id="btn-pdf-partes-auto" class="text-link">Volver a lo automático</button></p>
               </div>
-            </div>
-          </details>
+            </fieldset>
 
+            <fieldset class="pdf-grupo" id="pdf-sec-imagenes" hidden>
+              <legend class="vpdf-titulo">Tamaño y posición de las imágenes</legend>
+              <ul class="vpdf-imagenes" id="pdf-imagenes-lista"></ul>
+            </fieldset>
+          </div>
         </div>
 
         <!-- Vista previa: la página tal como saldrá, con los datos de la izquierda. -->
@@ -1532,40 +1641,45 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <div class="ver-tabs" id="pdf-ver-tabs" role="tablist" aria-label="Versiones" hidden></div>
           <div class="ver-panel" id="pdf-ver-panel" hidden>
             <p class="ver-composicion" id="pdf-ver-composicion"></p>
-            <div class="ver-puntos-barra">
-              <div class="form-group">
-                <label class="field-label" for="pdf-ver-objetivo">Total de puntos</label>
-                <input type="number" id="pdf-ver-objetivo" class="form-input" min="1" step="any" value="100">
-              </div>
-              <div class="form-group">
-                <label class="field-label" for="pdf-ver-reparto">Repartir</label>
-                <select id="pdf-ver-reparto" class="form-input">
-                  <option value="byType">Según el tipo</option>
-                  <option value="equal">En partes iguales</option>
-                </select>
-              </div>
-              <button type="button" id="btn-pdf-ver-ajustar" class="btn btn-ghost btn-sm">Ajustar esta versión</button>
-              <button type="button" id="btn-pdf-ver-ajustar-todas" class="btn btn-ghost btn-sm">Ajustar todas</button>
-            </div>
             <p class="ver-suma" id="pdf-ver-suma" role="status"></p>
             <details class="pdf-seccion" id="pdf-ver-detalle">
-              <summary><span>Puntos de cada pregunta</span><small id="pdf-ver-detalle-resumen"></small></summary>
-              <div class="pdf-seccion-cuerpo"><ol class="ver-preguntas" id="pdf-ver-preguntas"></ol></div>
+              <summary><span>Ajustar los puntos</span><small id="pdf-ver-detalle-resumen"></small></summary>
+              <div class="pdf-seccion-cuerpo">
+                <div class="ver-puntos-barra">
+                  <div class="form-group">
+                    <label class="field-label" for="pdf-ver-objetivo">Puntaje total</label>
+                    <input type="number" id="pdf-ver-objetivo" class="form-input" min="1" step="any" value="100">
+                  </div>
+                  <div class="form-group">
+                    <label class="field-label" for="pdf-ver-reparto">Repartir</label>
+                    <select id="pdf-ver-reparto" class="form-input">
+                      <option value="byType">Según el tipo</option>
+                      <option value="equal">En partes iguales</option>
+                    </select>
+                  </div>
+                  <button type="button" id="btn-pdf-ver-ajustar" class="btn btn-ghost btn-sm">Ajustar esta versión</button>
+                  <button type="button" id="btn-pdf-ver-ajustar-todas" class="btn btn-ghost btn-sm">Ajustar todas</button>
+                </div>
+                <ol class="ver-preguntas" id="pdf-ver-preguntas" aria-label="Puntos de cada pregunta de esta versión"></ol>
+              </div>
             </details>
           </div>
           <!-- Puntos enteros (2.7): lo que valdrá cada pregunta en el PDF cuando no hay versiones. -->
           <div class="ver-panel pts-panel" id="pdf-pts-panel" hidden>
-            <div class="pts-nota" id="pdf-pts-nota" role="status"></div>
-            <div class="pts-alt" id="pdf-pts-alt" hidden></div>
             <details class="pdf-seccion" id="pdf-pts-detalle">
-              <summary><span>Puntos de cada pregunta en el PDF</span><small id="pdf-pts-detalle-resumen"></small></summary>
-              <div class="pdf-seccion-cuerpo"><ol class="ver-preguntas" id="pdf-pts-lista"></ol></div>
+              <summary><span>Puntos enteros</span><small id="pdf-pts-detalle-resumen" role="status"></small></summary>
+              <div class="pdf-seccion-cuerpo">
+                <div class="pts-nota" id="pdf-pts-nota"></div>
+                <div class="pts-alt" id="pdf-pts-alt" hidden></div>
+                <ol class="ver-preguntas" id="pdf-pts-lista" aria-label="Puntos de cada pregunta en el PDF"></ol>
+              </div>
             </details>
           </div>
           <div class="pdf-vista-barra">
             <button type="button" id="btn-pdf-vista-ant" class="btn btn-icon" aria-label="Página anterior" title="Página anterior"><i data-lucide="chevron-left" class="ico-16"></i></button>
             <span id="pdf-vista-pagina" aria-live="polite">Página 1</span>
             <button type="button" id="btn-pdf-vista-sig" class="btn btn-icon" aria-label="Página siguiente" title="Página siguiente"><i data-lucide="chevron-right" class="ico-16"></i></button>
+            <button type="button" id="btn-pdf-vista-zoom" class="btn btn-ghost btn-sm" aria-pressed="false">Ampliar</button>
           </div>
           <p class="field-hint pdf-vista-nota" id="pdf-vista-nota" hidden>La vista previa es la del PDF: el Word se arma con el mismo plan, así que dice lo mismo (en Word la paginación puede variar un poco).</p>
           <div class="pdf-vista-marco">
@@ -1579,7 +1693,6 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <p class="field-error" id="pdf-error" role="alert" hidden></p>
           <p class="vpdf-pie-texto" id="pdf-pie-texto" role="status"></p>
         </div>
-        <button type="button" id="btn-pdf-cancelar" class="btn btn-ghost">Cancelar</button>
         <button type="submit" id="btn-pdf-exportar" class="btn btn-primary"><span id="btn-pdf-exportar-etiqueta">Exportar PDF</span></button>
       </div>
     </form>
@@ -1594,7 +1707,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
        Versión y actualizaciones, API de Gemini, privacidad, información
        legal, avisos de terceros y créditos. Se rellena en ui/acerca.js. -->
   <div id="modal-acerca" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="acerca-title">
-    <div class="modal-box modal-md">
+    <div class="modal-box modal-guia modal-acerca">
       <div class="modal-header">
         <h2 class="modal-title" id="acerca-title">
           <i data-lucide="info" style="width:20px;height:20px;color:var(--color-accent);"></i>
@@ -1604,11 +1717,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
           <i data-lucide="x" class="ico-18"></i>
         </button>
       </div>
-      <div class="modal-body acerca-body">
-
-        <section class="acerca-card" aria-labelledby="acerca-h-version">
+      <div class="guia-marco">
+        <div class="acerca-lado">
+          <section class="acerca-identidad" aria-labelledby="acerca-h-version">
           <div class="acerca-app">
-            <img src="img/icono.png" alt="" width="44" height="44">
+            <img src="img/icono.png" alt="" width="64" height="64">
             <div>
               <h3 id="acerca-h-version" class="acerca-app-name">Cátedra</h3>
               <p class="acerca-app-version">Versión <span id="acerca-version">—</span></p>
@@ -1623,81 +1736,95 @@ Ahora convierte el examen adjunto a este formato.</pre>
               <i data-lucide="download" class="ico-14"></i> <span id="acerca-descargar-texto">Descargar</span>
             </button>
           </div>
-        </section>
-
-        <section class="acerca-card" aria-labelledby="acerca-h-ofrece">
-          <h3 id="acerca-h-ofrece" class="acerca-h"><i data-lucide="sparkles"></i> Qué ofrece</h3>
-          <p class="acerca-texto"><strong>Cátedra</strong> (antes «Conversor a Moodle XML») es tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel, todo en tu propio equipo.</p>
-          <ul class="acerca-lista">
-            <li><strong>Moodle XML listo para importar,</strong> de pruebas en PDF, Word o TXT, con los 7 tipos de pregunta, imágenes, fórmulas y retroalimentación, validado contra lo que Moodle acepta y con avisos cuando algo se vería distinto allí (puntos, orden de las opciones, números ambiguos).</li>
-            <li><strong>Revisión con el original:</strong> cada pregunta junto al recorte de su página, con el origen y la confianza de la respuesta. Nada se decide solo.</li>
-            <li><strong>IA como ayuda, no como juez:</strong> sugerir respuestas faltantes, escribir retroalimentación, mejorar la redacción y detectar preguntas repetidas; siempre visible y editable.</li>
-            <li><strong>Edición de un XML que ya tienes,</strong> sin IA.</li>
-            <li><strong>Examen en PDF o Word para imprimir,</strong> con su clave o como folleto, hoja de respuestas y clave; con tus logos, opciones mezcladas, partes, márgenes y tipo de letra a elección, y vista previa.</li>
-            <li><strong>Varias versiones de un examen:</strong> sortea parciales distintos a partir de un examen grande, al azar o por tipo de pregunta, cada uno con su clave y con los puntos que quieras.</li>
-            <li><strong>Mis materias:</strong> tus exámenes ordenados por materia, para reabrirlos, descargarlos o reutilizarlos.</li>
-            <li><strong>Mi perfil:</strong> tu nombre y tus encabezados guardados, para no escribirlos en cada examen.</li>
-            <li><strong>Privada y sin cuenta:</strong> sin cookies, sin analítica y con tus datos en tu equipo.</li>
-          </ul>
-        </section>
-
-        <section class="acerca-card" aria-labelledby="acerca-h-api">
-          <h3 id="acerca-h-api" class="acerca-h"><i data-lucide="key-round"></i> API de Gemini</h3>
+          </section>
+          <div class="acerca-nav" id="acerca-pestanas" role="tablist" aria-label="Secciones de «Acerca de»" aria-orientation="vertical">
+            <button type="button" class="acerca-tab" role="tab" id="acerca-t-ofrece" aria-controls="acerca-p-ofrece" aria-selected="true"><i data-lucide="sparkles" aria-hidden="true"></i> Qué ofrece</button>
+            <button type="button" class="acerca-tab" role="tab" id="acerca-t-clave" aria-controls="acerca-p-clave" aria-selected="false" tabindex="-1"><i data-lucide="key-round" aria-hidden="true"></i> Clave de Gemini</button>
+            <button type="button" class="acerca-tab" role="tab" id="acerca-t-privacidad" aria-controls="acerca-p-privacidad" aria-selected="false" tabindex="-1"><i data-lucide="shield-check" aria-hidden="true"></i> Privacidad y datos</button>
+            <button type="button" class="acerca-tab" role="tab" id="acerca-t-legal" aria-controls="acerca-p-legal" aria-selected="false" tabindex="-1"><i data-lucide="scale" aria-hidden="true"></i> Legal y ayuda</button>
+          </div>
+        </div>
+        <div class="modal-body acerca-body">
+          <div class="guia" id="acerca-p-ofrece" role="tabpanel" aria-labelledby="acerca-t-ofrece" tabindex="0">
+            <section class="guia-sec">
+              <h3 id="acerca-h-ofrece">Qué ofrece</h3>
+              <p ><strong>Cátedra</strong> (antes «Conversor a Moodle XML») es tu espacio para gestionar tus evaluaciones: del documento a Moodle y al papel, todo en tu propio equipo.</p>
+              <ul class="guia-caminos">
+                  <li><span class="vm-icono" aria-hidden="true"><i data-lucide="list-checks"></i></span><span><strong>Moodle XML listo para importar,</strong> de pruebas en PDF, Word o TXT, con los 7 tipos de pregunta, imágenes, fórmulas y retroalimentación, validado contra lo que Moodle acepta y con avisos cuando algo se vería distinto allí (puntos, orden de las opciones, números ambiguos).</span></li>
+                  <li><span class="vm-icono" aria-hidden="true"><i data-lucide="file-search"></i></span><span><strong>Revisión con el original:</strong> cada pregunta junto al recorte de su página, con el origen y la confianza de la respuesta. Nada se decide solo.</span></li>
+                  <li><span class="vm-icono" aria-hidden="true"><i data-lucide="wand-sparkles"></i></span><span><strong>IA como ayuda, no como juez:</strong> sugerir respuestas faltantes, escribir retroalimentación, mejorar la redacción y detectar preguntas repetidas; siempre visible y editable.</span></li>
+                  <li><span class="vm-icono" aria-hidden="true"><i data-lucide="square-pen"></i></span><span><strong>Evaluaciones escritas desde cero</strong> en el mismo editor, y <strong>edición de un XML que ya tienes</strong>, sin IA.</span></li>
+                  <li><span class="vm-icono" aria-hidden="true"><i data-lucide="printer"></i></span><span><strong>Evaluación en PDF o Word para imprimir,</strong> con su clave y, si quieres, hoja de respuestas aparte; cada documento por separado (el PDF, también en modo folleto); con tus logos, opciones mezcladas, partes, cuadro de puntos, fórmulas dibujadas, tamaño y posición de las imágenes, márgenes y tipo de letra a elección, y vista previa.</span></li>
+                  <li><span class="vm-icono" aria-hidden="true"><i data-lucide="shuffle"></i></span><span><strong>Varias versiones de una evaluación:</strong> sortea parciales distintos a partir de una evaluación grande, al azar o por tipo de pregunta, cada uno con su clave y con los puntos que quieras.</span></li>
+                  <li><span class="vm-icono" aria-hidden="true"><i data-lucide="library"></i></span><span><strong>Mis materias:</strong> tus evaluaciones ordenadas por materia, para reabrirlas, descargarlas o reutilizarlas.</span></li>
+                  <li><span class="vm-icono" aria-hidden="true"><i data-lucide="user-round"></i></span><span><strong>Mi perfil:</strong> tu nombre y tus encabezados guardados, para no escribirlos en cada evaluación.</span></li>
+                  <li><span class="vm-icono" aria-hidden="true"><i data-lucide="lock"></i></span><span><strong>Privada y sin cuenta:</strong> sin cookies, sin analítica y con tus datos en tu equipo.</span></li>
+              </ul>
+            </section>
+          </div>
+          <div class="guia" id="acerca-p-clave" role="tabpanel" aria-labelledby="acerca-t-clave" tabindex="0" hidden>
+            <section class="guia-sec">
+              <h3 id="acerca-h-api">Clave de Gemini</h3>
           <p id="acerca-api-estado" class="acerca-texto">Comprobando…</p>
           <div class="acerca-acciones">
             <button type="button" id="btn-acerca-api" class="btn btn-ghost btn-sm">
               <i data-lucide="key-round" class="ico-14"></i> <span id="acerca-api-boton">Cambiar o quitar la clave</span>
             </button>
           </div>
-        </section>
-
-        <section class="acerca-card" aria-labelledby="acerca-h-privacidad">
-          <h3 id="acerca-h-privacidad" class="acerca-h"><i data-lucide="shield-check"></i> Privacidad y datos</h3>
-          <h4 class="acerca-sub">Lo que se guarda en tu equipo</h4>
+            </section>
+          </div>
+          <div class="guia" id="acerca-p-privacidad" role="tabpanel" aria-labelledby="acerca-t-privacidad" tabindex="0" hidden>
+              <section class="guia-sec">
+                <h3>Lo que se guarda en tu equipo</h3>
           <ul class="acerca-lista">
-            <li><strong>Mis materias, tus datos y el historial de conversiones</strong> (tus materias, tu nombre, tus perfiles de encabezado con sus logos y los exámenes convertidos con sus respuestas), para descargarlos, reabrirlos o exportarlos: <code id="acerca-ruta-historial">—</code></li>
-            <li><strong>Tu clave de la API de Gemini</strong>, cifrada; solo se puede descifrar en este equipo y con tu usuario: <code id="acerca-ruta-clave">—</code></li>
-            <li><strong>Registro de errores</strong>, sin el contenido de tus exámenes: <code id="acerca-ruta-registro">—</code></li>
-            <li><strong>La revisión que tengas a medias</strong>, para retomarla si cierras la app, en el almacenamiento de la propia ventana.</li>
-            <li><strong>El PDF que subes, solo en la memoria</strong> de la aplicación mientras está abierta (para mostrártelo junto a cada pregunta). No se escribe en el disco ni en el Historial, y se olvida al cerrar la app.</li>
+            <li><strong>Mis materias, tus datos y tus evaluaciones</strong> (tus materias, tu nombre, tus perfiles de encabezado con sus logos y las evaluaciones convertidas con sus respuestas), para descargarlas, reabrirlas o exportarlas: <code id="acerca-ruta-historial">—</code></li>
+            <li><strong>Tu clave de Gemini</strong>, cifrada; solo se puede descifrar en este equipo y con tu usuario: <code id="acerca-ruta-clave">—</code></li>
+            <li><strong>Registro de errores</strong>, sin el contenido de tus evaluaciones: <code id="acerca-ruta-registro">—</code></li>
+            <li><strong>La evaluación que tengas a medias</strong>, para retomarla si cierras Cátedra, en el almacenamiento de la propia ventana.</li>
+            <li><strong>El PDF que subes, solo en la memoria</strong> de la aplicación mientras está abierta (para mostrártelo junto a cada pregunta). No se escribe en el disco ni en Mis materias, y se olvida al cerrar Cátedra.</li>
           </ul>
-          <h4 class="acerca-sub">Lo que sale de tu equipo</h4>
+              </section>
+              <section class="guia-sec">
+                <h3>Lo que sale de tu equipo</h3>
           <ul class="acerca-lista">
-            <li><strong>A Google (API de Gemini), con tu clave:</strong> el texto de tu examen y, cuando hace falta, imágenes de algunas páginas, para ordenar las preguntas; y, al guardar tu clave, una consulta para comprobar que Google la acepta. Nada más se envía a Google.</li>
-            <li><strong>A GitHub, al abrir la app:</strong> una consulta para saber si hay versión nueva. No lleva ningún dato tuyo; GitHub solo ve lo que ve de cualquier visita (tu dirección IP).</li>
+            <li><strong>A Google (API de Gemini), con tu clave:</strong> el texto de tu evaluación y, cuando hace falta, imágenes de algunas páginas, para ordenar las preguntas; y, al guardar tu clave, una consulta para comprobar que Google la acepta. Nada más se envía a Google.</li>
+            <li><strong>A GitHub, al abrir Cátedra:</strong> una consulta para saber si hay versión nueva. No lleva ningún dato tuyo; GitHub solo ve lo que ve de cualquier visita (tu dirección IP).</li>
           </ul>
           <div class="callout is-warning acerca-aviso">
             <i data-lucide="alert-triangle"></i>
-            <p><strong>Con el plan gratuito de la API de Gemini, Google puede usar lo que envías para mejorar sus productos</strong>, y personas de Google pueden revisarlo. Con el plan de pago (facturación activada en tu cuenta de Google) no lo usa para eso. Si tus exámenes son confidenciales, considera el plan de pago. <button type="button" class="text-link" data-url="https://ai.google.dev/gemini-api/terms">Términos de la API de Gemini</button></p>
+            <p><strong>Con el plan gratuito de la API de Gemini, Google puede usar lo que envías para mejorar sus productos</strong>, y personas de Google pueden revisarlo. Con el plan de pago (facturación activada en tu cuenta de Google) no lo usa para eso. Si tus evaluaciones son confidenciales, considera el plan de pago. <button type="button" class="text-link" data-url="https://ai.google.dev/gemini-api/terms">Términos de la API de Gemini</button></p>
           </div>
-          <h4 class="acerca-sub">Cookies</h4>
-          <p class="acerca-texto">La app <strong>no usa cookies</strong>, ni analítica, publicidad o seguimiento de ningún tipo, y no necesita cuenta. Todo lo que guarda la ventana (la revisión a medias, tu última materia, lo último que escribiste al exportar el PDF y los tiempos de conversiones anteriores, para estimar la espera) se queda en tu equipo.</p>
-        </section>
-
-        <section class="acerca-card" aria-labelledby="acerca-h-legal">
-          <h3 id="acerca-h-legal" class="acerca-h"><i data-lucide="scale"></i> Información legal</h3>
+              </section>
+              <section class="guia-sec">
+                <h3>Cookies</h3>
+          <p class="acerca-texto">Cátedra <strong>no usa cookies</strong>, ni analítica, publicidad o seguimiento de ningún tipo, y no necesita cuenta. Todo lo que guarda la ventana (la evaluación a medias, tu última materia, lo último que escribiste al exportar el PDF y los tiempos de conversiones anteriores, para estimar la espera) se queda en tu equipo.</p>
+              </section>
+          </div>
+          <div class="guia" id="acerca-p-legal" role="tabpanel" aria-labelledby="acerca-t-legal" tabindex="0" hidden>
+            <section class="guia-sec">
+              <h3 id="acerca-h-legal">Información legal</h3>
           <ul class="acerca-lista">
             <li>© 2026 César González y Vicente Urriola. Todos los derechos reservados.</li>
-            <li><strong>Sin garantía.</strong> La aplicación se ofrece tal cual. La lectura con IA puede equivocarse: revisa cada pregunta y su respuesta antes de usar el examen en una evaluación. Los autores no se hacen responsables de errores en los exámenes generados ni de su uso.</li>
-            <li><strong>Tus exámenes son tuyos.</strong> La aplicación no reclama ningún derecho sobre el contenido que conviertes.</li>
+            <li><strong>Sin garantía.</strong> La aplicación se ofrece tal cual. La lectura con IA puede equivocarse: revisa cada pregunta y su respuesta antes de usarla con tus estudiantes. Los autores no se hacen responsables de errores en las evaluaciones generadas ni de su uso.</li>
+            <li><strong>Tus evaluaciones son tuyas.</strong> La aplicación no reclama ningún derecho sobre el contenido que conviertes.</li>
             <li><strong>API de Gemini.</strong> Al crear tu clave aceptas los términos de Google; el uso, sus límites y cualquier costo corresponden a tu cuenta de Google.</li>
             <li><strong>Marcas.</strong> Moodle es una marca registrada de Moodle Pty Ltd. Google y Gemini son marcas de Google LLC. Cátedra es independiente: no está afiliada, patrocinada ni respaldada por ellas.</li>
           </ul>
-        </section>
-
-        <section class="acerca-card" aria-labelledby="acerca-h-terceros">
-          <h3 id="acerca-h-terceros" class="acerca-h"><i data-lucide="package"></i> Avisos de terceros</h3>
+            </section>
+            <section class="guia-sec">
+              <h3 id="acerca-h-terceros">Avisos de terceros</h3>
           <p class="acerca-texto">Esta aplicación usa software libre de terceros, cada uno con su propia licencia. Entre los principales:</p>
           <ul class="acerca-lista acerca-lista-compacta">
             <li>Python — PSF</li>
-            <li>FastAPI, pdfplumber, pdfminer.six, Pillow, pydantic, python-docx (Word del examen) — MIT</li>
+            <li>FastAPI, pdfplumber, pdfminer.six, Pillow, pydantic, python-docx (Word de la evaluación) — MIT</li>
             <li>Uvicorn, Starlette, lxml, pywebview — BSD</li>
             <li>requests, python-multipart, OpenTelemetry API (dependencia de FastAPI) — Apache 2.0</li>
             <li>PDFium (vía pypdfium2) — BSD / Apache 2.0</li>
-            <li>ReportLab (PDF del examen) — BSD</li>
+            <li>ReportLab (PDF de la evaluación) — BSD</li>
             <li>cryptography — Apache 2.0 o BSD</li>
             <li>Íconos Lucide — ISC</li>
             <li>KaTeX (vista previa de fórmulas) — MIT</li>
+            <li>ziamath, ziafont y latex2mathml (fórmulas de la evaluación impresa) — MIT; con la fuente STIX Two Math — SIL OFL 1.1</li>
             <li>driver.js (recorridos guiados) y three.js (el robot ayudante 3D) — MIT</li>
             <li>Fuentes Outfit, Hanken Grotesk y JetBrains Mono — SIL Open Font License 1.1</li>
             <li>Fuentes del PDF: DejaVu Sans (licencia libre de DejaVu/Bitstream Vera) y Liberation Sans y Serif (SIL OFL 1.1)</li>
@@ -1707,12 +1834,11 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <summary>Ver la lista completa y los textos de las licencias</summary>
             <pre id="acerca-licencias-texto" class="acerca-pre" tabindex="0">Cargando…</pre>
           </details>
-        </section>
-
-        <section class="acerca-card" aria-labelledby="acerca-h-creditos">
-          <h3 id="acerca-h-creditos" class="acerca-h"><i data-lucide="users"></i> Créditos y ayuda</h3>
+            </section>
+            <section class="guia-sec">
+              <h3 id="acerca-h-creditos">Créditos y ayuda</h3>
           <p class="acerca-texto">Desarrollado por los ingenieros <strong>César González</strong> y <strong>Vicente Urriola</strong>.</p>
-          <p class="acerca-texto">¿Encontraste un problema o tienes una sugerencia? Cuéntanos en GitHub. Si hubo un error, adjunta el registro de errores (su ubicación aparece arriba, en Privacidad y datos).</p>
+          <p class="acerca-texto">¿Encontraste un problema o tienes una sugerencia? Cuéntanos en GitHub. Si hubo un error, adjunta el registro de errores (su ubicación aparece en la pestaña «Privacidad y datos»).</p>
           <div class="acerca-acciones">
             <button type="button" class="btn btn-ghost btn-sm" data-url="https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/issues">
               <i data-lucide="message-circle" class="ico-14"></i> Reportar un problema
@@ -1721,8 +1847,9 @@ Ahora convierte el examen adjunto a este formato.</pre>
               <i data-lucide="external-link" class="ico-14"></i> Versiones publicadas
             </button>
           </div>
-        </section>
-
+            </section>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1732,7 +1859,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       <div class="modal-header">
         <h2 class="modal-title" id="apikey-title">
           <i data-lucide="key-round" style="width:20px;height:20px;color:var(--color-accent);"></i>
-          <span id="apikey-title-text">Conecta tu API de Gemini</span>
+          <span id="apikey-title-text">Conecta tu clave de Gemini</span>
         </h2>
         <button type="button" id="btn-close-apikey" class="btn btn-icon" aria-label="Cerrar" title="Cerrar">
           <i data-lucide="x" class="ico-18"></i>
@@ -1740,7 +1867,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
       </div>
       <div class="modal-body apikey-body">
         <p id="apikey-intro" class="apikey-intro">
-          <span id="apikey-bienvenida"><strong>Cátedra es tu espacio para gestionar tus evaluaciones:</strong> del documento a Moodle y al papel. </span>Para leer tus exámenes usa la IA de Google (Gemini) y necesita tu propia <strong>clave de la API de Gemini</strong>, que se obtiene <strong>gratis</strong> en un par de minutos.
+          <span id="apikey-bienvenida"><strong>Cátedra es tu espacio para gestionar tus evaluaciones:</strong> del documento a Moodle y al papel. </span>Para leer tus evaluaciones usa la IA de Google (Gemini) y necesita tu propia <strong>clave de Gemini</strong>, que se obtiene <strong>gratis</strong> en un par de minutos.
         </p>
 
         <div id="apikey-current" class="apikey-current" hidden>
@@ -1762,7 +1889,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
           </li>
           <li>
             <span class="apikey-step-num" aria-hidden="true">2</span>
-            <div><p>Pulsa <strong>«Create API key»</strong> (Crear clave de API). Si te pregunta por un proyecto, elige el que aparece o crea uno nuevo.</p></div>
+            <div><p>Haz clic en <strong>«Create API key»</strong> (Crear clave de API). Si te pregunta por un proyecto, elige el que aparece o crea uno nuevo.</p></div>
           </li>
           <li>
             <span class="apikey-step-num" aria-hidden="true">3</span>
@@ -1776,7 +1903,7 @@ Ahora convierte el examen adjunto a este formato.</pre>
         </div>
         <div class="callout is-warning">
           <i data-lucide="shield-alert"></i>
-          <p><strong>Con la clave gratuita, Google puede usar lo que le envías para mejorar sus productos</strong> y personas de Google pueden revisarlo; con el plan de pago (facturación activada en tu cuenta de Google) no. Si tus exámenes son confidenciales, activa la facturación. Los términos pueden cambiar: están en <button type="button" class="text-link" data-url="https://ai.google.dev/gemini-api/terms">ai.google.dev/gemini-api/terms</button>.</p>
+          <p><strong>Con la clave gratuita, Google puede usar lo que le envías para mejorar sus productos</strong> y personas de Google pueden revisarlo; con el plan de pago (facturación activada en tu cuenta de Google) no. Si tus evaluaciones son confidenciales, activa la facturación. Los términos pueden cambiar: están en <button type="button" class="text-link" data-url="https://ai.google.dev/gemini-api/terms">ai.google.dev/gemini-api/terms</button>.</p>
         </div>
 
         <form id="apikey-form" class="apikey-form" novalidate>
@@ -1794,6 +1921,57 @@ Ahora convierte el examen adjunto a este formato.</pre>
             <span id="btn-apikey-save-label">Guardar y comenzar</span>
           </button>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- «¿Qué quieres imprimir?» (3.2): un documento cada vez, normal o en modo folleto, con su vista previa. -->
+  <div id="modal-imprimir" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="imp-titulo">
+    <div class="modal-box modal-imprimir">
+      <div class="modal-header">
+        <h2 class="modal-title" id="imp-titulo">¿Qué quieres imprimir?</h2>
+        <button type="button" id="btn-imp-cerrar" class="btn btn-icon" aria-label="Cerrar" title="Cerrar (Esc)"><i data-lucide="x" class="ico-18"></i></button>
+      </div>
+      <div class="imp-cuerpo">
+        <div class="imp-opciones">
+          <fieldset class="pdf-grupo" id="imp-documentos">
+            <legend class="field-label">Documento</legend>
+            <div class="pdf-grupo" id="imp-lista"></div>
+          </fieldset>
+          <fieldset class="pdf-grupo" id="imp-modos">
+            <legend class="field-label">Cómo se imprime</legend>
+            <label class="pdf-opcion"><input type="radio" name="imp_modo" value="normal"> <span><strong>Impresión normal</strong><small>Una página por cara, en la hoja entera.</small></span></label>
+            <label class="pdf-opcion"><input type="radio" name="imp_modo" value="folleto"> <span><strong>Modo folleto (PDF)</strong><small>Dos páginas por cara. Se imprime a doble cara, se dobla por la mitad y queda un librito: ahorra papel.</small></span></label>
+          </fieldset>
+          <div class="imp-folleto" id="imp-folleto" hidden>
+            <label class="field-label" for="imp-letra">Tamaño de la letra en el folleto</label>
+            <select id="imp-letra" class="form-input">
+              <option value="7">7 pt (la que menos papel gasta)</option>
+              <option value="7.5">7,5 pt</option>
+              <option value="8">8 pt</option>
+              <option value="8.5">8,5 pt (recomendada)</option>
+              <option value="9">9 pt</option>
+              <option value="10">10 pt</option>
+              <option value="11">11 pt</option>
+            </select>
+            <ul class="imp-pasos" id="imp-pasos"></ul>
+          </div>
+        </div>
+        <div class="imp-vista">
+          <div class="pdf-vista-barra">
+            <button type="button" id="btn-imp-vista-ant" class="btn btn-icon" aria-label="Página anterior de la vista previa"><i data-lucide="chevron-left" class="ico-16"></i></button>
+            <span id="imp-vista-pagina" aria-live="polite">Página 1 de 1</span>
+            <button type="button" id="btn-imp-vista-sig" class="btn btn-icon" aria-label="Página siguiente de la vista previa"><i data-lucide="chevron-right" class="ico-16"></i></button>
+          </div>
+          <div class="pdf-vista-marco" id="imp-vista-marco"><img id="imp-vista-img" alt="Vista previa de lo que se va a descargar" hidden><p class="pdf-vista-estado" id="imp-vista-estado"></p></div>
+          <p class="imp-papel" id="imp-papel" role="status"></p>
+          <p class="field-hint" id="imp-nota-word" hidden>La vista previa es la del PDF; en Word la paginación puede variar un poco.</p>
+        </div>
+      </div>
+      <p class="field-error imp-error" id="imp-error" role="alert" hidden></p>
+      <div class="modal-footer">
+        <button type="button" id="btn-imp-listo" class="btn btn-ghost">Listo</button>
+        <button type="button" id="btn-imp-descargar" class="btn btn-primary"><i data-lucide="download" class="ico-16"></i> <span id="imp-descargar-texto">Descargar PDF</span></button>
       </div>
     </div>
   </div>

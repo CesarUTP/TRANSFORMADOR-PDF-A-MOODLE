@@ -39,7 +39,7 @@ export function crearVersiones({ alCambiar, enteros = () => false, ordenPartes =
     caja.replaceChildren(...tipos().map(t => {
       const fila = document.createElement('div');
       fila.className = 'ver-tipo';
-      fila.innerHTML = `<span class="ver-tipo-nombre">${esc_html(t.nombre)}<small>Hay ${t.cantidad} en el examen</small></span>`
+      fila.innerHTML = `<span class="ver-tipo-nombre">${esc_html(t.nombre)}<small>Hay ${t.cantidad} en la evaluación</small></span>`
         + `<input type="number" class="form-input" min="0" max="${t.cantidad}" step="1" data-tipo="${esc_html(t.tipo)}" aria-label="Cuántas de «${esc_html(t.nombre)}» en cada versión" value="${Number(plan.cuotas[t.tipo]) || 0}">`
         + `<button type="button" class="btn btn-quiet btn-sm" data-todas="${esc_html(t.tipo)}">Todas</button>`;
       return fila;
@@ -94,7 +94,7 @@ export function crearVersiones({ alCambiar, enteros = () => false, ordenPartes =
     } else {
       const n = Number(plan.versiones);
       const usadas = Math.min(hay, n * rev.porVersion - rev.repiten);
-      resumen.textContent = `${plural(n, 'versión', 'versiones')} de ${plural(rev.porVersion, 'pregunta', 'preguntas')}: se usan ${usadas} de las ${hay} del examen`
+      resumen.textContent = `${plural(n, 'versión', 'versiones')} de ${plural(rev.porVersion, 'pregunta', 'preguntas')}: se usan ${usadas} de las ${hay} de la evaluación`
         + (rev.repiten > 0 ? '.' : plan.sinRepetir ? ', sin repetir ninguna.' : '.');
       rev.avisos.forEach(a => aviso(a));
       if (!plan.sinRepetir && n > 1 && rev.repiten === 0 && n * rev.porVersion <= hay) {
@@ -155,7 +155,7 @@ export function crearVersiones({ alCambiar, enteros = () => false, ordenPartes =
     const meta = objetivo();
     const bien = cuadra(v, examen.questions, meta, enteros());
     const suma = $('pdf-ver-suma');
-    suma.textContent = bien ? `La versión ${v.etiqueta} suma ${fmt(total)} puntos.` : `La versión ${v.etiqueta} suma ${fmt(total)} puntos y el total deseado es ${fmt(meta)}. Usa «Ajustar» o cambia los puntos de abajo.`;
+    suma.textContent = bien ? `La versión ${v.etiqueta} suma ${fmt(total)} puntos.` : `La versión ${v.etiqueta} suma ${fmt(total)} puntos y el total deseado es ${fmt(meta)}. Abre «Ajustar los puntos» para cambiarlo.`;
     suma.classList.toggle('desajuste', !bien);
     $('pdf-ver-detalle-resumen').textContent = `${fmt(total)} pts`;
     const tab = $('pdf-ver-tabs').children[actual];

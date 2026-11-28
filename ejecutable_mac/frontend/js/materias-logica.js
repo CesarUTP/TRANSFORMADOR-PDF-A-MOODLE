@@ -92,13 +92,13 @@ export function avisoDeLimite(uso) {
   if (!uso || !uso.cerca_del_limite) return null;
   const lleno = uso.porcentaje >= 100;
   const sin = uso.sin_materia || 0;
-  const usado = `${plural(uso.examenes, 'examen guardado', 'exámenes guardados')} (${formatoBytes(uso.bytes)}) de ${uso.maximo_examenes}`;
+  const usado = `${plural(uso.examenes, 'evaluación guardada', 'evaluaciones guardadas')} (${formatoBytes(uso.bytes)}) de ${uso.maximo_examenes}`;
   const que = sin > 0
-    ? `Al llenarse se borran primero los exámenes sin materia (hoy ${sin}), los más antiguos antes. Pasa a una materia lo que quieras conservar.`
-    : 'Todos tus exámenes tienen materia: al llenarse se borrarán los más antiguos. Borra los que ya no necesites.';
+    ? `Al llenarse se borran primero las evaluaciones sin materia (hoy ${sin}), las más antiguas antes. Pasa a una materia las que quieras conservar.`
+    : 'Todas tus evaluaciones tienen materia: al llenarse se borrarán las más antiguas. Borra las que ya no necesites.';
   return {
     nivel: lleno ? 'lleno' : 'aviso',
-    titulo: lleno ? 'El Historial está lleno' : 'El Historial se está llenando',
+    titulo: lleno ? 'El espacio está lleno' : 'El espacio se está llenando',
     texto: `${usado}. ${que}`,
   };
 }
@@ -106,7 +106,7 @@ export function avisoDeLimite(uso) {
 /** Una línea con lo usado, para mostrar siempre. */
 export function textoUso(uso) {
   if (!uso) return '';
-  return `${plural(uso.examenes, 'examen', 'exámenes')} · ${formatoBytes(uso.bytes)} · ${Math.round(uso.porcentaje)} % del espacio`;
+  return `${plural(uso.examenes, 'evaluación', 'evaluaciones')} · ${formatoBytes(uso.bytes)} · ${Math.round(uso.porcentaje)} % del espacio`;
 }
 
 // ── Asistente para ordenar los exámenes sin materia ──────────────────────

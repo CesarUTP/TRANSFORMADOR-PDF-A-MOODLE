@@ -18,7 +18,14 @@ function guardar(estado) {
   try { localStorage.setItem(CLAVE_VISTOS, JSON.stringify(estado)); } catch (_) { /* sin almacenamiento: se vuelve a ofrecer */ }
 }
 
-function enPantalla(selector) {
+/** Un paso puede estar en una pestaña (`pestana`: el id de su botón): se muestra antes de mirarlo. */
+function abrirPestana(id) {
+  const boton = id && document.getElementById(id);
+  if (boton && boton.getAttribute('aria-selected') !== 'true') boton.click();
+}
+
+function enPantalla(selector, paso) {
+  abrirPestana(paso && paso.pestana);
   const el = document.querySelector(selector);
   return !!el && el.getClientRects().length > 0;
 }
@@ -29,12 +36,18 @@ export function iniciarTour(nombre) {
   const clave = nombreDeTour(nombre, { hayLista: !!document.getElementById('vm-lista') });
   if (!clave) return;
   if (activo) { activo.destroy(); activo = null; }
+  // La pestaña que el docente estaba mirando: se vuelve a ella al terminar.
+  const pestanaAntes = TOURS[clave].pasos.some(p => p.pestana)
+    ? [...new Set(TOURS[clave].pasos.map(p => p.pestana).filter(Boolean))].find(id => document.getElementById(id)?.getAttribute('aria-selected') === 'true')
+    : null;
   const pasos = pasosVisibles(TOURS[clave].pasos, enPantalla);
   if (!pasos.length) return;
+  abrirPestana(pasos[0].pestana);
   const reducido = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const instancia = driverJs({
     steps: pasos.map(p => ({
       ...(p.el ? { element: p.el } : {}),
+      ...(p.pestana ? { onHighlightStarted: () => abrirPestana(p.pestana) } : {}),
       popover: { title: p.titulo, description: p.texto, ...(p.el ? { side: p.lado || 'bottom', align: 'start' } : {}) },
     })),
     popoverClass: 'tour-popover',
@@ -56,6 +69,7 @@ export function iniciarTour(nombre) {
       instancia.destroy();
       if (activo !== instancia) return;
       activo = null;
+      abrirPestana(pestanaAntes);
       guardar(marcarVisto(leer(), clave));
       window.dispatchEvent(new Event('tourfin'));
     },

@@ -109,8 +109,14 @@ function aviso(a) {
   </div>`;
 }
 
+// Cuánto del espacio de Mis materias está usado.
 function pieDeUso() {
-  return uso ? `<p class="vm-uso">${esc_html(textoUso(uso))}</p>` : '';
+  if (!uso) return '';
+  const lleno = Math.min(100, Math.max(0, Number(uso.porcentaje) || 0));
+  return `<div class="vm-uso">
+    <span class="vm-uso-barra" aria-hidden="true"><span style="width:${lleno ? Math.max(lleno, 1.5) : 0}%"></span></span>
+    <p>${esc_html(textoUso(uso))}</p>
+  </div>`;
 }
 
 function chipActividad(e) {
@@ -135,20 +141,27 @@ function resaltar(texto, q) {
   return `${esc_html(chars.slice(0, i).join(''))}<mark>${esc_html(chars.slice(i, i + q.length).join(''))}</mark>${esc_html(chars.slice(i + q.length).join(''))}`;
 }
 
+// El ícono según de dónde salió: un documento, un XML o escrita desde cero (sin extensión).
+function iconoDeOrigen(nombre) {
+  const extension = (/\.(pdf|docx?|txt|xml)$/i.exec(String(nombre || '')) || [])[1]?.toLowerCase();
+  return extension === 'pdf' ? 'file-text' : extension === 'xml' ? 'file-code-2' : extension === 'txt' ? 'file' : extension ? 'file-type-2' : 'square-pen';
+}
+
 function fila(e, q, conMateria) {
   const marcada = seleccion.has(e.id);
   return `<li class="vm-fila" data-id="${e.id}">
     <div class="vm-fila-principal">
       <input type="checkbox" class="vm-casilla" data-accion-cambio="marcarExamen" data-arg-n="${e.id}" ${marcada ? 'checked' : ''} aria-label="Elegir «${esc_html(e.filename)}»">
+      <span class="vm-fila-icono" aria-hidden="true"><i data-lucide="${iconoDeOrigen(e.filename)}"></i></span>
       <div class="vm-fila-info">
         <strong>${resaltar(e.filename, q)}</strong>
         <span class="vm-meta">${chipActividad(e)}${conMateria ? chipMateria(e) : ''}${resaltar(e.category, q)} · ${esc_html(e.total_points)} pts · ${resaltar(e.fecha, q)}</span>
       </div>
       <div class="vm-fila-acciones">
-        ${e.has_editor ? `<button type="button" class="btn btn-ghost btn-sm" data-accion="reabrirExamen" data-arg-n="${e.id}" title="Abrir de nuevo la revisión de este examen"><i data-lucide="pencil" class="ico-14"></i> Reabrir</button>` : ''}
-        ${e.has_editor ? `<button type="button" class="btn btn-ghost btn-sm" data-accion="exportarPdfHistorial" data-arg-n="${e.id}" title="Configurar y exportar este examen en PDF o Word, con su clave"><i data-lucide="file-text" class="ico-14"></i> PDF</button>` : ''}
+        ${e.has_editor ? `<button type="button" class="btn btn-ghost btn-sm vm-reabrir" data-accion="reabrirExamen" data-arg-n="${e.id}" title="Abrir esta evaluación en el editor"><i data-lucide="pencil" class="ico-14"></i> Reabrir</button>` : ''}
+        ${e.has_editor ? `<button type="button" class="btn btn-ghost btn-sm" data-accion="exportarPdfHistorial" data-arg-n="${e.id}" title="Configurar y exportar esta evaluación en PDF o Word, con su clave"><i data-lucide="file-text" class="ico-14"></i> Exportar</button>` : ''}
         <button type="button" class="btn btn-ghost btn-sm" data-accion="descargarExamen" data-arg-n="${e.id}" title="Descargar el Moodle XML"><i data-lucide="download" class="ico-14"></i> XML</button>
-        <button type="button" class="btn btn-ghost btn-sm vm-organizar-boton" data-accion="organizarExamen" data-arg-n="${e.id}" aria-expanded="false" aria-controls="vm-org-${e.id}" title="Cambiar su materia o su actividad, o borrarlo"><i data-lucide="folder-input" class="ico-14"></i> Organizar</button>
+        <button type="button" class="btn btn-ghost btn-sm vm-organizar-boton" data-accion="organizarExamen" data-arg-n="${e.id}" aria-expanded="false" aria-controls="vm-org-${e.id}" title="Cambiar su materia o su tipo de actividad, o borrarla"><i data-lucide="folder-input" class="ico-14"></i> Organizar</button>
       </div>
     </div>
     <div class="vm-organizar" id="vm-org-${e.id}" hidden>
@@ -157,12 +170,12 @@ function fila(e, q, conMateria) {
         <select id="vm-org-mat-${e.id}" class="form-input vm-org-materia"></select>
       </div>
       <div class="form-group">
-        <label class="field-label" for="vm-org-act-${e.id}">Actividad</label>
-        <input id="vm-org-act-${e.id}" class="form-input vm-org-actividad" type="text" maxlength="160" autocomplete="off" list="actividades-lista" value="${esc_html(e.actividad || '')}" placeholder="ej: Parcial 1">
+        <label class="field-label" for="vm-org-act-${e.id}">Tipo de actividad</label>
+        <input id="vm-org-act-${e.id}" class="form-input vm-org-actividad" type="text" maxlength="160" autocomplete="off" list="actividades-lista" value="${esc_html(e.actividad || '')}" placeholder="Ej.: Parcial 1">
       </div>
       <div class="vm-organizar-botones">
         <button type="button" class="btn btn-primary btn-sm" data-accion="guardarOrganizar" data-arg-n="${e.id}">Guardar</button>
-        <button type="button" class="btn btn-quiet btn-danger-text btn-sm" data-accion="borrarExamenDeLista" data-arg-n="${e.id}"><i data-lucide="trash-2" class="ico-14"></i> Borrar el examen</button>
+        <button type="button" class="btn btn-quiet btn-danger-text btn-sm" data-accion="borrarExamenDeLista" data-arg-n="${e.id}"><i data-lucide="trash-2" class="ico-14"></i> Borrar la evaluación</button>
       </div>
     </div>
   </li>`;
@@ -170,10 +183,10 @@ function fila(e, q, conMateria) {
 
 function barraDeSeleccion() {
   const n = seleccion.size;
-  return `<div class="vm-seleccion${n ? ' activa' : ''}" id="vm-seleccion" role="region" aria-label="Elegir exámenes">
+  return `<div class="vm-seleccion${n ? ' activa' : ''}" id="vm-seleccion" role="region" aria-label="Elegir evaluaciones">
     <div class="vm-seleccion-barra">
-      <label class="vm-todo"><input type="checkbox" id="vm-todo" data-accion-cambio="elegirTodos"> <span id="vm-todo-texto">Elegir todos</span></label>
-      <span id="vm-seleccion-n" aria-live="polite">${esc_html(n ? plural(n, 'examen elegido', 'exámenes elegidos') : '')}</span>
+      <label class="vm-todo"><input type="checkbox" id="vm-todo" data-accion-cambio="elegirTodos"> <span id="vm-todo-texto">Elegir todas</span></label>
+      <span id="vm-seleccion-n" aria-live="polite">${esc_html(n ? plural(n, 'evaluación elegida', 'evaluaciones elegidas') : '')}</span>
       <div class="vm-seleccion-acciones" id="vm-seleccion-acciones" ${n ? '' : 'hidden'}>
         <label class="vm-seleccion-mover">Mover a
           <select id="vm-mover-a" class="form-input"></select>
@@ -189,31 +202,42 @@ function barraDeSeleccion() {
 function buscador() {
   return `<div class="vm-buscar">
     <i data-lucide="search" aria-hidden="true"></i>
-    <input type="search" id="vm-buscar" class="form-input" placeholder="Buscar por nombre, categoría, actividad o fecha" aria-label="Buscar en esta lista" aria-describedby="vm-cuenta" autocomplete="off" value="${esc_html(busqueda)}">
+    <input type="search" id="vm-buscar" class="form-input" placeholder="Buscar por nombre, categoría, tipo de actividad o fecha" aria-label="Buscar en esta lista" aria-describedby="vm-cuenta" autocomplete="off" value="${esc_html(busqueda)}">
     <span id="vm-cuenta" class="vm-cuenta" aria-live="polite"></span>
   </div>`;
 }
 
 // ── Pantallas ───────────────────────────────────────────────────────────
-function cabecera({ color = null, titulo, sub = '', acciones = '' }) {
+function cabecera({ color = null, icono = '', titulo, sub = '', acciones = '' }) {
   return `<header class="vm-cab">
-    ${color ? `<span class="vm-cab-punto" style="background:var(${color})" aria-hidden="true"></span>` : ''}
-    <div class="vm-cab-texto"><h2 id="vm-titulo" class="vm-titulo">${esc_html(titulo)}</h2>${sub ? `<p class="vm-sub">${sub}</p>` : ''}</div>
+    ${icono ? `<span class="vm-icono vm-icono-grande" ${color ? `style="--vm-color:var(${color})"` : ''} aria-hidden="true"><i data-lucide="${icono}"></i></span>` : ''}
+    <div class="vm-cab-texto"><h2 id="vm-titulo" class="vm-titulo">${esc_html(titulo)}</h2>${sub ? `<div class="vm-sub">${sub}</div>` : ''}</div>
     <div class="vm-cab-acciones">${acciones}</div>
   </header>`;
 }
 
+// Una tarjeta de Mis materias: su ícono de color, el nombre, lo que guarda y «Abrir».
+function _tarjetaHtml({ color, icono, accion, argumento = '', aria, nombre, cuenta, detalle = '', clase = '', extra = '' }) {
+  return `<li class="vm-tarjeta${clase}" style="--vm-color:var(${color})">
+    <button type="button" class="vm-tarjeta-boton" data-accion="${accion}"${argumento} aria-label="${aria}">
+      <span class="vm-icono" aria-hidden="true"><i data-lucide="${icono}"></i></span>
+      <span class="vm-tarjeta-nombre">${nombre}</span>
+      <span class="vm-tarjeta-cuenta">${cuenta}</span>
+      ${detalle ? `<span class="vm-tarjeta-detalle">${detalle}</span>` : ''}
+      <span class="vm-tarjeta-ir" aria-hidden="true">Abrir <i data-lucide="arrow-right"></i></span>
+    </button>${extra}
+  </li>`;
+}
+
 function tarjeta(m) {
   const ultimo = m.ultimo ? ` · ${esc_html(fechaCorta(m.ultimo))}` : '';
-  const detalle = [m.docente, m.grupo].filter(Boolean).map(esc_html).join(' · ');
-  return `<li class="vm-tarjeta" style="--vm-color:var(${variableDeColor(m.color)})">
-    <button type="button" class="vm-tarjeta-boton" data-accion="abrirMateria" data-arg-n="${m.id}" aria-label="Abrir ${esc_html(m.nombre)}: ${esc_html(plural(m.examenes, 'examen', 'exámenes'))}">
-      <span class="vm-tarjeta-nombre">${esc_html(m.nombre)}</span>
-      <span class="vm-tarjeta-cuenta">${esc_html(plural(m.examenes, 'examen', 'exámenes'))}${ultimo}</span>
-      ${detalle ? `<span class="vm-tarjeta-detalle">${detalle}</span>` : ''}
-    </button>
-    <button type="button" class="btn btn-icon vm-tarjeta-editar" data-accion="editarMateria" data-arg-n="${m.id}" title="Editar «${esc_html(m.nombre)}»" aria-label="Editar la materia ${esc_html(m.nombre)}"><i data-lucide="pencil" class="ico-14"></i></button>
-  </li>`;
+  const cuenta = esc_html(plural(m.examenes, 'evaluación', 'evaluaciones'));
+  return _tarjetaHtml({
+    color: variableDeColor(m.color), icono: 'book-open', accion: 'abrirMateria', argumento: ` data-arg-n="${m.id}"`,
+    aria: `Abrir ${esc_html(m.nombre)}: ${cuenta}`, nombre: esc_html(m.nombre), cuenta: `${cuenta}${ultimo}`,
+    detalle: [m.docente, m.grupo].filter(Boolean).map(esc_html).join(' · '),
+    extra: `<button type="button" class="btn btn-icon vm-tarjeta-editar" data-accion="editarMateria" data-arg-n="${m.id}" title="Editar «${esc_html(m.nombre)}»" aria-label="Editar la materia ${esc_html(m.nombre)}"><i data-lucide="pencil" class="ico-16"></i></button>`,
+  });
 }
 
 function pintarRaiz() {
@@ -223,33 +247,33 @@ function pintarRaiz() {
   const sin = examenesDe(examenes, null);
   let html = cabecera({
     titulo: 'Mis materias',
-    sub: 'Cada materia es un espacio con todos sus exámenes. Elige una para reabrirlos, descargarlos o exportarlos en PDF o Word.',
+    sub: 'Cada materia guarda sus evaluaciones. Elige una para reabrirlas, descargarlas o exportarlas.',
     acciones: `<button type="button" class="btn btn-primary btn-sm" data-accion="nuevaMateria"><i data-lucide="plus" class="ico-14"></i> Nueva materia</button>
-      <button type="button" class="btn btn-ghost btn-sm" data-accion="abrirTodos"><i data-lucide="clock" class="ico-14"></i> Todos los exámenes</button>`,
+      <button type="button" class="btn btn-ghost btn-sm" data-accion="abrirTodos"><i data-lucide="clock" class="ico-14"></i> Todas las evaluaciones</button>`,
   });
   html += aviso(avisoDeLimite(uso));
   if (sin.length) {
     const sugerencias = sugerirMaterias(sin, todas).grupos.length;
-    html += `<div class="vm-ordenar callout">
-      <i data-lucide="wand-sparkles"></i>
-      <div><p><strong>${esc_html(plural(sin.length, 'examen sin materia', 'exámenes sin materia'))}</strong></p>
-        <p>${sugerencias ? 'Puedo proponerte a qué materia pertenece cada uno, según su categoría y su nombre. Tú decides qué se mueve.' : 'Muévelos a una materia para conservarlos: cuando el Historial se llena, son lo primero que se borra.'}</p></div>
-      ${sugerencias ? '<button type="button" class="btn btn-ghost btn-sm" data-accion="abrirAsistente">Ordenarlos con ayuda</button>' : ''}
+    html += `<div class="vm-ordenar">
+      <span class="vm-icono" aria-hidden="true"><i data-lucide="wand-sparkles"></i></span>
+      <div><p><strong>${esc_html(plural(sin.length, 'evaluación sin materia', 'evaluaciones sin materia'))}</strong></p>
+        <p>${sugerencias ? 'Puedo proponerte a qué materia pertenece cada una, según su categoría y su nombre. Tú decides qué se mueve.' : 'Muévelas a una materia para conservarlas: cuando se llena el espacio, son las primeras que se borran.'}</p></div>
+      ${sugerencias ? '<button type="button" class="btn btn-ghost btn-sm" data-accion="abrirAsistente">Ordenarlas con ayuda</button>' : ''}
     </div>`;
   }
   if (!vivas.length && !sin.length && !guardadas.length) {
     html += `<div class="vm-vacio">
-      <i data-lucide="library" aria-hidden="true"></i>
-      <p class="vm-vacio-titulo">${cargado ? 'Todavía no hay materias ni exámenes' : 'Cargando…'}</p>
-      ${cargado ? '<p>Crea tu primera materia y, al convertir un examen, elígela en el paso 1: quedará guardado aquí.</p><button type="button" class="btn btn-primary btn-sm" data-accion="nuevaMateria">Crear una materia</button>' : ''}
+      <span class="vm-icono vm-icono-grande" aria-hidden="true"><i data-lucide="library"></i></span>
+      <p class="vm-vacio-titulo">${cargado ? 'Todavía no hay materias ni evaluaciones' : 'Cargando…'}</p>
+      ${cargado ? '<p>Crea tu primera materia y, al empezar una evaluación, elígela: quedará guardada aquí.</p><button type="button" class="btn btn-primary btn-sm" data-accion="nuevaMateria">Crear una materia</button>' : ''}
     </div>`;
   } else {
+    const cuantas = esc_html(plural(sin.length, 'evaluación', 'evaluaciones'));
     html += `<ul class="vm-tarjetas">${vivas.map(tarjeta).join('')}
-      ${sin.length ? `<li class="vm-tarjeta vm-tarjeta-sin"><button type="button" class="vm-tarjeta-boton" data-accion="abrirSinMateria" aria-label="Abrir Sin materia: ${esc_html(plural(sin.length, 'examen', 'exámenes'))}">
-        <span class="vm-tarjeta-nombre">Sin materia</span>
-        <span class="vm-tarjeta-cuenta">${esc_html(plural(sin.length, 'examen', 'exámenes'))}</span>
-        <span class="vm-tarjeta-detalle">Lo primero que se borra al llenarse</span></button></li>` : ''}
-      <li class="vm-tarjeta vm-tarjeta-nueva"><button type="button" class="vm-tarjeta-boton" data-accion="nuevaMateria"><i data-lucide="plus" aria-hidden="true"></i><span class="vm-tarjeta-nombre">Nueva materia</span></button></li>
+      ${sin.length ? _tarjetaHtml({
+    color: '--color-text-subtle', icono: 'inbox', accion: 'abrirSinMateria', aria: `Abrir Sin materia: ${cuantas}`,
+    nombre: 'Sin materia', cuenta: cuantas, detalle: 'Las primeras que se borran al llenarse', clase: ' vm-tarjeta-sin',
+  }) : ''}
     </ul>`;
   }
   if (guardadas.length) {
@@ -266,35 +290,37 @@ function pintarLista(titulo) {
 
 function pintarMateria() {
   const m = materiaPorId(sitio.materiaId);
-  const partes = [plural(m.examenes, 'examen', 'exámenes'), m.docente, m.grupo, m.perfil ? `Perfil: ${m.perfil}` : ''].filter(Boolean);
+  const datos = [['files', plural(m.examenes, 'evaluación', 'evaluaciones')], ['user-round', m.docente], ['users', m.grupo],
+    ['layout-template', m.perfil ? `Perfil: ${m.perfil}` : ''], ['archive', m.archivada ? 'Archivada' : '']];
   return cabecera({
     color: variableDeColor(m.color),
+    icono: 'book-open',
     titulo: m.nombre,
-    sub: partes.map(esc_html).join(' · ') + (m.archivada ? ' · <strong>Archivada</strong>' : ''),
-    acciones: `<button type="button" class="btn btn-primary btn-sm" data-accion="nuevoExamenEnMateria" data-arg-n="${m.id}" title="Vuelve al paso 1 con esta materia ya elegida"><i data-lucide="plus" class="ico-14"></i> Nuevo examen en esta materia</button>
+    sub: `<ul class="vm-datos">${datos.filter(([, t]) => t).map(([icono, t]) => `<li><i data-lucide="${icono}" aria-hidden="true"></i>${esc_html(t)}</li>`).join('')}</ul>`,
+    acciones: `<button type="button" class="btn btn-primary btn-sm" data-accion="nuevoExamenEnMateria" data-arg-n="${m.id}" title="Vuelve al inicio con esta materia ya elegida"><i data-lucide="plus" class="ico-14"></i> Nueva evaluación en esta materia</button>
       <button type="button" class="btn btn-ghost btn-sm" data-accion="editarMateria" data-arg-n="${m.id}"><i data-lucide="settings-2" class="ico-14"></i> Editar materia</button>`,
-  }) + pintarLista(`Exámenes de ${m.nombre}`);
+  }) + pintarLista(`Evaluaciones de ${m.nombre}`);
 }
 
 function pintarSin() {
   const n = examenesDe(examenes, null).length;
   return cabecera({
     titulo: 'Sin materia',
-    sub: 'Los exámenes que no están en ninguna materia. Cuando el Historial se llena, estos se borran primero (los más antiguos antes).',
-    acciones: n ? '<button type="button" class="btn btn-primary btn-sm" data-accion="abrirAsistente"><i data-lucide="wand-sparkles" class="ico-14"></i> Ordenarlos con ayuda</button>' : '',
-  }) + aviso(avisoDeLimite(uso)) + pintarLista('Exámenes sin materia') + pieDeUso();
+    sub: 'Las evaluaciones que no están en ninguna materia. Cuando se llena el espacio, estas se borran primero (las más antiguas antes).',
+    acciones: n ? '<button type="button" class="btn btn-primary btn-sm" data-accion="abrirAsistente"><i data-lucide="wand-sparkles" class="ico-14"></i> Ordenarlas con ayuda</button>' : '',
+  }) + aviso(avisoDeLimite(uso)) + pintarLista('Evaluaciones sin materia') + pieDeUso();
 }
 
 function pintarTodos() {
   return cabecera({
-    titulo: 'Todos los exámenes',
-    sub: 'Todo lo que has convertido, del más reciente al más antiguo.',
-  }) + aviso(avisoDeLimite(uso)) + pintarLista('Todos los exámenes') + pieDeUso();
+    titulo: 'Todas las evaluaciones',
+    sub: 'Todas las que has convertido, de la más reciente a la más antigua.',
+  }) + aviso(avisoDeLimite(uso)) + pintarLista('Todas las evaluaciones') + pieDeUso();
 }
 
 function pintarMigas() {
   const resto = $('vm-miga-resto');
-  const actual = sitio.nivel === 'materia' ? nombreDeMateria(sitio.materiaId) : sitio.nivel === 'sin' ? 'Sin materia' : sitio.nivel === 'todos' ? 'Todos los exámenes' : '';
+  const actual = sitio.nivel === 'materia' ? nombreDeMateria(sitio.materiaId) : sitio.nivel === 'sin' ? 'Sin materia' : sitio.nivel === 'todos' ? 'Todas las evaluaciones' : '';
   resto.hidden = !actual;
   $('vm-miga-actual').textContent = actual;
   $('vm-miga-raiz').setAttribute('aria-current', actual ? 'false' : 'page');
@@ -326,17 +352,17 @@ function pintarFilas() {
   const base = examenesDe(examenes, sitio.nivel === 'materia' ? sitio.materiaId : sitio.nivel === 'sin' ? null : 'todos');
   const q = normalizar(busqueda.trim());
   const visibles = q ? filtrarExamenes(base, busqueda, nombreDeMateria) : base;
-  $('vm-cuenta').textContent = base.length ? (q ? `${visibles.length} de ${base.length}` : plural(base.length, 'examen', 'exámenes')) : '';
+  $('vm-cuenta').textContent = base.length ? (q ? `${visibles.length} de ${base.length}` : plural(base.length, 'evaluación', 'evaluaciones')) : '';
   if (!visibles.length) {
     const vacio = q
-      ? `<p class="vm-vacio-titulo">Sin resultados para «${esc_html(busqueda.trim())}»</p><p>Prueba con parte del nombre del archivo, la categoría, la actividad o la fecha.</p>`
+      ? `<p class="vm-vacio-titulo">Sin resultados para «${esc_html(busqueda.trim())}»</p><p>Prueba con parte del nombre del archivo, la categoría, el tipo de actividad o la fecha.</p>`
       : !cargado
         ? '<p class="vm-vacio-titulo">Cargando…</p>'
         : sitio.nivel === 'materia'
-          ? '<p class="vm-vacio-titulo">Esta materia todavía no tiene exámenes</p><p>Al convertir un examen, elige esta materia en el paso 1; o muévele uno desde «Sin materia» o «Todos los exámenes».</p>'
+          ? '<p class="vm-vacio-titulo">Esta materia todavía no tiene evaluaciones</p><p>Al empezar una evaluación, elige esta materia; o mueve aquí una desde «Sin materia» o «Todas las evaluaciones».</p>'
           : sitio.nivel === 'sin'
-            ? '<p class="vm-vacio-titulo">Todos tus exámenes tienen materia</p>'
-            : '<p class="vm-vacio-titulo">Todavía no hay conversiones guardadas</p><p>Cada examen que conviertas queda aquí para volver a descargarlo o reabrir su revisión.</p>';
+            ? '<p class="vm-vacio-titulo">Todas tus evaluaciones tienen materia</p>'
+            : '<p class="vm-vacio-titulo">Todavía no hay conversiones guardadas</p><p>Cada evaluación que conviertas queda aquí para volver a descargarla o reabrirla en el editor.</p>';
     lista.innerHTML = `<li class="vm-vacio">${vacio}</li>`;
     actualizarSeleccion();
     return;
@@ -355,7 +381,7 @@ function visiblesAhora() {
 function actualizarSeleccion() {
   if (!$('vm-seleccion')) return;
   const n = seleccion.size;
-  $('vm-seleccion-n').textContent = n ? plural(n, 'examen elegido', 'exámenes elegidos') : '';
+  $('vm-seleccion-n').textContent = n ? plural(n, 'evaluación elegida', 'evaluaciones elegidas') : '';
   $('vm-seleccion-acciones').hidden = n === 0;
   $('vm-seleccion').classList.toggle('activa', n > 0);
   const vis = visiblesAhora();
@@ -364,7 +390,7 @@ function actualizarSeleccion() {
   todo.disabled = vis.length === 0;
   todo.checked = vis.length > 0 && marcados === vis.length;
   todo.indeterminate = marcados > 0 && marcados < vis.length;
-  $('vm-todo-texto').textContent = busqueda.trim() ? `Elegir los ${vis.length} que se ven` : `Elegir todos (${vis.length})`;
+  $('vm-todo-texto').textContent = busqueda.trim() ? `Elegir las ${vis.length} que se ven` : `Elegir todas (${vis.length})`;
 }
 
 /** «Elegir todos»: marca (o desmarca) todo lo que se ve en la lista, respetando la búsqueda. */
@@ -382,15 +408,15 @@ export async function borrarElegidos() {
   if (!ids.length) return;
   const todosLosVisibles = ids.length === examenes.length;
   const ok = await confirmar({
-    titulo: ids.length === 1 ? '¿Borrar este examen?' : `¿Borrar ${ids.length} exámenes?`,
-    mensaje: `Se borrará${ids.length === 1 ? '' : 'n'} de este equipo ${todosLosVisibles ? 'TODO tu Historial' : plural(ids.length, 'examen', 'exámenes')}, con su XML y su revisión. Si ya los importaste en Moodle, allí no cambia nada. Esta acción no se puede deshacer.`,
-    confirmar: ids.length === 1 ? 'Borrar el examen' : `Borrar ${ids.length} exámenes`,
+    titulo: ids.length === 1 ? '¿Borrar esta evaluación?' : `¿Borrar ${ids.length} evaluaciones?`,
+    mensaje: `Se borrará${ids.length === 1 ? '' : 'n'} de este equipo ${todosLosVisibles ? 'TODAS tus evaluaciones' : plural(ids.length, 'evaluación', 'evaluaciones')}, con su XML y sus preguntas. Si ya las importaste en Moodle, allí no cambia nada. Esta acción no se puede deshacer.`,
+    confirmar: ids.length === 1 ? 'Borrar la evaluación' : `Borrar ${ids.length} evaluaciones`,
     cancelar: 'Conservarlos',
   });
   if (!ok) return;
   const r = await llamar('/api/history/borrar', 'POST', { ids });
   if (!r.ok) { showToast(r.mensaje, 'error'); return; }
-  showToast(`${plural(r.datos.borrados, 'examen borrado', 'exámenes borrados')}`, 'info');
+  showToast(`${plural(r.datos.borrados, 'evaluación borrada', 'evaluaciones borradas')}`, 'info');
   seleccion.clear();
   await recargar();
 }
@@ -441,7 +467,7 @@ export async function guardarOrganizar(id) {
   const actividad = nombreLimpio(panel.querySelector('.vm-org-actividad').value, 160) || null;
   const r = await llamar(`/api/history/${id}`, 'PATCH', { materia_id: materiaId, actividad });
   if (!r.ok) { showToast(r.mensaje, 'error'); return; }
-  showToast(materiaId == null ? 'Examen actualizado: sin materia' : `Examen guardado en «${nombreDeMateria(materiaId)}»`, 'info');
+  showToast(materiaId == null ? 'Evaluación actualizada: sin materia' : `Evaluación guardada en «${nombreDeMateria(materiaId)}»`, 'info');
   await recargar();
 }
 
@@ -449,13 +475,13 @@ export async function borrarExamenDeLista(id) {
   const e = examenPorId(id);
   if (!e) return;
   const ok = await confirmar({
-    titulo: '¿Borrar este examen?',
-    mensaje: `Se borrará «${e.filename}» de este equipo, con su XML y su revisión. Si ya lo importaste en Moodle, allí no cambia nada. Esta acción no se puede deshacer.`,
-    confirmar: 'Borrar el examen',
+    titulo: '¿Borrar esta evaluación?',
+    mensaje: `Se borrará «${e.filename}» de este equipo, con su XML y sus preguntas. Si ya la importaste en Moodle, allí no cambia nada. Esta acción no se puede deshacer.`,
+    confirmar: 'Borrar la evaluación',
     cancelar: 'Conservarlo',
   });
   if (!ok) return;
-  if (await borrarExamen(id)) { showToast('Examen borrado', 'info'); await recargar(); }
+  if (await borrarExamen(id)) { showToast('Evaluación borrada', 'info'); await recargar(); }
 }
 
 export async function moverElegidos() {
@@ -464,7 +490,7 @@ export async function moverElegidos() {
   const destino = valorDeSelect(sel);
   const r = await llamar('/api/history/mover', 'POST', { ids: [...seleccion], materia_id: destino });
   if (!r.ok) { showToast(r.mensaje, 'error'); return; }
-  showToast(`${plural(r.datos.movidos, 'examen movido', 'exámenes movidos')} a ${destino == null ? '«Sin materia»' : `«${nombreDeMateria(destino)}»`}`, 'info');
+  showToast(`${plural(r.datos.movidos, 'evaluación movida', 'evaluaciones movidas')} a ${destino == null ? '«Sin materia»' : `«${nombreDeMateria(destino)}»`}`, 'info');
   seleccion.clear();
   await recargar();
 }
@@ -484,16 +510,16 @@ export async function editarMateria(id) {
   if (r.borrada && sitio.materiaId === id) irA('raiz');
 }
 
-/** «Nuevo examen en esta materia»: vuelve al paso 1 con la materia ya elegida. */
+/** «Nuevo examen en esta materia»: vuelve al inicio con la materia ya elegida. */
 export async function nuevoExamenEnMateria(id) {
   const m = materiaPorId(id);
   if (!m) return;
   if (estado.panel === 'editor') {
     const ok = await confirmar({
-      titulo: '¿Empezar otro examen?',
-      mensaje: 'Tienes una revisión abierta. Si empiezas otro examen se perderá la revisión actual, con todo lo que no hayas convertido a XML. Esta acción no se puede deshacer.',
-      confirmar: 'Empezar otro y perder la revisión',
-      cancelar: 'Seguir con mi revisión',
+      titulo: '¿Empezar otra evaluación?',
+      mensaje: 'Tienes una evaluación abierta en el editor. Si empiezas otra, se perderá lo que no hayas convertido a XML. Esta acción no se puede deshacer.',
+      confirmar: 'Empezar otra y perder la actual',
+      cancelar: 'Seguir con la actual',
     });
     if (!ok) return;
     borrarBorrador();
@@ -501,13 +527,13 @@ export async function nuevoExamenEnMateria(id) {
   cerrarBiblioteca();
   if (estado.panel === 'progress') {
     elegirEnPaso1(id);
-    showToast(`Hay una conversión en curso. El próximo examen se guardará en «${m.nombre}».`, 'info');
+    showToast(`Hay una conversión en curso. La próxima evaluación se guardará en «${m.nombre}».`, 'info');
     return;
   }
   resetAll();
   elegirEnPaso1(id);
-  showToast(`Elige el examen: se guardará en «${m.nombre}»`, 'info');
-  $('drop-zone').focus({ preventScroll: true });
+  showToast(`Elige cómo empezar: la evaluación se guardará en «${m.nombre}»`, 'info');
+  $('inicio-documento').focus({ preventScroll: true });
 }
 
 // ── Asistente ───────────────────────────────────────────────────────────
@@ -526,15 +552,15 @@ export function abrirAsistente() {
         <p class="asi-detalle"></p>
       </div>`;
     li.querySelector('.asi-nombre').value = g.nombre;
-    li.querySelector('.asi-detalle').textContent = `${plural(g.ids.length, 'examen', 'exámenes')} · ${g.materiaId != null ? 'ya existe esa materia' : 'materia nueva'} · ${g.ejemplos.join(', ')}`;
+    li.querySelector('.asi-detalle').textContent = `${plural(g.ids.length, 'evaluación', 'evaluaciones')} · ${g.materiaId != null ? 'ya existe esa materia' : 'materia nueva'} · ${g.ejemplos.join(', ')}`;
     return li;
   }));
   $('asi-intro').textContent = propuesta.grupos.length
-    ? 'Esto es solo una propuesta, sacada de la categoría de Moodle y del nombre del archivo. Cambia el nombre de la materia o desmarca lo que no quieras mover: nada se mueve hasta que pulses el botón.'
-    : 'No encontré pistas en los nombres de estos exámenes. Puedes elegirlos en «Sin materia» y moverlos a mano.';
+    ? 'Esto es solo una propuesta, sacada de la categoría de Moodle y del nombre del archivo. Cambia el nombre de la materia o desmarca lo que no quieras mover: nada se mueve hasta que hagas clic en el botón.'
+    : 'No encontré pistas en los nombres de estas evaluaciones. Puedes elegirlas en «Sin materia» y moverlas a mano.';
   const sp = $('asi-sin-pista');
   sp.hidden = !propuesta.sinPista.length;
-  sp.textContent = propuesta.sinPista.length ? `${plural(propuesta.sinPista.length, 'examen no tiene', 'exámenes no tienen')} pista en su nombre: se quedan en «Sin materia».` : '';
+  sp.textContent = propuesta.sinPista.length ? `${plural(propuesta.sinPista.length, 'evaluación no tiene', 'evaluaciones no tienen')} pista en su nombre: se quedan en «Sin materia».` : '';
   $('asi-error').hidden = true;
   $('btn-asi-aplicar').disabled = !propuesta.grupos.length;
   abrirModal($('modal-asistente'), { foco: $('btn-asi-aplicar') });
@@ -566,7 +592,7 @@ async function aplicarAsistente() {
     return;
   }
   cerrarModal($('modal-asistente'));
-  showToast(`${plural(movidos, 'examen movido', 'exámenes movidos')} a ${plural(usadas.size, 'materia', 'materias')}`);
+  showToast(`${plural(movidos, 'evaluación movida', 'evaluaciones movidas')} a ${plural(usadas.size, 'materia', 'materias')}`);
   await recargar();
 }
 

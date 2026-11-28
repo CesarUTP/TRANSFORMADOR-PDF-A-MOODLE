@@ -20,6 +20,7 @@ Es un documento de apoyo: no se guarda en el Historial ni cambia el XML.
 import io
 import json
 import logging
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -35,7 +36,7 @@ import pypdfium2 as pdfium
 from pdfium_cerrojo import CERROJO as CERROJO_PDFIUM
 import versiones
 from database import MAX_PERFILES, delete_perfil, list_perfiles, rename_perfil, save_perfil
-from estado_servidor import ERROR_LOG_PATH, _avisos_para_cabecera, _content_disposition, _detalle_tecnico, _nombre_nfc
+from estado_servidor import ERROR_LOG_PATH, _avisos_para_cabecera, _content_disposition, _detalle_tecnico, _nombre_base, _nombre_nfc
 from rutas_xml import validar_para_exportar
 
 logger = logging.getLogger(__name__)
@@ -62,6 +63,11 @@ class DatosPortada(BaseModel):
     instrucciones: str = Field("", max_length=exportar_pdf.LIMITE_INSTRUCCIONES)
     contenido: str = "examen_y_clave"
     formato: str = "pdf"              # FORMATOS: «pdf», «word» (.docx editable) o «ambos» (un ZIP con los dos)
+    # Un solo documento del contenido ("" = todos) y «modo folleto» (media hoja, para doblar; solo afecta al PDF).
+    documento: str = ""
+    plegado: bool = False
+    letra_plegado: float = Field(exportar_pdf.LETRA_PLEGADO, ge=exportar_pdf.LETRA_PLEGADO_MIN, le=exportar_pdf.LETRA_PLEGADO_MAX,
+                                 allow_inf_nan=False)
     version: str = Field("", max_length=exportar_pdf.LIMITE_VERSION)     # «A», «B»… (solo en las versiones de un examen)
     papel: str = "carta"
     margenes: str = "moderados"
@@ -83,6 +89,11 @@ class DatosPortada(BaseModel):
     renglones_procedimiento: int = Field(4, ge=exportar_pdf.RENGLONES_MIN, le=exportar_pdf.RENGLONES_MAX)
     orden_partes: List[str] = Field(default_factory=list, max_length=len(exportar_pdf.NOMBRE_PARTE))
     textos_partes: Dict[str, TextoParte] = Field(default_factory=dict, max_length=len(exportar_pdf.NOMBRE_PARTE))
+    # El cuadro de puntos de la portada, las partes que empiezan en hoja nueva y el tamaño de cada imagen.
+    cuadro_puntos: bool = False
+    saltos_partes: List[str] = Field(default_factory=list, max_length=len(exportar_pdf.NOMBRE_PARTE))
+    tam_imagenes: Dict[str, str] = Field(default_factory=dict, max_length=500)
+    alin_imagenes: Dict[str, str] = Field(default_factory=dict, max_length=500)
     # Logos en base64 (el diálogo los reduce antes de enviarlos); "" = sin logo.
     logo_izquierdo: str = Field("", max_length=exportar_pdf.LIMITE_LOGO)
     logo_derecho: str = Field("", max_length=exportar_pdf.LIMITE_LOGO)
@@ -103,13 +114,24 @@ MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.docu
 def _partes_validas(d) -> bool:
     """El orden y los textos solo hablan de tipos de pregunta que existen, y el orden no repite ninguno."""
     tipos = set(exportar_pdf.NOMBRE_PARTE)
-    return set(d.orden_partes) <= tipos and len(set(d.orden_partes)) == len(d.orden_partes) and set(d.textos_partes) <= tipos
+    return (set(d.orden_partes) <= tipos and len(set(d.orden_partes)) == len(d.orden_partes) and set(d.textos_partes) <= tipos
+            and set(d.saltos_partes) <= tipos)
+
+
+_POSICION_IMAGEN = re.compile(r"\d{1,6}:\d{1,3}")
+
+
+def _tamanos_validos(d) -> bool:
+    return (all(_POSICION_IMAGEN.fullmatch(k) and v in ("pequena", "grande", "completo") for k, v in d.tam_imagenes.items())
+            and all(_POSICION_IMAGEN.fullmatch(k) and v in ("centro", "derecha") for k, v in d.alin_imagenes.items()))
 
 
 def _opciones_validas(d: DatosPortada) -> None:
     if (d.contenido not in exportar_pdf.CONTENIDOS or d.papel not in exportar_pdf.PAPELES or d.margenes not in exportar_pdf.MARGENES
             or d.fuente_titulos not in exportar_pdf.FUENTES or d.fuente_preguntas not in exportar_pdf.FUENTES
-            or d.rotulo_docente not in exportar_pdf.ROTULOS or d.formato not in FORMATOS or not _partes_validas(d)):
+            or d.rotulo_docente not in exportar_pdf.ROTULOS or d.formato not in FORMATOS or not _partes_validas(d)
+            or not _tamanos_validos(d)
+            or (d.documento and d.documento not in exportar_pdf.DOCUMENTOS_DE[d.contenido])):
         raise HTTPException(status_code=422, detail="Opciones de exportación no válidas.")
 
 
@@ -124,13 +146,16 @@ def _datos_examen(d: DatosPortada, titulo_respaldo: str, version: str = "") -> e
         logo_izquierdo=d.logo_izquierdo, logo_derecho=d.logo_derecho,
         procedimiento_numerica=d.procedimiento_numerica, procedimiento_corta=d.procedimiento_corta,
         renglones_procedimiento=d.renglones_procedimiento, orden_partes=list(d.orden_partes),
-        textos_partes={t: x.model_dump() for t, x in d.textos_partes.items()})
+        textos_partes={t: x.model_dump() for t, x in d.textos_partes.items()},
+        cuadro_puntos=d.cuadro_puntos, saltos_partes=list(d.saltos_partes), tam_imagenes=dict(d.tam_imagenes),
+        alin_imagenes=dict(d.alin_imagenes),
+        documento=d.documento, plegado=d.plegado, letra_plegado=d.letra_plegado)
 
 
 def _exportar_sync(req: ExportarPdfRequest, clave: Dict[int, Any]):
     validar_para_exportar(req.questions, clave)
     _opciones_validas(req.datos)
-    datos = _datos_examen(req.datos, Path(req.filename).stem)
+    datos = _datos_examen(req.datos, _nombre_base(req.filename))
     try:
         return exportar_pdf.generar_pdf(req.questions, clave, req.total_points, datos)
     except exportar_pdf.PuntosNoEnteros as exc:
@@ -144,7 +169,7 @@ def _generar(questions, clave, total_points, datos: exportar_pdf.DatosExamen, fo
     try:
         if formato in ("pdf", "ambos"):
             r = exportar_pdf.generar_pdf(questions, clave, total_points, datos)
-            salida.update(pdf=r.pdf, paginas=r.paginas, preguntas=r.preguntas, avisos=r.avisos)
+            salida.update(pdf=r.pdf, paginas=r.paginas, hojas=r.hojas, preguntas=r.preguntas, avisos=r.avisos)
         if formato in ("word", "ambos"):
             w = exportar_docx.generar_docx(questions, clave, total_points, datos)
             salida.update(docx=w.docx, preguntas=w.preguntas)
@@ -158,18 +183,30 @@ def _exportar_examen_sync(req: ExportarPdfRequest, clave: Dict[int, Any]):
     validar_para_exportar(req.questions, clave)
     _opciones_validas(req.datos)
     d = req.datos
-    stem = Path(req.filename).stem
+    stem = _nombre_base(req.filename)
     g = _generar(req.questions, clave, req.total_points, _datos_examen(d, stem), d.formato)
-    base = f"{stem}{_SUFIJO.get(d.contenido, '')}"
+    de_pdf, de_word = f"{stem}{_sufijo(d)}", f"{stem}{_sufijo(d, 'word')}"
     if d.formato == "pdf":
-        return g["pdf"], "application/pdf", f"{base}.pdf", g
+        return g["pdf"], "application/pdf", f"{de_pdf}.pdf", g
     if d.formato == "word":
-        return g["docx"], MIME_DOCX, f"{base}.docx", g
-    return versiones.empaquetar([(f"{base}.pdf", g["pdf"]), (f"{base}.docx", g["docx"])]), "application/zip", f"{base}_pdf_y_word.zip", g
+        return g["docx"], MIME_DOCX, f"{de_word}.docx", g
+    zip_ = versiones.empaquetar([(f"{de_pdf}.pdf", g["pdf"]), (f"{de_word}.docx", g["docx"])])
+    return zip_, "application/zip", f"{de_pdf}_pdf_y_word.zip", g
 
 
-_SUFIJO = {"examen_y_clave": "_examen_y_clave", "solo_examen": "_examen", "solo_clave": "_clave",
+_SUFIJO = {"examen_y_clave": "_evaluacion_y_clave", "solo_examen": "_evaluacion", "solo_clave": "_clave",
            "folleto_hoja_clave": "_folleto_hoja_y_clave"}
+
+
+def _sufijo(d: DatosPortada, formato: str = "pdf") -> str:
+    """Lo que se añade al nombre del archivo: qué documento es y, en el PDF, si va en modo folleto."""
+    if d.documento == "examen":
+        base = "_preguntas" if d.contenido == "folleto_hoja_clave" else "_evaluacion"
+    elif d.documento:
+        base = {"hoja": "_hoja_de_respuestas", "clave": "_clave"}[d.documento]
+    else:
+        base = _SUFIJO.get(d.contenido, "")
+    return base + ("_folleto" if d.plegado and formato == "pdf" else "")
 
 
 @router.post("/api/exportar_pdf")
@@ -181,8 +218,8 @@ async def api_exportar_pdf(req: ExportarPdfRequest):
     req.filename = _nombre_nfc(req.filename)
     try:
         r = await run_in_threadpool(_exportar_sync, req, clave)
-        nombre = f"{Path(req.filename).stem}{_SUFIJO.get(req.datos.contenido, '')}.pdf"
-        info = json.dumps({"paginas": r.paginas, "preguntas": r.preguntas, "avisos": _avisos_para_cabecera(r.avisos)})
+        nombre = f"{_nombre_base(req.filename)}{_sufijo(req.datos)}.pdf"
+        info = json.dumps({"paginas": r.paginas, "hojas": r.hojas, "preguntas": r.preguntas, "avisos": _avisos_para_cabecera(r.avisos)})
         return Response(content=r.pdf, media_type="application/pdf",
                         headers={"Content-Disposition": _content_disposition(nombre), "X-PDF-Info": info})
     except HTTPException:
@@ -190,7 +227,7 @@ async def api_exportar_pdf(req: ExportarPdfRequest):
     except Exception as exc:  # noqa: BLE001
         logger.exception("Error inesperado generando el PDF de '%s'", req.filename)
         raise HTTPException(status_code=500, detail=(
-            "Ocurrió un error inesperado al generar el PDF. Tu revisión sigue intacta y el XML no se ve afectado: "
+            "Ocurrió un error inesperado al generar el PDF. Tu trabajo sigue intacto y el XML no se ve afectado: "
             f"vuelve a intentarlo. Si se repite, envía al desarrollador el registro «{ERROR_LOG_PATH}». "
             f"(Detalle técnico: {_detalle_tecnico(exc)})"))
 
@@ -205,14 +242,15 @@ async def api_exportar_examen(req: ExportarPdfRequest):
     req.filename = _nombre_nfc(req.filename)
     try:
         contenido, mime, nombre, g = await run_in_threadpool(_exportar_examen_sync, req, clave)
-        info = json.dumps({"paginas": g["paginas"], "preguntas": g["preguntas"], "avisos": _avisos_para_cabecera(g["avisos"])})
+        info = json.dumps({"paginas": g["paginas"], "hojas": g.get("hojas", 0), "preguntas": g["preguntas"],
+                           "avisos": _avisos_para_cabecera(g["avisos"])})
         return Response(content=contenido, media_type=mime, headers={"Content-Disposition": _content_disposition(nombre), "X-PDF-Info": info})
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
-        logger.exception("Error inesperado generando el examen de '%s' (%s)", req.filename, req.datos.formato)
+        logger.exception("Error inesperado generando la evaluación de '%s' (%s)", req.filename, req.datos.formato)
         raise HTTPException(status_code=500, detail=(
-            "Ocurrió un error inesperado al generar el archivo. Tu revisión sigue intacta y el XML no se ve afectado: "
+            "Ocurrió un error inesperado al generar el archivo. Tu trabajo sigue intacto y el XML no se ve afectado: "
             f"vuelve a intentarlo. Si se repite, envía al desarrollador el registro «{ERROR_LOG_PATH}». "
             f"(Detalle técnico: {_detalle_tecnico(exc)})"))
 
@@ -244,8 +282,7 @@ def _exportar_versiones_sync(req: ExportarVersionesRequest, clave: Dict[int, Any
     if len({e.upper() for e in etiquetas}) != len(etiquetas) or not all(etiquetas):
         raise HTTPException(status_code=422, detail="Cada versión necesita un nombre distinto.")
     archivos, resumen, avisos = [], [], []
-    sufijo = _SUFIJO.get(d.contenido, "")
-    stem = Path(req.filename).stem
+    stem = _nombre_base(req.filename)
     for v, etiqueta in zip(req.versiones, etiquetas):
         try:
             qs, clave_v = versiones.subconjunto(req.questions, clave, v.nums, {int(k): p for k, p in v.puntos.items()})
@@ -255,11 +292,11 @@ def _exportar_versiones_sync(req: ExportarVersionesRequest, clave: Dict[int, Any
             g = _generar(qs, clave_v, v.total_points, _datos_examen(d, stem, etiqueta), d.formato)
         except HTTPException as exc:
             raise HTTPException(status_code=exc.status_code, detail=f"Versión {etiqueta}: {exc.detail}")
-        base = f"{stem}_version_{versiones.etiqueta_para_archivo(etiqueta)}{sufijo}"
+        base = f"{stem}_version_{versiones.etiqueta_para_archivo(etiqueta)}"
         if "pdf" in g:
-            archivos.append((f"{base}.pdf", g["pdf"]))
+            archivos.append((f"{base}{_sufijo(d)}.pdf", g["pdf"]))
         if "docx" in g:
-            archivos.append((f"{base}.docx", g["docx"]))
+            archivos.append((f"{base}{_sufijo(d, 'word')}.docx", g["docx"]))
         resumen.append({"etiqueta": etiqueta, "paginas": g["paginas"], "preguntas": g["preguntas"]})
         avisos += [f"Versión {etiqueta}: {a}" for a in g["avisos"]]
     return versiones.empaquetar(archivos), resumen, avisos
@@ -274,7 +311,7 @@ async def api_exportar_versiones(req: ExportarVersionesRequest):
     req.filename = _nombre_nfc(req.filename)
     try:
         contenido, resumen, avisos = await run_in_threadpool(_exportar_versiones_sync, req, clave)
-        nombre = f"{Path(req.filename).stem}_versiones.zip"
+        nombre = f"{_nombre_base(req.filename)}_versiones.zip"
         info = json.dumps({"versiones": resumen, "avisos": _avisos_para_cabecera(avisos)})
         return Response(content=contenido, media_type="application/zip",
                         headers={"Content-Disposition": _content_disposition(nombre), "X-PDF-Info": info})
@@ -283,7 +320,7 @@ async def api_exportar_versiones(req: ExportarVersionesRequest):
     except Exception as exc:  # noqa: BLE001
         logger.exception("Error inesperado generando las versiones de '%s'", req.filename)
         raise HTTPException(status_code=500, detail=(
-            "Ocurrió un error inesperado al generar las versiones. Tu revisión sigue intacta y el XML no se ve afectado: "
+            "Ocurrió un error inesperado al generar las versiones. Tu trabajo sigue intacto y el XML no se ve afectado: "
             f"vuelve a intentarlo. Si se repite, envía al desarrollador el registro «{ERROR_LOG_PATH}». "
             f"(Detalle técnico: {_detalle_tecnico(exc)})"))
 
@@ -359,6 +396,8 @@ class PerfilPdf(BaseModel):
     renglones_procedimiento: int = Field(4, ge=exportar_pdf.RENGLONES_MIN, le=exportar_pdf.RENGLONES_MAX)
     orden_partes: List[str] = Field(default_factory=list, max_length=len(exportar_pdf.NOMBRE_PARTE))
     textos_partes: Dict[str, TextoParte] = Field(default_factory=dict, max_length=len(exportar_pdf.NOMBRE_PARTE))
+    cuadro_puntos: bool = False
+    saltos_partes: List[str] = Field(default_factory=list, max_length=len(exportar_pdf.NOMBRE_PARTE))
 
 
 def _nombre_perfil(nombre: str) -> str:

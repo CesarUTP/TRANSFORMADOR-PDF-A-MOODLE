@@ -95,8 +95,9 @@ export function onTabKeydown(e) {
   const tabs = Array.from(modalTabs);
   const i = tabs.indexOf(e.currentTarget);
   let next = null;
-  if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
-  else if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+  // En pantalla ancha el menú es vertical y en la angosta horizontal: valen las cuatro flechas.
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = tabs[(i + 1) % tabs.length];
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = tabs[(i - 1 + tabs.length) % tabs.length];
   else if (e.key === 'Home') next = tabs[0];
   else if (e.key === 'End') next = tabs[tabs.length - 1];
   if (!next) return;

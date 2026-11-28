@@ -124,7 +124,7 @@ def no_es_examen_error() -> HTTPException:
     return HTTPException(
         status_code=422,
         detail={
-            "message": "El archivo no parece ser una prueba o examen:",
+            "message": "El archivo no parece ser una evaluación:",
             "errors": [
                 "No se detectaron preguntas y respuestas reales, destinadas a evaluar, en el documento.",
                 "Verifica que subiste el archivo correcto (no una presentación, un manual, un artículo, etc.).",
@@ -140,7 +140,7 @@ def demasiado_largo_error() -> HTTPException:
             "message": "El documento es demasiado largo para procesarlo de una sola vez:",
             "errors": [
                 "La respuesta de la IA superó el tamaño máximo permitido.",
-                "Divide el examen en partes más pequeñas y súbelas por separado.",
+                "Divide la evaluación en partes más pequeñas y súbelas por separado.",
             ],
         },
     )

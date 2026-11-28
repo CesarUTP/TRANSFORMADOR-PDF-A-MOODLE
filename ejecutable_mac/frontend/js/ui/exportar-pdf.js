@@ -20,6 +20,9 @@ import { abrirModal, cerrarModal } from './modales.js';
 import { showToast } from './toast.js';
 import { crearPuntosPdf } from './puntos-pdf.js';
 import { crearPartesPdf } from './partes-pdf.js';
+import { crearPestanas } from './pestanas.js';
+import { crearImagenesPapel } from './imagenes-papel.js';
+import { crearImprimir } from './imprimir.js';
 import { crearVersiones } from './versiones.js';
 import {
   ACTIVIDADES, RENGLONES_MAX, RENGLONES_MIN, aplicarPerfil, avisosDelPdf, cuerpoPdf, datosDePerfil, enteroEn, fechaLegible,
@@ -34,9 +37,6 @@ const errorEl = $('pdf-error');
 const btnExportar = $('btn-pdf-exportar');
 const CAMPOS_TEXTO = ['institucion', 'facultad', 'departamento', 'materia', 'docente', 'actividad', 'grupo', 'instrucciones'];
 const LADOS = { logo_izquierdo: 'izq', logo_derecho: 'der' };
-const PAPELES = { carta: 'Carta', legal: 'Legal', a4: 'A4' };
-const FUENTES = { dejavu: 'DejaVu Sans', arial: 'Arial', times: 'Times New Roman' };
-const MARGENES = { normal: 'normales', estrechos: 'estrechos', moderados: 'moderados', anchos: 'anchos' };
 
 /** Lo que se exporta ahora: { filename, total_points, questions, answer_key }. */
 let examen = null;
@@ -52,6 +52,12 @@ const versiones = crearVersiones({
 });
 /** El orden de las partes y sus textos (3.1). */
 const partesPdf = crearPartesPdf({ alCambiar: () => cambioEnFormulario(), alReordenar: () => versiones.repintar() });
+/** El tamaño de cada imagen en el papel (3.2). */
+const imagenesPapel = crearImagenesPapel({ alCambiar: () => {} });   // el formulario ya avisa del cambio
+/** Las pestañas de las opciones (3.2). */
+let pestanas = null;
+/** La ventana «¿Qué quieres imprimir?» (3.2): un documento cada vez, normal o en modo folleto. */
+const imprimir = crearImprimir({ vista: vistaDeImpresion, descargar: descargarDocumento });
 /** Los puntos enteros del PDF de un examen sin versiones (2.7): su panel y su copia de los puntos. */
 const puntosPdf = crearPuntosPdf({ alCambiar: () => cambioEnFormulario() });
 
@@ -68,7 +74,8 @@ function guardar(datos) {
 function llenarExamen(v) {
   ['materia', 'actividad', 'grupo'].forEach(k => { $(`pdf-${k}`).value = v[k]; });
   $('pdf-fecha').value = '';
-  form.elements.contenido.value = v.contenido;
+  // «Solo el examen» y «Solo la clave» (de antes) ahora se eligen al descargar.
+  form.elements.contenido.value = v.contenido === 'folleto_hoja_clave' ? v.contenido : 'examen_y_clave';
   form.elements.formato.value = v.formato;
 }
 
@@ -88,12 +95,13 @@ function llenarPerfil(v) {
   f.procedimiento_numerica.checked = v.procedimiento_numerica;
   f.procedimiento_corta.checked = v.procedimiento_corta;
   f.campos_estudiante.checked = v.campos_estudiante;
+  f.cuadro_puntos.checked = v.cuadro_puntos;
   f.partes.checked = v.partes;
   f.mezclar.checked = v.mezclar;
   f.puntos_por_pregunta.checked = v.puntos_por_pregunta;
   f.puntos_enteros.checked = v.puntos_enteros;
   Object.keys(LADOS).forEach(k => mostrarLogo(k, v[k]));
-  partesPdf.llenar(v.orden_partes, v.textos_partes);
+  partesPdf.llenar(v.orden_partes, v.textos_partes, v.saltos_partes);
 }
 
 /** Lo que hay escrito ahora en el diálogo (la fecha va ya con su nombre de mes). */
@@ -108,23 +116,33 @@ function leer() {
     renglones_ensayo: f.renglones_ensayo.value, campos_estudiante: f.campos_estudiante.checked, partes: f.partes.checked,
     mezclar: f.mezclar.checked, puntos_por_pregunta: f.puntos_por_pregunta.checked, puntos_enteros: f.puntos_enteros.checked,
     renglones_procedimiento: f.renglones_procedimiento.value, procedimiento_numerica: f.procedimiento_numerica.checked,
-    procedimiento_corta: f.procedimiento_corta.checked,
-  }, partesPdf.leer(), logos);
+    procedimiento_corta: f.procedimiento_corta.checked, cuadro_puntos: f.cuadro_puntos.checked,
+  }, partesPdf.leer(), imagenesPapel.leer(), logos);
   return datos;
 }
 
-/** El motivo por el que lo escrito no sirve, o '' si está bien. */
-function problemaDe(datos) {
-  if (tamanoValido(datos.tam_titulos) === null || tamanoValido(datos.tam_preguntas) === null) {
-    return 'El tamaño de la letra debe estar entre 7 y 20 puntos.';
+/** El primer dato que no sirve: { mensaje, campo (id del control) }, o null si todo está bien. */
+function fallaDe(datos) {
+  const letra = 'El tamaño de la letra debe estar entre 7 y 20 puntos.';
+  if (tamanoValido(datos.tam_titulos) === null) return { mensaje: letra, campo: 'pdf-tam-titulos' };
+  if (tamanoValido(datos.tam_preguntas) === null) return { mensaje: letra, campo: 'pdf-tam-preguntas' };
+  for (const [clave, que, campo] of [['renglones_ensayo', 'desarrollo', 'pdf-renglones'], ['renglones_procedimiento', 'procedimiento', 'pdf-renglones-proc']]) {
+    if (enteroEn(datos[clave], RENGLONES_MIN, RENGLONES_MAX) === null) {
+      return { mensaje: `El alto del recuadro de ${que} debe ser un número entero de ${RENGLONES_MIN} a ${RENGLONES_MAX} renglones.`, campo };
+    }
   }
-  if (enteroEn(datos.renglones_ensayo, RENGLONES_MIN, RENGLONES_MAX) === null) {
-    return `El alto del recuadro de ensayo debe ser un número entero de ${RENGLONES_MIN} a ${RENGLONES_MAX} renglones.`;
-  }
-  if (enteroEn(datos.renglones_procedimiento, RENGLONES_MIN, RENGLONES_MAX) === null) {
-    return `El alto del recuadro de procedimiento debe ser un número entero de ${RENGLONES_MIN} a ${RENGLONES_MAX} renglones.`;
-  }
-  return '';
+  return null;
+}
+
+const problemaDe = datos => fallaDe(datos)?.mensaje || '';
+
+/** Dice qué está mal y lleva al docente a ese control, aunque esté en otra pestaña. */
+function señalar(falla) {
+  mostrarError(falla.mensaje);
+  const campo = $(falla.campo);
+  campo.closest('[hidden]:not([role="tabpanel"])')?.removeAttribute('hidden');
+  pestanas.mostrarElemento(campo);
+  campo.focus();
 }
 
 function mostrarError(texto) {
@@ -157,8 +175,10 @@ function actualizarPie() {
     if (!versiones.cantidad()) texto = 'Sortea las versiones (a la izquierda) para poder exportarlas.';
     else if (!listas) texto = 'Cambiaste el plan de versiones: vuelve a sortear para exportar.';
     else texto = resumenDeDescarga({ formato, cantidad: versiones.resumen().n });
-  } else if (!generando && formato === 'ambos') {
-    texto = 'Un ZIP con el PDF y el Word del examen. El XML de Moodle no cambia.';
+  } else if (!generando) {
+    texto = formato === 'ambos' ? 'Al exportar eliges qué documento: recibirás un ZIP con su PDF y su Word.'
+      : formato === 'word' ? 'Al exportar eliges qué documento descargar.'
+        : 'Al exportar eliges qué documento descargar y si va normal o en modo folleto.';
   }
   $('pdf-pie-texto').textContent = texto;
   // La vista previa es la del PDF; el Word dice lo mismo (mismas preguntas, mismo orden de opciones, misma clave).
@@ -166,14 +186,14 @@ function actualizarPie() {
   $('pdf-word-aviso').hidden = formato === 'pdf';
 }
 
-/** Lo que dice cada sección plegada, para saber qué hay dentro sin abrirla. */
-function actualizarResumenes() {
-  const d = leer();
-  const nombres = [d.institucion, d.facultad, d.departamento].map(x => x.trim()).filter(Boolean);
-  const nLogos = (d.logo_izquierdo ? 1 : 0) + (d.logo_derecho ? 1 : 0);
-  $('pdf-resumen-encabezado').textContent = [nombres[0] || 'Sin institución', nLogos ? `${nLogos} logo${nLogos > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
-  const preguntas = FUENTES[d.fuente_preguntas] || FUENTES.dejavu;
-  $('pdf-resumen-formato').textContent = `${PAPELES[d.papel] || 'Carta'} · márgenes ${MARGENES[d.margenes] || ''} · ${preguntas} ${tamanoValido(d.tam_preguntas) ?? '?'} pt${d.puntos_enteros ? ' · puntos enteros' : ''}`;
+/** Lo que acompaña a cada elección: su explicación y los controles que solo sirven con ella. */
+function actualizarOpciones() {
+  const f = form.elements;
+  form.querySelectorAll('[data-pista]').forEach(p => { p.hidden = f[p.dataset.pista].value !== p.dataset.valor; });
+  const proc = $('pdf-renglones-proc');
+  $('pdf-fila-procedimiento').hidden = !(f.procedimiento_numerica.checked || f.procedimiento_corta.checked)
+    && enteroEn(proc.value, RENGLONES_MIN, RENGLONES_MAX) !== null;
+  partesPdf.activar();
 }
 
 // ── Logos ───────────────────────────────────────────────────────────────
@@ -237,7 +257,6 @@ function elegirMateria(id, { aplicar = true } = {}) {
   }
   if (m.docente) $('pdf-docente').value = m.docente;
   if (m.grupo) $('pdf-grupo').value = m.grupo;
-  actualizarResumenes();
 }
 
 /** Mi nombre y cómo me llamo (de «Mi perfil») mandan sobre lo que traiga un perfil o lo recordado. */
@@ -272,8 +291,8 @@ async function guardarPerfil() {
   const nombre = nombrePerfil($('pdf-perfil-nombre').value);
   if (!nombre) { mostrarError('Escribe un nombre para el perfil.'); return; }
   const datos = leer();
-  const problema = problemaDe(datos);
-  if (problema) { mostrarError(problema); return; }
+  const falla = fallaDe(datos);
+  if (falla) { señalar(falla); return; }
   mostrarError('');
   try {
     const res = await apiFetch(`/api/perfiles_pdf/${encodeURIComponent(nombre)}`, {
@@ -400,8 +419,7 @@ function actualizarPuntos() {
 
 /** Todo cambio del formulario: actualiza los resúmenes y la línea de abajo, y rehace la vista previa. */
 function cambioEnFormulario() {
-  actualizarResumenes();
-  partesPdf.activar();
+  actualizarOpciones();
   actualizarPuntos();
   actualizarPie();
   if (vista.abierta) {
@@ -415,22 +433,24 @@ function cambioEnFormulario() {
 export function abrirExportarPdf(origen = null) {
   examen = origen && Array.isArray(origen.questions) ? origen : estado.exportable;
   if (!examen) {
-    showToast('Genera primero el XML: el PDF y el Word salen del mismo examen.', 'error');
+    showToast('Genera primero el XML: el PDF y el Word salen de la misma evaluación.', 'error');
     return;
   }
   const v = valoresIniciales(leerGuardado());
   llenarExamen(v);
   llenarPerfil(v);
   const n = examen.questions.length;
-  $('pdf-examen-nombre').textContent = `${examen.filename} · ${n} pregunta${n === 1 ? '' : 's'}. Todos los datos son opcionales y se recuerdan para el próximo examen.`;
+  $('pdf-examen-nombre').textContent = `${n} pregunta${n === 1 ? '' : 's'}. Todo es opcional y se recuerda para la próxima evaluación.`;
   $('pdf-migas-examen').textContent = examen.filename;
   mostrarError('');
   ocupado(false);
   cerrarNombreDePerfil();
   partesPdf.abrir(examen);
+  imagenesPapel.abrir(examen);
   versiones.abrir(examen);
   puntosPdf.abrir(examen);
-  partesPdf.activar();
+  pestanas.mostrar('pdf-tab-examen');
+  ampliar(false);
   vista.abierta = true;
   vista.pagina = 1;
   soltarImagenDeVista();
@@ -439,7 +459,7 @@ export function abrirExportarPdf(origen = null) {
   const idMateria = examen.materia_id != null && materiaPorId(examen.materia_id) ? examen.materia_id : null;
   elegirMateria(idMateria, { aplicar: false });
   if (examen.actividad) $('pdf-actividad').value = examen.actividad;
-  actualizarResumenes();
+  actualizarOpciones();
   actualizarPuntos();
   // Orden de prioridad: la materia (su perfil, docente y grupo) > mi perfil predeterminado y mis datos > lo recordado.
   cargarPerfiles('').then(() => {
@@ -452,7 +472,7 @@ export function abrirExportarPdf(origen = null) {
     }
     aplicarDocente();
     if (idMateria != null) elegirMateria(idMateria);
-    actualizarResumenes();
+    actualizarOpciones();
     actualizarPuntos();
     actualizarPie();
     refrescarVista(1);
@@ -475,13 +495,14 @@ function cerrar() {
   cerrarModal(modal);
 }
 
+/** El botón «Exportar»: revisa lo escrito y pregunta qué imprimir. */
 async function exportar(e) {
   e.preventDefault();
   if (!examen || btnExportar.disabled) return;
   const datos = leer();
   mostrarError('');
-  const problema = problemaDe(datos);
-  if (problema) { mostrarError(problema); return; }
+  const falla = fallaDe(datos);
+  if (falla) { señalar(falla); return; }
   const conVersiones = versiones.activa();
   if (conVersiones) {
     if (!versiones.listas()) { mostrarError('Sortea las versiones antes de exportarlas.'); return; }
@@ -497,6 +518,36 @@ async function exportar(e) {
       if (!ok) return;
     }
   }
+  const recordado = valoresIniciales(leerGuardado());
+  imprimir.abrir({
+    contenido: datos.contenido, formato: datos.formato, versiones: conVersiones ? versiones.cantidad() : 0,
+    plegado: recordado.plegado, letra_plegado: recordado.letra_plegado,
+  });
+}
+
+async function mensajeDeError(res) {
+  let msg = friendlyHttpError(res.status);
+  try { msg = detalleDeError((await res.json()).detail, msg); } catch (_) { /* se queda el genérico */ }
+  return typeof msg === 'string' ? msg : (msg.errors || []).join(' ');
+}
+
+/** La vista previa de un documento tal como se descargaría (con versiones, de la que se está viendo). */
+async function vistaDeImpresion(extra, pagina, signal) {
+  const datos = { ...leer(), ...extra };
+  const cuerpo = versiones.estadoVista() === 'version' ? versiones.cuerpoVista(datos) : cuerpoNormal(datos);
+  const res = await apiFetch(`/api/vista_previa_pdf?pagina=${pagina}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo), signal,
+  });
+  if (!res.ok) return { mensaje: await mensajeDeError(res) };
+  const paginas = Number(res.headers.get('X-PDF-Paginas')) || 1;
+  return { url: URL.createObjectURL(await res.blob()), paginas };
+}
+
+/** Genera y guarda UN documento. { guardado } o { mensaje } si no se pudo. */
+async function descargarDocumento(extra, documento) {
+  const datos = { ...leer(), ...extra };
+  const conVersiones = versiones.activa();
+  const formato = datos.formato;
   ocupado(true);
   try {
     const res = await apiFetch(conVersiones ? '/api/exportar_versiones' : '/api/exportar_examen', {
@@ -504,33 +555,37 @@ async function exportar(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(conVersiones ? versiones.cuerpoExportar(datos) : cuerpoNormal(datos)),
     });
-    if (!res.ok) {
-      let msg = friendlyHttpError(res.status);
-      try { const json = await res.json(); msg = detalleDeError(json.detail, msg); } catch (_) { /* se queda el genérico */ }
-      mostrarError(typeof msg === 'string' ? msg : (msg.errors || []).join(' '));
-      return;
-    }
+    if (!res.ok) return { mensaje: await mensajeDeError(res) };
     const avisos = avisosDelPdf(res.headers.get('X-PDF-Info'));
-    const formato = datos.formato;
     const nombre = nombreDeDescarga(res.headers.get('Content-Disposition'),
-      conVersiones || formato === 'ambos' ? 'examen.zip' : formato === 'word' ? 'examen.docx' : 'examen.pdf');
+      conVersiones || formato === 'ambos' ? 'evaluacion.zip' : formato === 'word' ? 'evaluacion.docx' : 'evaluacion.pdf');
+    const que = conVersiones || formato === 'ambos' ? 'en un ZIP en tu equipo' : 'en tu equipo';
     const guardado = await saveFileToUser(await res.blob(), nombre,
-      (conVersiones ? 'Versiones guardadas en un ZIP en tu equipo' : formato === 'ambos' ? 'PDF y Word guardados en un ZIP en tu equipo'
-        : formato === 'word' ? 'Word guardado en tu equipo' : 'PDF guardado en tu equipo') + (avisos.length ? '. ' + avisos.join(' ') : ''));
-    // Si cerró el diálogo de «Guardar como» sin guardar, se queda aquí para poder intentarlo otra vez.
-    if (guardado) {
-      guardar(datos);
-      cerrar();
-    }
-  } catch (err) {
-    mostrarError(`No se pudo generar ${versiones.activa() ? 'las versiones' : datos.formato === 'word' ? 'el Word' : datos.formato === 'ambos' ? 'los archivos' : 'el PDF'}. Tu revisión y el XML no se ven afectados: inténtalo de nuevo.`);
+      `${documento.nombre}${extra.plegado ? ' (PDF en modo folleto)' : ''}: guardado ${que}` + (avisos.length ? '. ' + avisos.join(' ') : ''));
+    // Si cerró «Guardar como» sin guardar, no se marca como descargado y puede intentarlo otra vez.
+    // Descargar un Word no cambia lo recordado del modo folleto (que es del PDF).
+    if (guardado) guardar(formato === 'word' ? { ...datos, plegado: valoresIniciales(leerGuardado()).plegado } : datos);
+    return { guardado: !!guardado };
+  } catch (_) {
+    return { mensaje: 'No se pudo generar el archivo. Tu trabajo y el XML no se ven afectados: inténtalo de nuevo.' };
   } finally {
     ocupado(false);
   }
 }
 
+/** La página entera a la vista, o a todo el ancho para leerla de cerca. */
+function ampliar(si) {
+  $('pdf-previa').classList.toggle('ampliada', si);
+  const boton = $('btn-pdf-vista-zoom');
+  boton.setAttribute('aria-pressed', String(si));
+  boton.textContent = si ? 'Ver la página entera' : 'Ampliar';
+}
+
 export function iniciarExportarPdf() {
+  pestanas = crearPestanas($('pdf-pestanas'), () => { $('pdf-config').scrollTop = 0; });
   partesPdf.iniciar();
+  imagenesPapel.iniciar();
+  imprimir.iniciar();
   $('pdf-actividades').replaceChildren(...ACTIVIDADES.map(a => Object.assign(document.createElement('option'), { value: a })));
   form.addEventListener('submit', exportar);
   form.addEventListener('input', cambioEnFormulario);
@@ -551,7 +606,7 @@ export function iniciarExportarPdf() {
   });
   $('btn-pdf-vista-ant').addEventListener('click', () => refrescarVista(vista.pagina - 1));
   $('btn-pdf-vista-sig').addEventListener('click', () => refrescarVista(vista.pagina + 1));
-  $('btn-pdf-cancelar').addEventListener('click', cerrar);
+  $('btn-pdf-vista-zoom').addEventListener('click', () => ampliar($('btn-pdf-vista-zoom').getAttribute('aria-pressed') !== 'true'));
   $('btn-pdf-cerrar').addEventListener('click', cerrar);
   versiones.iniciar();
   puntosPdf.iniciar();

@@ -10,6 +10,7 @@
 import { apiFetch } from '../api.js';
 import { abrirEnlaceExterno } from '../util.js';
 import { abrirAjustesClave } from './clave.js';
+import { crearPestanas } from './pestanas.js';
 import { abrirModal, cerrarModal } from './modales.js';
 
 const modal = document.getElementById('modal-acerca');
@@ -22,7 +23,7 @@ let _urlDescarga = null;
 // Un mensaje distinto para cada caso: nunca «al día» cuando en realidad no
 // se pudo preguntar (ver backend/actualizaciones.py).
 const MOTIVOS_ERROR = {
-  conexion: 'no hay conexión a internet. Revísala y vuelve a pulsar «Buscar actualizaciones».',
+  conexion: 'no hay conexión a internet. Revísala y vuelve a hacer clic en «Buscar actualizaciones».',
   servidor: 'el servidor de actualizaciones no respondió. Inténtalo más tarde.',
   respuesta: 'la respuesta del servidor de actualizaciones no era válida. Inténtalo más tarde.',
   local: 'la aplicación no respondió. Ciérrala y vuelve a abrirla.',
@@ -74,7 +75,7 @@ async function _estadoClave() {
         : `Configurada y guardada cifrada en este equipo; termina en ····${e.final}.`;
       $('acerca-api-boton').textContent = 'Cambiar o quitar la clave';
     } else {
-      el.textContent = 'Sin configurar: la necesitas para convertir exámenes. Es gratis.';
+      el.textContent = 'Sin configurar: la necesitas para convertir evaluaciones. Es gratis.';
       $('acerca-api-boton').textContent = 'Configurar la clave';
     }
   } catch (_) {
@@ -93,7 +94,10 @@ async function _datosDelEquipo() {
   } catch (_) { /* quedan los guiones */ }
 }
 
+const pestanas = crearPestanas($('acerca-pestanas'), () => { modal.querySelector('.acerca-body').scrollTop = 0; });
+
 export function abrirAcerca() {
+  pestanas.mostrar('acerca-t-ofrece');
   abrirModal(modal);
   _datosDelEquipo();
   _estadoClave();

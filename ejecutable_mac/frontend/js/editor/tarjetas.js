@@ -3,17 +3,19 @@
  */
 import { claveDeOpcionMultiple, letrasCorrectasPorIndice } from './respuesta-indices.js';
 import { clozeBuildTextAndAnswer, initClozeBuilder, parseClozeSegments, renderClozeBuilder } from './cloze.js';
-import { scrollToEditorCard } from './panel.js';
+import { buildReviewRail, scrollToEditorCard } from './panel.js';
 import { abiertasEnOrden, aplicarPlegado } from './plegado.js';
 import { datosDeFilas, filasConDistractores } from './emparejamiento-logica.js';
-import { bloqueCompartidoHtml, prepararCompartidos } from './compartido.js';
-import { heredarContexto, tramosCompartidos } from './compartido-logica.js';
+import { abrirGrupoHtml, cerrarGrupoHtml, grupoPendienteHtml, hayCompartidoEnMarcha, prepararCompartidos, reiniciarCompartidos } from './compartido.js';
+import { heredarContexto, marcarImagenesComunes, tramosCompartidos } from './compartido-logica.js';
 import { movimientosDe } from './orden-logica.js';
 import { _editorTotalPoints, reiniciarPanelPuntos, sincronizarPanelPuntos } from './puntos-ui.js';
 import { apiFetch } from '../api.js';
 import { imagenesDeTarjeta, imagenesHtml, prepararImagenes } from './imagenes.js';
 import { estado, notificar } from '../estado.js';
-import { fmtPoints, puntajeComunDe, puntosEnMoodle } from '../puntos.js';
+import { autoDistributePoints, fmtPoints, puntajeComunDe, puntosEnMoodle } from '../puntos.js';
+import { pintarDatosExamen } from './datos-examen.js';
+import { MAX_OPCIONES, MIN_OPCIONES, conOpcionNueva, preguntaEnBlanco, sinOpcion } from './nuevo-logica.js';
 import { showToast } from '../ui/toast.js';
 import { crearIconos, esc_html, findClozeBrackets, humanizeSkipReason, scrollBehavior, splitAnswers, textoConFormulas, tieneFormulas } from '../util.js';
 import { chipsVisibles, chipsHtml, copiaSinImagenes, firmaRespuesta, marcarSiCambio, mostrarAvisoConfianzaLegado, mostrarAvisoMarcaLegado, motivoRevisarPrimero, necesitaRevisarPrimero, requiereRevision, respuestaCambio } from './procedencia.js';
@@ -38,6 +40,7 @@ export function syncParseResultFromDOM() {
   const prevColorNotice = estado.currentParseResult ? estado.currentParseResult.color_marks_notice : undefined;
   const prevEscaneado = estado.currentParseResult ? estado.currentParseResult.escaneado : undefined;
   const prevImportado = estado.currentParseResult ? estado.currentParseResult.importado : undefined;
+  const prevPendiente = estado.currentParseResult ? estado.currentParseResult.compartido_pendiente : undefined;
   estado.currentParseResult = existingCards.length > 0
     ? collectEditorData()
     : { questions: [], answer_key: {} };
@@ -46,6 +49,7 @@ export function syncParseResultFromDOM() {
   if (prevColorNotice) estado.currentParseResult.color_marks_notice = prevColorNotice;
   if (prevEscaneado) estado.currentParseResult.escaneado = prevEscaneado;
   if (prevImportado) estado.currentParseResult.importado = prevImportado;
+  if (prevPendiente) estado.currentParseResult.compartido_pendiente = prevPendiente;
 }
 
 // Borrar una pregunta ya no es definitivo: el aviso ofrece "Deshacer"
@@ -89,7 +93,7 @@ export function deleteQuestionCard(btn) {
     reanclar();
     requestAnimationFrame(reanclar);
     cards[Math.min(pos, cards.length - 1)]?.focus({ preventScroll: true });
-    showToast(`Pregunta ${pos + 1} eliminada`, 'info', {
+    showToast(`Pregunta ${pos + 1} borrada`, 'info', {
       accion: { texto: 'Deshacer', alPulsar: () => {
         if (!borrada) return null;
         syncParseResultFromDOM();
@@ -117,9 +121,20 @@ export function deleteQuestionCard(btn) {
 
 export function addNewQuestion(type) {
   syncParseResultFromDOM();
-  const existingCards = document.querySelectorAll('.editor-card');
-  const nextNum = existingCards.length + 1;
+  const nextNum = document.querySelectorAll('.editor-card').length + 1;
+  const nueva = crearPreguntaNueva(type, nextNum);
+  if (!nueva) return;
 
+  estado.currentParseResult.questions.push(nueva.pregunta);
+  estado.currentParseResult.answer_key[nextNum] = nueva.clave;
+
+  renderEditor(estado.currentParseResult);
+  showToast(`Pregunta ${nextNum} (${QUESTION_TYPE_LABEL_MAP[type] || type}) agregada`);
+  irAPreguntaNueva(nextNum);
+}
+
+/** { pregunta, clave } de una pregunta nueva, con sus puntos; null si no se puede. Se llama con el editor ya leído. */
+export function crearPreguntaNueva(type, nextNum) {
   let newQ = { num: nextNum, type: type, data: {} };
   let defaultAns = '';
 
@@ -143,7 +158,7 @@ export function addNewQuestion(type) {
     };
     defaultAns = '1. Primer concepto → Primera pareja; 2. Segundo concepto → Segunda pareja';
   } else if (type === 'essay') {
-    newQ.data = { stem: 'Escribe aquí la instrucción de la pregunta de ensayo (respuesta abierta).' };
+    newQ.data = { stem: 'Escribe aquí la instrucción de la pregunta de desarrollo (respuesta abierta).' };
     defaultAns = '';
   } else if (type === 'shortanswer') {
     newQ.data = { stem: 'Escribe aquí el enunciado de la pregunta de respuesta corta.' };
@@ -151,6 +166,14 @@ export function addNewQuestion(type) {
   } else if (type === 'numerical') {
     newQ.data = { stem: 'Escribe aquí el enunciado de la pregunta numérica.' };
     defaultAns = '0';
+  }
+
+  // En un examen escrito desde cero la pregunta llega vacía: la app no pone texto ni respuestas por el docente.
+  if (estado.currentUploadMetadata?.desde_cero) {
+    const vacia = preguntaEnBlanco(type, nextNum);
+    if (!vacia) return null;
+    newQ = vacia.pregunta;
+    defaultAns = vacia.clave.answer;
   }
 
   // Puntaje default para la pregunta nueva: el promedio de lo que ya
@@ -164,18 +187,13 @@ export function addNewQuestion(type) {
   // «Completar» vale puntos enteros (Moodle no admite decimales en sus huecos).
   if (type === 'cloze') newQ.points = puntosEnMoodle(newQ.data.text, newQ.points).enMoodle;
 
-  estado.currentParseResult.questions.push(newQ);
-  estado.currentParseResult.answer_key[nextNum] = { type: type, answer: defaultAns };
-
-  renderEditor(estado.currentParseResult);
-  showToast(`Pregunta ${nextNum} (${QUESTION_TYPE_LABEL_MAP[type] || type}) añadida`);
-  _irAPreguntaNueva(nextNum);
+  return { pregunta: newQ, clave: { type: type, answer: defaultAns } };
 }
 
 // Lleva a la pregunta recién añadida y pone el cursor en su enunciado
 // (antes se intentaba mover el scroll de un contenedor que no tiene
 // scroll propio, así que la página no se movía).
-function _irAPreguntaNueva(num) {
+export function irAPreguntaNueva(num) {
   requestAnimationFrame(() => {
     const card = document.querySelector(`.editor-card[data-qnum="${num}"]`);
     if (!card) return;
@@ -241,7 +259,7 @@ export function recoverSkippedQuestion(skippedIdx) {
   const abiertas = abiertasEnOrden();
   abiertas.splice(pos, 0, true);
   renderEditor(estado.currentParseResult, { abiertas });
-  showToast(sq.type === 'essay' ? `Pregunta ${nextNum} añadida — revisa su enunciado` : `Pregunta ${nextNum} añadida — marca la respuesta correcta`, 'info');
+  showToast(sq.type === 'essay' ? `Pregunta ${nextNum} agregada — revisa su enunciado` : `Pregunta ${nextNum} agregada — marca la respuesta correcta`, 'info');
   requestAnimationFrame(() => {
     const card = document.querySelector(`.editor-card[data-qnum="${nextNum}"]`);
     if (card) scrollToEditorCard(card, { enfocar: true });
@@ -299,7 +317,7 @@ function getMatchingPairs(q, keyInfo) {
   }
 
   if (pairs.length === 0) {
-    pairs.push({ left: '', right: '' });
+    pairs.push({ left: '', right: '' }, { left: '', right: '' });     // un emparejamiento necesita dos parejas
   }
   return pairs;
 }
@@ -392,6 +410,42 @@ function _renumerarParejas(list) {
   });
 }
 
+// ── Opciones de selección múltiple: agregar y quitar ────────────────────
+function _cambiarOpciones(boton, cambio) {
+  const card = boton.closest('.editor-card');
+  if (!card) return;
+  const idx = Array.from(document.querySelectorAll('.editor-card')).indexOf(card);
+  const marcadas = [...card.querySelectorAll('.q-opt-correct')].filter(x => x.checked).map(x => x.dataset.letter);
+  syncParseResultFromDOM();
+  const res = estado.currentParseResult;
+  const q = res.questions[idx];
+  const hecho = q && cambio(q.data.options || {}, marcadas);
+  if (!hecho) return;
+  q.data.options = hecho.options;
+  res.answer_key[q.num] = { type: q.type, ...claveDeOpcionMultiple(hecho.options, hecho.marcadas) };
+  if (hecho.cambiaRespuesta) marcarSiCambio(q.data, true);
+  const abiertas = abiertasEnOrden();
+  renderEditor(res, { abiertas });
+  const nueva = document.querySelectorAll('.editor-card')[idx];
+  const campos = nueva?.querySelectorAll('.q-opt');
+  campos?.[Math.min(hecho.foco, campos.length - 1)]?.focus({ preventScroll: true });
+}
+
+export function agregarOpcion(boton) {
+  _cambiarOpciones(boton, (options, marcadas) => {
+    const nuevas = conOpcionNueva(options);
+    return nuevas && { options: nuevas, marcadas, foco: Object.keys(nuevas).length - 1 };
+  });
+}
+
+export function quitarOpcion(boton) {
+  const letra = boton.dataset.letter;
+  _cambiarOpciones(boton, (options, marcadas) => {
+    const r = sinOpcion(options, marcadas, letra);
+    return r && { ...r, cambiaRespuesta: marcadas.includes(letra), foco: Object.keys(options).sort().indexOf(letra) };
+  });
+}
+
 // Interactive Question Editor Renderer
 //
 // Orden de la pantalla (la tarea principal —revisar— va primero):
@@ -427,6 +481,9 @@ function _sanearDatos(data) {
   });
   if (!esObjeto(data.answer_key)) data.answer_key = {};
   data.skipped_questions = (Array.isArray(data.skipped_questions) ? data.skipped_questions : []).filter(esObjeto);
+  const pendiente = data.compartido_pendiente;
+  if (pendiente !== undefined && !(esObjeto(pendiente) && typeof pendiente.texto === 'string')) delete data.compartido_pendiente;
+  else if (pendiente && !Array.isArray(pendiente.images)) delete pendiente.images;
   data.skipped_questions.forEach(sq => {
     sq.num = _entero(sq.num, 0);
     if (!Array.isArray(sq.reasons)) sq.reasons = [String(sq.reasons ?? '')];
@@ -440,20 +497,32 @@ function _sanearDatos(data) {
 export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
   const abiertasPrevias = nuevo ? null : (abiertas || abiertasEnOrden());
   _sanearDatos(data);
+  if (nuevo) { reiniciarCompartidos(); marcarImagenesComunes(data.questions); }
   estado.currentParseResult = data;
+  const meta = estado.currentUploadMetadata;
+  const desdeCero = !!meta?.desde_cero;
+  // Mientras el docente no toque ningún punto, el total del examen se reparte solo entre las preguntas.
+  if (desdeCero && meta.reparto_auto && data.questions.length) autoDistributePoints(data.questions, meta.total_points, 'byType');
   const container = document.getElementById('editor-questions-container');
   // Los puntos por tipo que el docente escribió en «Distribuir puntos» viven en inputs
   // que se reconstruyen con el resto de la barra: se leen antes y se vuelven
   // a poner después (para los tipos que siguen presentes).
+  // Solo lo que el docente ESCRIBIÓ: lo demás se calcula de nuevo (si no, el panel se quedaba con los puntos de
+  // antes de añadir o quitar preguntas). Un examen recién abierto no hereda nada del anterior.
   const pesosEscritos = {};
-  container.querySelectorAll('.points-type-input').forEach(inp => { pesosEscritos[inp.dataset.type] = inp.value; });
+  if (!nuevo) container.querySelectorAll('.points-type-input[data-escrito]').forEach(inp => { pesosEscritos[inp.dataset.type] = inp.value; });
   const total = data.questions.length;
 
   // Subtítulo con el conteo real del examen.
   const sub = document.getElementById('editor-sub');
-  if (sub) {
+  const titulo = document.getElementById('editor-title');
+  if (titulo) titulo.textContent = desdeCero ? 'Crea tu evaluación' : 'Revisa las preguntas';
+  pintarDatosExamen();
+  if (sub && desdeCero) {
+    sub.innerHTML = `${total ? `${total} pregunta${total !== 1 ? 's' : ''}. ` : ''}Escribe cada pregunta, marca su respuesta correcta y genera el XML cuando esté listo. <button type="button" class="text-link" data-accion="openHelp" data-arg="review">¿Cómo funciona el editor?</button>`;
+  } else if (sub) {
     const skippedN = (data.skipped_questions || []).length;
-    sub.innerHTML = `${total} pregunta${total !== 1 ? 's' : ''}${skippedN ? ` · ${skippedN} no incluida${skippedN !== 1 ? 's' : ''}` : ''}. Compara cada una con tu documento: la transcripción puede traer errores o respuestas faltantes. <button type="button" class="text-link" data-accion="openHelp" data-arg="review">¿Cómo reviso?</button>`;
+    sub.innerHTML = `${total} pregunta${total !== 1 ? 's' : ''}${skippedN ? ` · ${skippedN} no incluida${skippedN !== 1 ? 's' : ''}` : ''}. Compáralas con tu documento: puede haber errores o respuestas faltantes. <button type="button" class="text-link" data-accion="openHelp" data-arg="review">¿Cómo reviso?</button>`;
   }
 
   // Preguntas que el sistema NO pudo procesar: una línea plegable con el
@@ -467,10 +536,10 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
         <p class="skipped-reason">${esc_html(humanizeSkipReason(sq.reasons[0]))}</p>
         <p class="skipped-num">${Number.isInteger(sq.despues_de)
           ? `En el documento va después de la pregunta ${esc_html(sq.despues_de)}; se agrega ahí.`
-          : `Ubicada como pregunta #${esc_html(sq.num)} — este número es del sistema, puede no coincidir con el del documento original.`}</p>
+          : `Ubicada como pregunta #${esc_html(sq.num)} — este número lo pone Cátedra, puede no coincidir con el del documento original.`}</p>
         ${_miniaturas(sq)}
         ${sq.recoverable_data ? `<button type="button" class="btn btn-ghost btn-sm" data-accion="recoverSkippedQuestion" data-arg-n="${sIdx}" style="margin-top:8px;"
-          aria-label="Añadir con lo ya extraído: ${esc_html((sq.preview || '').slice(0, 60))}">
+          aria-label="Agregar con lo ya extraído: ${esc_html((sq.preview || '').slice(0, 60))}">
           <i data-lucide="list-plus" style="width:13px;height:13px;"></i> Añadir con lo ya extraído
         </button>` : ''}
       </div>`).join('');
@@ -484,7 +553,7 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
       <div class="skipped-body">
         ${skippedItems}
         <p class="skipped-reason" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--color-border-subtle);">
-          Para incluirlas: usa «Añadir con lo ya extraído» cuando aparezca (se agrega en su lugar), corrige el documento original y vuelve a convertirlo, o créalas con «Añadir pregunta».
+          Para incluirlas: usa «Agregar con lo ya extraído» cuando aparezca (se agrega en su lugar), corrige el documento original y vuelve a convertirlo, o créalas con «Agregar pregunta».
         </p>
       </div>
     </details>`;
@@ -506,7 +575,7 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
 
   // XML de Moodle abierto en el editor: las respuestas son las del archivo; ninguna IA interpretó nada.
   const importadoHtml = data.importado
-    ? `<div class="callout"><i data-lucide="file-code-2"></i><p><strong>Abierto desde un XML de Moodle.</strong> Las respuestas son las del archivo (ninguna IA las interpretó). Corrige lo que quieras y vuelve a generar el XML.</p></div>` : '';
+    ? `<div class="callout"><i data-lucide="file-code-2"></i><p><strong>Abierto desde un Moodle XML.</strong> Las respuestas son las del archivo (ninguna IA las interpretó). Corrige lo que quieras y vuelve a generar el XML.</p></div>` : '';
 
   const noticesHtml = (skippedHtml || completenessHtml || colorNoticeHtml || escaneadoHtml || importadoHtml)
     ? `<div class="editor-notices">${importadoHtml}${escaneadoHtml}${skippedHtml}${completenessHtml}${colorNoticeHtml}</div>` : '';
@@ -514,7 +583,7 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
   // Barra de herramientas: dos botones plegados. Sus paneles se abren
   // debajo, de a uno.
   const typesPresent = [...new Set(data.questions.map(q => q.type))];
-  const toolbarHtml = `<div class="editor-tools">
+  const toolbarHtml = !total ? '' : `<div class="editor-tools">
     <div class="editor-toolbar">
       <button type="button" class="btn btn-ghost toolbar-btn" data-accion="toggleFilterMenu" aria-expanded="false" aria-controls="filter-chips-bar">
         <i data-lucide="filter" style="width:16px;height:16px;"></i>
@@ -532,12 +601,12 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
     </div>
     <div id="filter-chips-bar" class="collapsible-panel"></div>
     <div id="points-tool-panel" class="collapsible-panel" style="flex-direction:column;gap:12px;">
-      <div style="display:flex;gap:8px;" role="group" aria-label="Cómo repartir los puntos">
+      <div class="puntos-modos" role="group" aria-label="Cómo repartir los puntos">
         <button type="button" id="points-mode-equal" class="btn btn-ghost btn-sm" aria-pressed="false" data-accion="setPointsToolMode" data-arg="equal" style="flex:1;">Igual para todas</button>
         <button type="button" id="points-mode-byType" class="btn btn-primary btn-sm" aria-pressed="true" data-accion="setPointsToolMode" data-arg="byType" style="flex:1;">Según el tipo</button>
       </div>
-      <p id="points-help-byType" class="points-help">Escribe cuántos puntos vale <strong style="color:var(--color-text);">cada pregunta</strong> de cada tipo. El total del examen es la suma: 10 preguntas de 2 pts valen 20 pts.</p>
-      <p id="points-help-equal" class="points-help" hidden>Reparte los <strong style="color:var(--color-text);">${fmtPoints(_editorTotalPoints())} pts</strong> del examen en partes iguales entre las ${data.questions.length} preguntas.</p>
+      <p id="points-help-byType" class="points-help">Escribe cuántos puntos vale <strong style="color:var(--color-text);">cada pregunta</strong> de cada tipo. El total de la evaluación es la suma: 10 preguntas de 2 pts valen 20 pts.</p>
+      <p id="points-help-equal" class="points-help" hidden>Reparte los <strong style="color:var(--color-text);">${fmtPoints(_editorTotalPoints())} pts</strong> de la evaluación en partes iguales entre las ${data.questions.length} preguntas.</p>
       <div id="points-weights-editor" style="display:flex;flex-direction:column;gap:8px;">
         ${typesPresent.map(t => {
           const def = QUESTION_TYPE_DEFS.find(d => d.key === t) || { label: t, colorVar: 'var(--color-text)' };
@@ -559,28 +628,42 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
     </div>
   </div>`;
 
-  // "Añadir pregunta" al final: es una tarea ocasional, no debe estar
-  // entre el docente y la primera pregunta.
-  const addQuestionHtml = `<div class="add-question-block">
+  // «Agregar pregunta» al final: al revisar es una tarea ocasional y no debe estar entre el docente y la
+  // primera pregunta. Al escribir desde cero es lo principal: los tipos quedan a la vista. Sin ninguna
+  // pregunta, la pantalla invita a agregar la primera. En los tres casos son las mismas tarjetas.
+  // Mientras un enunciado compartido recibe preguntas, sus tipos van dentro de su marco y este panel no sale.
+  const grupos = tramosCompartidos(data.questions);
+  const hayGrupos = grupos.length > 0;
+  const addQuestionHtml = hayCompartidoEnMarcha(grupos, data.compartido_pendiente) ? ''
+    : !total
+    ? `<div class="elegir-tipo editor-vacio">
+    <h3>Agrega tu primera pregunta</h3>
+    <p>Elige el tipo. Después puedes cambiar el orden, duplicarlas o borrarlas.</p>
+    ${_tarjetasDeTipo('Tipo de la primera pregunta')}
+  </div>`
+    : desdeCero ? `<div class="elegir-tipo">
+    <h3>${hayGrupos ? 'Agrega una pregunta independiente' : 'Agrega otra pregunta'}</h3>
+    <p>Elige el tipo. La nueva queda al final de la lista${hayGrupos ? ', fuera de los enunciados compartidos' : ''}.</p>
+    ${_tarjetasDeTipo('Tipo de la pregunta nueva')}
+  </div>` : `<div class="elegir-tipo">
     <div class="add-head">
-      <p>¿Falta alguna pregunta del documento?</p>
+      <h3>¿Falta alguna pregunta del documento?</h3>
       <button type="button" class="btn btn-ghost btn-sm" data-accion="toggleAddQuestionMenu" aria-expanded="false" aria-controls="add-question-types">
-        <i data-lucide="plus" style="width:15px;height:15px;"></i> Añadir pregunta
+        <i data-lucide="plus" style="width:15px;height:15px;"></i> Agregar pregunta
       </button>
     </div>
-    <div id="add-question-types" class="collapsible-panel add-type-grid" role="group" aria-label="Tipo de la pregunta nueva" style="background:none;border:none;padding:0;margin:12px 0 0;">
-      ${QUESTION_TYPE_DEFS.map(t => `<button type="button" class="filter-chip" data-filter="${t.key}" data-accion="addNewQuestion" data-arg="${t.key}">
-        <i data-lucide="plus" style="width:13px;height:13px;"></i> ${t.label}
-      </button>`).join('')}
-    </div>
+    ${_tarjetasDeTipo('Tipo de la pregunta nueva', 'add-question-types')}
   </div>`;
 
   // Todas las tarjetas se arman en un solo string y se insertan de una
   // vez (antes se hacía innerHTML += por cada pregunta, que vuelve a
   // parsear todo el contenedor en cada vuelta: lento con 50+ preguntas).
-  // El bloque de un enunciado compartido va justo antes de la primera pregunta de su grupo.
-  const bloques = new Map(tramosCompartidos(data.questions).map(t => [t.desde, bloqueCompartidoHtml(data.questions, t)]));
-  const cardsHtml = data.questions.map((q, i) => (bloques.get(i) || '') + _cardHtml(q, i, data.answer_key[q.num] || { answer: '' }, movimientosDe(data.questions, i))).join('');
+  // Las preguntas de un enunciado compartido van dentro de su marco: se abre antes de la primera y se cierra tras la última.
+  const abre = new Map(grupos.map(t => [t.desde, abrirGrupoHtml(data.questions, t)]));
+  const cierra = new Map(grupos.map(t => [t.hasta, cerrarGrupoHtml(t)]));
+  const cardsHtml = data.questions.map((q, i) => (abre.get(i) || '')
+    + _cardHtml(q, i, data.answer_key[q.num] || { answer: '' }, movimientosDe(data.questions, i)) + (cierra.get(i) || '')).join('')
+    + (data.compartido_pendiente ? grupoPendienteHtml(data.questions, data.compartido_pendiente) : '');
 
   // Al vaciar y volver a llenar el contenedor, la página se queda sin altura un instante y el
   // navegador recorta el scroll: con 50 preguntas, borrar la 49 estando en la 50 devolvía la vista a
@@ -603,7 +686,7 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
   // Los campos de texto siempre muestran todo su contenido.
   container.querySelectorAll('.editor-card textarea').forEach(autoGrowTextarea);
   container.querySelectorAll('.cloze-builder').forEach(initClozeBuilder);
-  prepararCompartidos(container, data.questions);
+  prepararCompartidos(container);
   container.querySelectorAll('.editor-card').forEach(actualizarFormulas);
   prepararImagenes(container);
   _observarAncho(container);
@@ -615,6 +698,7 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
   // Un solo aviso: los chips de filtro, el mapa del examen y el contador
   // de puntos se actualizan solos (ver suscripciones en app.js).
   notificar('editor redibujado');
+  if (!total) buildReviewRail();       // sin preguntas no hay filtros que lo redibujen: «Sin preguntas»
   aplicarPlegado(abiertasPrevias);
   crearIconos(container);
   // Un examen recién abierto entra en cascada (solo la primera pantalla);
@@ -623,6 +707,41 @@ export function renderEditor(data, { nuevo = false, abiertas = null } = {}) {
     container.classList.add('entrando');
     setTimeout(() => container.classList.remove('entrando'), 700);
   }
+}
+
+// Para qué sirve cada tipo, en una línea, y su ícono.
+const PARA_QUE = {
+  multichoice: ['list-checks', 'Elegir una o varias opciones'], truefalse: ['circle-check', 'Decidir si una afirmación es cierta'],
+  matching: ['arrow-left-right', 'Unir cada concepto con su pareja'], cloze: ['text-cursor-input', 'Llenar espacios en un texto'],
+  essay: ['pencil-line', 'Respuesta abierta; la calificas tú'], shortanswer: ['type', 'Una palabra o frase exacta'],
+  numerical: ['hash', 'Un número exacto'],
+};
+
+// El ícono de un tipo sobre su color: el mismo en las tarjetas para añadir y en cada pregunta.
+function _iconoDeTipo(tipo, clase) {
+  const t = QUESTION_TYPE_DEFS.find(x => x.key === tipo);
+  if (!t) return '';
+  return `<span class="${clase}" style="color:${t.colorVar};background:${t.bgVar};border-color:${t.borderVar};" title="${t.label}" aria-hidden="true"><i data-lucide="${PARA_QUE[t.key][0]}"></i></span>`;
+}
+
+// Los siete tipos como tarjetas. Con `plegable` (su id) arrancan ocultas y las abre un botón (paneles.js).
+// Dentro de un enunciado compartido (`enCompartido`) agregan a ese enunciado y no ofrecen crear otro.
+function _tarjetasDeTipo(etiqueta, plegable = '', { enCompartido = false } = {}) {
+  return `<div${plegable ? ` id="${plegable}"` : ''} class="tipos-grid${plegable ? ' collapsible-panel' : ''}" role="group" aria-label="${etiqueta}">
+      ${QUESTION_TYPE_DEFS.map(t => `<button type="button" class="tipo-nuevo" ${enCompartido
+    ? `data-accion="agregarEnCompartido" data-este data-tipo="${t.key}"` : `data-accion="addNewQuestion" data-arg="${t.key}"`}>
+        ${_iconoDeTipo(t.key, 'tipo-nuevo-icono')}
+        <span><strong>${t.label}</strong><small>${PARA_QUE[t.key][1]}</small></span>
+      </button>`).join('')}
+      ${enCompartido ? '' : `<button type="button" class="tipo-nuevo" data-accion="nuevoCompartido">
+        <span class="tipo-nuevo-icono tipo-compartido-icono" aria-hidden="true"><i data-lucide="text-quote"></i></span>
+        <span><strong>Enunciado compartido</strong><small>Un caso o texto para varias preguntas</small></span>
+      </button>`}
+    </div>`;
+}
+
+export function tarjetasParaCompartido(etiqueta) {
+  return _tarjetasDeTipo(etiqueta, '', { enCompartido: true });
 }
 
 // Miniaturas de las imágenes de una pregunta no incluida: el motivo dice
@@ -719,8 +838,8 @@ function _ordenHtml(N, mov) {
 function _cardHtml(q, i, keyInfo, mov) {
   const needsReview = requiereRevision(q.data);
   const flags = [
-    q.data.from_table && _flagBadge('flag-review', 'table-2', 'convertida de tabla', 'El sistema detectó un cuadro en el documento original y lo convirtió en esta pregunta de emparejamiento. Revísala con cuidado antes de generar el XML.'),
-    q.data.color_review_hint && _flagBadge('flag-review', 'palette', 'revisar marca', 'Esta pregunta viene de una página con respuestas marcadas (color, resaltado, subrayado o negrita), pero el sistema no pudo leer la marca con certeza. Compara las opciones correctas con el documento original.'),
+    q.data.from_table && _flagBadge('flag-review', 'table-2', 'convertida de tabla', 'Cátedra detectó un cuadro en el documento original y lo convirtió en esta pregunta de emparejamiento. Revísala con cuidado antes de generar el XML.'),
+    q.data.color_review_hint && _flagBadge('flag-review', 'palette', 'revisar marca', 'Esta pregunta viene de una página con respuestas marcadas (color, resaltado, subrayado o negrita), pero Cátedra no pudo leer la marca con certeza. Compara las opciones correctas con el documento original.'),
     mostrarAvisoConfianzaLegado(q.data) && _flagBadge('flag-review', 'eye-off', 'confianza baja', 'La IA no pudo leer con total claridad una imagen que esta pregunta necesita (código o marca borrosa o cortada). Compárala con el documento original.'),
     mostrarAvisoMarcaLegado(q.data) && _flagBadge('flag-neutral', 'highlighter', 'respuesta por marca', 'La respuesta se tomó directamente de la marca del documento (color, resaltado, subrayado, negrita o X en un cuadro), leída del PDF sin que la IA la interprete.'),
     q.data.rescatada && _flagBadge('flag-review', 'list-plus', 'rescatada', 'La IA no había incluido esta pregunta; se agregó con lo que se pudo extraer del documento. Revisa su enunciado, su tipo y su respuesta.'),
@@ -732,6 +851,7 @@ function _cardHtml(q, i, keyInfo, mov) {
   const N = esc_html(q.num), T = esc_html(q.type);
   let html = `<article class="editor-card" tabindex="-1" data-idx="${i}" data-qnum="${N}" data-qtype="${T}"${needsReview ? ' data-review="1"' : ''}${necesitaRevisarPrimero(q.data) ? ` data-revisar="1" data-motivo="${esc_html(motivoRevisarPrimero(q.data))}"` : ''} aria-labelledby="q-title-${i}">
     <div class="card-head">
+      ${_iconoDeTipo(q.type, 'card-tipo-icono')}
       <div class="card-title">
         <h3 id="q-title-${i}"><button type="button" class="card-toggle" data-accion="alternarTarjeta" data-este aria-expanded="false" aria-label="Abrir la pregunta ${N}">
           <i data-lucide="chevron-right" class="card-chevron" aria-hidden="true"></i>Pregunta ${N}</button></h3>
@@ -756,12 +876,12 @@ function _cardHtml(q, i, keyInfo, mov) {
     // tarjeta (el texto se insertaba como HTML dentro del <textarea>).
     html += `<div><div class="stem-cabecera"><label class="field-label" for="q-stem-${i}">Enunciado</label>
       <button type="button" class="btn btn-ghost btn-sm" data-accion="mejorarEnunciado" data-este
-        aria-label="Mejorar redacción del enunciado de la pregunta ${N} (con IA)" title="Con IA (usa tu API de Gemini): corrige ortografía, tildes y claridad sin cambiar datos, código ni fórmulas">
+        aria-label="Mejorar redacción del enunciado de la pregunta ${N} (con IA)" title="Con IA (usa tu clave de Gemini): corrige ortografía, tildes y claridad sin cambiar datos, código ni fórmulas">
         <i data-lucide="wand-sparkles" style="width:14px;height:14px;"></i> <span>Mejorar redacción</span>
-      </button></div><textarea id="q-stem-${i}" class="q-stem" rows="2">${esc_html(q.data.stem || '')}</textarea></div>`;
+      </button></div><textarea id="q-stem-${i}" class="q-stem" rows="2" placeholder="Escribe el enunciado de la pregunta">${esc_html(q.data.stem || '')}</textarea></div>`;
     // Las imágenes van junto al enunciado, como en Moodle: son parte de la
     // pregunta (el código de «¿Cuántos errores tiene?»), no de la respuesta.
-    html += imagenesHtml(q, i, N);
+    html += imagenesHtml(q, i, N, mov.enGrupo);
     // Vista previa de las fórmulas LaTeX (\( … \)) del enunciado y las
     // opciones, como las verá el estudiante (ver actualizarFormulas).
     html += `<div class="q-math" hidden></div>`;
@@ -792,88 +912,75 @@ function _cardHtml(q, i, keyInfo, mov) {
         return t.includes(optClean) || optClean.includes(t);
       });
     };
-    html += `<fieldset style="margin-top:12px;border:none;padding:0;">
-      <legend class="field-label" style="color:var(--color-success);">
-        <i data-lucide="check-circle-2" style="width:14px;height:14px;"></i>
-        Opciones — marca la(s) correcta(s)
-      </legend>`;
+    html += `<fieldset class="sec">
+      <legend class="field-label">Opciones <span class="sec-ayuda">marca la correcta; puede haber varias</span></legend>`;
     optEntries.forEach(([letter, optText]) => {
       const checked = isOptCorrect(letter, optText);
       const L = esc_html(letter);
       html += `<div class="mc-option-row">
         <input type="checkbox" id="q-opt-ok-${i}-${L}" class="q-opt-correct" data-letter="${L}" data-accion-cambio="notaVariasCorrectas" data-este ${checked ? 'checked' : ''} aria-label="La opción ${L} es correcta" />
         <label for="q-opt-ok-${i}-${L}" class="mc-option-letter" title="Marcar como correcta">${L}</label>
-        <input class="form-input q-opt" data-letter="${L}" value="${esc_html(optText)}" aria-label="Texto de la opción ${L}" />
+        <input class="form-input q-opt" data-letter="${L}" value="${esc_html(optText)}" placeholder="Texto de la opción ${L}" aria-label="Texto de la opción ${L}" />
+        ${optEntries.length > MIN_OPCIONES ? `<button type="button" class="btn btn-icon btn-danger-text q-opt-quitar" data-accion="quitarOpcion" data-este data-letter="${L}" aria-label="Quitar la opción ${L}" title="Quitar la opción"><i data-lucide="x" style="width:15px;height:15px;" aria-hidden="true"></i></button>` : ''}
       </div>`;
     });
-    html += `<p class="card-note">Marca varias si la pregunta es de "selecciona todas las que correspondan".</p>
-      <p class="card-note mc-resta-nota"${optEntries.filter(([l, t]) => isOptCorrect(l, t)).length > 1 ? '' : ' hidden'}><i data-lucide="info" style="width:13px;height:13px;vertical-align:-2px;"></i> ${TEXTO_RESTAN}</p></fieldset>`;
+    if (optEntries.length < MAX_OPCIONES) {
+      html += `<button type="button" class="btn btn-ghost btn-sm q-opt-agregar" data-accion="agregarOpcion" data-este><i data-lucide="plus" style="width:14px;height:14px;" aria-hidden="true"></i> Agregar opción</button>`;
+    }
+    html += `<p class="card-note mc-resta-nota"${optEntries.filter(([l, t]) => isOptCorrect(l, t)).length > 1 ? '' : ' hidden'}><i data-lucide="info" style="width:13px;height:13px;vertical-align:-2px;"></i> ${TEXTO_RESTAN}</p></fieldset>`;
 
   } else if (q.type === 'truefalse') {
-    html += `<div style="margin-top:14px;"><label class="field-label" for="q-ans-${i}" style="color:var(--color-success);">Respuesta correcta</label>
-      <select id="q-ans-${i}" class="q-ans form-input" style="border-color:var(--color-success);margin-top:6px;">
-        <option value="Verdadero" ${keyInfo.answer.toLowerCase() === 'verdadero' ? 'selected' : ''}>Verdadero</option>
-        <option value="Falso" ${keyInfo.answer.toLowerCase() === 'falso' ? 'selected' : ''}>Falso</option>
-      </select>
-    </div>`;
+    html += `<fieldset class="sec">
+      <legend class="field-label">Respuesta correcta</legend>
+      <div class="vpdf-segmentos vf-segmentos">
+        ${['Verdadero', 'Falso'].map(v => `<label><input type="radio" class="q-ans" name="vf-${i}" value="${v}"${String(keyInfo.answer || '').toLowerCase() === v.toLowerCase() ? ' checked' : ''}><span>${v}</span></label>`).join('')}
+      </div>
+    </fieldset>`;
 
   } else if (q.type === 'cloze') {
-    html += `<div><p class="field-label">Enunciado con espacios en blanco</p>
-      <p class="card-note" style="margin:4px 0 8px;">Escribe el texto normal y pulsa <strong>Espacio en blanco</strong> donde falte una palabra; luego marca la opción correcta.</p>
+    html += `<div class="sec"><p class="field-label">Enunciado con espacios en blanco</p>
+      <p class="card-note" style="margin:0 0 8px;">Escribe el texto normal y haz clic en <strong>Espacio en blanco</strong> donde falte una palabra; luego marca la opción correcta.</p>
     </div>`;
     const segments = parseClozeSegments(q.data.text || '', keyInfo.answer, keyInfo.huecos);
     html += renderClozeBuilder(i, segments);
 
   } else if (q.type === 'matching') {
     const pairs = filasConDistractores(getMatchingPairs(q, keyInfo), q.data && q.data.col_a, q.data && q.data.col_b, keyInfo && keyInfo.pairs);
-    html += `<div class="matching-box">
-      <p class="field-label" style="color:var(--color-success);margin-bottom:10px;">
-        <i data-lucide="link-2" style="width:14px;height:14px;"></i>
-        Parejas (concepto → su pareja correcta)
-      </p>
+    html += `<div class="matching-box sec">
+      <p class="field-label">Parejas <span class="sec-ayuda">cada concepto con su pareja correcta</span></p>
       <div id="matching-pairs-list-${i}" class="matching-pairs-list">
         ${(() => { let np = 0, nd = 0; return pairs.map(p => _matchingPairRowHtml(p, p.distractor ? ++nd : ++np)).join(''); })()}
       </div>
       <div class="matching-add-row">
         <button type="button" class="btn btn-ghost btn-sm" data-accion="addMatchingPairRow" data-arg-n="${i}">
-          <i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar pareja
+          <i data-lucide="plus" style="width:14px;height:14px;"></i> Pareja
         </button>
         <button type="button" class="btn btn-ghost btn-sm" data-accion="addMatchingDistractorRow" data-arg-n="${i}" title="Una opción de la columna B que no es la pareja de ningún concepto: sirve para que no se adivine por descarte">
-          <i data-lucide="plus" style="width:14px;height:14px;"></i> Agregar opción de más
+          <i data-lucide="plus" style="width:14px;height:14px;"></i> Opción de más
         </button>
       </div>
     </div>`;
 
   } else if (q.type === 'essay') {
-    html += `<p class="card-note" style="margin-top:10px;display:flex;gap:6px;align-items:flex-start;">
-      <i data-lucide="pencil-line" style="width:14px;height:14px;color:var(--color-es);flex-shrink:0;margin-top:1px;"></i>
-      Respuesta abierta: el docente la califica a mano en Moodle. No necesita respuesta correcta.
-    </p>`;
+    html += `<p class="card-note sec">Respuesta abierta: el docente la califica a mano en Moodle. No necesita respuesta correcta.</p>`;
 
   } else if (q.type === 'shortanswer') {
-    html += `<div style="margin-top:14px;"><label class="field-label" for="q-sa-${i}" style="color:var(--color-success);">Respuesta correcta (palabra o frase corta)</label>
-      <input id="q-sa-${i}" class="q-sa-answer form-input" style="border-color:var(--color-success);" value="${esc_html(keyInfo.answer || '')}" placeholder="Escribe la respuesta correcta" />
+    html += `<div class="sec"><label class="field-label" for="q-sa-${i}">Respuesta correcta <span class="sec-ayuda">palabra o frase corta</span></label>
+      <input id="q-sa-${i}" class="q-sa-answer q-correcta form-input" value="${esc_html(keyInfo.answer || '')}" placeholder="Escribe la respuesta correcta" />
       <p class="card-note">Moodle no distingue mayúsculas y también acepta la respuesta sin tildes, pero una tilde mal puesta cuenta como error.</p>
     </div>`;
 
   } else if (q.type === 'numerical') {
-    html += `<div style="margin-top:14px;"><label class="field-label" for="q-nu-${i}" style="color:var(--color-success);">Respuesta correcta (número)</label>
-      <input id="q-nu-${i}" class="q-nu-answer form-input" type="text" inputmode="decimal" autocomplete="off" style="border-color:var(--color-success);" value="${esc_html(keyInfo.answer || '')}" placeholder="Escribe el número correcto" aria-describedby="q-nu-nota-${i}" />
+    html += `<div class="sec"><label class="field-label" for="q-nu-${i}">Respuesta correcta <span class="sec-ayuda">un número</span></label>
+      <input id="q-nu-${i}" class="q-nu-answer q-correcta form-input" type="text" inputmode="decimal" autocomplete="off" value="${esc_html(keyInfo.answer || '')}" placeholder="Escribe el número correcto" aria-describedby="q-nu-nota-${i}" />
       <p id="q-nu-nota-${i}" class="card-note">Moodle compara el número <strong>exacto</strong> (tolerancia 0): si la respuesta es 9,8, un estudiante que escriba 9,81 queda mal. Escríbelo sin separador de miles (1000, no 1.000 ni 1,000).</p>
     </div>`;
   }
 
   // En «Completar» el enunciado es el constructor de espacios: las
   // imágenes van debajo de él.
-  return html + (q.type === 'cloze' ? imagenesHtml(q, i, N) : '') + _sugerirHtml(q, N) + _compartirHtml(N) + _retroalimentacionHtml(q, i, N) + `</article>`;
-}
-
-// Empezar un enunciado compartido por varias preguntas (se oculta en las que ya están en uno).
-function _compartirHtml(N) {
-  return `<button type="button" class="btn btn-ghost btn-sm q-compartir" data-accion="crearCompartido" data-este
-    aria-label="Crear un enunciado compartido desde la pregunta ${N}" title="Un caso o texto del que se preguntan esta y las siguientes">
-    <i data-lucide="text-quote" style="width:14px;height:14px;" aria-hidden="true"></i> <span>Enunciado compartido</span>
-  </button>`;
+  return html + (q.type === 'cloze' ? imagenesHtml(q, i, N, mov.enGrupo) : '') + _sugerirHtml(q, N)
+    + `<div class="card-pie">${_retroalimentacionHtml(q, i, N)}</div></article>`;
 }
 
 // «Sugerir respuesta con IA» (2.0): solo se ve cuando a la pregunta le FALTA la respuesta
@@ -884,10 +991,10 @@ function _sugerirHtml(q, N) {
   return `<div class="q-sugerir">
     <button type="button" class="btn btn-ghost btn-sm q-sugerir-btn" data-accion="sugerirRespuesta" data-este
       aria-label="Sugerir con IA la respuesta de la pregunta ${N}"
-      title="Con IA (usa tu API de Gemini): propone una respuesta; solo se aplica si la aceptas y queda marcada como sugerida">
+      title="Con IA (usa tu clave de Gemini): propone una respuesta; solo se aplica si la aceptas y queda marcada como sugerida">
       <i data-lucide="wand-sparkles" style="width:14px;height:14px;"></i> <span>Sugerir respuesta con IA</span>
     </button>
-    <span class="card-note">Falta la respuesta correcta: el documento no la traía.</span>
+    <span class="card-note">${estado.currentUploadMetadata?.desde_cero ? 'Falta la respuesta correcta.' : 'Falta la respuesta correcta: el documento no la traía.'}</span>
   </div>`;
 }
 
@@ -905,7 +1012,7 @@ function _retroalimentacionHtml(q, i, N) {
         aria-label="Escribir con IA la retroalimentación de la pregunta ${N}">
         <i data-lucide="sparkles" style="width:14px;height:14px;"></i> <span>Escribir con IA</span>
       </button>
-      <span class="card-note">Usa tu API de Gemini. Revísala antes de exportar.</span>
+      <span class="card-note">Usa tu clave de Gemini. Revísala antes de exportar.</span>
     </div>
   </details>`;
 }
@@ -927,7 +1034,7 @@ async function _pedirIA(btn, url, cuerpo, aplicar, ocupado) {
   const card = btn.closest('.editor-card');
   if (!card || btn.disabled) return;
   if (_iaEnCurso >= MAX_IA_SIMULTANEAS) {
-    showToast(`Ya hay ${MAX_IA_SIMULTANEAS} peticiones a la IA en curso. Espera a que termine una y vuelve a pulsar.`, 'info');
+    showToast(`Ya hay ${MAX_IA_SIMULTANEAS} peticiones a la IA en curso. Espera a que termine una y vuelve a intentarlo.`, 'info');
     return;
   }
   const pos = Array.from(document.querySelectorAll('.editor-card')).indexOf(card);
@@ -1247,8 +1354,8 @@ export function collectEditorData({ conImagenes = true, firmas = null } = {}) {
       ak[qNum] = { type: newQ.type, ...claveDeOpcionMultiple(newQ.data.options, marcadas) };
 
     } else if (newQ.type === 'truefalse') {
-      const ansEl = card.querySelector('.q-ans');
-      ak[qNum] = { type: newQ.type, answer: ansEl ? ansEl.value : 'Verdadero' };
+      // Dos botones: sin ninguno marcado la pregunta queda sin respuesta (no se elige una por el docente).
+      ak[qNum] = { type: newQ.type, answer: card.querySelector('.q-ans:checked')?.value || '' };
 
     } else if (newQ.type === 'cloze') {
       const builderEl = card.querySelector('.cloze-builder');
@@ -1314,11 +1421,11 @@ export function collectEditorData({ conImagenes = true, firmas = null } = {}) {
 
 // Stats Updater
 export const QUESTION_TYPE_DEFS = [
-  { key: 'multichoice', label: 'Opción múltiple', colorVar: 'var(--color-mc)', bgVar: 'var(--color-mc-bg)', borderVar: 'var(--color-mc-border)' },
-  { key: 'truefalse',   label: 'Verdadero/Falso', colorVar: 'var(--color-tf)', bgVar: 'var(--color-tf-bg)', borderVar: 'var(--color-tf-border)' },
+  { key: 'multichoice', label: 'Selección múltiple', colorVar: 'var(--color-mc)', bgVar: 'var(--color-mc-bg)', borderVar: 'var(--color-mc-border)' },
+  { key: 'truefalse',   label: 'Verdadero o falso', colorVar: 'var(--color-tf)', bgVar: 'var(--color-tf-bg)', borderVar: 'var(--color-tf-border)' },
   { key: 'matching',    label: 'Emparejamiento', colorVar: 'var(--color-mt)', bgVar: 'var(--color-mt-bg)', borderVar: 'var(--color-mt-border)' },
   { key: 'cloze',       label: 'Completar',     colorVar: 'var(--color-cl)', bgVar: 'var(--color-cl-bg)', borderVar: 'var(--color-cl-border)' },
-  { key: 'essay',       label: 'Ensayo',        colorVar: 'var(--color-es)', bgVar: 'var(--color-es-bg)', borderVar: 'var(--color-es-border)' },
+  { key: 'essay',       label: 'Desarrollo',    colorVar: 'var(--color-es)', bgVar: 'var(--color-es-bg)', borderVar: 'var(--color-es-border)' },
   { key: 'shortanswer', label: 'Respuesta corta', colorVar: 'var(--color-sa)', bgVar: 'var(--color-sa-bg)', borderVar: 'var(--color-sa-border)' },
   { key: 'numerical',   label: 'Numérica',      colorVar: 'var(--color-nu)', bgVar: 'var(--color-nu-bg)', borderVar: 'var(--color-nu-border)' },
 ];

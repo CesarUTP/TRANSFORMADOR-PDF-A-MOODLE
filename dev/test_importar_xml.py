@@ -277,7 +277,7 @@ ok(not _avisos(r), "«¡Correcto!» e «Incorrecto.» (los de esta aplicación):
 r = _importar(_pregunta("multichoice", _resp(100, "Roma", fb("Es la capital desde 1871")) + _resp(0, "Lima", fb("Lima es de Perú")), "<single>true</single>"))
 ok("retroalimentación propia en 2 opción(es)" in _avisos(r) and "capital desde 1871" in _avisos(r), "retroalimentación propia de cada opción: se avisa")
 r = _importar(_pregunta("cloze", "", "").replace("<p>Enunciado</p>", "<p>Es {1:MULTICHOICE:=Roma#sí~Lima#no}</p>"))
-ok("retroalimentación propia en sus huecos" in _avisos(r), "«Completar» con retroalimentación en un hueco (#…): se avisa")
+ok("retroalimentación propia en sus espacios" in _avisos(r), "«Completar» con retroalimentación en un hueco (#…): se avisa")
 r = _importar(_pregunta("cloze", "", "").replace("<p>Enunciado</p>", "<p>Es {1:MULTICHOICE:=Roma~Lima}</p>"))
 ok(not _avisos(r), "«Completar» sin retroalimentación: sin aviso")
 # Verdadero/falso: solo 100 %
@@ -376,6 +376,15 @@ xml_de_vuelta = c.post("/api/generate_xml", json={
 }, headers=H)
 ok(xml_de_vuelta.status_code == 200, f"lo importado vuelve a pasar por «Generar XML» ({xml_de_vuelta.status_code})")
 ok("a_editado.xml" in xml_de_vuelta.headers.get("content-disposition", ""), "y el XML que sale no se llama igual que el original (a_editado.xml)")
+# Un examen escrito desde cero no tiene extensión: un punto en su nombre no es una extensión.
+nuevo_ = {"questions": [{"num": 1, "type": "essay", "points": 5, "data": {"stem": "Explique."}}], "answer_key": {"1": {"type": "essay", "answer": ""}},
+          "filename": "Parcial 2.1", "category": "redes", "total_points": 5}
+r = c.post("/api/generate_xml", json=nuevo_, headers=H)
+ok(r.status_code == 200 and 'filename="Parcial 2.1.xml"' in r.headers.get("content-disposition", ""), f"«Parcial 2.1» se descarga como «Parcial 2.1.xml» ({r.headers.get('content-disposition', '')[:60]})")
+fila = [x for x in c.get("/api/history", headers=H).json() if x["filename"] == "Parcial 2.1"]
+ok(len(fila) == 1 and 'filename="Parcial 2.1.xml"' in c.get(f"/api/history/{fila[0]['id']}/download", headers=H).headers.get("content-disposition", ""), "y también desde el Historial")
+r = c.post("/api/exportar_examen", json={**nuevo_, "datos": {"documento": "examen"}}, headers=H)
+ok(r.status_code == 200 and 'filename="Parcial 2.1_evaluacion.pdf"' in r.headers.get("content-disposition", ""), "y el PDF conserva el nombre")
 
 print()
 print("TODO OK" if not fallas else f"{fallas} FALLA(S)")

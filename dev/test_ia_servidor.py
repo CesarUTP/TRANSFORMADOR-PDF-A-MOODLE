@@ -826,7 +826,7 @@ try:
     r = c.post("/api/generate_xml", headers=H, json=cuerpo_xml)
     st = json.loads(r.headers.get("X-Question-Stats", "{}"))
     ok(r.status_code == 200 and b"<quiz>" in r.content, "el historial falla («no such table»): la exportación NO se aborta, el XML se entrega")
-    ok(st.get("historial_guardado") is False and "Historial" in (st.get("aviso_historial") or ""), "…y la respuesta avisa (X-Question-Stats.historial_guardado=false + aviso_historial)")
+    ok(st.get("historial_guardado") is False and "Mis materias" in (st.get("aviso_historial") or ""), "…y la respuesta avisa (X-Question-Stats.historial_guardado=false + aviso_historial)")
     rutas_xml.save_conversion = lambda *a, **k: 1
     r = c.post("/api/generate_xml", headers=H, json=cuerpo_xml)
     st = json.loads(r.headers.get("X-Question-Stats", "{}"))
@@ -839,7 +839,7 @@ _gh = rutas_historial.get_history_list
 rutas_historial.get_history_list = lambda: (_ for _ in ()).throw(sqlite3.OperationalError("database is locked"))
 try:
     r = c.get("/api/history", headers=H)
-    ok(r.status_code == 503 and "historial" in r.json()["detail"], "historial ilegible: 503 con mensaje claro, no un 500 mudo")
+    ok(r.status_code == 503 and "evaluaciones guardadas" in r.json()["detail"], "historial ilegible: 503 con mensaje claro, no un 500 mudo")
 finally:
     rutas_historial.get_history_list = _gh
 

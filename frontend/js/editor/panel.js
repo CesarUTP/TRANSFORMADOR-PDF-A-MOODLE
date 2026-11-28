@@ -8,6 +8,7 @@ import { abrirTarjeta, actualizarEstado } from './plegado.js';
 import { crearIconos, esc_html, scrollBehavior } from '../util.js';
 import { faltaRespuesta, questionIssues } from '../validacion.js';
 import { detectarProblemas } from './calidad.js';
+import { actualizarResumenesDeGrupos, mostrarSuGrupo } from './compartido.js';
 import { refreshFilterChips } from './filtros.js';
 import { chipsVisibles, chipsHtml, motivoRevisarPrimero, necesitaRevisarPrimero, requiereRevision } from './procedencia.js';
 
@@ -184,6 +185,11 @@ export function buildReviewRail() {
   const headerH = `${document.querySelector('.app-header')?.offsetHeight || 0}px`;
   if (rail.style.getPropertyValue('--header-h') !== headerH) rail.style.setProperty('--header-h', headerH);
   refreshQuestionIssues();
+  // Sin preguntas no hay avance ni mapa que enseñar: se dice qué falta y «Generar XML» se ve apagado.
+  const vacio = !document.querySelector('#editor-questions-container .editor-card');
+  rail.classList.toggle('sin-preguntas', vacio);
+  document.getElementById('btn-generate-xml')?.setAttribute('aria-disabled', String(vacio));
+  actualizarResumenesDeGrupos();
   // El contador del filtro «Revisar primero» baja cuando el docente edita una
   // respuesta dudosa. Solo se cambia el número: la lista no se vuelve a filtrar
   // para que la pregunta que se está editando no desaparezca bajo el cursor.
@@ -261,6 +267,7 @@ export function jumpRelative(delta) {
   const base = _railCurrent < 0 ? 0 : _railCurrent;
   const i = Math.min(Math.max(base + delta, 0), cards.length - 1);
   const card = cards[i];
+  mostrarSuGrupo(card);
   const top = card.getBoundingClientRect().top + window.scrollY - _headerBottom() - 16;
   window.scrollTo({ top, behavior: 'auto' });
   card.focus({ preventScroll: true });
@@ -301,6 +308,7 @@ export function updateReviewProgress() {
   const threshold = _headerBottom() + 24;
   let current = 0;
   for (let i = 0; i < cards.length; i++) {
+    if (!cards[i].offsetParent) continue;           // en un enunciado plegado: no está a la vista
     if (cards[i].getBoundingClientRect().top <= threshold) current = i;
     else break;
   }

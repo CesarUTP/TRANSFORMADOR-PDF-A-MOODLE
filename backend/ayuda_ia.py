@@ -45,9 +45,9 @@ _TIPOS = {"multichoice", "truefalse", "matching", "cloze", "essay", "shortanswer
 _MIME = {"image/png", "image/jpeg"}
 
 _TIPO_ES = {
-    "multichoice": "Opción múltiple", "truefalse": "Verdadero o falso",
-    "matching": "Emparejamiento", "cloze": "Completar espacios",
-    "essay": "Ensayo (respuesta abierta)", "shortanswer": "Respuesta corta",
+    "multichoice": "Selección múltiple", "truefalse": "Verdadero o falso",
+    "matching": "Emparejamiento", "cloze": "Completar",
+    "essay": "Desarrollo (respuesta abierta)", "shortanswer": "Respuesta corta",
     "numerical": "Respuesta numérica",
 }
 
@@ -544,7 +544,7 @@ def sugerir_respuesta(q: Dict[str, Any], respuesta: Any = None) -> Dict[str, Any
     """«Sugerir respuesta»: la IA propone la respuesta de una pregunta SIN clave."""
     _comprobar(q)
     if q.get("type") == "essay":
-        raise HTTPException(status_code=422, detail="Un ensayo se califica a mano: no tiene respuesta correcta que sugerir.")
+        raise HTTPException(status_code=422, detail="Una pregunta de desarrollo se califica a mano: no tiene respuesta correcta que sugerir.")
 
     def leer(resultado):
         _comprobar_fin(resultado)

@@ -13,6 +13,7 @@ import { ROTULOS_NOMBRES, RENGLONES_MAX, RENGLONES_MIN, cuerpoPdf, datosDePerfil
 import { MENSAJE_LOGO_INVALIDO, logoArchivoValido, reducirLogo } from './ui/logo-imagen.js';
 import { abrirModal, cerrarModal } from './ui/modales.js';
 import { showToast } from './ui/toast.js';
+import { variableDeColor } from './materias-logica.js';
 import { ejemploExamen, iniciales, materiasQueUsan, nombreCopia, nombreOcupado, ordenarPerfiles, resumenEncabezado, resumenFormato } from './perfil-logica.js';
 
 const $ = id => document.getElementById(id);
@@ -88,31 +89,35 @@ function ejemploRotulo() {
   $('vp-ejemplo').textContent = `${r}: ${$('vp-nombre').value.trim() || 'Ing. Ana Pérez'}`;
 }
 
-function thumb(b64, alt) {
-  return logoValido(b64) ? `<img src="data:image/png;base64,${b64}" alt="${esc_html(alt)}">` : '';
+// La cabecera tal como sale en el papel: los logos a los lados y las líneas de la institución.
+function cabeceraImpresa(d) {
+  const lineas = [d.institucion, d.facultad, d.departamento].map(x => String(x || '').trim()).filter(Boolean);
+  const logo = b64 => (logoValido(b64) ? `<img src="data:image/png;base64,${b64}" alt="">` : '<span></span>');
+  return `${logo(d.logo_izquierdo)}<p>${lineas.length ? lineas.map(esc_html).join('<br>') : '<em>Sin institución</em>'}</p>${logo(d.logo_derecho)}`;
 }
 
 function tarjeta(p, predeterminado, usan) {
   const d = p.datos || {};
-  const logos = thumb(d.logo_izquierdo, 'Logo izquierdo') + thumb(d.logo_derecho, 'Logo derecho');
   const esPred = p.nombre === predeterminado;
   const n = esc_html(p.nombre);
+  const marcar = `${esPred ? 'Quitar predeterminado' : 'Usar como predeterminado'}`;
+  const materiasChips = usan.slice(0, 3).map(m => `<span class="vm-chip vm-chip-materia"><span class="vm-punto" style="background:var(${variableDeColor(m.color)})"></span>${esc_html(m.nombre)}</span>`).join('');
   return `<li class="vp-perfil${esPred ? ' es-predeterminado' : ''}">
-    <div class="vp-perfil-cab">
-      ${logos ? `<span class="vp-perfil-logos">${logos}</span>` : '<span class="vp-perfil-logos vacio"><i data-lucide="image" class="ico-16" aria-hidden="true"></i></span>'}
+    <div class="vp-papel" aria-hidden="true"><div class="vp-papel-cab">${cabeceraImpresa(d)}</div></div>
+    <div class="vp-perfil-cuerpo">
       <div class="vp-perfil-titulo">
         <strong>${n}</strong>
         ${esPred ? '<span class="vm-chip">Predeterminado</span>' : ''}
       </div>
+      <p class="sr-only">${esc_html(resumenEncabezado(d))}</p>
+      <p class="vp-perfil-formato">${esc_html(resumenFormato(d))}</p>
+      <p class="vp-perfil-usan">${usan.length ? `<span>Lo usa${usan.length === 1 ? '' : 'n'}</span> ${materiasChips}${usan.length > 3 ? `<span>y ${usan.length - 3} más</span>` : ''}` : '<span>Ninguna materia lo usa todavía</span>'}</p>
     </div>
-    <p class="vp-perfil-linea">${esc_html(resumenEncabezado(d))}</p>
-    <p class="vp-perfil-linea vp-perfil-formato">${esc_html(resumenFormato(d))}</p>
-    ${usan.length ? `<p class="vp-perfil-linea vp-perfil-formato">Lo usa${usan.length === 1 ? '' : 'n'} ${esc_html(usan.map(m => m.nombre).slice(0, 3).join(', '))}${usan.length > 3 ? ` y ${usan.length - 3} más` : ''}</p>` : ''}
     <div class="vp-perfil-acciones">
-      <button type="button" class="btn btn-ghost btn-sm" data-accion="editarPerfilEnc" data-arg="${n}"><i data-lucide="pencil" class="ico-14"></i> Editar</button>
+      <button type="button" class="btn btn-ghost btn-sm vp-editar" data-accion="editarPerfilEnc" data-arg="${n}"><i data-lucide="pencil" class="ico-14"></i> Editar</button>
       <button type="button" class="btn btn-ghost btn-sm" data-accion="duplicarPerfilEnc" data-arg="${n}"><i data-lucide="copy" class="ico-14"></i> Duplicar</button>
-      <button type="button" class="btn btn-ghost btn-sm" data-accion="predeterminadoPerfilEnc" data-arg="${n}" aria-pressed="${esPred}"><i data-lucide="${esPred ? 'star-off' : 'star'}" class="ico-14"></i> ${esPred ? 'Quitar por defecto' : 'Usar por defecto'}</button>
-      <button type="button" class="btn btn-quiet btn-danger-text btn-sm" data-accion="borrarPerfilEnc" data-arg="${n}" aria-label="Borrar el perfil ${n}"><i data-lucide="trash-2" class="ico-14"></i></button>
+      <button type="button" class="btn btn-icon vp-marcar" data-accion="predeterminadoPerfilEnc" data-arg="${n}" aria-pressed="${esPred}" aria-label="${marcar}: ${n}" title="${marcar}"><i data-lucide="star" class="ico-16"></i></button>
+      <button type="button" class="btn btn-icon btn-danger-text" data-accion="borrarPerfilEnc" data-arg="${n}" aria-label="Borrar el perfil ${n}" title="Borrar perfil"><i data-lucide="trash-2" class="ico-16"></i></button>
     </div>
   </li>`;
 }
@@ -122,11 +127,13 @@ function pintar() {
   if (document.activeElement !== $('vp-nombre')) $('vp-nombre').value = yoDatos.nombre || '';
   $('vp-rotulo').value = yoDatos.rotulo_docente || 'facilitador';
   ejemploRotulo();
+  // La vista de «Mis datos» usa la cabecera del perfil predeterminado.
+  $('vp-papel-cab').innerHTML = cabeceraImpresa(perfiles.find(p => p.nombre === yoDatos.perfil_predeterminado)?.datos || {});
   const lista = ordenarPerfiles(perfiles, yoDatos.perfil_predeterminado);
   const ul = $('vp-perfiles');
   if (!lista.length) {
     ul.innerHTML = `<li class="vm-vacio vp-vacio">
-      <i data-lucide="file-text" aria-hidden="true"></i>
+      <span class="vm-icono vm-icono-grande" aria-hidden="true"><i data-lucide="layout-template"></i></span>
       <p class="vm-vacio-titulo">Todavía no tienes perfiles de encabezado</p>
       <p>Un perfil guarda tu institución, tus logos, las indicaciones generales y el formato de impresión. Créalo una vez y cada PDF o Word empieza con todo puesto.</p>
       <button type="button" class="btn btn-primary btn-sm" data-accion="nuevoPerfilEnc">Crear mi primer perfil</button>
@@ -174,14 +181,14 @@ export async function predeterminadoPerfilEnc(nombre) {
   yoDatos = { ...yoDatos, ...r.datos };
   pintar();
   avisar();
-  showToast(quitar ? `«${nombre}» ya no es el predeterminado` : `«${nombre}» se usará por defecto al exportar`, 'info');
+  showToast(quitar ? `«${nombre}» ya no es el predeterminado` : `«${nombre}» es ahora el predeterminado al exportar`, 'info');
 }
 
 export async function borrarPerfilEnc(nombre) {
   const usan = materiasQueUsan(materias(), nombre);
   const ok = await confirmar({
     titulo: '¿Borrar este perfil?',
-    mensaje: `Se borrará el perfil «${nombre}».${usan.length ? ` ${usan.length === 1 ? 'La materia' : 'Las materias'} ${usan.map(m => `«${m.nombre}»`).join(', ')} se quedará${usan.length === 1 ? '' : 'n'} sin perfil por defecto.` : ''} Los PDF que ya exportaste no cambian.`,
+    mensaje: `Se borrará el perfil «${nombre}».${usan.length ? ` ${usan.length === 1 ? 'La materia' : 'Las materias'} ${usan.map(m => `«${m.nombre}»`).join(', ')} se quedará${usan.length === 1 ? '' : 'n'} sin perfil predeterminado.` : ''} Los PDF que ya exportaste no cambian.`,
     confirmar: 'Borrar el perfil',
     cancelar: 'Conservarlo',
   });
@@ -224,7 +231,7 @@ function llenarEditor(nombre, d) {
   $('pe-renglones-proc').value = d.renglones_procedimiento;
   $('pe-proc-numerica').checked = d.procedimiento_numerica; $('pe-proc-corta').checked = d.procedimiento_corta;
   $('pe-mezclar').checked = d.mezclar; $('pe-partes').checked = d.partes;
-  $('pe-puntos').checked = d.puntos_por_pregunta; $('pe-enteros').checked = d.puntos_enteros; $('pe-campos').checked = d.campos_estudiante;
+  $('pe-puntos').checked = d.puntos_por_pregunta; $('pe-enteros').checked = d.puntos_enteros; $('pe-campos').checked = d.campos_estudiante; $('pe-cuadro').checked = d.cuadro_puntos;
   Object.keys(LADOS).forEach(k => mostrarLogo(k, d[k]));
 }
 
@@ -238,14 +245,14 @@ function leerEditor() {
     renglones_procedimiento: $('pe-renglones-proc').value, procedimiento_numerica: $('pe-proc-numerica').checked,
     procedimiento_corta: $('pe-proc-corta').checked,
     renglones_ensayo: $('pe-renglones').value, mezclar: $('pe-mezclar').checked, partes: $('pe-partes').checked,
-    puntos_por_pregunta: $('pe-puntos').checked, puntos_enteros: $('pe-enteros').checked, campos_estudiante: $('pe-campos').checked,
+    puntos_por_pregunta: $('pe-puntos').checked, puntos_enteros: $('pe-enteros').checked, campos_estudiante: $('pe-campos').checked, cuadro_puntos: $('pe-cuadro').checked,
     ...logosEd,
   };
 }
 
 function problemaDelEditor(d) {
   if (tamanoValido(d.tam_titulos) === null || tamanoValido(d.tam_preguntas) === null) return 'El tamaño de la letra debe estar entre 7 y 20 puntos.';
-  if (enteroEn(d.renglones_ensayo, RENGLONES_MIN, RENGLONES_MAX) === null) return `El alto del recuadro de ensayo debe ser un número entero de ${RENGLONES_MIN} a ${RENGLONES_MAX} renglones.`;
+  if (enteroEn(d.renglones_ensayo, RENGLONES_MIN, RENGLONES_MAX) === null) return `El alto del recuadro de desarrollo debe ser un número entero de ${RENGLONES_MIN} a ${RENGLONES_MAX} renglones.`;
   if (enteroEn(d.renglones_procedimiento, RENGLONES_MIN, RENGLONES_MAX) === null) return `El alto del recuadro de procedimiento debe ser un número entero de ${RENGLONES_MIN} a ${RENGLONES_MAX} renglones.`;
   return '';
 }

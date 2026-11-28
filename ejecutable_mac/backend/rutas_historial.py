@@ -14,7 +14,6 @@ rutas_historial.py — el Historial de conversiones guardadas en este equipo.
 import json
 import logging
 import sqlite3
-from pathlib import Path
 
 from typing import List, Optional
 
@@ -26,7 +25,7 @@ from database import (
     LIMITE_CAMPO_MATERIA, delete_history_item, delete_history_items, get_editor_data, get_history_list, get_uso, get_xml_content,
     move_history_items, update_history_item,
 )
-from estado_servidor import ERROR_LOG_PATH, _content_disposition
+from estado_servidor import ERROR_LOG_PATH, _content_disposition, _nombre_base
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,7 @@ def _historial(operacion, *args):
     except (sqlite3.Error, OSError) as exc:
         logger.exception("Error en el historial (%s)", getattr(operacion, "__name__", operacion))
         raise HTTPException(status_code=503, detail=(
-            "No se pudo acceder al historial guardado en este equipo "
+            "No se pudo acceder a las evaluaciones guardadas en este equipo "
             f"({type(exc).__name__}). Cierra y vuelve a abrir la aplicación; si se repite, envía al "
             f"desarrollador el registro «{ERROR_LOG_PATH}». Convertir y descargar siguen funcionando."
         ))
@@ -62,7 +61,7 @@ def api_download_history(record_id: int):
     if not record:
         raise HTTPException(status_code=404, detail="Registro no encontrado")
 
-    output_filename = f"{Path(record['filename']).stem}.xml"
+    output_filename = f"{_nombre_base(record['filename'])}.xml"
     return Response(
         content=record["xml_content"].encode("utf-8"),
         media_type="application/xml",

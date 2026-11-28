@@ -49,6 +49,8 @@ export const pointsError = document.getElementById('points-error');
 
 export const btnConvert = document.getElementById('btn-convert');
 
+export const panelInicio = document.getElementById('panel-inicio');
+
 export const panelUpload = document.getElementById('panel-upload');
 
 export const panelProgress = document.getElementById('panel-progress');

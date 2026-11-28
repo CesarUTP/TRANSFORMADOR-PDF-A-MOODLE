@@ -35,6 +35,10 @@ from modelo import (
 
 logger = logging.getLogger(__name__)
 
+# Cómo se llama cada tipo en lo que lee el docente.
+_NOMBRE_TIPO = {"multichoice": "selección múltiple", "truefalse": "verdadero o falso", "matching": "emparejamiento",
+                "cloze": "completar", "essay": "desarrollo", "shortanswer": "respuesta corta", "numerical": "numérica"}
+
 
 # ── Resultado de validación ─────────────────────────────────────────────────
 
@@ -170,7 +174,7 @@ def _collect_question_errors(p: Pregunta, key_info: Optional[Clave]) -> List[str
     # quedado en la clave para esta pregunta.
     if qtype != "essay":
         if p.sin_respuesta:
-            errors.append(f"Error: la Pregunta {num} ({qtype}) no tiene una respuesta correcta especificada en el examen.")
+            errors.append(f"Error: la Pregunta {num} ({_NOMBRE_TIPO.get(qtype, qtype)}) no tiene una respuesta correcta especificada en la evaluación.")
             return errors
 
     required = REQUIRED_FIELDS.get(qtype, [])
@@ -214,7 +218,7 @@ _ANSWER_ONLY_PATTERNS = [
     r"referencia el elemento '.*' de la Columna A, que no existe",
     r"referencia la letra '.*' de la Columna B, que no existe",
     r"no se encontró la respuesta correcta del espacio",
-    r"el espacio \[.*\] en la Pregunta \d+ \(cloze\) no tiene una respuesta correcta especificada",
+    r"el espacio \[.*\] en la Pregunta \d+ \(completar\) no tiene una respuesta correcta especificada",
 ]
 
 
@@ -313,7 +317,7 @@ def _validate_multichoice(p: PreguntaMultichoice, target: List[str]) -> None:
     if len(options) < MIN_MULTICHOICE_OPTIONS:
         target.append(
             f"Error: falta opciones válidas en el ítem Pregunta {num} "
-            f"(multichoice). Se encontraron {len(options)}, "
+            f"(selección múltiple). Se encontraron {len(options)}, "
             f"se requieren al menos {MIN_MULTICHOICE_OPTIONS}."
         )
 
@@ -325,7 +329,7 @@ def _validate_multichoice(p: PreguntaMultichoice, target: List[str]) -> None:
         if not opt_text.strip():
             target.append(
                 f"Error: la opción '{letter}' de la Pregunta {num} "
-                f"(multichoice) no tiene texto."
+                f"(selección múltiple) no tiene texto."
             )
 
     # Regla: cada respuesta correcta listada debe identificar UNA opción. La
@@ -361,7 +365,7 @@ def _validate_truefalse(p: PreguntaTruefalse, target: List[str]) -> None:
     if p.es_verdadero() is None:
         target.append(
             f"Error: respuesta '{p.respuesta_texto}' inválida para el ítem "
-            f"Pregunta {p.num} (truefalse). Se esperaba 'Verdadero' o 'Falso'."
+            f"Pregunta {p.num} (verdadero o falso). Se esperaba 'Verdadero' o 'Falso'."
         )
 
 
@@ -383,20 +387,20 @@ def _validate_matching(p: PreguntaMatching, target: List[str]) -> None:
     if not pairs:
         target.append(
             f"Error: no se encontró una clave de respuestas 'número-letra' "
-            f"válida para el ítem Pregunta {num} (matching). Formato esperado: "
+            f"válida para el ítem Pregunta {num} (emparejamiento). Formato esperado: "
             f"'1-a; 2-b; 3-c'. Recibido: '{correct_answer[:80]}'."
         )
     elif len(pairs) < MIN_MATCHING_PAIRS:
         target.append(
             f"Error: se encontraron solo {len(pairs)} par(es) en la clave "
-            f"del ítem Pregunta {num} (matching). Moodle requiere al menos "
+            f"del ítem Pregunta {num} (emparejamiento). Moodle requiere al menos "
             f"{MIN_MATCHING_PAIRS} pares (<subquestion>)."
         )
 
     if not col_a or not col_b:
         target.append(
             f"Error: no se pudieron extraer 'Columna A' y 'Columna B' en la "
-            f"Pregunta {num} (matching)."
+            f"Pregunta {num} (emparejamiento)."
         )
         return
 
@@ -419,13 +423,13 @@ def _validate_matching(p: PreguntaMatching, target: List[str]) -> None:
         if not item_text.strip():
             target.append(
                 f"Error: el elemento '{a_num}' de la Columna A en la "
-                f"Pregunta {num} (matching) no tiene texto."
+                f"Pregunta {num} (emparejamiento) no tiene texto."
             )
     for letter, item_text in col_b.items():
         if not item_text.strip():
             target.append(
                 f"Error: el elemento '{letter}' de la Columna B en la "
-                f"Pregunta {num} (matching) no tiene texto."
+                f"Pregunta {num} (emparejamiento) no tiene texto."
             )
 
     if pairs:
@@ -439,12 +443,12 @@ def _validate_matching(p: PreguntaMatching, target: List[str]) -> None:
         for a_num, letter in pairs.items():
             if a_num not in col_a:
                 target.append(
-                    f"Error: la clave de respuestas de la Pregunta {num} (matching) "
+                    f"Error: la clave de respuestas de la Pregunta {num} (emparejamiento) "
                     f"referencia el elemento '{a_num}' de la Columna A, que no existe."
                 )
             if clave_de_columna(col_b, letter) is None:
                 target.append(
-                    f"Error: la clave de respuestas de la Pregunta {num} (matching) "
+                    f"Error: la clave de respuestas de la Pregunta {num} (emparejamiento) "
                     f"referencia la letra '{letter}' de la Columna B, que no existe."
                 )
 
@@ -474,7 +478,7 @@ def _validate_cloze(p: PreguntaCloze, target: List[str]) -> None:
     if not huecos and "{1:MULTICHOICE:" in text:
         target.append(
             f"Error: se detectó una etiqueta Moodle vacía o inválida "
-            f"({{1:MULTICHOICE:}}) en el ítem Pregunta {num} (cloze). "
+            f"({{1:MULTICHOICE:}}) en el ítem Pregunta {num} (completar). "
             f"Asegúrate de que la pregunta incluya sus opciones."
         )
         return
@@ -483,7 +487,7 @@ def _validate_cloze(p: PreguntaCloze, target: List[str]) -> None:
     if not huecos:
         target.append(
             f"Error: no se detectaron espacios con opciones '[A: ...]' en "
-            f"el ítem Pregunta {num} (cloze). Formato esperado: "
+            f"el ítem Pregunta {num} (completar). Formato esperado: "
             f"'[A: correcta / incorrecta]'."
         )
         return
@@ -496,19 +500,19 @@ def _validate_cloze(p: PreguntaCloze, target: List[str]) -> None:
             if options:
                 target.append(
                     f"Error: el espacio [{slot_letter}] tiene una sola opción en el ítem Pregunta {num} "
-                    f"(cloze): el estudiante no tendría nada que elegir. Agrega al menos otra "
+                    f"(completar): el estudiante no tendría nada que elegir. Agrega al menos otra "
                     f"(mínimo {MIN_CLOZE_OPTIONS})."
                 )
             else:
                 target.append(
                     f"Error: el espacio [{slot_letter}] está vacío y no tiene "
-                    f"opciones para elegir en el ítem Pregunta {num} (cloze)."
+                    f"opciones para elegir en el ítem Pregunta {num} (completar)."
                 )
             continue
 
         if any(SIN_RESPUESTA in opt.upper() for opt in options):
             target.append(
-                f"Error: el espacio [{slot_letter}] en la Pregunta {num} (cloze) no tiene una respuesta correcta especificada."
+                f"Error: el espacio [{slot_letter}] en la Pregunta {num} (completar) no tiene una respuesta correcta especificada."
             )
             continue
 
@@ -516,12 +520,12 @@ def _validate_cloze(p: PreguntaCloze, target: List[str]) -> None:
         if not slot_answers:
             target.append(
                 f"Error: no se encontró la respuesta correcta del espacio [{slot_letter}] "
-                f"en la clave de respuestas de la Pregunta {num} (cloze). Formato "
+                f"en la clave de respuestas de la Pregunta {num} (completar). Formato "
                 f"esperado en RESPUESTAS: '{slot_letter}. respuesta_correcta'."
             )
         elif any(ans.strip().upper() == SIN_RESPUESTA for ans in slot_answers):
             target.append(
-                f"Error: el espacio [{slot_letter}] en la Pregunta {num} (cloze) no tiene una respuesta correcta especificada."
+                f"Error: el espacio [{slot_letter}] en la Pregunta {num} (completar) no tiene una respuesta correcta especificada."
             )
         else:
             # Cada respuesta de la clave debe identificar UNA opción del
@@ -534,12 +538,12 @@ def _validate_cloze(p: PreguntaCloze, target: List[str]) -> None:
                 if motivo == "ambigua":
                     target.append(
                         f"Error: la respuesta correcta '{ans[:60]}' del espacio [{slot_letter}] es ambigua: "
-                        f"coincide con varias opciones en la Pregunta {num} (cloze). Opciones: {options}."
+                        f"coincide con varias opciones en la Pregunta {num} (completar). Opciones: {options}."
                     )
                 else:
                     target.append(
                         f"Error: la respuesta correcta '{ans[:60]}' del espacio [{slot_letter}] no coincide "
-                        f"con ninguna de las opciones disponibles en la Pregunta {num} (cloze). Opciones: {options}."
+                        f"con ninguna de las opciones disponibles en la Pregunta {num} (completar). Opciones: {options}."
                     )
 
 
@@ -555,7 +559,7 @@ def _validate_numerical(p: PreguntaNumerical, target: List[str]) -> None:
         pista = (f" Parece llevar separador de miles: escríbelo sin él (por ejemplo {sugerido})." if sugerido else "")
         target.append(
             f"Error: la respuesta '{p.respuesta_texto[:60]}' de la Pregunta {p.num} "
-            f"(numerical) no es un número válido.{pista}"
+            f"(numérica) no es un número válido.{pista}"
         )
 
 
@@ -605,7 +609,7 @@ def pre_validate_raw_text(text: str) -> None:
     costo de mandarle un documento que no lo es resulta despreciable.
     """
     if len(text.strip()) < 100:
-        raise ValueError("El texto extraído es demasiado corto para ser un examen válido (mínimo 100 caracteres).")
+        raise ValueError("El texto extraído es demasiado corto para ser una evaluación válida (mínimo 100 caracteres).")
 
 
 def estimate_question_count(raw_text: str) -> int:

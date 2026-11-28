@@ -250,7 +250,7 @@ export function onUploadDone() {
   fill.style.transform = 'scaleX(0)';
   void fill.offsetWidth;
   fill.style.transition = prev;
-  document.getElementById('progress-subtitle').textContent = 'Leyendo el texto del examen…';
+  document.getElementById('progress-subtitle').textContent = 'Leyendo el texto de la evaluación…';
   _setProgressDetail('');
   // La barra simulada de procesamiento cuenta desde ahora, no desde el
   // inicio de la subida (si no, saltaría hacia adelante). El reloj de
@@ -264,10 +264,10 @@ export function startProgress(kind = 'text') {
   const elapsedEl = document.getElementById('progress-elapsed');
   const etaEl = document.getElementById('progress-eta');
   const sequence = [
-    { time: 0,  text: 'Leyendo el texto del examen…' },
+    { time: 0,  text: 'Leyendo el texto de la evaluación…' },
     { time: 3,  text: 'Identificando las preguntas…' },
     { time: 7,  text: 'Ordenando preguntas y respuestas con IA…' },
-    { time: 14, text: 'Preparando la revisión…' }
+    { time: 14, text: 'Preparando el editor…' }
   ];
 
   progressKind = kind;
@@ -286,7 +286,7 @@ export function startProgress(kind = 'text') {
 
   document.getElementById('progress-timer-row').style.display = 'flex';
   document.getElementById('btn-cancel-progress').style.display = '';
-  document.getElementById('progress-title').textContent = 'Procesando tu examen…';
+  document.getElementById('progress-title').textContent = 'Procesando tu evaluación…';
   pFill.style.transform = 'scaleX(0)';
   pSubtitle.textContent = sequence[0].text;
   elapsedEl.textContent = '0:00';

@@ -1,5 +1,5 @@
 {
-  "version": "3.1",
+  "version": "3.2",
   "url": "https://github.com/CesarUTP/TRANSFORMADOR-PDF-A-MOODLE/releases/latest",
-  "notas": "Versión 3.1: un enunciado compartido para varias preguntas, mover y duplicar preguntas, desarrollo en un recuadro con marco, espacio para el procedimiento en numéricas y respuesta corta, y orden e indicaciones propias de cada parte del PDF y el Word."
+  "notas": "Versión 3.2: empieza de tres formas (ahora también desde cero), pantallas rediseñadas, imprime cada documento aparte o en modo folleto, cuadro de puntos, fórmulas dibujadas, imágenes con tamaño y posición, y enunciado compartido con imágenes."
 }

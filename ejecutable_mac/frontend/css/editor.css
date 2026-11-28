@@ -101,9 +101,15 @@ body.editor-active .review-rail { display: flex; }
 .rail-review-next.is-error { color: var(--color-error); }
 .rail-links { display: flex; flex-direction: column; gap: 6px; }
 .rail-actions { display: flex; flex-direction: column; gap: 6px; }
+/* Sin preguntas: ni barra de avance ni mapa; solo qué falta. */
+.rail-vacio { display: none; margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--color-text-muted); }
+.review-rail.sin-preguntas .rail-vacio { display: block; }
+.review-rail.sin-preguntas .rail-bar, .review-rail.sin-preguntas .rail-grid-wrap { display: none; }
+.rail-actions .btn[aria-disabled="true"] { opacity: 0.45; cursor: default; }
 .rail-actions .btn { width: 100%; justify-content: center; padding: 11px 12px; font-size: 13.5px; white-space: nowrap; }
-.rail-actions #btn-discard-review { padding: 8px 12px; font-size: var(--text-sm); }
+.rail-actions #btn-discard-review { padding: 8px 12px; font-size: var(--text-sm); color: var(--color-text-muted); background: transparent; border-color: transparent; }
 @media (hover: hover) and (pointer: fine) {
+  .rail-actions #btn-discard-review:hover { color: var(--color-error); background: var(--color-error-bg); }
   .rail-item:hover { border-color: var(--color-accent); color: var(--color-text); }
   .rail-review-next:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
@@ -118,6 +124,8 @@ body.editor-active .review-rail { display: flex; }
     left: max(calc(24px + 860px + 20px), calc(50% + 430px - 108px + 20px));
     width: 196px;
     max-height: calc(100vh - var(--header-h, 80px) - 48px);
+    border-radius: var(--radius-xl);
+    padding: 16px 14px 12px;
   }
   .rail-grid { max-height: none; flex: 1; }
   .rail-grid-wrap { flex: 1; overflow: hidden; }
@@ -144,6 +152,7 @@ body.editor-active .review-rail { display: flex; }
   .rail-pos .rail-pos-short { display: inline; }
   .rail-pos .rail-pill.visible { display: inline-flex; }
   .rail-bar { display: none; }
+  .review-rail.sin-preguntas .rail-vacio { display: none; }
   .rail-actions { flex: 1; flex-direction: row; justify-content: flex-end; align-items: center; }
   .rail-actions .btn-success { flex: 1 1 auto; max-width: 260px; }
   .rail-actions #btn-discard-review { flex: 0 0 auto; width: auto; padding: 10px 12px; }
@@ -171,7 +180,10 @@ body.editor-active .review-rail { display: flex; }
 .shortcuts-list dd { margin: 0; font-size: 13px; color: var(--color-text); }
 
 /* ── CABECERA Y HERRAMIENTAS DEL EDITOR ──────────────────────────────── */
-.editor-head { margin-bottom: 16px; }
+.editor-head { margin-bottom: 18px; }
+.editor-head .screen-title { font-size: 28px; letter-spacing: -0.4px; line-height: 1.25; }
+.editor-head .screen-sub { margin-top: 6px; }
+@media (max-width: 720px) { .editor-head .screen-title { font-size: 24px; } }
 .editor-notices { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
 
 /* Preguntas omitidas: una línea que se expande (antes era un muro de
@@ -206,21 +218,35 @@ body.editor-active .review-rail { display: flex; }
 .skipped-reason { font-size: 12px; color: var(--color-text-muted); }
 .skipped-num { font-size: 12px; color: var(--color-text-subtle); margin-top: 2px !important; }
 
+/* Las tres herramientas en una sola barra, como los segmentos de las otras pantallas. */
 .editor-toolbar {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 1px;
   margin-bottom: 8px;
+  background: var(--color-border);          /* lo que se ve entre los botones: sus separadores */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
-.toolbar-btn {
+.editor-toolbar .toolbar-btn {
   flex: 1 1 220px;
   justify-content: flex-start;
-  padding: 10px 14px;
+  padding: 11px 16px;
   font-size: 13.5px;
   font-weight: 600;
+  background: var(--color-surface);
+  border: 0;
+  border-radius: 0;
+}
+.editor-toolbar .toolbar-btn[aria-expanded="true"] { background: linear-gradient(var(--color-accent-glow), var(--color-accent-glow)), var(--color-surface); }
+.editor-toolbar .toolbar-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -3px; }
+@media (hover: hover) and (pointer: fine) {
+  .editor-toolbar .toolbar-btn:hover:not([aria-expanded="true"]) { background: var(--color-surface-hover); }
 }
 .toolbar-btn strong { font-weight: 800; }
-.toolbar-btn.toolbar-btn-corto { flex: 0 0 auto; }
+.editor-toolbar .toolbar-btn.toolbar-btn-corto { flex: 0 0 auto; }
+@media (max-width: 560px) { .editor-toolbar .toolbar-btn.toolbar-btn-corto { flex: 1 1 100%; justify-content: center; } }
 .toolbar-btn .chev { margin-left: auto; width: 15px; height: 15px; transition: transform var(--dur-fast) var(--ease-out); }
 .toolbar-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
 .toolbar-btn.is-off strong { color: var(--color-warning); }
@@ -230,8 +256,8 @@ body.editor-active .review-rail { display: flex; }
    golpe. */
 .collapsible-panel {
   display: none;
-  background: var(--color-surface-hover);
-  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 12px 14px;
   margin-bottom: 8px;
@@ -243,6 +269,10 @@ body.editor-active .review-rail { display: flex; }
 #editor-questions-container { display: flex; flex-direction: column; gap: 12px; }
 .editor-tools { margin-bottom: 4px; }
 
+/* Cómo repartir: dos opciones excluyentes en una línea. */
+.puntos-modos { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.puntos-modos .btn { border: 1px solid transparent; border-radius: calc(var(--radius-md) - 4px); background: transparent; color: var(--color-text-muted); box-shadow: none; }
+.puntos-modos .btn[aria-pressed="true"] { color: var(--color-text); background: var(--color-accent-glow); border-color: var(--color-accent); }
 .points-help { font-size: 12px; color: var(--color-text-muted); line-height: 1.6; }
 .points-help[hidden] { display: none; }
 .points-type-row { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
@@ -253,21 +283,33 @@ body.editor-active .review-rail { display: flex; }
 .points-type-sub { font-size: var(--text-xs); color: var(--color-text-muted); min-width: 92px; text-align: right; font-variant-numeric: tabular-nums; }
 .points-type-total { margin: 4px 0 0; padding-top: 8px; border-top: 1px solid var(--color-border-subtle); font-size: var(--text-sm); font-weight: 700; color: var(--color-text); }
 
-/* ── AÑADIR PREGUNTA (al final de la lista) ──────────────────────────── */
-.add-question-block {
-  border: 1.5px dashed var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 14px 16px;
-}
-.add-question-block .add-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.add-question-block .add-head p { font-size: 13px; color: var(--color-text-muted); margin: 0; }
-.add-type-grid {
-  /* display lo pone togglePanel() ('grid') al abrirse. */
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
-  margin-top: 12px;
-}
-.add-type-grid .filter-chip { flex: none; min-width: 0; }
+/* ── AÑADIR PREGUNTA: las tarjetas de tipo, iguales para la primera y las siguientes ── */
+.elegir-tipo { padding: 22px; border: 1.5px dashed var(--color-border); border-radius: var(--radius-lg); }
+.elegir-tipo h3 { margin: 0; font-family: var(--font-heading); font-size: 18px; font-weight: 800; }
+.elegir-tipo > p { margin: 4px 0 0; font-size: var(--text-md); color: var(--color-text-muted); }
+.elegir-tipo .add-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.tipos-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin-top: 16px; }
+.tipos-grid:not(.collapsible-panel) { display: grid; }
+/* Plegadas (al revisar un documento) el display lo pone togglePanel(); sin la caja de los otros paneles. */
+.tipos-grid.collapsible-panel { padding: 0; margin-bottom: 0; background: none; border: 0; }
+
+/* ── EXAMEN DESDE CERO: sus datos y la primera pregunta ──────────────── */
+.editor-datos { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; padding: 18px; margin-bottom: 16px; }
+.editor-datos[hidden] { display: none; }
+.editor-datos h3 { grid-column: 1 / -1; margin: 0; font-family: var(--font-heading); font-size: 18px; font-weight: 800; }
+.editor-datos .form-group { grid-column: span 2; min-width: 0; }
+.editor-datos .editor-datos-nombre { grid-column: span 4; }
+@media (max-width: 640px) { .editor-datos .form-group, .editor-datos .editor-datos-nombre { grid-column: 1 / -1; } }
+.tipo-nuevo { display: flex; align-items: center; gap: 12px; padding: 12px; font: inherit; text-align: left; color: var(--color-text); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; transition-property: border-color, background-color; transition-duration: var(--dur-fast); }
+.tipo-nuevo strong { display: block; font-size: var(--text-md); }
+.tipo-nuevo small { display: block; font-size: var(--text-sm); line-height: 1.4; color: var(--color-text-muted); }
+.tipo-nuevo:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.tipo-nuevo-icono { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 38px; height: 38px; border: 1px solid; border-radius: var(--radius-sm, 6px); }
+.tipo-nuevo-icono svg { width: 20px; height: 20px; }
+.tipo-compartido-icono { color: var(--color-accent); background: var(--color-accent-glow); border-color: var(--color-accent); }
+@media (hover: hover) and (pointer: fine) { .tipo-nuevo:hover { border-color: var(--color-accent); background: var(--color-accent-glow); } }
+.q-opt-quitar { flex-shrink: 0; }
+.q-opt-agregar { margin-top: 8px; }
 
 /* ── EDITOR CARDS (Interactive Question Editor) ──────────────────────── */
 .editor-card {
@@ -275,22 +317,31 @@ body.editor-active .review-rail { display: flex; }
   background: var(--color-surface);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 18px 20px 12px;
   outline: 2px dashed transparent;
   outline-offset: 4px;
   transition: border-color var(--dur-fast) ease, outline-color var(--dur-fast) ease, background-color var(--dur-fast) ease;
   scroll-margin-top: calc(var(--header-h, 80px) + 16px);
 }
 .editor-card:focus-within { border-color: var(--color-accent); }
-/* Enunciado compartido: el bloque va encima de su grupo; las tarjetas del grupo quedan sangradas bajo él. */
+/* Enunciado compartido: un marco encierra su texto, sus imágenes y sus preguntas. Lo que está dentro va con
+   el enunciado; lo de fuera es independiente. */
+.grupo-compartido { display: flex; flex-direction: column; gap: 12px; padding: 12px; border: 2px solid var(--color-accent); border-radius: calc(var(--radius-lg) + 8px); background: var(--color-accent-glow); }
 .bloque-compartido {
   background: var(--color-surface);
-  border: 1.5px solid var(--color-accent);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 16px 20px;
-  scroll-margin-top: calc(var(--header-h, 80px) + 16px);
+  outline: 2px dashed transparent;
+  outline-offset: 2px;
+  scroll-margin-top: calc(var(--header-h, 80px) + 24px);
 }
+.bloque-compartido.soltar-aqui { outline-color: var(--color-accent); }
+.bloque-compartido.soltar-aqui .q-soltar-nota { display: inline-flex; }
 .compartido-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.compartido-titulo { display: flex; align-items: center; gap: 6px; }
+.compartido-plegar svg { width: 18px; height: 18px; transition: transform var(--dur-fast) var(--ease-out); }
+.grupo-compartido.plegado .compartido-plegar svg { transform: rotate(-90deg); }
 .compartido-cabecera h3 {
   display: flex; align-items: center; gap: 8px; margin: 0;
   font-family: var(--font-heading); font-size: var(--text-lg); font-weight: 800; color: var(--color-text);
@@ -299,15 +350,40 @@ body.editor-active .review-rail { display: flex; }
 .compartido-rango { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: var(--text-sm); color: var(--color-text-muted); }
 .compartido-rango select.form-input { width: auto; min-width: 66px; padding: 6px 8px; margin: 0; font-size: var(--text-sm); }
 .compartido-texto { width: 100%; margin-top: 10px; resize: none; overflow: hidden; line-height: 1.5; font-size: 13.5px; }
-.editor-card.en-grupo { margin-left: 18px; }
-.q-compartir { margin-top: 12px; }
-.q-compartir[hidden] { display: none; }
+.grupo-compartido.es-pendiente .compartido-rango { margin-left: auto; }
+/* El pie del marco: dónde termina el enunciado y cómo agregarle otra pregunta. */
+.grupo-fin { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 2px 6px; }
+.grupo-fin p { display: flex; align-items: center; gap: 8px; margin: 0; font-size: var(--text-sm); font-weight: 700; color: var(--color-text-muted); }
+.grupo-fin p svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--color-accent); }
+.grupo-fin .btn { background: var(--color-surface); }
+.compartido-panel { background: var(--color-bg); }
+.compartido-existentes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; font-size: var(--text-sm); color: var(--color-text-muted); }
+.compartido-existentes select.form-input { width: auto; min-width: 100px; padding: 6px 8px; margin: 0; font-size: var(--text-sm); }
+/* Plegado: queda el enunciado y una línea que cuenta lo que guarda. */
+.grupo-resumen { display: none; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; font: inherit; font-size: var(--text-sm); text-align: left; color: var(--color-text); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); cursor: pointer; }
+.grupo-resumen svg { width: 16px; height: 16px; flex-shrink: 0; }
+.grupo-resumen span { flex: 1; }
+.grupo-resumen em { font-style: normal; font-weight: 700; color: var(--color-accent); }
+.grupo-resumen:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.resumen-mal { color: var(--color-error); font-weight: 700; }
+.resumen-revisar { color: var(--color-warning); font-weight: 700; }
+@media (hover: hover) and (pointer: fine) { .grupo-resumen:hover { border-color: var(--color-accent); } }
+/* Con un filtro puesto se ven las preguntas que cumplen, aunque su enunciado esté plegado, y no se agregan otras. */
+#editor-questions-container:not([data-filtrado="1"]) .grupo-compartido.plegado > .editor-card,
+#editor-questions-container:not([data-filtrado="1"]) .grupo-compartido.plegado > .grupo-fin,
+#editor-questions-container:not([data-filtrado="1"]) .grupo-compartido.plegado > .compartido-panel { display: none; }
+#editor-questions-container:not([data-filtrado="1"]) .grupo-compartido.plegado > .grupo-resumen { display: flex; }
+#editor-questions-container[data-filtrado="1"] :is(.grupo-fin, .compartido-panel, .compartido-plegar) { display: none; }
 .editor-card.is-incomplete { border-color: var(--color-error); }
 .card-head {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: flex-start;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
 }
-.card-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+/* El mismo ícono de color de las tarjetas «Añade una pregunta»: el tipo se reconoce de un vistazo. */
+.card-tipo-icono { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 38px; height: 38px; border: 1px solid; border-radius: var(--radius-sm); }
+.card-tipo-icono svg { width: 20px; height: 20px; }
+.card-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.card-title h3 { white-space: nowrap; }
 .card-title h3 {
   font-family: var(--font-heading);
   font-size: var(--text-lg);
@@ -316,10 +392,10 @@ body.editor-active .review-rail { display: flex; }
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
-.card-meta { display: flex; align-items: center; gap: 6px; }
+.card-meta { display: flex; align-items: center; gap: 6px; padding-left: 10px; border-left: 1px solid var(--color-border); }
 /* Subir, bajar y duplicar: discretos hasta que se pasa por la tarjeta o se llega con el teclado. */
 .card-orden { display: flex; align-items: center; gap: 2px; margin-left: auto; opacity: 0.55; transition: opacity var(--dur-fast) ease; }
-.card-orden + .card-meta { margin-left: 4px; }
+.card-orden + .card-meta { margin-left: 0; }
 .editor-card:hover .card-orden, .editor-card:focus-within .card-orden { opacity: 1; }
 .card-orden .btn-icon:disabled, .compartido-rango .btn-icon:disabled { opacity: 0.35; cursor: default; }
 #editor-questions-container[data-filtrado="1"] .btn-mover { display: none; }
@@ -351,17 +427,19 @@ body.editor-active .review-rail { display: flex; }
 .card-note { font-size: var(--text-xs); color: var(--color-text-subtle); margin: 4px 0 0; }
 .card-note[hidden] { display: none; }
 .editor-card textarea, .editor-card input {
-  background: var(--color-bg);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   color: var(--color-text);
-  border-radius: var(--radius-sm);
+  caret-color: var(--color-accent);
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   width: 100%;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.5;
   margin-top: 6px;
-  outline: none;
+  outline: 2px solid transparent;
+  outline-offset: -1px;
 }
 /* Sin arrastre manual (podía romper el layout de la tarjeta): los campos
    de texto crecen solos con el contenido (ver autoGrowTextarea), así el
@@ -372,7 +450,20 @@ body.editor-active .review-rail { display: flex; }
 }
 .editor-card textarea:focus, .editor-card input:focus {
   border-color: var(--color-accent);
+  outline-color: var(--color-accent);
 }
+/* Cada parte de la pregunta: un título en negrita (como en las otras pantallas) y aire encima. */
+.editor-card .sec { margin-top: 18px; }
+.editor-card fieldset.sec { min-width: 0; padding: 0; border: 0; }
+.editor-card .field-label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 0; margin-bottom: 2px; font-size: 14px; font-weight: 800; letter-spacing: 0; text-transform: none; color: var(--color-text); }
+.sec-ayuda { font-size: var(--text-sm); font-weight: 500; color: var(--color-text-muted); }
+.editor-card .q-correcta { border-color: var(--color-success); }
+.editor-card .q-correcta:focus { border-color: var(--color-accent); }
+/* Verdadero o falso: dos botones; la elegida queda en verde, como toda respuesta correcta. */
+.vf-segmentos { max-width: 340px; margin-top: 6px; }
+.editor-card .vf-segmentos input { width: 1px; height: 1px; margin: 0; padding: 0; border: 0; }
+.vf-segmentos span { padding-block: 10px; }
+.vf-segmentos input:checked + span { background: var(--color-success-bg); border-color: var(--color-success); }
 
 /* Vista previa de fórmulas LaTeX (KaTeX), bajo el enunciado */
 .q-math { margin-top: 8px; padding: 10px 14px; border: 1px dashed var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
@@ -453,9 +544,14 @@ body.editor-active .review-rail { display: flex; }
 .q-ia-propuesta ins { text-decoration: none; background: var(--color-success-bg); color: var(--color-text); border-bottom: 2px solid var(--color-success); border-radius: 3px; padding: 0 2px; }
 .q-ia-propuesta del { color: var(--color-text-muted); text-decoration: line-through; text-decoration-color: var(--color-error); padding: 0 2px; }
 
+/* Pie de la tarjeta: lo opcional (la retroalimentación) en una fila discreta. */
+.card-pie { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin-top: 18px; padding-top: 8px; border-top: 1px solid var(--color-border); }
+@media (hover: hover) and (pointer: fine) {
+  .card-pie .q-feedback-box summary:hover { color: var(--color-text); background: var(--color-surface-hover); }
+}
+.card-pie .q-feedback-box[open] { flex: 1 0 100%; }
 /* Retroalimentación opcional */
-.q-feedback-box { margin-top: 14px; }
-.q-feedback-box summary { list-style: none; display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--color-text-muted); padding: 4px 0; width: fit-content; }
+.q-feedback-box summary { list-style: none; display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: var(--text-sm); font-weight: 700; color: var(--color-text-muted); padding: 7px 10px; border-radius: var(--radius-sm); width: fit-content; }
 .q-feedback-box summary::-webkit-details-marker { display: none; }
 .q-feedback-chevron { width: 14px; height: 14px; transition: transform var(--dur-fast) var(--ease-out); }
 .q-feedback-box[open] .q-feedback-chevron { transform: rotate(90deg); }
@@ -467,12 +563,10 @@ body.editor-active .review-rail { display: flex; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
   white-space: nowrap;
 }
 .type-badge svg { width: 12px; height: 12px; }
@@ -494,31 +588,20 @@ body.editor-active .review-rail { display: flex; }
 .type-badge-select:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 /* ── EMPAREJAMIENTO ─────────────────────────────────────────────────── */
-.matching-box {
-  margin-top: 14px;
-  background: var(--color-bg);
-  padding: 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-}
-.matching-pairs-list { display: flex; flex-direction: column; gap: 8px; }
+.matching-pairs-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
 .matching-pair-row {
   display: grid;
   grid-template-columns: 1fr auto 1fr auto;
   gap: 8px;
   align-items: start;
-  background: var(--color-surface);
-  padding: 8px 10px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-subtle);
 }
 .matching-pair-row textarea { margin-top: 0 !important; }
 .pair-arrow { color: var(--color-text-subtle); width: 16px; height: 16px; margin-top: 12px; }
 /* Opción de más (distractor): sin concepto en la columna A; borde discontinuo para distinguirla de una pareja. */
-.matching-distractor-row { border-style: dashed; }
-.matching-distractor-row .pair-left:disabled { background: transparent; border-style: dashed; cursor: not-allowed; opacity: .7; }
+.matching-distractor-row .pair-right { border-style: dashed; }
+.matching-distractor-row .pair-left:disabled { background: transparent; border-style: dashed; cursor: not-allowed; opacity: .75; }
 .matching-add-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.matching-add-row .btn { flex: 1 1 200px; }
+.matching-add-row .btn { flex: 0 0 auto; }
 .matching-pair-row .btn-icon { margin-top: 3px; }
 @media (max-width: 640px) {
   /* En celular cada pareja se apila: concepto arriba, pareja abajo. */
@@ -527,6 +610,8 @@ body.editor-active .review-rail { display: flex; }
   .matching-pair-row .btn-icon { grid-column: 2; grid-row: 1; }
   .matching-pair-row .pair-arrow { display: none; }
   .matching-pair-row .pair-right { grid-column: 1; grid-row: 2; }
+  /* Sin caja por pareja, una línea las separa. */
+  .matching-pair-row + .matching-pair-row { padding-top: 10px; border-top: 1px solid var(--color-border); }
 }
 
 /* ── CLOZE BUILDER (editor de "completar" sin sintaxis de corchetes) ──── */
@@ -615,10 +700,15 @@ body.editor-active .review-rail { display: flex; }
 }
 
 /* ── SELECCIÓN MÚLTIPLE: casilla de "correcta" por opción ────────────── */
-.mc-option-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-.mc-option-row input[type="checkbox"] { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--color-success); cursor: pointer; margin-top: 0; }
-.mc-option-row .mc-option-letter { font-weight: 800; color: var(--color-mc); width: 16px; flex-shrink: 0; }
+.mc-option-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.mc-option-row input[type="checkbox"] { flex-shrink: 0; width: 20px; height: 20px; accent-color: var(--color-success); cursor: pointer; margin-top: 0; outline-offset: 2px; }
+.mc-option-row .mc-option-letter { font-weight: 800; color: var(--color-mc); width: 16px; flex-shrink: 0; cursor: pointer; }
 .mc-option-row .q-opt { flex: 1; margin-top: 0; }
+.editor-card .mc-option-row .q-opt-correct:checked ~ .q-opt { border-color: var(--color-success); background: var(--color-success-bg); }
+.editor-card .mc-option-row .q-opt-quitar { color: var(--color-text-subtle); }
+@media (hover: hover) and (pointer: fine) {
+  .editor-card .mc-option-row .q-opt-quitar:hover { color: var(--color-error); }
+}
 
 /* ── FILTER CHIPS (Revisar Preguntas) ────────────────────────────────── */
 .filter-chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -688,38 +778,46 @@ body.editor-active .review-rail { display: flex; }
 .card-resumen, .card-estado { display: none; }
 .card-estado:empty { display: none !important; }
 
-.editor-card:not([data-abierta]) { padding: 12px 16px; cursor: pointer; }
+.editor-card:not([data-abierta]) { padding: 8px 14px; cursor: pointer; }
 .editor-card:not([data-abierta]) > :not(.card-head):not(.card-issues) { display: none; }
-.editor-card:not([data-abierta]) .card-head { margin-bottom: 0; flex-wrap: nowrap; gap: 12px; }
+.editor-card:not([data-abierta]) .card-head {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "icono titulo estado orden" "icono resumen estado orden";
+  align-items: center; gap: 1px 12px; margin-bottom: 0;
+}
+.editor-card:not([data-abierta]) .card-tipo-icono { grid-area: icono; }
+.editor-card:not([data-abierta]) .card-title { grid-area: titulo; gap: 8px; }
+.editor-card:not([data-abierta]) .card-title h3 { font-size: 13px; line-height: 1.35; }
+.editor-card:not([data-abierta]) .type-badge { padding-block: 0; padding-inline: 0; line-height: 1.35; background: transparent; border: 0; }
 .editor-card:not([data-abierta]) .card-meta { display: none; }
-.editor-card:not([data-abierta]) .card-orden { flex-shrink: 0; margin-top: -6px; margin-bottom: -6px; }
-.editor-card:not([data-abierta]) .card-title h3 { font-size: var(--text-md); }
-.editor-card:not([data-abierta]) .card-title { flex-shrink: 0; }
+.editor-card:not([data-abierta]) .card-orden { grid-area: orden; margin: 0; }
 .editor-card:not([data-abierta]) .card-resumen {
-  display: flex; align-items: baseline; gap: 12px; flex: 1 1 0; min-width: 0; margin: 0;
-  font-size: var(--text-sm); color: var(--color-text-muted);
+  grid-area: resumen; display: flex; align-items: baseline; gap: 12px; min-width: 0; margin: 0;
+  font-size: var(--text-sm); line-height: 1.45; color: var(--color-text-muted);
 }
 .resumen-enun, .resumen-resp, .resumen-pts { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.resumen-enun { flex: 1 1 0; color: var(--color-text); }
+.resumen-enun { flex: 1 1 0; font-size: 14px; color: var(--color-text); }
 .resumen-resp { flex: 0 1 auto; max-width: 40%; font-weight: 600; color: var(--color-success); }
 .resumen-resp::before { content: "→ "; color: var(--color-text-subtle); font-weight: 400; }
 .resumen-resp.falta { color: var(--color-error); }
 .resumen-pts { flex: 0 0 auto; color: var(--color-text-subtle); font-variant-numeric: tabular-nums; }
 .editor-card:not([data-abierta]) .card-estado {
-  display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+  grid-area: estado; display: inline-flex; align-items: center; gap: 4px;
   font-size: var(--text-xs); font-weight: 700; color: var(--color-warning);
   padding: 2px 8px; border: 1px dashed var(--color-warning); border-radius: var(--radius-full);
   background: var(--color-warning-bg);
 }
 .card-estado svg { width: 12px; height: 12px; }
-.editor-card:not([data-abierta]) .card-issues { margin: 8px 0 0 28px; }
+.editor-card:not([data-abierta]) .card-issues { margin: 6px 0 0 50px; }
 @media (hover: hover) and (pointer: fine) {
   .editor-card:not([data-abierta]):hover { border-color: var(--color-accent); }
 }
 @media (max-width: 640px) {
-  .editor-card:not([data-abierta]) .card-head { flex-wrap: wrap; row-gap: 4px; }
-  .editor-card:not([data-abierta]) .card-resumen { flex: 1 1 100%; order: 3; padding-left: 22px; }
-  .editor-card:not([data-abierta]) .card-estado { order: 2; margin-left: auto; }
+  .editor-card:not([data-abierta]) .card-head { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "icono titulo orden" "resumen resumen resumen" "estado estado estado"; row-gap: 6px; }
+  .editor-card:not([data-abierta]) .card-resumen { flex-wrap: wrap; row-gap: 2px; }
+  .editor-card:not([data-abierta]) .resumen-enun { flex-basis: 100%; }
+  .editor-card:not([data-abierta]) .resumen-resp { max-width: 70%; }
+  .editor-card:not([data-abierta]) .card-estado { justify-self: start; }
+  .editor-card:not([data-abierta]) .card-issues { margin-left: 0; }
 }
 /* Al abrirla con un clic, el cuerpo entra con un fundido corto; las
    preguntas abiertas al dibujar el examen no se animan. */
@@ -744,15 +842,15 @@ body.editor-active .review-rail { display: flex; }
 
 /* Entrada del examen recién abierto: las primeras tarjetas suben una tras otra
    (40ms de diferencia). Pasa una vez por examen; las demás no se animan. */
-#editor-questions-container.entrando > .editor-card { animation: fadeInUp 260ms var(--ease-out) both; }
-#editor-questions-container.entrando > .editor-card:nth-of-type(2) { animation-delay: 40ms; }
-#editor-questions-container.entrando > .editor-card:nth-of-type(3) { animation-delay: 80ms; }
-#editor-questions-container.entrando > .editor-card:nth-of-type(4) { animation-delay: 120ms; }
-#editor-questions-container.entrando > .editor-card:nth-of-type(5) { animation-delay: 160ms; }
-#editor-questions-container.entrando > .editor-card:nth-of-type(6) { animation-delay: 200ms; }
-#editor-questions-container.entrando > .editor-card:nth-of-type(n+7) { animation: none; }
+#editor-questions-container.entrando .editor-card { animation: fadeInUp 260ms var(--ease-out) both; }
+#editor-questions-container.entrando .editor-card:nth-of-type(2) { animation-delay: 40ms; }
+#editor-questions-container.entrando .editor-card:nth-of-type(3) { animation-delay: 80ms; }
+#editor-questions-container.entrando .editor-card:nth-of-type(4) { animation-delay: 120ms; }
+#editor-questions-container.entrando .editor-card:nth-of-type(5) { animation-delay: 160ms; }
+#editor-questions-container.entrando .editor-card:nth-of-type(6) { animation-delay: 200ms; }
+#editor-questions-container.entrando .editor-card:nth-of-type(n+7) { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  #editor-questions-container.entrando > .editor-card { animation: none; }
+  #editor-questions-container.entrando .editor-card { animation: none; }
 }
 
 /* ── IA ASISTIDA (2.0) ────────────────────────────────────────────────────
@@ -766,4 +864,5 @@ body.editor-active .review-rail { display: flex; }
 .card-calidad { display: flex; flex-direction: column; gap: 4px; margin: -4px 0 12px; font-size: var(--text-sm); font-weight: 600; color: var(--color-warning); }
 .card-calidad span { display: flex; align-items: flex-start; gap: 6px; }
 .card-calidad svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
-.editor-card:not([data-abierta]) .card-calidad { margin: 8px 0 0 28px; }
+.editor-card:not([data-abierta]) .card-calidad { margin: 6px 0 0 50px; }
+@media (max-width: 640px) { .editor-card:not([data-abierta]) .card-calidad { margin-left: 0; } }

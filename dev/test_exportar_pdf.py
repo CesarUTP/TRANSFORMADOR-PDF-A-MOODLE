@@ -177,7 +177,7 @@ c = pdf_de(qs, key, contenido="solo_clave")
 tc = texto_de(c.pdf)
 ok("CLAVE DE RESPUESTAS" in tc and all(f"TOK{n}OK" in tc for n in range(1, 13)), "solo_clave: las respuestas correctas están")
 ok(not any(f"TOK{n}NO" in tc for n in range(1, 13)), "solo_clave: ninguna opción incorrecta")
-ok("Selecciona una." not in tc and "Respuesta: ____" not in tc and c.paginas < e.paginas, "solo_clave: no repite el examen")
+ok("Seleccione una." not in tc and "Respuesta: ____" not in tc and c.paginas < e.paginas, "solo_clave: no repite el examen")
 ley = re.search(r"([a-z])\) derTOK15b", te).group(1)        # la letra con que salió impresa la pareja del elemento 1
 ok(f"izqTOK15a → {re.search(r'([a-z])[)] derTOK15a', te).group(1)})" in tc.replace("  ", " ") or f"→ {ley})" in tc.replace("  ", " "), f"la clave del emparejamiento une cada elemento con la letra IMPRESA de su pareja ({ley})")
 ok("TOK14OK" in tc and "TOK14NO1" not in tc, "la clave del «Completar» solo dice la correcta")
@@ -223,14 +223,11 @@ for nombre_m, (m_ar, m_ab, m_iz, m_de) in ep.MARGENES.items():
         for i, pg in enumerate(d.pages):
             ws_ = pg.extract_words()
             malas += [(i, round(w["x0"]), round(w["x1"])) for w in ws_ if w["x0"] < m_iz * c28 - 1 or w["x1"] > pg.width - m_de * c28 + 1 or w["bottom"] > pg.height - 4]
-            lineas_ = sorted({round(w["top"]) for w in ws_})
-            if i == 1 and len(lineas_) > 2:                   # el encabezado corrido no pisa el texto
-                cab = max(w["bottom"] for w in ws_ if round(w["top"]) == lineas_[0])
-                if cab + 1 >= lineas_[1]:
-                    malas.append((i, "encabezado pisa el texto"))
+            if i == 1 and ws_ and min(w["top"] for w in ws_) < m_ar * c28 - 1:     # arriba no hay encabezado corrido
+                malas.append((i, "hay texto en el margen de arriba"))
             imgs_ = [im for im in pg.images if im["x1"] > pg.width - m_de * c28 + 1 or im["x0"] < m_iz * c28 - 1]
             malas += [(i, "imagen fuera") for _ in imgs_]
-    ok(not malas, f"márgenes «{nombre_m}» ({m_ar}/{m_iz} cm): nada fuera, ni el encabezado ni el pie, con logos y hoja de respuestas ({malas[:2]})")
+    ok(not malas, f"márgenes «{nombre_m}» ({m_ar}/{m_iz} cm): nada fuera, sin encabezado arriba y con el pie en su sitio (logos y hoja de respuestas) ({malas[:2]})")
 with pdfplumber.open(io.BytesIO(pdf_de(qs2[:3], key2, margenes="estrechos").pdf)) as d:
     ok(min(w["x0"] for w in d.pages[0].extract_words()) < 40, "«Estrechos» (1,27 cm) de verdad usa más hoja que «Moderados»")
 with pdfplumber.open(io.BytesIO(pdf_de(qs2[:3], key2, margenes="anchos").pdf)) as d:
@@ -284,9 +281,9 @@ tcl = texto_de(rc.pdf)
 ok(all(f"{x}) opción larga número" in tcl for x in "abcd"), "las opciones largas van una por línea con su letra")
 ok(re.search(r"a\) \w+\s+b\) \w+", tcl) is not None, "las opciones cortas van juntas en una línea")
 ok(re.search(r"\(3\)\s+_{15,}", tcl) is not None and re.search(r"\(1\)\s+_{5,}", tcl) is not None, "el espacio de escribir lleva una raya larga y el de elegir, un hueco para la letra")
-ok("ESCRIBA EN CADA ESPACIO CON OPCIONES LA LETRA" in tcl and "Escribe en cada espacio la letra" not in tcl, "la indicación de la parte distingue espacios con opciones y espacios de escribir (y no se repite en la pregunta)")
+ok("ESCRIBA EN CADA ESPACIO CON OPCIONES LA LETRA" in tcl and "Escriba en cada espacio la letra" not in tcl, "la indicación de la parte distingue espacios con opciones y espacios de escribir (y no se repite en la pregunta)")
 rs = pdf_de([cl], {1: {"type": "cloze", "answer": "A. opción larga número 2 del primer espacio; B. no; C. Panamá"}}, contenido="solo_examen", partes=False)
-ok("Escribe en cada" in texto_de(rs.pdf) or "En los espacios con opciones" in texto_de(rs.pdf), "sin partes, la ayuda va en cada pregunta como antes")
+ok("Escriba en cada" in texto_de(rs.pdf) or "En los espacios con opciones" in texto_de(rs.pdf), "sin partes, la ayuda va en cada pregunta como antes")
 ok("3." not in tcl.split("Escribe")[-1], "el espacio de escribir no genera lista")
 ok(re.search(r"(?m)^1\. a\)", tcl) and re.search(r"(?m)^2\. a\)", tcl), "las listas se numeran 1., 2. y sus opciones a), b)")
 
@@ -314,10 +311,10 @@ ok("VALOR: 10 PTS" in tm.split("III PARTE")[0] and "III PARTE: VERDADERO O FALSO
    "…y el valor de las preguntas agrupadas se suma")
 ok(tm.index("MC-UNO") < tm.index("MC-DOS") < tm.index("TF-UNO") and tm.index("MC-DOS") < tm.index("TF-UNO"), "las preguntas del mismo tipo quedan juntas")
 ok(all(re.search(rf"(?m)^{i}\.", texto_de(rm.pdf)) for i in range(1, 9)), "la numeración sigue corrida de 1 a 8")
-ok("Selecciona una." not in tm, "la ayuda por pregunta ya no se repite cuando hay indicación de parte")
+ok("Seleccione una." not in tm, "la ayuda por pregunta ya no se repite cuando hay indicación de parte")
 mixto = [mc(1, "UNA-SOLA", ["a", "b"], [0])[0], mc(2, "VARIAS", ["a", "b", "c"], [0, 1])[0]]
 tmx = plano(texto_de(pdf_de(mixto, {1: {"type": "multichoice", "answer": "A"}, 2: {"type": "multichoice", "answer": "A | B"}}, contenido="solo_examen").pdf))
-ok("CÍRCULO (UNA SOLA RESPUESTA) O EL CUADRO" in tmx and "Selecciona todas las que correspondan." in tmx, "una parte con preguntas de una y de varias respuestas lo dice y conserva la ayuda por pregunta")
+ok("CÍRCULO (UNA SOLA RESPUESTA) O EL CUADRO" in tmx and "Seleccione todas las que correspondan." in tmx, "una parte con preguntas de una y de varias respuestas lo dice y conserva la ayuda por pregunta")
 sueltos = []
 for relleno in range(1, 15):          # el título de la parte cae en distintos puntos de la hoja
   for extra in range(0, 4):           # …y con distinto sobrante al pie (el enunciado del último relleno crece)
@@ -357,7 +354,7 @@ i_clave = next(i for i, g in enumerate(pf) if "CLAVE DE RESPUESTAS" in g and i >
 folleto, hoja, clave = pf[:i_hoja], pf[i_hoja:i_clave], pf[i_clave:]
 tf_, th_, tk_ = plano("\n".join(folleto)), plano("\n".join(hoja)), plano("\n".join(clave))
 ok(i_hoja >= 1 and i_clave > i_hoja, f"tres secciones, cada una en su página: folleto {len(folleto)}, hoja {len(hoja)}, clave {len(clave)}")
-ok(all(x in tf_ for x in ("FOLL-MC1", "FOLL-TF1", "FOLL-MT", "FOLL-CL", "FOLL-SA", "FOLL-ES", "Sin calculadora.", "NO ESCRIBA EN ESTE FOLLETO")), "el folleto trae todas las preguntas y las indicaciones")
+ok(all(x in tf_ for x in ("FOLL-MC1", "FOLL-TF1", "FOLL-MT", "FOLL-CL", "FOLL-SA", "FOLL-ES", "Sin calculadora.", "NO ESCRIBA EN ESTA HOJA DE PREGUNTAS")), "el folleto trae todas las preguntas y las indicaciones")
 ok("NOMBRE:" not in tf_ and "CÉDULA" not in tf_ and "CALIFICACIÓN" not in tf_ and "FECHA:" not in tf_, "el folleto no tiene nombre, cédula ni calificación")
 ok("Respuesta:" not in tf_ and "______ 1." not in tf_ and "Verdadero" not in tf_, "…ni espacios para responder")
 ok("HOJA DE RESPUESTAS" in tf_ and "MARQUE EN LA HOJA DE RESPUESTAS «V»" in tf_ and "EN LA HOJA DE RESPUESTAS LA LETRA DE LA COLUMNA B" in tf_, "las indicaciones de cada parte remiten a la hoja de respuestas")
@@ -579,11 +576,11 @@ ok(all(im["x1"] <= 612 - 54 + 1 for im in imgs) and max(im["height"] for im in i
 ok(min(im["width"] for im in imgs) < 40, "la imagen pequeña no se agranda")
 ok(any("pregunta 2" in a for a in r.avisos), f"la imagen ilegible se avisa y no rompe nada ({r.avisos})")
 
-qf, kf = mc(1, r"Calcula \(x^2 + \alpha\) y \(\frac{1}{2}\) pero no \(\begin{matrix}1\\2\end{matrix}\)", [r"\(\sqrt{2}\)", "otra"], [0])
+qf, kf = mc(1, r"Calcula \(x^2 + \alpha\) y \(\frac{1}{2}\) pero no \(\comandoinventado{3}\)", [r"\(\sqrt{2}\)", "otra"], [0])
 r = pdf_de([qf], {1: kf}, contenido="solo_examen")
 tf = texto_de(r.pdf)
 ok("x² + α" in tf and "½" in tf and "√2" in tf, "las fórmulas sencillas salen como texto")
-ok(r"\(\begin{matrix}1" in tf and any("fórmula" in a for a in r.avisos), "la que no se entiende queda en LaTeX y se avisa")
+ok(r"\(\comandoinventado" in tf and any("fórmula" in a for a in r.avisos), "la que no se entiende queda en LaTeX y se avisa")
 
 qe, ke = mc(1, "Ideogramas 漢字 y <b>etiqueta</b> & más; código:\n    for i in range(3):\n        print(i)", ["a < b", "a & b"], [0])
 r = pdf_de([qe], {1: ke}, contenido="solo_examen")
@@ -615,7 +612,9 @@ ind = paginas_de(pdf_de(qs2[:3], key2, instrucciones="- Uno\n• Dos\n\nTres").p
 ok(all(x in ind for x in ("• Uno", "• Dos", "• Tres")), "cada línea de las indicaciones es una viñeta")
 t1 = paginas_de(pdf_de(qs2[:3], key2, titulo_respaldo="mi archivo").pdf)[0]
 ok("MI ARCHIVO" in t1, "sin datos tampoco falla (usa el nombre del archivo como título)")
-ok("Ana Pérez" in paginas_de(pdf_de(qs2[:30], key2, docente="Ana Pérez").pdf)[1].split("\n")[0], "el encabezado de las demás páginas lleva el docente")
+varias = paginas_de(pdf_de(qs2[:30], key2, docente="Ana Pérez", materia="Física", actividad="Parcial 2").pdf)
+ok(len(varias) > 2 and not any(x in pg for pg in varias[1:] for x in ("Física · Parcial 2", "uso del docente")) and "Ana Pérez" not in varias[1]
+   and all(f"Página " in pg for pg in varias), "las páginas no llevan encabezado arriba, solo el número abajo")
 meta = pdfplumber.open(io.BytesIO(r.pdf)).metadata
 ok(meta.get("Author") == "Ana Pérez" and "Parcial 2" in (meta.get("Title") or ""), f"metadatos del PDF ({meta.get('Author')}, {meta.get('Title')})")
 
@@ -645,7 +644,7 @@ cuerpo = {"filename": "mi examen.docx", "total_points": 20, "questions": qs, "an
           "datos": {"docente": "Ana", "materia": "Física"}}
 r = cli.post("/api/exportar_pdf", json=cuerpo, headers=H)
 ok(r.status_code == 200 and r.headers["content-type"] == "application/pdf" and r.content[:5] == b"%PDF-", f"200 con un PDF ({r.status_code})")
-ok("mi%20examen_examen_y_clave.pdf" in r.headers["content-disposition"] or "mi examen_examen_y_clave.pdf" in r.headers["content-disposition"], f"nombre {r.headers['content-disposition']}")
+ok("mi%20examen_evaluacion_y_clave.pdf" in r.headers["content-disposition"] or "mi examen_evaluacion_y_clave.pdf" in r.headers["content-disposition"], f"nombre {r.headers['content-disposition']}")
 info = json.loads(r.headers["x-pdf-info"])
 ok(info["preguntas"] == 15 and info["paginas"] >= 2 and info["avisos"] == [], f"cabecera X-PDF-Info {info}")
 ok("_folleto_hoja_y_clave.pdf" in cli.post("/api/exportar_pdf", json={**cuerpo, "datos": {"contenido": "folleto_hoja_clave"}}, headers=H).headers["content-disposition"], "folleto, hoja y clave: _folleto_hoja_y_clave.pdf")

@@ -25,6 +25,7 @@ las opciones y la letra sola no basta.
 """
 
 import io
+import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -39,12 +40,13 @@ from reportlab.platypus import (
 )
 from reportlab.platypus.doctemplate import LayoutError
 
+import plegado
 from plan_impreso import (  # noqa: F401  (varios se usan desde fuera: rutas y pruebas)
-    CONTENIDOS, FUENTES, GRIS, GRIS_CLARO, GROSOR_RECUADRO, LIMITE_CAMPO, LIMITE_INDICACION_PARTE, LIMITE_INSTRUCCIONES, LIMITE_LOGO, LIMITE_NOMBRE_PARTE, LIMITE_VERSION, NOMBRE_PARTE,
+    CONTENIDOS, DOCUMENTOS_DE, LETRA_PLEGADO, LETRA_PLEGADO_MAX, LETRA_PLEGADO_MIN, FUENTES, GRIS, GRIS_CLARO, GROSOR_RECUADRO, LIMITE_CAMPO, LIMITE_INDICACION_PARTE, LIMITE_INSTRUCCIONES, LIMITE_LOGO, LIMITE_NOMBRE_PARTE, LIMITE_VERSION, NOMBRE_PARTE,
     MARGENES, PAPELES, PASO_BURBUJAS, PASO_HUECOS, RENGLONES_MAX, RENGLONES_MIN, ROTULOS, TAM_MAX, TAM_MIN,
     Burbujas, CuadroEstudiante, DatosExamen, Espacio, Estilo, FilaDocente, Grupo, Huecos, Imagen, LogosCabecera,
     Opcion, Parrafo, Plan, PuntosNoEnteros, RejillaBurbujas, Recuadro, Sangrado, Seccion, TablaHuecos,
-    TablaPareo, construir_plan, revisar_puntos_enteros,
+    SaltoPagina, TablaPareo, TablaPuntos, construir_plan, revisar_puntos_enteros,
 )
 
 _FAMILIA = "DejaVu"
@@ -59,6 +61,7 @@ class ResultadoPdf:
     preguntas: int
     avisos: List[str] = field(default_factory=list)
     partes_automaticas: List[Dict[str, str]] = field(default_factory=list)
+    hojas: int = 0                       # solo en modo folleto: hojas de papel (cada una por ambas caras)
 
 
 # ── Figuras ─────────────────────────────────────────────────────────────────
@@ -204,6 +207,30 @@ class _Huecos(Flowable):
                     c.drawCentredString(x + w_et + largo / 2, y, valor)
 
 
+class _ConFormula(Paragraph):
+    """Un párrafo con fórmulas dibujadas. ReportLab pone la primera línea a un tamaño de letra del borde, así que
+    una fórmula más alta se saldría por arriba (sobre lo anterior): este párrafo reserva lo que sobresale."""
+    sobra = 0.0
+
+    def wrap(self, ancho, alto):
+        w, h = super().wrap(ancho, alto)
+        lineas = getattr(self.blPara, "lines", None)
+        ascenso = getattr(lineas[0], "ascent", 0.0) if self.blPara.kind == 1 and lineas else 0.0
+        self.sobra = max(0.0, ascenso - self.style.fontSize)
+        return w, h + self.sobra
+
+    def split(self, ancho, alto):
+        return super().split(ancho, alto - self.sobra)
+
+
+_IMG_ALTO = re.compile(r'<img [^>]*height="([\d.]+)" valign="(-?[\d.]+)"')
+
+
+def _sobra(marcado: str, tam: float) -> float:
+    """Cuánto baja la línea base de un texto por una fórmula más alta que la letra (0 si no tiene)."""
+    return max([0.0] + [float(alto) + float(bajo) - tam for alto, bajo in _IMG_ALTO.findall(marcado)])
+
+
 # ── El plan, dibujado ───────────────────────────────────────────────────────
 
 class _Dibujante:
@@ -226,7 +253,11 @@ class _Dibujante:
         return self._estilos[e]
 
     def _p(self, p: Parrafo) -> Paragraph:
-        return Paragraph(p.marcado, self._estilo(p.estilo), bulletText=p.vineta)
+        estilo = self._estilo(p.estilo)
+        if "<img " not in p.marcado:
+            return Paragraph(p.marcado, estilo, bulletText=p.vineta)
+        estilo = ParagraphStyle(estilo.name + "f", parent=estilo, autoLeading="max")   # la línea crece con la fórmula
+        return _ConFormula(p.marcado, estilo, bulletText=p.vineta)
 
     def _celdas(self, bloques: list) -> list:
         return [self._p(b) if isinstance(b, Parrafo) else b for b in bloques]
@@ -250,6 +281,15 @@ class _Dibujante:
             return [Indenter(left=b.izquierda)] + self.piezas(b.hijos) + [Indenter(left=-b.izquierda)]
         if isinstance(b, Grupo):
             return [KeepTogether(self.piezas(b.hijos))]
+        if isinstance(b, SaltoPagina):
+            return [PageBreak()]
+        if isinstance(b, TablaPuntos):
+            tabla = Table([[self._p(c) if isinstance(c, Parrafo) else c for c in fila] for fila in b.filas],
+                          colWidths=b.anchos, rowHeights=b.altos)
+            tabla.setStyle(TableStyle([("GRID", (0, 0), (-1, -1), 0.8, colors.black), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                                       ("LEFTPADDING", (0, 0), (-1, -1), 4), ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                                       ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]))
+            return [tabla]
         if isinstance(b, Opcion):
             return [self._opcion(b)]
         if isinstance(b, TablaPareo):
@@ -257,6 +297,12 @@ class _Dibujante:
             tabla = Table([[self._p(izq), self._p(der)] for izq, der in b.filas], colWidths=[mitad, mitad])
             tabla.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
                                        ("BOTTOMPADDING", (0, 0), (-1, -1), 4), ("LINEBELOW", (0, 0), (-1, 0), 0.5, _GRIS_CLARO)]))
+            # Si una celda de la fila lleva una fórmula alta, la otra baja igual: las dos quedan en el mismo renglón.
+            for i, fila in enumerate(b.filas):
+                sobras = [_sobra(p.marcado, p.estilo.tam) for p in fila]
+                for j, s in enumerate(sobras):
+                    if s < max(sobras):
+                        tabla.setStyle(TableStyle([("TOPPADDING", (j, i), (j, i), 3 + max(sobras) - s)]))
             return [tabla]
         if isinstance(b, TablaHuecos):
             tabla = Table([[self._p(num), self._celdas(celda)] for num, celda in b.filas],
@@ -316,33 +362,22 @@ class _Dibujante:
         t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
                                ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (0, 0), 2.5),
                                ("TOPPADDING", (1, 0), (1, 0), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
+        sobra = _sobra(o.marcado, self.plan.estilos["opcion"].tam)
+        if sobra:                        # con una fórmula alta el texto baja: la casilla baja lo mismo
+            t.setStyle(TableStyle([("TOPPADDING", (0, 0), (0, 0), 2.5 + sobra)]))
         return t
 
-    # ---- encabezado corrido y documento ----
-    def _encabezado(self, sec: Seccion, vista: dict):
+    # ---- pie de página y documento ----
+    def _al_empezar_pagina(self, sec: Seccion):
+        """Lo que cada página necesita saber para su pie. Las páginas no llevan encabezado, solo el número."""
         g, fe = self.geo, self.plan.fuente_e
 
-        def dibujar(c, doc):
+        def preparar(c, doc):
             c._seccion = sec.id                      # para «Página X de Y» dentro de su sección (ver _Lienzo)
             c._margen_der = g.m_der                  # el pie va dentro del margen inferior, a la altura que quepa
             c._pie_y = max(0.45 * cm, g.m_inf - 0.8 * cm)
             c._fuente_pie = fe
-            # Primera hoja de la sección: lleva el encabezado grande, no el corrido.
-            vista["n"] = vista["n"] + 1 if vista["seccion"] == sec.id else 1
-            vista["seccion"] = sec.id
-            if sec.primera_sin_encabezado and vista["n"] == 1:
-                return
-            c.saveState()
-            c.setFont(fe, 8)
-            c.setFillColor(_GRIS)
-            y = g.papel[1] - max(0.55 * cm, g.m_sup - 0.8 * cm)      # dentro del margen superior
-            c.drawString(g.m_izq, y, sec.izquierda)
-            c.drawRightString(g.papel[0] - g.m_der, y, sec.derecha)
-            c.setStrokeColor(_GRIS_CLARO)
-            c.setLineWidth(0.5)
-            c.line(g.m_izq, y - 4, g.papel[0] - g.m_der, y - 4)
-            c.restoreState()
-        return dibujar
+        return preparar
 
     def construir(self):
         g, plan = self.geo, self.plan
@@ -352,8 +387,7 @@ class _Dibujante:
                               author=plan.meta["autor"], subject=plan.meta["materia"], creator="Cátedra")
         marco = lambda: Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="m", leftPadding=0, rightPadding=0,
                               topPadding=0, bottomPadding=0)
-        vista = {"seccion": None, "n": 0}
-        doc.addPageTemplates([PageTemplate(id=s.id, frames=[marco()], onPage=self._encabezado(s, vista)) for s in plan.secciones])
+        doc.addPageTemplates([PageTemplate(id=s.id, frames=[marco()], onPage=self._al_empezar_pagina(s)) for s in plan.secciones])
         historia: list = []
         for i, sec in enumerate(plan.secciones):
             if i:
@@ -376,5 +410,9 @@ def generar_pdf(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[str,
         except LayoutError:
             if simple:
                 raise
+    hojas = 0
+    if plan.datos.plegado:
+        # Las páginas de media hoja pasan a hojas a lo ancho, en el orden en que quedan al doblarlas.
+        pdf, paginas, hojas = plegado.imponer(pdf)
     return ResultadoPdf(pdf=pdf, paginas=paginas, preguntas=plan.preguntas, avisos=plan.avisos,
-                        partes_automaticas=plan.partes_automaticas)
+                        partes_automaticas=plan.partes_automaticas, hojas=hojas)

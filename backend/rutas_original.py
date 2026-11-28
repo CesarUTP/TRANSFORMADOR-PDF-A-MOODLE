@@ -20,7 +20,7 @@ router = APIRouter()
 
 MENSAJE_NO_DISPONIBLE = (
     "El original ya no está disponible: solo se conserva mientras la aplicación está abierta, "
-    "y no se guarda en el Historial. Vuelve a convertir el examen para verlo."
+    "y no se guarda en Mis materias. Vuelve a convertir la evaluación para verlo."
 )
 
 

@@ -341,7 +341,7 @@ def save_conversion(filename: str, category: str, total_points: float, xml_conte
     def _guardar() -> int:
         with _connection() as conn:
             if materia_id is not None and not conn.execute('SELECT 1 FROM materias WHERE id = ?', (materia_id,)).fetchone():
-                logger.warning("La materia %s ya no existe: el examen se guarda sin materia", materia_id)
+                logger.warning("La materia %s ya no existe: la evaluación se guarda sin materia", materia_id)
                 mid = None
             else:
                 mid = materia_id

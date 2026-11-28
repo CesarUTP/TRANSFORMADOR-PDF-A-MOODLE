@@ -20,8 +20,8 @@ export const MODOS = ['aleatorio', 'por_tipo'];
 
 /** Cómo se llama cada tipo (el mismo nombre que en el editor). */
 export const NOMBRES_TIPO = {
-  multichoice: 'Opción múltiple', truefalse: 'Verdadero/Falso', matching: 'Emparejamiento', cloze: 'Completar',
-  essay: 'Ensayo', shortanswer: 'Respuesta corta', numerical: 'Numérica',
+  multichoice: 'Selección múltiple', truefalse: 'Verdadero o falso', matching: 'Emparejamiento', cloze: 'Completar',
+  essay: 'Desarrollo', shortanswer: 'Respuesta corta', numerical: 'Numérica',
 };
 
 const nombreDeTipo = t => NOMBRES_TIPO[t] || t;

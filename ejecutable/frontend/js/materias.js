@@ -227,7 +227,7 @@ async function archivarDesdeFormulario() {
   const r = await llamar(`/api/materias/${materia.id}`, 'PATCH', { archivada: !materia.archivada });
   if (!r.ok) { errorDeFormulario(r.mensaje); return; }
   await cargarMaterias();
-  showToast(materia.archivada ? `«${materia.nombre}» vuelve a estar activa` : `«${materia.nombre}» archivada: sus exámenes se conservan`, 'info');
+  showToast(materia.archivada ? `«${materia.nombre}» vuelve a estar activa` : `«${materia.nombre}» archivada: sus evaluaciones se conservan`, 'info');
   cerrarFormulario(r.datos);
 }
 
@@ -238,8 +238,8 @@ async function borrarDesdeFormulario() {
   const ok = await confirmar({
     titulo: '¿Borrar esta materia?',
     mensaje: n
-      ? `Se borrará la materia «${materia.nombre}». Sus ${plural(n, 'examen', 'exámenes')} NO se borran: pasan a «Sin materia», y ahí son lo primero que se borra cuando el Historial se llena.`
-      : `Se borrará la materia «${materia.nombre}». No tiene exámenes.`,
+      ? `Se borrará la materia «${materia.nombre}». Sus ${plural(n, 'evaluación', 'evaluaciones')} NO se borran: pasan a «Sin materia», y ahí son las primeras que se borran cuando se llena el espacio.`
+      : `Se borrará la materia «${materia.nombre}». No tiene evaluaciones.`,
     confirmar: 'Borrar la materia',
     cancelar: 'Conservarla',
   });
@@ -326,7 +326,7 @@ async function cambiarMateriaDeExito(id) {
   if (estado.currentUploadMetadata) estado.currentUploadMetadata.materia_id = id;
   if (estado.exportable) estado.exportable.materia_id = id;
   await cargarMaterias();
-  showToast(id == null ? 'El examen quedó sin materia' : `Guardado en «${nombreDeMateria(id)}»`, 'info');
+  showToast(id == null ? 'La evaluación quedó sin materia' : `Guardada en «${nombreDeMateria(id)}»`, 'info');
 }
 
 export function iniciarMaterias() {

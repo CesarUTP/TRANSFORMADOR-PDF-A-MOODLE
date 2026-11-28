@@ -141,14 +141,17 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
 <section class="sec" id="primer" data-titulo="Tu primer examen">
   <div class="ey">1 · Primeros pasos</div><h2>Tu primer examen</h2>
   <p class="lead">Del archivo al XML para Moodle en cinco pasos. Tarda unos minutos, sobre todo el rato que Cátedra lee el documento.</p>
-  <h3 style="margin-top:3mm;">Paso 1 · Carga tu examen y elige cómo se guardará</h3>
-  <figure class="fig estrecha"><img src="{{IMG:01-cargar.png}}" alt="Pantalla Cargar y configurar con cinco números"><figcaption><b>Cargar y configurar.</b> (1) Arrastra tu examen aquí o haz clic para buscarlo. (2) Categoría de Moodle. (3) Puntaje total. (4) Materia. (5) Actividad.</figcaption></figure>
+  <h3 style="margin-top:3mm;">Elige cómo empezar</h3>
+  <figure class="fig estrecha"><img src="{{IMG:00-inicio.png}}" alt="Pantalla ¿Cómo quieres empezar? con tres opciones"><figcaption><b>¿Cómo quieres empezar?</b> (1) <i>Convertir un documento</i>. (2) <i>Crear desde cero</i>. (3) <i>Editar un Moodle XML</i>.</figcaption></figure>
+  <p>Aquí sigues el primer camino, convertir un documento. Los otros dos están en las guías «Crear un examen desde cero» y «Corregir un XML que ya tienes».</p>
+  <h3>Paso 1 · Carga tu examen y elige cómo se guardará</h3>
+  <figure class="fig estrecha"><img src="{{IMG:01-cargar.png}}" alt="Pantalla Cargar y configurar con cinco números"><figcaption><b>Cargar y configurar.</b> (1) Arrastra tu examen aquí o haz clic para buscarlo. (2) Categoría de Moodle. (3) Puntaje total. (4) Materia. (5) Tipo de actividad.</figcaption></figure>
   <ol class="pasos">
-    <li><b>Arrastra el archivo</b> a la zona punteada, o haz clic para buscarlo. Acepta <span class="chip">.PDF</span> <span class="chip">.DOCX</span> <span class="chip">.TXT</span> y <span class="chip">.XML</span>.</li>
+    <li><b>Arrastra el archivo</b> a la zona punteada, o haz clic para buscarlo. Acepta <span class="chip">.PDF</span> <span class="chip">.DOCX</span> y <span class="chip">.TXT</span>.</li>
     <li><b>Categoría Moodle:</b> el nombre de la carpeta donde quedarán las preguntas en el banco de Moodle. Por defecto, <i>mis-preguntas</i>.</li>
     <li><b>Puntaje total del examen:</b> cuántos puntos vale todo el examen (por defecto, 100). Cátedra lo reparte entre las preguntas y tú puedes cambiarlo después; incluso puedes escribir cuánto vale cada tipo de pregunta y el total pasa a ser la suma (ver «Los puntos»).</li>
     <li><b>Materia</b> <i>(opcional)</i>: elige una de tus materias o crea una nueva. Así el examen queda guardado en su espacio de <span class="btn">Mis materias</span>.</li>
-    <li><b>Actividad</b> <i>(opcional)</i>: por ejemplo «Parcial 1» o «Quiz 2».</li>
+    <li><b>Tipo de actividad</b> <i>(opcional)</i>: por ejemplo «Parcial 1» o «Quiz 2».</li>
   </ol>
   <h3>Paso 2 · Procesa el examen</h3>
   <div class="dos" style="align-items:start;">
@@ -182,7 +185,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <p class="lead">Cada guía es independiente y responde a una pregunta: «¿cómo hago…?». Ve directo a la que necesites.</p>
   <div class="dos">
     <div class="tarj"><h3 class="tj">Revisar</h3><ul><li>Revisar bien las preguntas</li><li>Revisar con el original</li><li>Completar una respuesta que falta y otras ayudas con IA</li></ul></div>
-    <div class="tarj"><h3 class="tj">Llevar a Moodle</h3><ul><li>Corregir un XML que ya tienes</li><li>Importar el XML en Moodle</li></ul></div>
+    <div class="tarj"><h3 class="tj">Llevar a Moodle</h3><ul><li>Crear un examen desde cero</li><li>Corregir un XML que ya tienes</li><li>Importar el XML en Moodle</li></ul></div>
     <div class="tarj"><h3 class="tj">Llevar al papel</h3><ul><li>Exportar el examen en PDF o Word</li><li>Sacar varias versiones de un examen</li></ul></div>
     <div class="tarj"><h3 class="tj">Organizarte</h3><ul><li>Ordenar tus exámenes por materia</li><li>Guardar tus datos y encabezados en Mi perfil</li><li>El robot ayudante y la Guía</li></ul></div>
   </div>
@@ -284,12 +287,26 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <p>Las imágenes de tu documento viajan a Moodle dentro de su pregunta. En la revisión puedes quitarlas, moverlas a otra pregunta, o agregar las tuyas con <span class="btn">Agregar imagen</span> o soltando el archivo sobre la pregunta. Las fórmulas se escriben en LaTeX entre <span class="mono">\( … \)</span>, con vista previa.</p>
 </section>
 
+<section id="g-cero" data-titulo="Crear un examen desde cero">
+  <h3 style="margin-top:6mm;font-size:17pt;">Crear un examen desde cero</h3>
+  <p><i>Úsala cuando todavía no tienes el examen escrito. No usa IA.</i></p>
+  <ol class="pasos">
+    <li>En la primera pantalla elige <b>Crear desde cero</b>: se abre el editor vacío.</li>
+    <li>Arriba, en los datos del examen, escribe el <b>nombre de la actividad</b>, el <b>puntaje total</b>, la <b>categoría de Moodle</b> y, si quieres, la materia y el tipo de actividad.</li>
+    <li>Elige el <b>tipo</b> de la primera pregunta y escríbela. Para las siguientes usa las mismas tarjetas, bajo <b>Añade otra pregunta</b>, al final de la lista.</li>
+    <li>En opción múltiple puedes <span class="btn">Agregar opción</span> o quitar las que sobren (entre 2 y 10), y marcar una o varias como correctas.</li>
+    <li>Pulsa <span class="btn">Generar XML</span>. No avanza mientras quede alguna pregunta incompleta.</li>
+  </ol>
+  <figure class="fig"><img src="{{IMG:00b-desde-cero.png}}" alt="Editor vacío de un examen nuevo"><figcaption><b>Un examen nuevo.</b> (1) Datos del examen. (2) Tipos de pregunta para empezar.</figcaption></figure>
+  <div class="aviso importante"><span class="et">Importante</span><p>Las preguntas llegan <b>en blanco</b>: Cátedra no pone texto ni respuestas por ti. El puntaje total se reparte solo entre las preguntas hasta que cambies algún punto; desde ese momento mandan tus números.</p></div>
+</section>
+
 <section id="g-xml" data-titulo="Corregir un XML que ya tienes">
   <h3 style="margin-top:6mm;font-size:17pt;">Corregir un XML que ya tienes</h3>
   <p><i>Úsala cuando ya tienes un Moodle XML (de Cátedra o de tu banco de preguntas) y quieres editarlo y generarlo de nuevo.</i></p>
   <ol class="pasos">
-    <li>En <b>Cargar y configurar</b>, arrastra el archivo <span class="chip">.XML</span>.</li>
-    <li>Pulsa <span class="btn">Procesar y convertir examen</span>. Con un XML <b>no se usa IA</b>: Cátedra lo abre directamente en el editor y te avisa «Abierto desde un XML de Moodle».</li>
+    <li>En la primera pantalla elige <b>Editar un Moodle XML</b> y arrastra el archivo <span class="chip">.XML</span> (o suéltalo directamente en esa primera pantalla).</li>
+    <li>Pulsa <span class="btn">Abrir en el editor</span>. Con un XML <b>no se usa IA</b>: Cátedra lo abre tal como está y te avisa «Abierto desde un XML de Moodle». La categoría y los puntos salen del propio archivo.</li>
     <li>Corrige lo que necesites, como en cualquier revisión.</li>
     <li>Pulsa <span class="btn">Generar XML</span>. El archivo nuevo se llama <span class="mono">&lt;nombre&gt;_editado.xml</span>.</li>
   </ol>
@@ -316,33 +333,44 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <p>El PDF y el Word salen de las <b>mismas preguntas y la misma clave</b> que el XML: son documentos de apoyo. Lo que se importa a Moodle sigue siendo el XML.</p>
   <ol class="pasos">
     <li>En la pantalla final pulsa <span class="btn">Exportar examen</span>. También puedes pulsar <span class="btn">PDF</span> en cualquier examen de <span class="btn">Mis materias</span>.</li>
-    <li>Revisa o elige tu <b>Perfil de encabezado</b> (institución, logos, formato). Si ya tienes uno predeterminado, se aplica solo.</li>
-    <li>Completa <b>Datos de este examen</b>: materia, tipo de actividad, grupo y fecha. Todo es opcional.</li>
-    <li>Elige <b>Qué incluir</b> y el <b>Formato del archivo</b>: <i>PDF</i>, <i>Word (.docx)</i> o <i>PDF y Word</i> (un ZIP con los dos).</li>
+    <li>La pantalla tiene cuatro pestañas: <b>Examen</b> (lo que cambia cada vez), <b>Encabezado</b>, <b>Página</b> y <b>Preguntas</b>. En <b>Encabezado</b> puedes elegir un <b>perfil</b>; si ya tienes uno predeterminado, se aplica solo.</li>
+    <li>En <b>Examen</b>, completa <b>Datos de este examen</b>: materia, tipo de actividad, grupo y fecha. Todo es opcional.</li>
+    <li>Elige <b>cómo contestan los estudiantes</b> y el <b>Formato del archivo</b>: <i>PDF</i>, <i>Word (.docx)</i> o <i>PDF y Word</i> (un ZIP con los dos).</li>
     <li>Mira la <b>vista previa</b> a la derecha: se actualiza al cambiar cualquier dato.</li>
-    <li>Pulsa el botón de abajo, que dice <span class="btn">Exportar PDF</span> o <span class="btn">Exportar Word</span> según el formato, y elige dónde guardarlo.</li>
+    <li>Pulsa el botón de abajo (<span class="btn">Exportar PDF</span> o <span class="btn">Exportar Word</span>). En la ventana elige el <b>documento</b> (en PDF, además, <b>impresión normal</b> o <b>modo folleto</b>) y pulsa <span class="btn">Descargar</span>. La ventana sigue abierta para descargar el siguiente.</li>
   </ol>
-  <figure class="fig"><img src="{{IMG:09-pdf.png}}" alt="Pantalla de exportar el examen con la vista previa"><figcaption><b>Exportar examen.</b> (1) Perfil de encabezado. (2) Datos de este examen. (3) Qué incluir (debajo, el formato del archivo: PDF, Word o los dos). (4) Vista previa de la página. (5) Puntos en el PDF (con «Puntos enteros» activado).</figcaption></figure>
+  <figure class="fig"><img src="{{IMG:09-pdf.png}}" alt="Pantalla de exportar el examen con la vista previa"><figcaption><b>Exportar examen.</b> (1) Las cuatro pestañas. (2) Datos de este examen. (3) Cómo contestan los estudiantes (debajo, el formato del archivo: PDF, Word o los dos). (4) Vista previa de la página. (5) Puntos enteros (con la opción activada).</figcaption></figure>
 </section>
 
 <section>
-  <h4 style="margin-top:0;">Qué incluir</h4>
-  <table><tr><th style="width:32%">Opción</th><th>Para qué sirve</th></tr>
-    <tr><td><b>El examen y su clave</b></td><td>La clave va en páginas aparte, al final. Imprime solo las primeras para los estudiantes.</td></tr>
-    <tr><td><b>Solo el examen</b></td><td>Sin respuestas: listo para entregar.</td></tr>
-    <tr><td><b>Folleto, hoja de respuestas y clave</b></td><td>Un folleto de preguntas sin espacios para escribir, una hoja de respuestas para que el estudiante conteste (con nombre y calificación) y la clave, que es esa misma hoja ya llena. Cada parte empieza en su propia página.</td></tr>
-    <tr><td><b>Solo la clave</b></td><td>Cada respuesta con su letra <b>y</b> su texto, porque Moodle mezcla las opciones.</td></tr></table>
-  <h4>Encabezado y formato</h4>
-  <figure class="fig"><img src="{{IMG:10-pdf-formato.png}}" alt="Secciones plegables de encabezado y formato"><figcaption>(1) <b>Encabezado de la institución</b>: institución, facultad, departamento, docente, hasta dos logos e indicaciones generales. (2) <b>Formato</b>: papel, márgenes, tipo de letra y opciones.</figcaption></figure>
+  <h4 style="margin-top:0;">Cómo contestan y qué se descarga</h4>
+  <table><tr><th style="width:32%">Cómo contestan</th><th>Documentos que puedes descargar, uno por uno</th></tr>
+    <tr><td><b>En el mismo examen</b></td><td><b>Examen</b> (cada pregunta con su espacio, sin respuestas) y <b>Clave</b> (cada respuesta con su letra <b>y</b> su texto, porque Moodle mezcla las opciones).</td></tr>
+    <tr><td><b>En una hoja de respuestas aparte</b></td><td><b>Hoja de preguntas</b> (sin espacios para escribir), <b>Hoja de respuestas</b> (con nombre y calificación) y <b>Clave</b>, que es esa misma hoja ya llena.</td></tr></table>
+  <h4>Modo folleto (solo PDF): ahorrar papel</h4>
+  <p>En <b>modo folleto</b> cada cara de la hoja lleva dos páginas, ya en el orden que toca para doblar. La letra tiene su propio tamaño (8,5 pt de fábrica; de 7 a 11), y debajo de la vista previa ves cuántas hojas gastarás.</p>
+  <ol class="pasos">
+    <li>Imprime a <b>doble cara</b>, volteando por el <b>borde corto</b>, a tamaño real (100 %) y sin activar el folleto de la impresora.</li>
+    <li>Si tu impresora no imprime sola por ambas caras: imprime las páginas <b>impares</b>, vuelve a poner las hojas volteadas por el borde corto e imprime las <b>pares</b>. Prueba antes con una sola hoja.</li>
+    <li>Apila las hojas en el orden en que salen y <b>dóblalas juntas por la mitad</b>.</li>
+  </ol>
+  <p>El modo folleto es solo del <b>PDF</b>: el Word se descarga siempre normal, también un documento a la vez.</p>
+  <h4>Encabezado y página</h4>
+  <figure class="fig"><img src="{{IMG:10-pdf-formato.png}}" alt="La pestaña Encabezado de la pantalla de exportar"><figcaption><b>Pestaña Encabezado.</b> (1) Institución y docente. (2) Hasta dos logos. Debajo, las indicaciones generales y lo que va en la primera hoja.</figcaption></figure>
   <ul>
+    <li><b>En la primera hoja:</b> el cuadro de nombre, cédula, grupo, fecha y calificación, y el <b>cuadro de puntos por parte</b>: lo que vale cada una y un renglón para anotar lo obtenido al corregir (necesita «Dividir en partes»).</li>
     <li><b>Papel:</b> Carta, Legal o A4. <b>Márgenes:</b> como los de Word (normales, estrechos, moderados o anchos).</li>
     <li><b>Tipo de letra y tamaño</b> por separado para los títulos y para las preguntas (DejaVu Sans, Arial o Times New Roman; de 7 a 20 pt).</li>
+    <li><b>Espacio para responder:</b> el alto del recuadro de desarrollo (una celda en blanco con marco) y, si quieres, un recuadro para el procedimiento en las preguntas numéricas, en las de respuesta corta o en ambas.</li>
+  </ul>
+  <h4>Preguntas</h4>
+  <figure class="fig"><img src="{{IMG:10b-pdf-preguntas.png}}" alt="La pestaña Preguntas de la pantalla de exportar"><figcaption><b>Pestaña Preguntas.</b> (1) Opciones y puntos. (2) Las partes del examen; si hay imágenes, debajo se elige su tamaño.</figcaption></figure>
+  <ul>
     <li><b>Mezclar el orden de las opciones:</b> en los documentos la clave suele ir en orden (1-a, 2-b, 3-c…) y en papel eso delata las respuestas. Cátedra baraja las opciones y la Columna B de los emparejamientos; la clave usa siempre las letras impresas.</li>
-    <li><b>Dividir el examen en partes:</b> agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con su indicación y su valor. Si un enunciado compartido tiene preguntas de varios tipos, se repite en cada parte (Cátedra lo avisa).</li>
-    <li><b>Mostrar cuánto vale cada pregunta</b> (o solo el valor de cada parte), cuadro de nombre y calificación, y <b>alto del recuadro de ensayo</b> (una celda en blanco con marco).</li>
-    <li><b>Puntos enteros:</b> el PDF usa solo números enteros (7 pts en vez de 6,67), con el mismo total, para calificar sin redondeos. Está activada de fábrica; ve «Puntos enteros en el PDF» más abajo.</li>
-    <li><b>Espacio para el procedimiento:</b> un recuadro en blanco con marco antes de la respuesta, en las preguntas numéricas, en las de respuesta corta o en ambas.</li>
-    <li><b>Partes del examen:</b> cambia el orden de las partes y, si quieres, escribe tu propio nombre e indicación para cada una; lo que dejes vacío se escribe solo, y el número y el valor son automáticos.</li>
+    <li><b>Mostrar cuánto vale cada pregunta</b> (o solo el valor de cada parte) y <b>Puntos enteros:</b> el PDF usa solo números enteros (7 pts en vez de 6,67), con el mismo total, para calificar sin redondeos. Está activada de fábrica; ve «Puntos enteros en el PDF» más abajo.</li>
+    <li><b>Dividir en partes:</b> agrupa las preguntas por tipo («I PARTE: SELECCIÓN MÚLTIPLE…») con su indicación y su valor. Cambia el orden con las flechas, marca <b>En hoja nueva</b> y, si quieres, escribe tu propio nombre e indicación; lo que dejes vacío se escribe solo. Si un enunciado compartido tiene preguntas de varios tipos, se repite en cada parte (Cátedra lo avisa).</li>
+    <li><b>Tamaño de las imágenes:</b> pequeña, mediana o grande, cada una por separado. No cambia el examen ni el XML.</li>
+    <li><b>Fórmulas:</b> las sencillas salen como texto; las matrices, las integrales y sumas con límites y las fracciones compuestas se dibujan como en un libro. Si una tiene un comando que no se reconoce, queda escrita tal cual y Cátedra lo avisa.</li>
   </ul>
   <h4>El Word</h4>
   <p>Con <b>Word (.docx)</b> recibes el mismo examen en un archivo que puedes <b>editar</b> antes de imprimir: cambiar un texto, quitar una pregunta, ajustar el formato. Dice <b>exactamente lo mismo que el PDF</b>: las mismas preguntas, el mismo orden de las opciones, las mismas letras y la misma clave, porque los dos salen del mismo plan.</p>
@@ -360,7 +388,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <ul>
     <li><b>Cómo se reparten.</b> Si se puede, todas las preguntas de un mismo tipo valen lo mismo (por ejemplo 7, 3 y 10 en vez de 6,67, 3,33 y 10). Si no se puede, algunas del mismo tipo valen 1 punto más (las primeras) y la pantalla te lo dice.</li>
     <li><b>Totales que sí cuadran.</b> Cuando no hay reparto en iguales (por ejemplo, 15 preguntas y 100 puntos), aparecen botones con totales cercanos que sí lo permiten, como «Usar 105 puntos». Elegirlos solo cambia el total del PDF.</li>
-    <li><b>Qué verás.</b> A la derecha, un resumen te dice cuánto suma el PDF y, si difiere de Moodle, un ejemplo («la pregunta 1 vale 1,82 en Moodle y 2 en el PDF; el total es el mismo»). Abre <b>Puntos de cada pregunta en el PDF</b> para ver cada valor y cambiar cualquiera con un número entero: lo que cambies manda y el total del PDF pasa a ser la suma de la lista.</li>
+    <li><b>Qué verás.</b> Encima de la vista previa, el panel <b>Puntos enteros</b> dice cuánto suma el PDF; al abrirlo, si difiere de Moodle te pone un ejemplo («la pregunta 1 vale 1,82 en Moodle y 2 en el PDF; el total es el mismo»). En ese mismo panel ves cada valor y puedes cambiar cualquiera con un número entero: lo que cambies manda y el total del PDF pasa a ser la suma de la lista.</li>
     <li><b>Si prefieres medios puntos,</b> desmarca la opción (también puedes guardarla desmarcada en tu perfil de encabezado).</li>
   </ul>
   <div class="aviso importante"><span class="et">Importante</span><p>Con muchas preguntas, cada una vale cerca de 1 o 2 puntos y los enteros dan saltos grandes (de 1,82 a 2 es un 10 % más). Abre la lista una vez para revisar que el reparto te parezca justo.</p></div>
@@ -388,9 +416,9 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <p>Después de sortear, cada versión tiene su <b>pestaña</b> a la derecha, con su vista previa (la misma que saldrá en el PDF) y cuánto suma.</p>
   <figure class="fig"><img src="{{IMG:12-versiones-revision.png}}" alt="Pestañas de las versiones y ajuste de puntos"><figcaption><b>Las versiones.</b> (1) Una pestaña por versión, con sus puntos. (2) El total que quieres. (3) <i>Ajustar todas</i>. (4) Puntos de cada pregunta.</figcaption></figure>
   <h4>Que los puntos cuadren</h4>
-  <p>Cada versión suma los puntos de <i>sus</i> preguntas, que casi nunca son los 100 que quieres. Escribe el <b>total de puntos</b> deseado y pulsa <span class="btn">Ajustar esta versión</span> o <span class="btn">Ajustar todas</span>; elige si se reparte <b>según el tipo</b> o <b>en partes iguales</b>. Si prefieres, abre <b>Puntos de cada pregunta</b> y cámbialos uno por uno. Cátedra <b>nunca cambia puntos por su cuenta</b> y, al exportar, te avisa si alguna versión no suma el total. Con <b>Puntos enteros</b> activado, los puntos de cada versión salen en enteros y <i>Ajustar</i> también reparte en enteros.</p>
+  <p>Cada versión suma los puntos de <i>sus</i> preguntas, que casi nunca son los 100 que quieres. Escribe el <b>total de puntos</b> deseado y pulsa <span class="btn">Ajustar esta versión</span> o <span class="btn">Ajustar todas</span>; elige si se reparte <b>según el tipo</b> o <b>en partes iguales</b>. Todo esto está en <b>Ajustar los puntos</b>, encima de la vista previa. Ahí mismo puedes cambiarlos uno por uno. Cátedra <b>nunca cambia puntos por su cuenta</b> y, al exportar, te avisa si alguna versión no suma el total. Con <b>Puntos enteros</b> activado, los puntos de cada versión salen en enteros y <i>Ajustar</i> también reparte en enteros.</p>
   <h4>Descargar</h4>
-  <p>Pulsa <span class="btn">Exportar 4 versiones (ZIP)</span> (el número cambia según tus versiones). Recibes un archivo <span class="mono">.zip</span> con <b>un PDF por versión</b> (o un Word, o los dos, según el formato que elegiste), cada uno rotulado «VERSIÓN A», «VERSIÓN B»… también en su clave. Todas llevan lo mismo que hayas elegido en «Qué incluir». La clave de cada versión es siempre la de <b>sus propias preguntas</b>.</p>
+  <p>Pulsa <span class="btn">Exportar 4 versiones (ZIP)</span> (el número cambia según tus versiones). Recibes un archivo <span class="mono">.zip</span> con <b>un PDF por versión</b> (o un Word, o los dos, según el formato que elegiste), cada uno rotulado «VERSIÓN A», «VERSIÓN B»… también en su clave. Se descarga un documento a la vez; en PDF, normal o en modo folleto. La clave de cada versión es siempre la de <b>sus propias preguntas</b>.</p>
   <div class="aviso consejo"><span class="et">Consejo</span><p>Puedes volver a pulsar <span class="btn">Sortear de nuevo</span> las veces que quieras hasta que te guste el resultado. Si cambiaste puntos a mano, Cátedra te pregunta antes de reemplazar las versiones.</p></div>
 </section>
 
@@ -404,8 +432,8 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <ul>
     <li><span class="btn">Reabrir</span> vuelve a la revisión del examen para corregirlo y generar de nuevo.</li>
     <li><span class="btn">PDF</span> abre la pantalla de exportar; <span class="btn">XML</span> vuelve a descargar el archivo.</li>
-    <li><span class="btn">Organizar</span> cambia la materia o la actividad del examen, o lo borra.</li>
-    <li><span class="btn">Nuevo examen en esta materia</span> vuelve al paso 1 con la materia ya elegida.</li>
+    <li><span class="btn">Organizar</span> cambia la materia o el tipo de actividad del examen, o lo borra.</li>
+    <li><span class="btn">Nuevo examen en esta materia</span> vuelve a la primera pantalla con la materia ya elegida.</li>
   </ul>
 </section>
 
@@ -416,7 +444,7 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
       <p>Pulsa <span class="btn">Nueva materia</span> (o el lápiz de su tarjeta para editarla). Puedes elegir su <b>color</b> y, opcionalmente, valores por defecto para el PDF: <b>perfil de encabezado</b>, <b>docente</b> y <b>grupo</b>. Al exportar un examen de esa materia, esos datos aparecen ya puestos.</p>
       <p>Una materia se puede <b>archivar</b> (queda aparte, sin borrarla) o <b>borrar</b>. Borrar una materia <b>no borra sus exámenes</b>: pasan a «Sin materia».</p>
     </div>
-    <figure class="fig" style="margin:0;"><img src="{{IMG:15-organizar.png}}" alt="Fila de un examen con el panel Organizar abierto"><figcaption><b>Organizar.</b> Cambia la materia o la actividad, o borra el examen.</figcaption></figure>
+    <figure class="fig" style="margin:0;"><img src="{{IMG:15-organizar.png}}" alt="Fila de un examen con el panel Organizar abierto"><figcaption><b>Organizar.</b> Cambia la materia o el tipo de actividad, o borra el examen.</figcaption></figure>
   </div>
   <h4>Exámenes sin materia y el asistente</h4>
   <p>«Sin materia» reúne los exámenes que guardaste antes de tener materias o sin elegir una. Pulsa <span class="btn">Ordenarlos con ayuda</span> y Cátedra propone una materia para cada grupo según su categoría y el nombre del archivo; <b>tú decides</b> qué se mueve. <span class="btn">Todos los exámenes</span> es la lista completa, con buscador.</p>
@@ -510,8 +538,8 @@ th { font-size: 7.8pt; letter-spacing: 0.1em; text-transform: uppercase; color: 
   <table><tr><th style="width:42%">Qué</th><th>Nombre o ubicación</th></tr>
     <tr><td>Instalador de macOS / Windows</td><td class="mono">Catedra.dmg · Catedra_Setup.exe</td></tr>
     <tr><td>XML de Moodle</td><td class="mono">&lt;nombre del examen&gt;.xml · &lt;nombre&gt;_editado.xml</td></tr>
-    <tr><td>PDF del examen</td><td class="mono">&lt;nombre&gt;_examen_y_clave.pdf · _examen.pdf · _clave.pdf · _folleto_hoja_y_clave.pdf</td></tr>
-    <tr><td>Word del examen</td><td class="mono">los mismos nombres, con .docx; con «PDF y Word»: &lt;nombre&gt;_examen_y_clave_pdf_y_word.zip</td></tr>
+    <tr><td>PDF del examen</td><td class="mono">&lt;nombre&gt;_examen.pdf · _preguntas.pdf · _hoja_de_respuestas.pdf · _clave.pdf (con «_folleto» al final en modo folleto)</td></tr>
+    <tr><td>Word del examen</td><td class="mono">los mismos nombres sin «_folleto», con .docx; con «PDF y Word»: &lt;nombre&gt;_examen_pdf_y_word.zip</td></tr>
     <tr><td>Versiones</td><td class="mono">&lt;nombre&gt;_versiones.zip, con &lt;nombre&gt;_version_A_….pdf</td></tr>
     <tr><td>Tus datos (macOS)</td><td class="mono">~/Library/Application Support/ConversorMoodleXML/</td></tr>
     <tr><td>Tus datos (Windows)</td><td class="mono">%LOCALAPPDATA%\ConversorMoodleXML\</td></tr></table>

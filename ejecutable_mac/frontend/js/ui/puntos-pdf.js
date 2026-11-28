@@ -16,6 +16,7 @@ export function crearPuntosPdf({ alCambiar }) {
   let examen = null;
   let total = null;          // el total del PDF que eligió el docente (null = el del editor, redondeado)
   let ediciones = {};        // { num: entero } lo que cambió a mano
+  let habiaQueDecidir = false;
 
   const resultado = () => puntosParaPdf(examen, { total, ediciones });
 
@@ -49,7 +50,12 @@ export function crearPuntosPdf({ alCambiar }) {
     r.alternativas.forEach(a => botones.push(`<button type="button" class="btn btn-ghost btn-sm" data-pts-total="${a.total}">Usar ${a.total} puntos (todas iguales por tipo)</button>`));
     alt.innerHTML = botones.join('');
     alt.hidden = !botones.length;
-    $('pdf-pts-detalle-resumen').textContent = `${fmt(r.total)} pts`;
+    // La línea del panel plegado dice lo esencial; se despliega solo si hay algo que decidir.
+    const distinto = r.diferencias.length || r.total !== r.totalEditor;
+    $('pdf-pts-detalle-resumen').textContent = `El PDF suma ${fmt(r.total)} puntos · ${distinto ? 'no coincide pregunta a pregunta con Moodle' : 'igual que en Moodle'}`;
+    const decidir = r.ceros > 0 || r.alternativas.length > 0;
+    if (decidir && !habiaQueDecidir) $('pdf-pts-detalle').open = true;
+    habiaQueDecidir = decidir;
   }
 
   function pintarLista(r) {

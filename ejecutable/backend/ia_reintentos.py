@@ -111,7 +111,7 @@ def _fallo_final(clase: str, timeout: int, detalle: str = "") -> HTTPException:
     if clase == "timeout":
         return HTTPException(status_code=503, detail=(
             f"La IA tardó demasiado en responder (más de {timeout} segundos). Puede que el "
-            "documento sea muy largo o que el servicio esté lento: inténtalo de nuevo, o divide el examen en partes."))
+            "documento sea muy largo o que el servicio esté lento: inténtalo de nuevo, o divide la evaluación en partes."))
     if clase == "bloqueo" and detalle.upper() == "MAX_TOKENS":
         return HTTPException(status_code=502, detail=(
             "La IA agotó su capacidad de respuesta sin llegar a escribir nada. "

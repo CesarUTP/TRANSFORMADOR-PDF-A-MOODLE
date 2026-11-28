@@ -74,8 +74,8 @@ ENV_PATH = _app_data_dir() / ".env"
 # ia_reintentos.generar_con_reintentos), así el usuario sabe qué hacer en vez
 # de ver un error técnico de la API.
 MISSING_API_KEY_MESSAGE = (
-    "Falta configurar tu API de Gemini. Ábrela desde «Acerca de», arriba a la "
-    "derecha (sección «API de Gemini»), y pega tu clave de Google AI Studio (se obtiene gratis en "
+    "Falta configurar tu clave de Gemini. Ábrela desde «Acerca de», arriba a la "
+    "derecha (sección «Clave de Gemini»), y pega tu clave de Google AI Studio (se obtiene gratis en "
     "https://aistudio.google.com/apikey)."
 )
 # Se puede cambiar con la variable GEMINI_MODEL (p. ej. para comparar
@@ -131,7 +131,7 @@ TRANSCRIPTION_FAILED_MARKER: str = "[TRANSCRIPCION_FALLIDA]"
 # publicar una nueva: subir este número y el de ejecutable/installer.iss, y
 # actualizar version.json (en la raíz del repositorio) con la misma versión
 # y el enlace de descarga.
-APP_VERSION: str = "3.1"
+APP_VERSION: str = "3.2"
 # La app lee este archivo al arrancar para avisar si hay una versión más
 # nueva. Tiene que ser una dirección PÚBLICA: mientras el repositorio sea
 # privado, GitHub responde 404 y la app simplemente no avisa nada.

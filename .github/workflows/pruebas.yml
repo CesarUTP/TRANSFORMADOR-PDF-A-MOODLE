@@ -111,6 +111,12 @@ jobs:
       - name: Enunciado compartido por varias preguntas
         if: ${{ !cancelled() }}
         run: python dev/test_enunciado_compartido.py
+      - name: Qué se imprime y modo folleto
+        if: ${{ !cancelled() }}
+        run: python dev/test_imprimir.py
+      - name: Fórmulas, cuadro de puntos y diseño del papel
+        if: ${{ !cancelled() }}
+        run: python dev/test_papel.py
       # Solo una vez (no en los 3 sistemas: compara archivos, no depende
       # del SO). Antes nadie se enteraba de que ejecutable/ o
       # ejecutable_mac/ quedaron desfasados de backend/frontend hasta

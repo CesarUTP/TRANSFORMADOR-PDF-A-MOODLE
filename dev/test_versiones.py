@@ -115,16 +115,19 @@ info = json.loads(r.headers["x-pdf-info"])
 ok([v["etiqueta"] for v in info["versiones"]] == list("ABCD") and all(v["preguntas"] == 25 for v in info["versiones"]), f"X-PDF-Info resume cada versión {info['versiones']}")
 ok("banco%20100_versiones.zip" in r.headers["content-disposition"] or "banco 100_versiones.zip" in r.headers["content-disposition"], r.headers["content-disposition"])
 z = zipfile.ZipFile(io.BytesIO(r.content))
-ok(sorted(z.namelist()) == [f"banco 100_version_{L}_examen_y_clave.pdf" for L in "ABCD"], f"un PDF por versión: {z.namelist()}")
+ok(sorted(z.namelist()) == [f"banco 100_version_{L}_evaluacion_y_clave.pdf" for L in "ABCD"], f"un PDF por versión: {z.namelist()}")
 for L, nums in zip("ABCD", reparto):
-    t = texto_de(z.read(f"banco 100_version_{L}_examen_y_clave.pdf"))
+    t = texto_de(z.read(f"banco 100_version_{L}_evaluacion_y_clave.pdf"))
     corte = t.index("CLAVE DE RESPUESTAS")
     examen, clave = t[:corte], t[corte:]
     propias = [f"PREG{n:03d}" for n in nums]
     ajenas = [f"PREG{n:03d}" for n in range(1, 101) if n not in nums]
     ok(all(p in examen for p in propias), f"versión {L}: trae sus 25 preguntas")
     ok(not any(a in t for a in ajenas), f"versión {L}: no trae ninguna pregunta de otra versión")
-    ok(f"VERSIÓN {L}" in examen and f"VERSIÓN {L}" in clave, f"versión {L}: se llama así en el examen y en la clave")
+    with pdfplumber.open(io.BytesIO(z.read(f"banco 100_version_{L}_evaluacion_y_clave.pdf"))) as d_:
+        hojas_ = [pg.extract_text() or "" for pg in d_.pages]
+    portada_clave = next(h for h in hojas_ if "CLAVE DE RESPUESTAS" in h)
+    ok(f"VERSIÓN {L}" in hojas_[0] and f"VERSIÓN {L}" in portada_clave, f"versión {L}: se llama así en la portada del examen y en la de la clave")
     # La clave de una versión es la de sus preguntas: la letra correcta de cada selección múltiple figura en ella.
     malas = []
     for n in nums:
@@ -142,12 +145,12 @@ r = cli.post("/api/exportar_versiones", headers=H, json={**cuerpo, "datos": {**c
 z = zipfile.ZipFile(io.BytesIO(r.content))
 t = texto_de(z.read(z.namelist()[0]))
 ok(r.status_code == 200 and t.index("PREG003") < t.index("PREG001") < t.index("PREG002"), "sin partes, las preguntas salen en el orden de la versión")
-ok(z.namelist() == ["banco 100_version_Unica_examen.pdf"], str(z.namelist()))
+ok(z.namelist() == ["banco 100_version_Unica_evaluacion.pdf"], str(z.namelist()))
 
 # Los puntos editados por versión llegan al papel.
 r = cli.post("/api/exportar_versiones", headers=H, json={**cuerpo, "datos": {**cuerpo["datos"], "contenido": "solo_examen"},
              "versiones": [{"etiqueta": "A", "nums": [1, 2], "puntos": {"1": 40, "2": 60}, "total_points": 100}]})
-t = texto_de(zipfile.ZipFile(io.BytesIO(r.content)).read("banco 100_version_A_examen.pdf"))
+t = texto_de(zipfile.ZipFile(io.BytesIO(r.content)).read("banco 100_version_A_evaluacion.pdf"))
 ok(r.status_code == 200 and "100" in t and "40" in t and "60" in t, "los puntos editados (40 + 60 = 100) salen en el examen")
 
 # ══════════════════════════════════════════════════════════════════════════

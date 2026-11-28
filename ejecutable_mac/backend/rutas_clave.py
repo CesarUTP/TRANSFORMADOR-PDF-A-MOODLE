@@ -80,17 +80,17 @@ def api_key_save(body: ApiKeyBody):
     except credenciales.ClaveInvalida:
         raise HTTPException(status_code=422, detail="Google no aceptó esa clave. Revisa que la copiaste completa, sin espacios de más.")
     except credenciales.SinConexion as exc:
-        logger.warning("No se pudo comprobar la clave de la API de Gemini: %s", exc)
+        logger.warning("No se pudo comprobar la clave de Gemini: %s", exc)
         raise HTTPException(status_code=503, detail="No se pudo comprobar la clave con Google. Revisa tu conexión a internet e inténtalo otra vez.")
     try:
         credenciales.guardar(clave)
     except OSError as exc:
-        logger.exception("No se pudo escribir la clave de la API de Gemini")
+        logger.exception("No se pudo escribir la clave de Gemini")
         raise HTTPException(status_code=500, detail=(
             "La clave es válida, pero no se pudo guardar en este equipo (falta permiso o espacio en la "
             f"carpeta de datos de la aplicación: {type(exc).__name__}). Revisa el permiso de esa carpeta e inténtalo de nuevo."))
     except Exception as exc:  # noqa: BLE001
-        logger.exception("No se pudo guardar la clave de la API de Gemini")
+        logger.exception("No se pudo guardar la clave de Gemini")
         raise HTTPException(status_code=500, detail=f"La clave es válida, pero no se pudo guardar ({type(exc).__name__}).")
     return credenciales.estado()
 
@@ -100,7 +100,7 @@ def api_key_delete():
     try:
         credenciales.borrar()
     except OSError as exc:
-        logger.exception("No se pudo borrar la clave de la API de Gemini")
+        logger.exception("No se pudo borrar la clave de Gemini")
         raise HTTPException(status_code=500, detail=(
             "No se pudo borrar la clave guardada (falta permiso en la carpeta de datos de la aplicación: "
             f"{type(exc).__name__}). Revisa el permiso de esa carpeta e inténtalo de nuevo."))

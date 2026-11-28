@@ -16,14 +16,16 @@ import * as proc from './editor/procedencia.js';
 import { MAX_ABIERTAS, abiertasPorDefecto, recortar } from './editor/plegado-logica.js';
 import { detectarProblemas, normalizar, similitud } from './editor/calidad.js';
 import { duplicarPregunta, moverGrupo, moverPregunta, movimientosDe, reordenar } from './editor/orden-logica.js';
-import { cambiarRango, contextoDe, crearTramo, heredarContexto, limitesDeTramo, quitarTramo, rotuloDeTramo, tramoEn, tramosCompartidos } from './editor/compartido-logica.js';
+import { cambiarRango, contextoDe, empezarCompartido, heredarContexto, imagenesPropias, imagenesQueTendria, limitesDeTramo, marcarImagenesComunes, posicionEnCompartido, posicionesLibres, quitarTramo, rotuloDeTramo, tramoEn, tramosCompartidos, usarEnPregunta } from './editor/compartido-logica.js';
 import { datosDeFilas, filasConDistractores, resumenDeFilas } from './editor/emparejamiento-logica.js';
 import { avisoDeMilesAmbiguo, milesAmbiguo, sinSeparadorDeMiles } from './numero-logica.js';
 import { faltaRespuesta } from './validacion.js';
 import { describirSugerencia } from './editor/sugerencias-logica.js';
-import { LIMITE_CAMPO, PERFIL_CAMPOS, aplicarPerfil, datosDePerfil, enteroEn, nombrePerfil, tamanoValido, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, resumenDeDescarga, textoDelBoton, valoresIniciales, moverParte, ordenDePartesValido, textosDePartesValidos, tiposEnOrden } from './ui/exportar-pdf-logica.js';
+import { LIMITE_CAMPO, PERFIL_CAMPOS, aplicarPerfil, datosDePerfil, enteroEn, nombrePerfil, tamanoValido, avisosDelPdf, cuerpoPdf, datosParaEnviar, fechaLegible, limpiarCampo, limpiarTexto, logoValido, medidasReducidas, nombreDeDescarga, paraGuardar, resumenDeDescarga, textoDelBoton, valoresIniciales, moverParte, ordenDePartesValido, textosDePartesValidos, tiposEnOrden, admiteFolleto, huellaDeImagen, imagenesDelExamen, tamanosDeImagenValidos, tamanosParaEnviar, documentosDe, pasosDePlegado, resumenDePapel, textoDeDescarga, posicionesParaEnviar, rotuloDeImagen } from './ui/exportar-pdf-logica.js';
 import { COLORES, activas, archivadas, avisoDeLimite, examenesDe, existeNombre, fechaCorta, filtrarExamenes, formatoBytes, nombreSugerido, normalizar as normalizarMateria, ordenarMaterias, planDelAsistente, sugerirMaterias, textoUso, variableDeColor } from './materias-logica.js';
-import { CLAVE_VISTOS, TOURS, debeOfrecer, leerVistos, marcarVisto, nombreDeTour, pasosVisibles } from './ui/tour-logica.js';
+import { pestanaTrasTecla } from './ui/pestanas.js';
+import { CLAVE_VISTOS, TOURS, contextoDeAyuda, debeOfrecer, leerVistos, marcarVisto, nombreDeTour, pasosVisibles } from './ui/tour-logica.js';
+import { NOMBRE_SIN_TITULO, conOpcionNueva, metaDesdeCero, nombreDeExamen, preguntaEnBlanco, sinOpcion } from './editor/nuevo-logica.js';
 import { ejemploExamen, iniciales, materiasQueUsan, nombreCopia, nombreOcupado, ordenarPerfiles, resumenEncabezado, resumenFormato } from './perfil-logica.js';
 import { ZOOMS, paginaDe, recuadroValido, urlOriginal, vecino, zoomVecino } from './ui/original-logica.js';
 import { duracionValida, estimarDuracion, onProgressQueue, onProgressStage, stopProgress } from './progreso.js';
@@ -887,11 +889,9 @@ prueba('compartido: las preguntas seguidas con el mismo texto forman un grupo', 
   igual([rotuloDeTramo({ desde: 0, hasta: 4 }), rotuloDeTramo({ desde: 0, hasta: 1 }), rotuloDeTramo({ desde: 2, hasta: 2 })],
     ['Preguntas 1 a 5', 'Preguntas 1 y 2', 'Pregunta 3']);
 });
-prueba('compartido: crear, cambiar el rango sin pisar otro grupo y quitar', () => {
-  const qs = conCtx(null, null, null, 'b', null);
-  const t = crearTramo(qs, 0);
-  igual([t.desde, t.hasta, contextos(qs)], [0, 1, ['', '', null, 'b', null]]);
-  igual(crearTramo(qs, 0), null);
+prueba('compartido: cambiar el rango sin pisar otro grupo y quitar', () => {
+  const qs = conCtx('', '', null, 'b', null);
+  const t = tramoEn(qs, 0);
   igual(limitesDeTramo(qs, t), { minimo: 0, maximo: 2 });
   cambiarRango(qs, t, 0, 4);
   igual(contextos(qs), ['', '', '', 'b', null]);
@@ -899,6 +899,52 @@ prueba('compartido: crear, cambiar el rango sin pisar otro grupo y quitar', () =
   igual(contextos(qs), [null, '', null, 'b', null]);
   quitarTramo(qs, tramoEn(qs, 3));
   igual(contextos(qs), [null, '', null, null, null]);
+});
+prueba('compartido: las imágenes del enunciado viajan en cada pregunta del grupo', () => {
+  const img = (b64, compartida) => ({ mime: 'image/png', b64, ...(compartida ? { compartida: true } : {}) });
+  const ims = q => (q.data.images || []).map(i => `${i.b64}${i.compartida ? '*' : ''}`);
+  const qs = conCtx('caso', 'caso', null);
+  qs[0].data.images = [img('A'), img('B')];
+  qs[1].data.images = [img('B'), img('C')];
+  marcarImagenesComunes(qs);
+  igual(qs.map(ims), [['B*', 'A'], ['B*', 'C'], []], 'al abrir, la que llevan todas es del enunciado');
+  qs[2].data.images = [img('D'), img('B')];
+  cambiarRango(qs, tramoEn(qs, 0), 1, 2);
+  igual(qs.map(ims), [['A'], ['B*', 'C'], ['B*', 'D']], 'quien sale la pierde; quien entra la recibe, sin repetirla');
+  quitarTramo(qs, tramoEn(qs, 1));
+  igual(qs.map(ims), [['A'], ['B', 'C'], ['B', 'D']], 'sin enunciado, la imagen se queda como propia');
+  const dos = conCtx('x', 'x');
+  dos[0].data.images = [img('A', true)];
+  dos[1].data.images = [img('B', true)];
+  igual(tramosCompartidos(dos).length, 2, 'el mismo texto con otra imagen es otro enunciado');
+  igual([imagenesQueTendria(dos[0], [img('Z'), img('Y')]), imagenesPropias(dos[0])], [2, []]);
+  const medio = conCtx('caso', null, 'caso');
+  medio[0].data.images = [img('A', true)];
+  medio[2].data.images = [img('A', true)];
+  heredarContexto(medio, 1);
+  igual([ims(medio[1]), tramosCompartidos(medio).length], [['A*'], 1]);
+  const res = { questions: conCtx(null), compartido_pendiente: { texto: '', images: [img('F')] } };
+  usarEnPregunta(res, 0);
+  igual(ims(res.questions[0]), ['F*']);
+  igual(empezarCompartido(res), 'pendiente', 'un grupo en blanco con imagen no se reutiliza');
+});
+prueba('compartido: empieza sin preguntas y solo hay uno en blanco a la vez', () => {
+  const res = { questions: conCtx(null, 'caso') };
+  igual([empezarCompartido(res), res.compartido_pendiente], ['pendiente', { texto: '' }]);
+  res.compartido_pendiente.texto = 'otro';
+  igual([empezarCompartido(res), res.compartido_pendiente], ['pendiente', { texto: 'otro' }], 'no se pierde lo escrito');
+  const blanco = { questions: conCtx(null, '') };
+  igual([empezarCompartido(blanco), blanco.compartido_pendiente], [{ desde: 1, hasta: 1, texto: '' }, undefined], 'el grupo en blanco del final se reutiliza');
+  igual(empezarCompartido({ questions: [] }), 'pendiente');
+});
+prueba('compartido: dónde entra cada pregunta y cómo pasarlo a preguntas que ya existen', () => {
+  const qs = conCtx('caso', 'caso', null, 'otro', null);
+  igual([posicionEnCompartido(qs, tramoEn(qs, 0)), posicionEnCompartido(qs, null)], [2, 5]);
+  igual(posicionesLibres(qs), [2, 4]);
+  const res = { questions: qs, compartido_pendiente: { texto: 'nuevo' } };
+  igual([usarEnPregunta(res, 0), res.compartido_pendiente], [null, { texto: 'nuevo' }], 'una pregunta que ya está en un grupo no se toca');
+  igual(usarEnPregunta(res, 4), { desde: 4, hasta: 4, texto: 'nuevo' });
+  igual([contextos(qs), res.compartido_pendiente], [['caso', 'caso', null, 'otro', 'nuevo'], undefined]);
 });
 prueba('compartido: una pregunta insertada en medio del grupo pasa a ser parte de él', () => {
   const qs = conCtx('caso', null, 'caso');
@@ -924,6 +970,34 @@ prueba('versiones: un grupo con enunciado compartido se mueve junto y en su orde
 prueba('calidad: la misma pregunta sobre dos enunciados compartidos distintos no es repetida', () => {
   const qs = conCtx('caso uno', 'caso dos').map(q => ({ ...q, data: { ...q.data, stem: 'El proyecto es rentable según el caso' } }));
   igual(detectarProblemas(qs, {}), [[], []]);
+});
+
+// ── ¿Qué imprimir? (modo folleto) ──────────────────────────────────────────
+prueba('imprimir: los documentos dependen de cómo contestan los estudiantes', () => {
+  igual(documentosDe('examen_y_clave').map(d => `${d.id}:${d.nombre}`), ['examen:Evaluación', 'clave:Clave de respuestas']);
+  igual(documentosDe('folleto_hoja_clave').map(d => d.id), ['examen', 'hoja', 'clave']);
+  igual(documentosDe('folleto_hoja_clave')[0].nombre, 'Hoja de preguntas');
+});
+prueba('imprimir: papel que se gasta, botón y pasos del folleto', () => {
+  igual(resumenDePapel({ paginas: 4, plegado: true }), '2 hojas de papel, por ambas caras.');
+  igual(resumenDePapel({ paginas: 2, plegado: true }), '1 hoja de papel, por ambas caras.');
+  igual(resumenDePapel({ paginas: 1 }), '1 página: 1 hoja.');
+  igual(resumenDePapel({ paginas: 7 }), '7 páginas: 4 hojas a doble cara (7 a una cara).');
+  igual(textoDeDescarga({ formato: 'pdf' }), 'Descargar PDF');
+  igual(textoDeDescarga({ formato: 'ambos' }), 'Descargar PDF y Word (ZIP)');
+  igual(textoDeDescarga({ formato: 'word', versiones: 3 }), 'Descargar Word de las 3 versiones (ZIP)');
+  igual(textoDeDescarga({ ocupada: true }), 'Generando…');
+  igual([admiteFolleto('pdf'), admiteFolleto('ambos'), admiteFolleto('word')], [true, true, false]);
+  igual([pasosDePlegado('pdf').length, pasosDePlegado('ambos').length, pasosDePlegado('ambos')[0].includes('solo del PDF')], [3, 4, true]);
+});
+prueba('imprimir: documento, modo y letra viajan al servidor; el documento no se recuerda', () => {
+  const examen = { filename: 'a', total_points: 1, questions: [], answer_key: {} };
+  const c = cuerpoPdf(examen, { documento: 'hoja', plegado: true, letra_plegado: '7.5' });
+  igual([c.datos.documento, c.datos.plegado, c.datos.letra_plegado], ['hoja', true, 7.5]);
+  const mal = cuerpoPdf(examen, { documento: 'otro', plegado: 'si', letra_plegado: 30 });
+  igual([mal.datos.documento, mal.datos.plegado, mal.datos.letra_plegado], ['', false, 8.5]);
+  const g = paraGuardar({ documento: 'clave', plegado: true, letra_plegado: 8 });
+  igual([g.documento, g.plegado, g.letra_plegado], [undefined, true, 8]);
 });
 
 // ── Partes del examen y recuadro de procedimiento ──────────────────────────
@@ -952,6 +1026,41 @@ prueba('partes: un perfil de antes no borra el procedimiento ni los textos que h
   igual([viejo.institucion, viejo.procedimiento_numerica, viejo.orden_partes, viejo.textos_partes.essay.nombre], ['U', true, ['essay'], 'X']);
   const nuevo = aplicarPerfil(actuales, { procedimiento_numerica: false, orden_partes: ['cloze'], textos_partes: {} });
   igual([nuevo.procedimiento_numerica, nuevo.orden_partes, nuevo.textos_partes.essay.nombre], [false, ['cloze'], 'X']);
+});
+prueba('papel: el cuadro de puntos y las hojas nuevas se recuerdan y van en los perfiles', () => {
+  const v = valoresIniciales({ cuadro_puntos: true, saltos_partes: ['essay', 'nada', 'essay'] });
+  igual([v.cuadro_puntos, v.saltos_partes], [true, ['essay']]);
+  igual([valoresIniciales({}).cuadro_puntos, valoresIniciales({ cuadro_puntos: 'si' }).cuadro_puntos, valoresIniciales(null).saltos_partes], [false, false, []]);
+  igual([paraGuardar(v).cuadro_puntos, paraGuardar(v).saltos_partes], [true, ['essay']]);
+  igual([datosDePerfil(v).cuadro_puntos, datosDePerfil(v).saltos_partes], [true, ['essay']]);
+  // Un perfil de antes no borra lo que haya puesto.
+  const viejo = aplicarPerfil(v, { institucion: 'U' });
+  igual([viejo.cuadro_puntos, viejo.saltos_partes], [true, ['essay']]);
+  const nuevo = aplicarPerfil(v, { cuadro_puntos: false, saltos_partes: [] });
+  igual([nuevo.cuadro_puntos, nuevo.saltos_partes], [false, []]);
+});
+prueba('papel: los tamaños de las imágenes', () => {
+  igual(tamanosDeImagenValidos({ '1:0': 'grande', '2:1': 'enorme', 'x:0': 'grande', '3:0': 'pequena' }), { '1:0': 'grande', '3:0': 'pequena' });
+  igual(tamanosDeImagenValidos(null), {});
+  const qs = [{ num: 1, data: { images: [{ b64: 'AAA', mime: 'image/png' }] } }, { num: 2, data: {} },
+    { num: 3, data: { images: [{ b64: 'BBB', mime: 'texto/"x' }, { b64: 'AAA' }] } }];
+  const imagenes = imagenesDelExamen(qs).map(im => ({ ...im, huella: huellaDeImagen(im.b64) }));
+  igual(imagenes.map(im => [im.b64, im.mime, im.usos, im.preguntas]), [['AAA', 'image/png', ['1:0', '3:1'], [1, 3]], ['BBB', 'image/png', ['3:0'], [3]]]);
+  igual(huellaDeImagen('AAA') === huellaDeImagen('AAA') && huellaDeImagen('AAA') !== huellaDeImagen('AAB'), true);
+  igual(tamanosParaEnviar(imagenes, { [huellaDeImagen('AAA')]: 'grande', otra: 'pequena' }), { '1:0': 'grande', '3:1': 'grande' });
+  // Se envían al servidor, pero no se guardan para el próximo examen ni en un perfil.
+  igual(posicionesParaEnviar([{ huella: 'a', usos: ['1:0', '2:0'] }, { huella: 'b', usos: ['3:0'] }], { a: 'centro', b: 'arriba' }),
+    { '1:0': 'centro', '2:0': 'centro' }, 'solo posiciones conocidas');
+  igual(tamanosParaEnviar([{ huella: 'a', usos: ['1:0'] }], { a: 'completo' }), { '1:0': 'completo' });
+  igual(datosParaEnviar({ alin_imagenes: { '1:0': 'derecha', x: 'centro' } }).alin_imagenes, { '1:0': 'derecha' });
+  igual([rotuloDeImagen({ preguntas: [1, 2, 3, 4, 5], compartida: true }), rotuloDeImagen({ preguntas: [3] }),
+    rotuloDeImagen({ preguntas: [1, 2] }), rotuloDeImagen({ preguntas: [4, 1, 3] })],
+  ['Enunciado compartido · preguntas 1 a 5', 'Pregunta 3', 'Preguntas 1 y 2', 'Preguntas 1, 3 y 4']);
+  const d = datosParaEnviar({ tam_imagenes: { '1:0': 'grande' } });
+  igual([d.tam_imagenes, paraGuardar(d).tam_imagenes, datosDePerfil(d).tam_imagenes], [{ '1:0': 'grande' }, undefined, undefined]);
+});
+prueba('pestañas: flechas, Inicio y Fin', () => {
+  igual(['ArrowRight', 'ArrowLeft', 'Home', 'End', 'Enter'].map(t => pestanaTrasTecla(t, 3, 4)), [0, 2, 0, 3, null]);
 });
 prueba('versiones: el orden de las partes manda, sin cambiar el orden dentro de cada una', () => {
   const qs = deTipos('multichoice', 'essay', 'multichoice', 'essay', 'multichoice');
@@ -1166,9 +1275,9 @@ prueba('Exportar: el botón y la línea de abajo dicen qué archivo sale', () =>
   igual(textoDelBoton({ formato: 'word', versiones: true, listas: true, cantidad: 3 }), 'Exportar 3 versiones (ZIP)');
   igual(textoDelBoton({ formato: 'pdf', versiones: true, generando: true }), 'Generando las versiones…');
   igual(textoDelBoton(), 'Exportar PDF');
-  igual(resumenDeDescarga({ formato: 'pdf', cantidad: 3 }), 'Un ZIP con 3 PDF, uno por versión, cada uno con su clave. El XML de Moodle no cambia.');
-  igual(resumenDeDescarga({ formato: 'word', cantidad: 2 }), 'Un ZIP con 2 Word, uno por versión, cada uno con su clave. El XML de Moodle no cambia.');
-  igual(resumenDeDescarga({ formato: 'ambos', cantidad: 2 }), 'Un ZIP con 2 PDF y 2 Word, uno de cada por versión, cada uno con su clave. El XML de Moodle no cambia.');
+  igual(resumenDeDescarga({ formato: 'pdf', cantidad: 3 }), 'De cada documento que elijas recibirás un ZIP con 3 PDF, uno por versión. El Moodle XML no cambia.');
+  igual(resumenDeDescarga({ formato: 'word', cantidad: 2 }), 'De cada documento que elijas recibirás un ZIP con 2 Word, uno por versión. El Moodle XML no cambia.');
+  igual(resumenDeDescarga({ formato: 'ambos', cantidad: 2 }), 'De cada documento que elijas recibirás un ZIP con 2 PDF y 2 Word, uno de cada por versión. El Moodle XML no cambia.');
 });
 prueba('Exportar PDF: no se recuerda la fecha y sí lo demás', () => {
   const g = paraGuardar({ docente: 'Ana', fecha: '12 de octubre de 2026', papel: 'a4', instrucciones: 'Sin calculadora.' });
@@ -1303,18 +1412,18 @@ prueba('Mis materias: tamaños y fechas', () => {
   igual(fechaCorta('', ahora), '');
 });
 
-prueba('Mis materias: el aviso de que el Historial se llena', () => {
+prueba('Mis materias: el aviso de que el espacio se llena', () => {
   igual(avisoDeLimite(null), null);
   igual(avisoDeLimite({ cerca_del_limite: false }), null);
   const base = { cerca_del_limite: true, examenes: 270, bytes: 50 * 1024 * 1024, maximo_examenes: 300, porcentaje: 90, sin_materia: 40 };
   const a = avisoDeLimite(base);
   igual(a.nivel, 'aviso');
-  igual(a.titulo, 'El Historial se está llenando');
-  igual(a.texto.includes('sin materia (hoy 40)'), true, 'dice cuántos son lo primero que se borra');
+  igual(a.titulo, 'El espacio se está llenando');
+  igual(a.texto.includes('sin materia (hoy 40)'), true, 'dice cuántas son las primeras que se borran');
   const lleno = avisoDeLimite({ ...base, examenes: 300, porcentaje: 100, sin_materia: 0 });
   igual(lleno.nivel, 'lleno');
-  igual(lleno.texto.includes('Todos tus exámenes tienen materia'), true, 'si no hay sin materia, lo dice');
-  igual(textoUso({ examenes: 1, bytes: 2048, porcentaje: 0.3 }), '1 examen · 2 KB · 0 % del espacio');
+  igual(lleno.texto.includes('Todas tus evaluaciones tienen materia'), true, 'si no hay sin materia, lo dice');
+  igual(textoUso({ examenes: 1, bytes: 2048, porcentaje: 0.3 }), '1 evaluación · 2 KB · 0 % del espacio');
 });
 
 prueba('Mis materias: la materia que sugiere la categoría o el archivo', () => {
@@ -1394,7 +1503,7 @@ prueba('Mi perfil: el examen de ejemplo es un examen válido', () => {
 
 // ── Recorridos guiados ─────────────────────────────────────────────────────
 prueba('Recorridos: cada uno tiene pasos completos y lados válidos', () => {
-  igual(Object.keys(TOURS).sort(), ['biblioteca', 'bibliotecaLista', 'cargar', 'final', 'pdf', 'perfil', 'revision']);
+  igual(Object.keys(TOURS).sort(), ['biblioteca', 'bibliotecaLista', 'cargar', 'final', 'inicio', 'pdf', 'perfil', 'revision']);
   for (const [nombre, t] of Object.entries(TOURS)) {
     igual(t.pasos.length >= 4, true, `${nombre}: muy corto`);
     for (const p of t.pasos) {
@@ -1425,15 +1534,48 @@ prueba('Recorridos: lo visto se recuerda y la bienvenida se ofrece una sola vez'
   const vacio = leerVistos(null);
   igual(vacio, { vistos: [], descartado: false });
   igual(debeOfrecer(vacio), true);
-  const visto = marcarVisto(vacio, 'cargar');
-  igual(visto.vistos, ['cargar']);
+  const visto = marcarVisto(vacio, 'inicio');
+  igual(visto.vistos, ['inicio']);
   igual(debeOfrecer(visto), false);
-  igual(marcarVisto(visto, 'cargar').vistos, ['cargar'], 'no se repite');
+  igual(marcarVisto(visto, 'inicio').vistos, ['inicio'], 'no se repite');
   igual(debeOfrecer({ vistos: [], descartado: true }), false, 'descartada');
   igual(debeOfrecer(marcarVisto(vacio, 'pdf')), true, 'otro recorrido no cuenta como la bienvenida');
   igual(leerVistos('basura'), vacio);
   igual(leerVistos('[1,2]'), vacio);
   igual(leerVistos('{"vistos":["a",3,"b"],"descartado":"si"}'), { vistos: ['a', 'b'], descartado: false });
+});
+
+// ── Escribir un examen desde cero (3.2) ────────────────────────────────────
+prueba('desde cero: el nombre sirve de nombre de archivo, sin extensión', () => {
+  igual(['  Parcial   1 ', 'Parcial 2.1', 'a/b:c*d?', '...oculto', 'tarea.xml', 'x.pdf.DOCX', '', null].map(nombreDeExamen),
+    ['Parcial 1', 'Parcial 2.1', 'a-b-c-d-', 'oculto', 'tarea', 'x', NOMBRE_SIN_TITULO, NOMBRE_SIN_TITULO]);
+  igual(nombreDeExamen('n'.repeat(300)).length, 120);
+});
+prueba('desde cero: empieza vacío y con los puntos repartiéndose solos', () => {
+  const m = metaDesdeCero({ materia_id: 7 });
+  igual([m.filename, m.nombre, m.category, m.total_points, m.materia_id, m.actividad, m.desde_cero, m.reparto_auto],
+    [NOMBRE_SIN_TITULO, '', 'mis-preguntas', 100, 7, null, true, true]);
+});
+prueba('desde cero: ninguna pregunta nueva trae texto ni respuesta, y todas piden completarse', () => {
+  for (const t of ['multichoice', 'truefalse', 'matching', 'cloze', 'essay', 'shortanswer', 'numerical']) {
+    const { pregunta, clave } = preguntaEnBlanco(t, 3);
+    igual([pregunta.num, pregunta.type, clave], [3, t, { type: t, answer: '' }]);
+    const textos = JSON.stringify(pregunta.data).match(/"[^"]*"/g).map(s => s.slice(1, -1)).filter(s => !['stem', 'options', 'col_a', 'col_b', 'text', 'A', 'B', 'C', 'D', '1', '2', 'a', 'b'].includes(s));
+    igual(textos.filter(Boolean), [], `${t}: sin texto puesto por la app`);
+    igual(questionIssues(pregunta, clave).length > 0, true, `${t}: queda como incompleta`);
+  }
+  igual(preguntaEnBlanco('otra', 1), null);
+});
+prueba('opciones de selección múltiple: agregar y quitar sin mover las marcadas', () => {
+  igual(conOpcionNueva({ A: 'x', B: 'y' }), { A: 'x', B: 'y', C: '' });
+  igual(conOpcionNueva(Object.fromEntries([...'ABCDEFGHIJ'].map(l => [l, l]))), null);
+  igual(sinOpcion({ A: 'uno', B: 'dos', C: 'tres', D: 'cuatro' }, ['B', 'D'], 'C'),
+    { options: { A: 'uno', B: 'dos', C: 'cuatro' }, marcadas: ['B', 'C'] });
+  igual(sinOpcion({ A: 'uno', B: 'dos', C: 'tres' }, ['A'], 'A'), { options: { A: 'dos', B: 'tres' }, marcadas: [] });
+  igual([sinOpcion({ A: 'x', B: 'y' }, [], 'A'), sinOpcion({ A: 'x', B: 'y', C: 'z' }, [], 'Z')], [null, null]);
+});
+prueba('el asistente: la pantalla de inicio tiene su propio recorrido', () => {
+  igual([contextoDeAyuda({ panel: 'inicio' }), contextoDeAyuda({ panel: 'upload' }), contextoDeAyuda({ panel: 'progress' })], ['inicio', 'cargar', null]);
 });
 
 // ── Versiones de un examen (2.5) ───────────────────────────────────────────
@@ -1445,7 +1587,7 @@ const todasLasNums = (vs) => vs.flatMap(v => v.nums);
 
 prueba('versiones: el resumen por tipo sigue el orden del examen', () => {
   igual(resumenPorTipo(banco100).map(t => [t.tipo, t.cantidad]), [['multichoice', 50], ['matching', 30], ['truefalse', 20]]);
-  igual(resumenPorTipo(banco100)[0].nombre, 'Opción múltiple');
+  igual(resumenPorTipo(banco100)[0].nombre, 'Selección múltiple');
   igual(['A', 'B', 'Z', 'AA', 'AB'].join(), [0, 1, 25, 26, 27].map(etiquetaDe).join());
 });
 prueba('versiones: 4 de 25 sobre 100 no repiten ninguna pregunta', () => {

@@ -381,7 +381,7 @@ try:
     ok(e.status_code == 503 and e.detail == (
         "Se alcanzó el límite diario de uso del servicio de IA. "
         "Se restablece automáticamente cada día (medianoche, hora del Pacífico). "
-        "Si esto ocurre seguido, conviene usar una API key con facturación activada.")
+        "Si esto ocurre seguido, conviene usar una clave con facturación activada.")
        and len(p.llamadas) == 1 and esp == [], "cuota diaria: mensaje de siempre, sin esperar ni reintentar")
 
     # Cuota por minuto: espera lo que pide y reintenta sin gastar un intento
@@ -414,8 +414,8 @@ try:
     p = ProveedorFalso([IARechazadaError(403, "no")])
     e, esp = correr(p, _sol(), 1, lambda r: r, 30)
     ok(e.status_code == 502 and e.detail == (
-        "Google rechazó tu clave de la API de Gemini (no es válida o fue "
-        "revocada). Ábrela desde «Acerca de → API de Gemini» y pega una "
+        "Google rechazó tu clave de Gemini (no es válida o fue "
+        "revocada). Ábrela desde «Acerca de → Clave de Gemini» y pega una "
         "clave nueva de https://aistudio.google.com/apikey.") and len(p.llamadas) == 1,
        "401/403: «Google rechazó tu clave…», sin reintentar")
     p = ProveedorFalso([IARechazadaError(404, "no")])
@@ -574,7 +574,7 @@ try:
         formatter.verify_and_format("una presentación", None)
         ok(False, "centinela")
     except HTTPException as e:
-        ok(e.status_code == 422 and "no parece ser una prueba" in e.detail["message"] and len(p.llamadas) == 1,
+        ok(e.status_code == 422 and "no parece ser una evaluación" in e.detail["message"] and len(p.llamadas) == 1,
            "el centinela «NO_ES_UNA_PRUEBA» se rechaza con 422, sin reintentar")
     p = enchufar(ProveedorFalso([{"es_examen": False, "preguntas": []}]))
     try:

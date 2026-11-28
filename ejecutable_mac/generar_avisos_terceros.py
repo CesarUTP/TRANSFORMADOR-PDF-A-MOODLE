@@ -102,6 +102,11 @@ def main(salida: Path) -> None:
         seccion("Fuentes Liberation Sans y Liberation Serif 2.1.5 (PDF del examen: «Arial» y «Times New Roman»)", "SIL OFL 1.1",
                 [("LICENSE", liberation.read_text(encoding="utf-8").strip())])
 
+    stix = (raiz / "backend" if (raiz / "backend").is_dir() else raiz.parent / "backend") / "fuentes" / "LICENSE-stix.txt"
+    if stix.is_file():
+        seccion("Fuente STIX Two Math 2.11 (fórmulas del examen impreso, dentro de ziamath)", "SIL OFL 1.1",
+                [("LICENSE", stix.read_text(encoding="utf-8").strip())])
+
     # Paquetes de Python. PyObjC (macOS) son ~150 paquetes del mismo
     # proyecto y la misma licencia: van agrupados.
     dists = {}

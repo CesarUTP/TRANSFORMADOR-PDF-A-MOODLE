@@ -4,6 +4,7 @@
 import { apiFetch } from './api.js';
 import { borrarBorrador, guardarBorradorAhora } from './borrador.js';
 import { showError } from './carga.js';
+import { irACompartido } from './editor/compartido.js';
 import { selectFilter } from './editor/filtros.js';
 import { buildReviewRail, refreshQuestionIssues, scrollToEditorCard } from './editor/panel.js';
 import { QUESTION_TYPE_DEFS, collectEditorData, propuestasPendientes } from './editor/tarjetas.js';
@@ -54,7 +55,7 @@ function updateSuccessStats(questions) {
       <div style="min-width:0;">
         <p style="font-weight:700;font-size:13.5px;color:var(--color-warning);margin:0 0 6px;">${skippedCount} pregunta${skippedCount !== 1 ? 's' : ''} no incluida${skippedCount !== 1 ? 's' : ''} en este XML</p>
         <ul style="margin:0 0 8px 18px;padding:0;font-size:13px;line-height:1.5;">${skippedItemsHtml}</ul>
-        <p style="margin:0;font-size:12px;">Para incluirlas, vuelve a la revisión y usa "Añadir pregunta", o corrige el documento original y conviértelo de nuevo.</p>
+        <p style="margin:0;font-size:12px;">Para incluirlas, vuelve al editor y usa "Agregar pregunta", o corrige el documento original y conviértelo de nuevo.</p>
       </div>`;
     skippedNoticeEl.style.display = 'flex';
     crearIconos(skippedNoticeEl);
@@ -151,6 +152,17 @@ export async function generateXml() {
       : `Hay ${pendientes.length} propuestas de la IA sin aceptar ni descartar`, 'error');
     return;
   }
+  // Un enunciado compartido escrito pero sin preguntas no saldría en el XML: se avisa en vez de perderlo.
+  const sinPreguntas = estado.currentParseResult?.compartido_pendiente;
+  if (sinPreguntas && (sinPreguntas.texto.trim() || sinPreguntas.images?.length)) {
+    irACompartido('pendiente');
+    showToast('El enunciado compartido todavía no tiene preguntas: agrégale una o quítalo', 'error');
+    return;
+  }
+  if (!document.querySelector('#editor-questions-container .editor-card')) {
+    showToast('Agrega al menos una pregunta antes de generar el XML', 'error');
+    return;
+  }
   // Con preguntas incompletas el backend rechazaría el XML: se avisa
   // aquí y se lleva al docente a la primera, en vez de mostrar un error.
   const incomplete = refreshQuestionIssues();
@@ -234,7 +246,7 @@ export async function generateXml() {
     estado.historialId = Number.isInteger(stats.historial_id) ? stats.historial_id : null;
   } catch (err) {
     stopProgress(false);
-    showError('No se pudo conectar con la aplicación para generar el archivo. Tu revisión está intacta: vuelve e inténtalo de nuevo. (Detalle: ' + err.message + ')', 'editor');
+    showError('No se pudo conectar con la aplicación para generar el archivo. Tu trabajo está intacto: vuelve e inténtalo de nuevo. (Detalle: ' + err.message + ')', 'editor');
     return;
   }
 
@@ -257,13 +269,13 @@ export async function generateXml() {
       // la revisión, así que se conserva. El XML sí se descarga igual.
       showToast(typeof stats.aviso_historial === 'string' && stats.aviso_historial.trim()
         ? stats.aviso_historial
-        : 'El XML se generó, pero no se pudo guardar en el Historial. Descárgalo ahora.', 'error');
+        : 'El XML se generó, pero no se pudo guardar en Mis materias. Descárgalo ahora.', 'error');
     }
     // El guardado nativo se dispara solo una vez, cuando el usuario
     // presiona "Descargar Moodle XML" — no automáticamente aquí, para
     // no pedirle guardar el mismo archivo dos veces seguidas.
   } catch (err) {
-    showError('Se generó el XML pero no se pudo mostrar el resultado (' + (err && err.message ? err.message : 'error desconocido') + '). Tu revisión está intacta: vuelve a la revisión y genera el XML otra vez.', 'editor', 'No se pudo mostrar el resultado');
+    showError('Se generó el XML pero no se pudo mostrar el resultado (' + (err && err.message ? err.message : 'error desconocido') + '). Tu trabajo está intacto: vuelve al editor y genera el XML otra vez.', 'editor', 'No se pudo mostrar el resultado');
   }
 }
 

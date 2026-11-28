@@ -396,7 +396,9 @@ def _compartidos(raw_qs: List[dict]) -> List[Tuple[str, bool]]:
             if not (q.get("_rescatada") and siguiente is not None and siguiente.get("sigue_enunciado_compartido") is True):
                 vigente = ""
         textos.append(vigente)
-    return [(t, bool(t) and not (i > 0 and textos[i - 1] == t) and not (i + 1 < len(textos) and textos[i + 1] == t))
+    # «Único de su grupo» vuelve a ser parte del enunciado, salvo que el enunciado traiga imágenes propias (XML).
+    return [(t, bool(t) and not (i > 0 and textos[i - 1] == t) and not (i + 1 < len(textos) and textos[i + 1] == t)
+             and not raw_qs[i].get("_con_imagen_compartida"))
             for i, t in enumerate(textos)]
 
 

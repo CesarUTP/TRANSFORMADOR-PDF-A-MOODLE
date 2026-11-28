@@ -15,6 +15,34 @@ import { leerPaso1 } from './materias.js';
 import { subir } from './subida.js';
 import { crearIconos, detalleDeError, formatBytes, friendlyHttpError } from './util.js';
 
+// Los dos usos de la pantalla de carga (3.2): convertir un documento o editar un Moodle XML.
+const MODOS = {
+  documento: {
+    titulo: 'Convierte tu documento', sub: 'Cátedra ordena las preguntas y después tú las revisas.', accept: '.pdf,.docx,.txt',
+    zona: 'Arrastra tu evaluación aquí', aria: 'Elegir la evaluación: arrastra un archivo PDF, Word o TXT, o haz clic para buscarlo',
+    boton: 'Procesar y convertir evaluación', icono: 'zap', pista: 'Primero elige un archivo PDF, Word o TXT.',
+  },
+  xml: {
+    titulo: 'Edita un Moodle XML', sub: 'Se abre en el editor tal como está.', accept: '.xml',
+    zona: 'Arrastra tu XML aquí', aria: 'Elegir el Moodle XML: arrastra un archivo .xml o haz clic para buscarlo',
+    boton: 'Abrir en el editor', icono: 'file-code-2', pista: 'Primero elige un archivo .xml de Moodle.',
+  },
+};
+
+/** Pone la pantalla de carga en «documento» o en «xml» (textos, formatos admitidos y datos que se piden). */
+export function ponerModoCarga(modo) {
+  estado.modoCarga = Object.hasOwn(MODOS, modo) ? modo : 'documento';
+  const m = MODOS[estado.modoCarga];
+  document.getElementById('upload-heading').textContent = m.titulo;
+  document.getElementById('upload-sub').textContent = m.sub;
+  document.getElementById('convert-hint').textContent = m.pista;
+  fileInput.accept = m.accept;
+  btnConvert.innerHTML = `<i data-lucide="${m.icono}" style="width:20px;height:20px;"></i> <span id="btn-convert-texto">${m.boton}</span>`;
+  crearIconos(btnConvert);
+  document.querySelectorAll('#panel-upload [data-modo-de]').forEach(el => { el.hidden = el.dataset.modoDe !== estado.modoCarga; });
+  _marcarZona(estado.selectedFile);
+}
+
 // El aviso bajo el botón explica por qué está deshabilitado.
 function _setConvertEnabled(enabled) {
   btnConvert.disabled = !enabled;
@@ -38,9 +66,6 @@ export function showFilePreview(file) {
   fileSizeEl.textContent = formatBytes(file.size);
   const nombre = file.name.toLowerCase();
   fileIconEl.setAttribute('data-lucide', nombre.endsWith('.pdf') || nombre.endsWith('.docx') ? 'file-text' : nombre.endsWith('.xml') ? 'file-code-2' : 'file');
-  // Un XML de Moodle no pasa por la IA: se abre directo en el editor.
-  const nota = document.getElementById('xml-nota');
-  if (nota) nota.style.display = nombre.endsWith('.xml') ? 'block' : 'none';
   crearIconos(filePreview);
   filePreview.style.display = 'flex';
   _setConvertEnabled(true);
@@ -50,20 +75,20 @@ export function showFilePreview(file) {
 // La zona de carga se pinta de verde con el archivo elegido y cambia su
 // texto; al quitarlo vuelve a su estado de "arrastra tu examen aquí".
 function _marcarZona(file) {
+  const m = MODOS[estado.modoCarga] || MODOS.documento;
   dropZone.classList.toggle('has-file', !!file);
-  document.getElementById('drop-title').textContent = file ? 'Archivo listo' : 'Arrastra tu examen aquí';
+  document.getElementById('drop-title').textContent = file ? 'Archivo listo' : m.zona;
   document.getElementById('drop-sub').textContent = file
     ? 'Arrastra otro o haz clic si quieres cambiarlo'
-    : 'o haz clic para buscarlo en tu computadora';
+    : 'o haz clic para buscarlo en tu equipo';
   dropZone.setAttribute('aria-label', file
-    ? `Archivo elegido: ${file.name}. Pulsa para elegir otro`
-    : 'Elegir el examen: arrastra un archivo PDF, Word o TXT, o pulsa para buscarlo');
+    ? `Archivo elegido: ${file.name}. Haz clic para elegir otro`
+    : m.aria);
 }
 
 export function clearFile() {
   estado.selectedFile = null;
-  const nota = document.getElementById('xml-nota');
-  if (nota) nota.style.display = 'none';
+  _dropError('');
   fileInput.value = '';
   filePreview.style.display = 'none';
   _setConvertEnabled(false);
@@ -193,7 +218,7 @@ async function runStreamingConversion(endpoint, kind, ptsVal) {
   try {
     goToEditorWithParsedData(datos, ptsVal);
   } catch (err) {
-    showError(`Se leyó el examen pero no se pudo mostrar la revisión (${err && err.message ? err.message : 'error desconocido'}). Vuelve a intentarlo; si sigue igual, cierra y abre la aplicación.`, 'upload', 'No se pudo mostrar la revisión');
+    showError(`Se leyó la evaluación pero no se pudo abrir el editor (${err && err.message ? err.message : 'error desconocido'}). Vuelve a intentarlo; si sigue igual, cierra y abre la aplicación.`, 'upload', 'No se pudo abrir el editor');
   }
 }
 
@@ -232,7 +257,7 @@ export async function runImportXml(ptsVal) {
   try {
     goToEditorWithParsedData(datos, ptsVal);
   } catch (err) {
-    showError(`Se leyó el XML pero no se pudo mostrar la revisión (${err && err.message ? err.message : 'error desconocido'}).`, 'upload', 'No se pudo mostrar la revisión');
+    showError(`Se leyó el XML pero no se pudo abrir el editor (${err && err.message ? err.message : 'error desconocido'}).`, 'upload', 'No se pudo abrir el editor');
   }
 }
 
@@ -253,9 +278,12 @@ export function handleFileSelected(file) {
     // Un .doc (Word antiguo) no es un .docx: se explica cómo convertirlo.
     _dropError(ext === 'doc'
       ? `“${file.name}” es de una versión antigua de Word. Ábrelo en Word y guárdalo como .docx.`
-      : `“${file.name}” no es un PDF, Word, TXT ni XML de Moodle. Elige un archivo .pdf, .docx, .txt o .xml.`);
+      : `“${file.name}” no es un PDF, Word, TXT ni Moodle XML. Elige un archivo ${estado.modoCarga === 'xml' ? '.xml' : '.pdf, .docx o .txt'}.`);
     return;
   }
+  // Si el archivo es del otro camino (un XML al convertir, o un documento al editar un XML), se pasa a ese.
+  const modo = ext === 'xml' ? 'xml' : 'documento';
+  if (modo !== estado.modoCarga) ponerModoCarga(modo);
   showFilePreview(file);
 }
 
@@ -264,9 +292,9 @@ export function handleFileSelected(file) {
 export function showError(msg, returnTo = 'upload', title = null) {
   estado.errorReturnPanel = returnTo;
   document.getElementById('error-title').textContent = title
-    || (returnTo === 'editor' ? 'No se pudo generar el XML' : 'No se pudo leer el examen');
+    || (returnTo === 'editor' ? 'No se pudo generar el XML' : 'No se pudo leer la evaluación');
   document.getElementById('btn-reset-error-label').textContent = returnTo === 'editor'
-    ? 'Volver a la revisión'
+    ? 'Volver al editor'
     : 'Volver e intentar de nuevo';
   showPanel('error');
   const errorMessage = document.getElementById('error-message');
@@ -277,7 +305,7 @@ export function showError(msg, returnTo = 'upload', title = null) {
   if (typeof msg === 'object' && msg !== null && msg.errors) {
     const p = document.createElement('p');
     p.style.fontWeight = '700';
-    p.textContent = msg.message || 'Se detectaron errores en la estructura del examen:';
+    p.textContent = msg.message || 'Se detectaron errores en la estructura de la evaluación:';
     errorMessage.appendChild(p);
     const ul = document.createElement('ul');
     ul.style.paddingLeft = '18px';

@@ -1,7 +1,8 @@
 /**
- * partes-pdf.js — «Partes del examen» en la pantalla de exportar: el orden de las partes y, si el docente
- * quiere, su propio nombre e indicación para cada una. Lo vacío lo escribe Cátedra solo (según el tipo y lo
- * que traigan sus preguntas); la vista previa manda esos textos para mostrarlos como sugerencia.
+ * partes-pdf.js — «Partes del examen» en la pantalla de exportar: el orden de las partes, cuáles empiezan en
+ * una hoja nueva y, si el docente quiere, su propio nombre e indicación para cada una. Lo vacío lo escribe
+ * Cátedra solo (según el tipo y lo que traigan sus preguntas); la vista previa manda esos textos para
+ * mostrarlos como sugerencia. La indicación va plegada: solo se despliega si se pide o ya tiene texto.
  */
 import { LIMITE_INDICACION_PARTE, LIMITE_NOMBRE_PARTE, NOMBRES_PARTE, moverParte, ordenDePartesValido, textosDePartesValidos, tiposEnOrden } from './exportar-pdf-logica.js';
 import { crearIconos, esc_html } from '../util.js';
@@ -15,16 +16,12 @@ export function crearPartesPdf({ alCambiar, alReordenar }) {
   let orden = [];
   let textos = {};          // { tipo: { nombre, indicacion } } tal como está escrito (se limpia al enviar)
   const automaticas = {};   // { tipo: { nombre, indicacion } } lo que Cátedra escribiría
+  let saltos = [];          // tipos cuya parte empieza en una hoja nueva
+  const abiertas = new Set();   // tipos con la indicación desplegada
 
   const lista = () => $('pdf-partes-lista');
   const presentes = () => tiposEnOrden(questions, orden);
   const automatica = t => automaticas[t] || { nombre: NOMBRES_PARTE[t] || 'PREGUNTAS', indicacion: '' };
-
-  function resumen() {
-    const n = Object.keys(textosDePartesValidos(textos)).length;
-    const piezas = [orden.length ? 'orden propio' : '', n ? `${n} con texto propio` : ''].filter(Boolean);
-    $('pdf-resumen-partes').textContent = $('pdf-form').elements.partes.checked ? (piezas.join(' · ') || 'Automáticas') : 'Sin partes';
-  }
 
   /** Las sugerencias (texto en gris) y el botón de copiar, sin redibujar: no se pierde lo que se está escribiendo. */
   function sugerencias() {
@@ -33,7 +30,7 @@ export function crearPartesPdf({ alCambiar, alReordenar }) {
       const indicacion = fila.querySelector('.parte-indicacion');
       fila.querySelector('.parte-nombre').placeholder = a.nombre;
       indicacion.placeholder = a.indicacion || 'Indicación automática';
-      fila.querySelector('.parte-copiar').hidden = !a.indicacion || !!indicacion.value.trim();
+      fila.querySelector('.parte-copiar').hidden = indicacion.hidden || !a.indicacion || !!indicacion.value.trim();
     });
   }
 
@@ -43,6 +40,7 @@ export function crearPartesPdf({ alCambiar, alReordenar }) {
     lista().innerHTML = tipos.map((t, i) => {
       const propio = textos[t] || {};
       const cual = `la parte ${ROMANOS[i]} (${NOMBRES_PARTE[t] || t})`;
+      const abierta = abiertas.has(t) || !!(propio.indicacion || '').trim();
       return `<li class="parte-fila" data-tipo="${esc_html(t)}">
         <div class="parte-cab">
           <span class="parte-num">${ROMANOS[i]}</span>
@@ -50,21 +48,23 @@ export function crearPartesPdf({ alCambiar, alReordenar }) {
           ${boton('parte-subir', 'arrow-up', `Subir ${esc_html(cual)}`, i > 0)}
           ${boton('parte-bajar', 'arrow-down', `Bajar ${esc_html(cual)}`, i < tipos.length - 1)}
         </div>
-        <textarea class="form-input parte-indicacion" rows="2" maxlength="${LIMITE_INDICACION_PARTE}" aria-label="Indicación de ${esc_html(cual)}">${esc_html(propio.indicacion || '')}</textarea>
+        <div class="parte-extras">
+          <label class="parte-salto-rotulo"><input type="checkbox" class="parte-salto"${saltos.includes(t) ? ' checked' : ''} aria-label="Empezar en hoja nueva ${esc_html(cual)}"> En hoja nueva</label>
+          <button type="button" class="text-link parte-ver" aria-expanded="${abierta}">${abierta ? 'Ocultar indicación' : 'Cambiar indicación'}</button>
+        </div>
+        <textarea class="form-input parte-indicacion" rows="3" maxlength="${LIMITE_INDICACION_PARTE}" aria-label="Indicación de ${esc_html(cual)}"${abierta ? '' : ' hidden'}>${esc_html(propio.indicacion || '')}</textarea>
         <button type="button" class="text-link parte-copiar" hidden>Editar a partir del texto automático</button>
       </li>`;
     }).join('');
     crearIconos(lista());
     sugerencias();
-    resumen();
   }
 
-  /** ¿Se dividen las partes? Sin partes no hay nada que ordenar. */
+  /** ¿Se dividen las partes? Sin partes no hay nada que ordenar ni cuadro de puntos. */
   function activar() {
-    const si = $('pdf-form').elements.partes.checked;
-    $('pdf-partes-cuerpo').hidden = !si;
-    $('pdf-partes-apagadas').hidden = si;
-    resumen();
+    const f = $('pdf-form').elements;
+    $('pdf-partes-cuerpo').hidden = !f.partes.checked;
+    f.cuadro_puntos.disabled = !f.partes.checked;
   }
 
   function iniciar() {
@@ -72,15 +72,30 @@ export function crearPartesPdf({ alCambiar, alReordenar }) {
     lista().addEventListener('input', e => {
       const fila = e.target.closest('.parte-fila');
       if (!fila) return;
-      textos[fila.dataset.tipo] = { nombre: fila.querySelector('.parte-nombre').value, indicacion: fila.querySelector('.parte-indicacion').value };
+      const t = fila.dataset.tipo;
+      if (e.target.classList.contains('parte-salto')) {
+        saltos = e.target.checked ? [...new Set([...saltos, t])] : saltos.filter(x => x !== t);
+        return;
+      }
+      textos[t] = { nombre: fila.querySelector('.parte-nombre').value, indicacion: fila.querySelector('.parte-indicacion').value };
       sugerencias();
-      resumen();
     });
     lista().addEventListener('click', e => {
       const boton = e.target.closest('button');
       const fila = boton && boton.closest('.parte-fila');
       if (!fila) return;
       const t = fila.dataset.tipo;
+      if (boton.classList.contains('parte-ver')) {
+        const area = fila.querySelector('.parte-indicacion');
+        area.hidden = !area.hidden;
+        if (area.hidden) abiertas.delete(t);
+        else abiertas.add(t);
+        boton.setAttribute('aria-expanded', String(!area.hidden));
+        boton.textContent = area.hidden ? 'Cambiar indicación' : 'Ocultar indicación';
+        sugerencias();
+        if (!area.hidden) area.focus();
+        return;
+      }
       if (boton.classList.contains('parte-copiar')) {
         const area = fila.querySelector('.parte-indicacion');
         area.value = automatica(t).indicacion;
@@ -98,6 +113,8 @@ export function crearPartesPdf({ alCambiar, alReordenar }) {
     $('btn-pdf-partes-auto').addEventListener('click', () => {
       orden = [];
       textos = {};
+      saltos = [];
+      abiertas.clear();
       pintar();
       alReordenar();
       alCambiar();
@@ -109,16 +126,18 @@ export function crearPartesPdf({ alCambiar, alReordenar }) {
     activar,
     abrir(examen) {
       questions = examen.questions;
+      abiertas.clear();
       Object.keys(automaticas).forEach(k => delete automaticas[k]);
       pintar();
     },
-    /** Pone el orden y los textos (de lo recordado o de un perfil). */
-    llenar(nuevoOrden, nuevosTextos) {
+    /** Pone el orden, los textos y las hojas nuevas (de lo recordado o de un perfil). */
+    llenar(nuevoOrden, nuevosTextos, nuevosSaltos) {
       orden = ordenDePartesValido(nuevoOrden);
       textos = textosDePartesValidos(nuevosTextos);
+      saltos = ordenDePartesValido(nuevosSaltos);
       pintar();
     },
-    leer: () => ({ orden_partes: [...orden], textos_partes: textosDePartesValidos(textos) }),
+    leer: () => ({ orden_partes: [...orden], textos_partes: textosDePartesValidos(textos), saltos_partes: [...saltos] }),
     /** Lo que dijo la vista previa que escribiría en cada parte: [{ tipo, nombre, indicacion }]. */
     sugerir(partes) {
       if (!Array.isArray(partes)) return;

@@ -206,12 +206,12 @@ export function describeArcSlice(cx, cy, r, startAngle, endAngle) {
 export function friendlyHttpError(status) {
   const known = {
     401: 'La aplicación perdió su conexión interna segura. Cierra la aplicación y vuelve a abrirla.',
-    413: 'El archivo es demasiado pesado para procesarlo. Intenta con un PDF más liviano o divide el examen en partes.',
+    413: 'El archivo es demasiado pesado para procesarlo. Intenta con un PDF más liviano o divide la evaluación en partes.',
     429: 'El servicio de IA está recibiendo demasiadas solicitudes en este momento. Espera un minuto y vuelve a intentarlo.',
-    500: 'Ocurrió un error inesperado en la aplicación al procesar tu examen.',
+    500: 'Ocurrió un error inesperado en la aplicación al procesar tu evaluación.',
     502: 'La aplicación no pudo completar la solicitud. Vuelve a intentarlo en unos segundos.',
     503: 'El servicio no está disponible en este momento. Vuelve a intentarlo en unos segundos.',
-    504: 'La solicitud tardó demasiado en responder. Vuelve a intentarlo — si tu examen es muy largo, puede tomar más tiempo del esperado.',
+    504: 'La solicitud tardó demasiado en responder. Vuelve a intentarlo — si tu evaluación es muy larga, puede tomar más tiempo del esperado.',
   };
   return known[status] || `La aplicación respondió con un error (código ${status}). Vuelve a intentarlo; si el problema persiste, revisa que el archivo no esté dañado.`;
 }
@@ -244,7 +244,7 @@ export function detalleDeError(detail, respaldo = '') {
 }
 
 // Textos de aviso que trae X-Question-Stats al generar el XML: los del
-// constructor (`avisos`) y, si no se pudo guardar en el Historial, su motivo
+// constructor (`avisos`) y, si no se pudo guardar en Mis materias, su motivo
 // (primero).
 export function avisosDelXml(stats) {
   const s = stats && typeof stats === 'object' ? stats : {};
@@ -252,7 +252,7 @@ export function avisosDelXml(stats) {
   if (s.historial_guardado === false) {
     const motivo = typeof s.aviso_historial === 'string' && s.aviso_historial.trim()
       ? s.aviso_historial.trim()
-      : 'El XML se generó, pero no se pudo guardar en el Historial. Descárgalo ahora.';
+      : 'El XML se generó, pero no se pudo guardar en Mis materias. Descárgalo ahora.';
     textos.unshift(motivo);
   }
   return textos;

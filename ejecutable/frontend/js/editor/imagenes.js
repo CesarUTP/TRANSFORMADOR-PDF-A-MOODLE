@@ -13,6 +13,11 @@
  * La tarjeta es la fuente de verdad: cada <figure class="q-image"> lleva su
  * imagen en el src (data URL) y collectEditorData() las lee de ahí, así que
  * mover una imagen es mover su nodo.
+ *
+ * Las de un enunciado compartido se ven una sola vez, en la cabecera de su
+ * marco (`.bloque-compartido`): al leer cada pregunta del grupo se le suman,
+ * marcadas con `compartida`. Una pregunta admite MAX_POR_PREGUNTA contando
+ * las suyas y las del enunciado.
  */
 
 import { notificar } from '../estado.js';
@@ -28,7 +33,17 @@ const TIPOS_ARCHIVO = /^image\/(png|jpeg|gif|webp|bmp)$/;
 
 const _valida = im => im && /^image\/(png|jpeg)$/.test(im.mime) && /^[A-Za-z0-9+/]+={0,2}$/.test(im.b64 || '');
 
-function _figuraHtml(im) {
+function _figuraHtml(im, delEnunciado = false) {
+  if (delEnunciado) {
+    return `<figure class="q-image">
+    <img src="data:${im.mime};base64,${im.b64}" alt="" draggable="false">
+    <figcaption class="q-image-botones">
+      <button type="button" class="btn btn-icon q-image-quitar" data-accion="quitarImagen" data-este aria-label="Quitar la imagen" title="Quitar imagen">
+        <i data-lucide="x" style="width:14px;height:14px;"></i>
+      </button>
+    </figcaption>
+  </figure>`;
+  }
   return `<figure class="q-image" draggable="true">
     <img src="data:${im.mime};base64,${im.b64}" alt="" draggable="false">
     <figcaption class="q-image-botones">
@@ -49,22 +64,38 @@ function _figuraHtml(im) {
   </figure>`;
 }
 
-/** Bloque de imágenes de una tarjeta (siempre presente: permite agregar). */
-export function imagenesHtml(q, i, N) {
-  const imgs = (Array.isArray(q.data.images) ? q.data.images : []).filter(_valida);
-  return `<div class="q-images${imgs.length ? '' : ' vacia'}">
-    <p class="field-label" id="q-img-t-${i}">Imágenes <span class="opcional">(van a Moodle con la pregunta)</span></p>
-    <div class="q-images-fila" role="list" aria-labelledby="q-img-t-${i}">${imgs.map(_figuraHtml).join('')}</div>
+function _bloqueHtml({ id, titulo, figuras, aria, pista, soltar }) {
+  return `<div class="q-images${figuras ? '' : ' vacia'}">
+    <p class="field-label"${id ? ` id="${id}"` : ''}>${titulo}</p>
+    <div class="q-images-fila" role="list"${id ? ` aria-labelledby="${id}"` : ' aria-label="Imágenes del enunciado"'}>${figuras}</div>
     <div class="q-images-acciones">
-      <button type="button" class="btn btn-ghost btn-sm" data-accion="agregarImagen" data-este aria-label="Agregar imagen a la pregunta ${N}"
-        title="También puedes arrastrar una imagen a la pregunta">
+      <button type="button" class="btn btn-ghost btn-sm" data-accion="agregarImagen" data-este aria-label="${aria}" title="${pista}">
         <i data-lucide="image-plus" style="width:14px;height:14px;"></i> <span>Agregar imagen</span>
       </button>
-      <span class="q-soltar-nota" aria-hidden="true"><i data-lucide="download" style="width:14px;height:14px;"></i> Soltar en la pregunta ${N}</span>
+      <span class="q-soltar-nota" aria-hidden="true"><i data-lucide="download" style="width:14px;height:14px;"></i> ${soltar}</span>
       <input type="file" class="q-image-archivo" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden
         data-accion-cambio="imagenElegida" data-este tabindex="-1" aria-hidden="true">
     </div>
   </div>`;
+}
+
+/** Bloque de imágenes de una tarjeta (siempre presente: permite agregar). En un grupo, solo las suyas. */
+export function imagenesHtml(q, i, N, enGrupo = false) {
+  const imgs = (Array.isArray(q.data.images) ? q.data.images : []).filter(im => _valida(im) && !(enGrupo && im.compartida));
+  return _bloqueHtml({
+    id: `q-img-t-${i}`, titulo: 'Imágenes <span class="opcional">(van a Moodle con la pregunta)</span>',
+    figuras: imgs.map(im => _figuraHtml(im)).join(''), aria: `Agregar imagen a la pregunta ${N}`,
+    pista: 'También puedes arrastrar una imagen a la pregunta', soltar: `Soltar en la pregunta ${N}`,
+  });
+}
+
+/** Las imágenes de la cabecera de un enunciado compartido. */
+export function bloqueDeImagenesHtml(imagenes) {
+  return _bloqueHtml({
+    titulo: 'Imágenes del enunciado <span class="opcional">(salen con él)</span>',
+    figuras: (imagenes || []).filter(_valida).map(im => _figuraHtml(im, true)).join(''), aria: 'Agregar imagen al enunciado compartido',
+    pista: 'También puedes arrastrar una imagen al enunciado', soltar: 'Soltar en el enunciado',
+  });
 }
 
 // El src de cada imagen lo escribe SOLO este archivo (imagen ya validada al
@@ -87,26 +118,49 @@ function _imagenDe(img) {
   return dato.nada ? null : dato;
 }
 
-/** Las imágenes que tiene ahora una tarjeta, listas para el XML. */
-export function imagenesDeTarjeta(card, qNum) {
-  const out = [];
-  card.querySelectorAll('.q-image img').forEach(img => {
-    if (out.length >= MAX_POR_PREGUNTA) return;
-    const im = _imagenDe(img);
-    if (!im) return;
-    const ext = im.mime === 'image/png' ? 'png' : 'jpg';
-    out.push({ name: `pregunta${qNum}-${out.length + 1}.${ext}`, mime: im.mime, b64: im.b64 });
-  });
-  return out;
+const _bloqueDe = contenedor => contenedor.closest('.grupo-compartido')?.querySelector(':scope > .bloque-compartido') || null;
+const _esEnunciado = contenedor => contenedor.classList.contains('bloque-compartido');
+const _cuantas = contenedor => contenedor.querySelectorAll('.q-image').length;
+
+/** Las imágenes de la cabecera de un enunciado. */
+export function imagenesDeEnunciado(bloque) {
+  return [...bloque.querySelectorAll('.q-image img')].map(_imagenDe).filter(Boolean)
+    .map(({ mime, b64 }) => ({ mime, b64 }));
 }
 
-/** Textos alternativos y estado vacío de una tarjeta. */
+/** Las imágenes que tiene ahora una tarjeta (primero las de su enunciado compartido), listas para el XML. */
+export function imagenesDeTarjeta(card, qNum) {
+  const bloque = _bloqueDe(card);
+  const todas = [
+    ...(bloque ? imagenesDeEnunciado(bloque).map(im => ({ ...im, compartida: true })) : []),
+    ...[...card.querySelectorAll('.q-image img')].map(_imagenDe).filter(Boolean),
+  ];
+  return todas.slice(0, MAX_POR_PREGUNTA).map((im, k) => ({
+    name: `pregunta${qNum}-${k + 1}.${im.mime === 'image/png' ? 'png' : 'jpg'}`, mime: im.mime, b64: im.b64,
+    ...(im.compartida ? { compartida: true } : {}),
+  }));
+}
+
+/** Cuántas imágenes caben todavía en una pregunta o en la cabecera de un enunciado. */
+function _libres(contenedor) {
+  if (!_esEnunciado(contenedor)) {
+    const bloque = _bloqueDe(contenedor);
+    return MAX_POR_PREGUNTA - _cuantas(contenedor) - (bloque ? _cuantas(bloque) : 0);
+  }
+  const propias = [...contenedor.closest('.grupo-compartido').querySelectorAll(':scope > .editor-card')].map(_cuantas);
+  return MAX_POR_PREGUNTA - _cuantas(contenedor) - Math.max(0, ...propias);
+}
+
+// Cómo se nombra el sitio en los avisos: «a la pregunta 3», «al enunciado compartido».
+const _nombre = (contenedor, prep) => (_esEnunciado(contenedor)
+  ? `${{ a: 'al', de: 'del' }[prep]} enunciado compartido` : `${prep} la pregunta ${contenedor.dataset.qnum}`);
+
+/** Textos alternativos y estado vacío de una tarjeta o de la cabecera de un enunciado. */
 function _etiquetar(card) {
-  const N = card.dataset.qnum || '';
   const figs = card.querySelectorAll('.q-image');
   figs.forEach((f, k) => {
     f.setAttribute('role', 'listitem');
-    f.querySelector('img').alt = `Imagen ${k + 1} de la pregunta ${N}`;
+    f.querySelector('img').alt = `Imagen ${k + 1} ${_nombre(card, 'de')}`;
   });
   card.querySelector('.q-images')?.classList.toggle('vacia', figs.length === 0);
 }
@@ -121,7 +175,7 @@ function _actualizar(card) {
 
 /** Después de dibujar el editor. */
 export function prepararImagenes(container) {
-  container.querySelectorAll('.editor-card').forEach(_etiquetar);
+  container.querySelectorAll('.editor-card, .bloque-compartido').forEach(_etiquetar);
 }
 
 function _tarjetas() { return Array.from(document.querySelectorAll('.editor-card')); }
@@ -159,7 +213,7 @@ function _hermanoVigente(siguiente, fila) {
 function _mover(fig, destino, botonFoco = null) {
   const origen = fig.closest('.editor-card');
   if (!destino || destino === origen) return false;
-  if (destino.querySelectorAll('.q-image').length >= MAX_POR_PREGUNTA) {
+  if (_libres(destino) <= 0) {
     showToast(`La pregunta ${destino.dataset.qnum} ya tiene ${MAX_POR_PREGUNTA} imágenes`, 'error');
     return false;
   }
@@ -215,17 +269,53 @@ export function moverImagenA(select) {
   if (fig && destino && _mover(fig, destino, '.q-image-mover')) fig.querySelector('.q-image-mover')?.focus({ preventScroll: true });
 }
 
-/** Quita una imagen de su pregunta (no llegará a Moodle). */
+// Una imagen de una pregunta soltada en un enunciado pasa a ser del enunciado (de todas sus preguntas).
+function _moverAlEnunciado(fig, bloque) {
+  const origen = fig.closest('.editor-card');
+  if (!origen) return false;
+  const filaOrigen = fig.parentElement, siguiente = fig.nextSibling;
+  const im = _imagenDe(fig.querySelector('img'));
+  fig.remove();
+  if (!im || _libres(bloque) <= 0) {
+    filaOrigen.insertBefore(fig, _hermanoVigente(siguiente, filaOrigen));
+    showToast(`No caben más imágenes: una pregunta admite ${MAX_POR_PREGUNTA} contando las del enunciado`, 'error');
+    return false;
+  }
+  const fila = bloque.querySelector('.q-images-fila');
+  fila.insertAdjacentHTML('beforeend', _figuraHtml(im, true));
+  const nueva = fila.lastElementChild;
+  crearIconos(nueva);
+  _actualizar(origen);
+  _actualizar(bloque);
+  _senalar(nueva);
+  notificar('imagen movida');
+  showToast(`Imagen movida de la pregunta ${origen.dataset.qnum} al enunciado compartido`, 'info', {
+    accion: { texto: 'Deshacer', alPulsar: () => {
+      if (!_puedeDeshacer(nueva, filaOrigen, origen, bloque)) return null;
+      nueva.remove();
+      filaOrigen.insertBefore(fig, _hermanoVigente(siguiente, filaOrigen));
+      _actualizar(origen);
+      _actualizar(bloque);
+      _senalar(fig);
+      return fig.querySelector('button');
+    } },
+  });
+  return true;
+}
+
+const _CONTENEDOR = '.editor-card, .bloque-compartido';
+
+/** Quita una imagen de su pregunta o de su enunciado (no llegará a Moodle). */
 export function quitarImagen(btn) {
   const fig = btn.closest('.q-image');
-  const card = btn.closest('.editor-card');
+  const card = btn.closest(_CONTENEDOR);
   if (!fig || !card) return;
   const fila = fig.parentElement, siguiente = fig.nextSibling;
   fig.remove();
   _actualizar(card);
-  card.focus({ preventScroll: true });
+  (_esEnunciado(card) ? card.querySelector('.compartido-texto') : card).focus({ preventScroll: true });
   notificar('imagen quitada');
-  showToast(`Imagen quitada de la pregunta ${card.dataset.qnum}`, 'info', {
+  showToast(`Imagen quitada ${_nombre(card, 'de')}`, 'info', {
     accion: { texto: 'Deshacer', alPulsar: () => {
       if (!_puedeDeshacer(fig, fila, card)) return null;
       fila.insertBefore(fig, _hermanoVigente(siguiente, fila));
@@ -241,7 +331,7 @@ export function agregarImagen(btn) {
 }
 
 export function imagenElegida(input) {
-  const card = input.closest('.editor-card');
+  const card = input.closest(_CONTENEDOR);
   const archivos = Array.from(input.files || []);
   input.value = '';
   if (card) _agregarArchivos(card, archivos);
@@ -293,12 +383,12 @@ async function _agregarArchivos(card, archivos) {
   let error = '';
   try {
     for (const archivo of archivos) {
-      if (fila.querySelectorAll('.q-image').length >= MAX_POR_PREGUNTA) {
-        error = `Cada pregunta admite hasta ${MAX_POR_PREGUNTA} imágenes.`;
+      if (_libres(card) <= 0) {
+        error = `Cada pregunta admite hasta ${MAX_POR_PREGUNTA} imágenes, contando las de su enunciado compartido.`;
         break;
       }
       try {
-        fila.insertAdjacentHTML('beforeend', _figuraHtml(await _procesar(archivo)));
+        fila.insertAdjacentHTML('beforeend', _figuraHtml(await _procesar(archivo), _esEnunciado(card)));
         nuevas.push(fila.lastElementChild);
       } catch (e) {
         error = `«${archivo.name}»: ${e?.message || 'no se pudo leer la imagen.'}`;
@@ -318,7 +408,7 @@ async function _agregarArchivos(card, archivos) {
   notificar('imagen agregada');
   // Un solo aviso con el resultado. Si algo se agregó, no es un error
   // (antes salía en rojo aunque la imagen sí entrara).
-  const hecho = nuevas.length === 1 ? `Imagen agregada a la pregunta ${card.dataset.qnum}` : `${nuevas.length} imágenes agregadas a la pregunta ${card.dataset.qnum}`;
+  const hecho = nuevas.length === 1 ? `Imagen agregada ${_nombre(card, 'a')}` : `${nuevas.length} imágenes agregadas ${_nombre(card, 'a')}`;
   showToast(error ? `${hecho}. ${error}` : hecho, error ? 'info' : 'success', {
     accion: { texto: 'Deshacer', alPulsar: () => {
       if (!card.isConnected) { _avisoNoSePuedeDeshacer(); return null; }
@@ -367,26 +457,27 @@ export function iniciarArrastreImagenes(container) {
     container.querySelectorAll('.soltar-aqui').forEach(c => c.classList.remove('soltar-aqui'));
   });
   container.addEventListener('dragover', e => {
-    const card = e.target.closest?.('.editor-card');
+    const card = e.target.closest?.(_CONTENEDOR);
     if (!card || !(_arrastrada || _hayArchivos(e))) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = _arrastrada ? 'move' : 'copy';
     if (!card.classList.contains('soltar-aqui')) {
       container.querySelectorAll('.soltar-aqui').forEach(c => c.classList.remove('soltar-aqui'));
-      if (card !== _arrastrada?.closest('.editor-card')) card.classList.add('soltar-aqui');
+      if (card !== _arrastrada?.closest(_CONTENEDOR)) card.classList.add('soltar-aqui');
     }
   });
   container.addEventListener('dragleave', e => {
-    const card = e.target.closest?.('.editor-card');
+    const card = e.target.closest?.(_CONTENEDOR);
     if (card && !card.contains(e.relatedTarget)) card.classList.remove('soltar-aqui');
   });
   container.addEventListener('drop', e => {
-    const card = e.target.closest?.('.editor-card');
+    const card = e.target.closest?.(_CONTENEDOR);
     if (!card) return;
     card.classList.remove('soltar-aqui');
     if (_arrastrada) {
       e.preventDefault();
-      _mover(_arrastrada, card);
+      if (_esEnunciado(card)) _moverAlEnunciado(_arrastrada, card);
+      else _mover(_arrastrada, card);
     } else if (_hayArchivos(e)) {
       e.preventDefault();
       _agregarArchivos(card, Array.from(e.dataTransfer.files));

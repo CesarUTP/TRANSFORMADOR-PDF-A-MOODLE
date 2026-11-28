@@ -131,7 +131,7 @@ MENSAJES_ES: Dict[str, str] = {
     "cuota_diaria": (
         "Se alcanzó el límite diario de uso del servicio de IA. "
         "Se restablece automáticamente cada día (medianoche, hora del Pacífico). "
-        "Si esto ocurre seguido, conviene usar una API key con facturación activada."
+        "Si esto ocurre seguido, conviene usar una clave con facturación activada."
     ),
     "cuota_persistente": "Se alcanzó el límite de uso del servicio de IA. Espera un minuto e intenta de nuevo.",
     "saturada": (
@@ -141,8 +141,8 @@ MENSAJES_ES: Dict[str, str] = {
     # 401/403: la clave no es válida o Google se la revocó. En esta app el
     # docente ES quien administra su propia clave.
     "clave_rechazada": (
-        "Google rechazó tu clave de la API de Gemini (no es válida o fue "
-        "revocada). Ábrela desde «Acerca de → API de Gemini» y pega una "
+        "Google rechazó tu clave de Gemini (no es válida o fue "
+        "revocada). Ábrela desde «Acerca de → Clave de Gemini» y pega una "
         "clave nueva de https://aistudio.google.com/apikey."
     ),
     "rechazada": (

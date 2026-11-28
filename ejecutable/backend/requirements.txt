@@ -18,3 +18,8 @@ Pillow==12.3.0 ; python_version < "3.11"   # la 13 pide Python 3.11 o más
 cryptography==50.0.1
 reportlab==4.2.5
 python-docx==1.2.0
+# Fórmulas dibujadas en el PDF y el Word (backend/formulas.py): todo en Python y sin red (licencia MIT;
+# ziamath trae la fuente STIX Two Math, licencia OFL).
+ziamath==0.13
+ziafont==0.11
+latex2mathml==3.81.1

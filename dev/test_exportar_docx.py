@@ -181,13 +181,12 @@ def _contar(texto: str, c: Counter) -> None:
 
 
 def palabras_pdf(pdf: bytes, plan) -> Counter:
-    """Las palabras del PDF sin «Página X de Y» ni el encabezado corrido (el Word los lleva en su encabezado y pie)."""
-    corridos = {norm(f"{s.izquierda} {s.derecha}") for s in plan.secciones}
+    """Las palabras del PDF sin «Página X de Y» (el Word lo lleva en su pie)."""
     c = Counter()
     with pdfplumber.open(io.BytesIO(pdf)) as doc:
         for pag in doc.pages:
             for linea in (pag.extract_text() or "").splitlines():
-                if re.fullmatch(r"Página \d+ de \d+", linea.strip()) or norm(linea) in corridos:
+                if re.fullmatch(r"Página \d+ de \d+", linea.strip()):
                     continue
                 _contar(linea, c)
     return c
@@ -252,8 +251,8 @@ for sec_i, sec in enumerate(d.sections):
     ok(sec._sectPr.find(qn("w:pgNumType")) is not None and sec._sectPr.find(qn("w:pgNumType")).get(qn("w:start")) == "1",
        f"sección {sec_i + 1}: la numeración empieza en 1")
     ok(sec.footer.paragraphs[0]._p.xpath('.//w:instrText[contains(., "SECTIONPAGES")]') != [], f"sección {sec_i + 1}: «Página X de Y» con campos de Word")
-ok(d.sections[0].different_first_page_header_footer and not d.sections[2].different_first_page_header_footer, "el encabezado corrido salta la primera hoja del examen, no la de la clave")
-ok("CLAVE DE RESPUESTAS" in d.sections[2].header.paragraphs[0].text, f"la clave lleva su encabezado ({d.sections[2].header.paragraphs[0].text!r})")
+ok(not any(re.match(r"word/header\d*\.xml", n) for n in z.namelist()) and "headerReference" not in xml_doc,
+   "las páginas no llevan encabezado, solo el número abajo")
 ok(len(d.inline_shapes) >= 20, f"casillas y burbujas son imágenes ({len(d.inline_shapes)})")
 g = pl.construir_plan(qs, key, 20, datos()).geo
 ok(abs(d.sections[0].page_width.pt - g.papel[0]) < 0.5 and abs(d.sections[0].left_margin.pt - g.m_izq) < 0.5, "papel y márgenes como en el PDF")
@@ -340,7 +339,7 @@ r = cli.post("/api/exportar_examen", json=cuerpo, headers=H)
 ok(r.status_code == 200, f"Word: 200 ({r.status_code})")
 ok(r.headers["content-type"].startswith("application/vnd.openxmlformats-officedocument.wordprocessingml.document") and r.content[:2] == b"PK",
    f"…con un .docx ({r.headers['content-type']})")
-ok(".docx" in r.headers["content-disposition"] and "examen_y_clave" in r.headers["content-disposition"], f"nombre {r.headers['content-disposition']}")
+ok(".docx" in r.headers["content-disposition"] and "evaluacion_y_clave" in r.headers["content-disposition"], f"nombre {r.headers['content-disposition']}")
 ok(len(abrir(r.content).sections) == 2, "el .docx descargado se abre y trae examen y clave")
 info = json.loads(r.headers["x-pdf-info"])
 ok(info["preguntas"] == 8 and info["paginas"] is None, f"cabecera X-PDF-Info del Word {info}")
@@ -369,14 +368,14 @@ vcuerpo = {"filename": "banco.docx", "total_points": 20, "questions": qs8, "answ
            "versiones": [{"etiqueta": "A", "nums": [1, 2, 3, 4], "total_points": 10}, {"etiqueta": "B", "nums": [5, 6, 7, 8], "total_points": 10}]}
 rv = cli.post("/api/exportar_versiones", json=vcuerpo, headers=H)
 zv = zipfile.ZipFile(io.BytesIO(rv.content)) if rv.status_code == 200 else None
-ok(rv.status_code == 200 and zv is not None and sorted(zv.namelist()) == ["banco_version_A_examen.docx", "banco_version_B_examen.docx"],
+ok(rv.status_code == 200 and zv is not None and sorted(zv.namelist()) == ["banco_version_A_evaluacion.docx", "banco_version_B_evaluacion.docx"],
    f"versiones en Word: un .docx por versión ({zv.namelist() if zv else rv.text[:100]})")
-va = abrir(zv.read("banco_version_A_examen.docx"))
+va = abrir(zv.read("banco_version_A_evaluacion.docx"))
 texto_va = " ".join(p.text for p in parrafos_docx(va))
 ok("VERSIÓN A" in texto_va and "Desarrolla el tema" not in texto_va and "Mira la imagen" in texto_va, "cada Word trae SOLO sus preguntas y su nombre de versión")
 rv2 = cli.post("/api/exportar_versiones", json={**vcuerpo, "datos": {**vcuerpo["datos"], "formato": "ambos"}}, headers=H)
 zv2 = zipfile.ZipFile(io.BytesIO(rv2.content))
-ok(sorted(zv2.namelist()) == ["banco_version_A_examen.docx", "banco_version_A_examen.pdf", "banco_version_B_examen.docx", "banco_version_B_examen.pdf"],
+ok(sorted(zv2.namelist()) == ["banco_version_A_evaluacion.docx", "banco_version_A_evaluacion.pdf", "banco_version_B_evaluacion.docx", "banco_version_B_evaluacion.pdf"],
    f"«ambos»: un PDF y un Word por versión ({zv2.namelist()})")
 ok(len(json.loads(rv2.headers["x-pdf-info"])["versiones"]) == 2, "…y el resumen de versiones")
 rv3 = cli.post("/api/exportar_versiones", json={**vcuerpo, "total_points": 20, "datos": {"formato": "word", "puntos_enteros": True}, "versiones": [{"etiqueta": "A", "nums": [1, 2, 3], "total_points": 7}]}, headers=H)

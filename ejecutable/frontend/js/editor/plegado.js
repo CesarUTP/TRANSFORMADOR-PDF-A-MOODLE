@@ -12,6 +12,7 @@
  * conserva lo que el docente tenía abierto.
  */
 import { clozeBuildTextAndAnswer } from './cloze.js';
+import { desplegarCompartidos, mostrarSuGrupo } from './compartido.js';
 import { autoGrowTextarea } from './tarjetas.js';
 import { crearIconos } from '../util.js';
 import { abiertasPorDefecto, recortar } from './plegado-logica.js';
@@ -36,9 +37,14 @@ function _sincronizar(card) {
   card.querySelector('.card-toggle')?.setAttribute('aria-label', `${abierta ? 'Plegar' : 'Abrir'} la pregunta ${card.dataset.qnum}`);
 }
 
-/** Abre una tarjeta. `animar` solo cuando la abre el docente con un clic. */
+/** Abre una tarjeta (y el enunciado compartido plegado que la guarde). `animar` solo cuando la abre un clic. */
 export function abrirTarjeta(card, { animar = false } = {}) {
   if (!card) return;
+  mostrarSuGrupo(card);
+  _abrir(card, { animar });
+}
+
+function _abrir(card, { animar = false } = {}) {
   if (!estaAbierta(card)) {
     card.setAttribute('data-abierta', '');
     // Estaba oculta: los campos no tenían medidas, se recalculan ahora.
@@ -71,6 +77,7 @@ export function alternarTarjeta(el) {
 export function alternarTodas() {
   const cards = _tarjetas().filter(c => c.style.display !== 'none');
   const abrir = cards.some(c => !estaAbierta(c));
+  if (abrir) desplegarCompartidos();
   cards.forEach(c => { if (abrir) abrirTarjeta(c); else plegarTarjeta(c); });
   _actualizarBotonTodas();
 }
@@ -106,7 +113,8 @@ export function resumenDe(card, { largoEnunciado = 140, largoRespuesta = 70 } = 
     }).join(' · ');
     falta = !marcadas.length;
   } else if (tipo === 'truefalse') {
-    respuesta = _valor(card, '.q-ans');
+    respuesta = _valor(card, '.q-ans:checked');
+    falta = !respuesta;
   } else if (tipo === 'shortanswer') {
     respuesta = _valor(card, '.q-sa-answer'); falta = !respuesta;
   } else if (tipo === 'numerical') {
@@ -122,7 +130,7 @@ export function resumenDe(card, { largoEnunciado = 140, largoRespuesta = 70 } = 
       const { text, huecos } = clozeBuildTextAndAnswer(b);
       enunciado = text.replace(/\[[^\]]*\]/g, '____');
       const n = huecos.length;
-      respuesta = n === 1 ? '1 hueco' : `${n} huecos`;
+      respuesta = n === 1 ? '1 espacio' : `${n} espacios`;
       falta = huecos.some(h => !h.correct_idx.length);
     }
   }
@@ -182,7 +190,7 @@ export function aplicarPlegado(abiertas = null) {
       revisar: c.dataset.revisar === '1' || c.dataset.review === '1',
     })));
   cards.forEach((c, i) => {
-    if (lista[i]) abrirTarjeta(c); else { c.removeAttribute('data-abierta'); actualizarResumen(c); _sincronizar(c); }
+    if (lista[i]) _abrir(c); else { c.removeAttribute('data-abierta'); actualizarResumen(c); _sincronizar(c); }
     actualizarEstado(c);
   });
   _actualizarBotonTodas();

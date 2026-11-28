@@ -1,14 +1,19 @@
 /**
- * navegacion.js — los tres pasos de la app (cargar, revisar, descargar).
+ * navegacion.js — las pantallas de la app: inicio (cómo empezar) y los tres pasos (cargar, revisar, descargar).
  */
 import { borrarBorrador } from './borrador.js';
 import { clearFile } from './carga.js';
-import { panelEditor, panelError, panelProgress, panelSuccess, panelUpload } from './dom.js';
+import { panelEditor, panelError, panelInicio, panelProgress, panelSuccess, panelUpload } from './dom.js';
 import { estado } from './estado.js';
 import { reiniciarPaso1 } from './materias.js';
 import { confirmar } from './ui/confirmar.js';
 
-// Stepper Manager
+// Stepper Manager. Un examen escrito desde cero no «carga» ni «revisa»: sus pasos se llaman de otra forma.
+function nombrarPasos(desdeCero) {
+  document.getElementById('step-1-texto').textContent = desdeCero ? 'Empezar' : 'Cargar y configurar';
+  document.getElementById('step-2-texto').textContent = desdeCero ? 'Escribir preguntas' : 'Revisar preguntas';
+}
+
 function updateStepper(step) {
   const items = [1, 2, 3].map(n => document.getElementById(`step-${n}-indicator`));
   items.forEach((el, i) => {
@@ -22,6 +27,7 @@ function updateStepper(step) {
 }
 
 const PANELES = {
+  inicio:   { el: () => panelInicio,   titulo: 'inicio-titulo' },
   upload:   { el: () => panelUpload,   titulo: 'upload-heading' },
   progress: { el: () => panelProgress, titulo: 'progress-title' },
   editor:   { el: () => panelEditor,   titulo: 'editor-title' },
@@ -42,6 +48,9 @@ export function showPanel(name, { enfocar = true } = {}) {
   rail?.classList.remove('grid-open');
   rail?.querySelector('.rail-pos')?.setAttribute('aria-expanded', 'false');
 
+  // En la elección de cómo empezar todavía no hay pasos que mostrar.
+  document.querySelector('.stepper').hidden = name === 'inicio';
+  nombrarPasos(!!estado.currentUploadMetadata?.desde_cero && (name === 'editor' || name === 'success'));
   if (name === 'upload') updateStepper(1);
   else if (name === 'editor') updateStepper(2);
   else if (name === 'success') updateStepper(3);
@@ -60,21 +69,22 @@ export function resetAll() {
   estado.historialId = null;
   estado.errorReturnPanel = 'upload';
   reiniciarPaso1();
-  showPanel('upload');
+  showPanel('inicio');
 }
 
-// "Descartar" en el panel de revisión: antes era un botón rojo junto a
+// "Descartar" en el editor: antes era un botón rojo junto a
 // "Aprobar" que borraba todo sin preguntar. Ahora es discreto y pide
 // confirmación diciendo cuánto trabajo se pierde.
 export async function confirmDiscardReview() {
   const n = document.querySelectorAll('#editor-questions-container .editor-card').length;
+  const nuevo = !!estado.currentUploadMetadata?.desde_cero;
   const ok = await confirmar({
-    titulo: '¿Descartar esta revisión?',
+    titulo: '¿Descartar esta evaluación?',
     mensaje: n
-      ? `Se perderán los cambios en ${n === 1 ? 'la pregunta' : `las ${n} preguntas`} de este examen y volverás al paso 1. Esta acción no se puede deshacer.`
-      : 'Volverás al paso 1. Esta acción no se puede deshacer.',
-    confirmar: 'Descartar revisión',
-    cancelar: 'Seguir revisando',
+      ? `Se perderán ${nuevo ? (n === 1 ? 'la pregunta que escribiste' : `las ${n} preguntas que escribiste`) : `los cambios en ${n === 1 ? 'la pregunta' : `las ${n} preguntas`} de esta evaluación`} y volverás al inicio. Esta acción no se puede deshacer.`
+      : 'Volverás al inicio. Esta acción no se puede deshacer.',
+    confirmar: 'Descartar evaluación',
+    cancelar: nuevo ? 'Seguir escribiendo' : 'Seguir editando',
   });
   if (!ok) return;
   borrarBorrador();

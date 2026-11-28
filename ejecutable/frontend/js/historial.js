@@ -25,7 +25,7 @@ export async function exportarPdfHistorial(id) {
     const d = await res.json();
     abrirExportarPdf({ filename: d.filename, total_points: d.total_points, questions: d.questions, answer_key: d.answer_key, materia_id: d.materia_id, actividad: d.actividad });
   } catch (_) {
-    showToast('No se pudo preparar la exportación de este examen. Vuelve a intentarlo.', 'error');
+    showToast('No se pudo preparar la exportación de esta evaluación. Vuelve a intentarlo.', 'error');
   }
 }
 
@@ -61,12 +61,12 @@ export async function reopenHistory(id, antesDeAbrir = null) {
   if (enRevision || convirtiendo) {
     const n = document.querySelectorAll('#editor-questions-container .editor-card').length;
     const ok = await confirmar({
-      titulo: '¿Reabrir este examen?',
+      titulo: '¿Reabrir esta evaluación?',
       mensaje: enRevision
-        ? `Tienes una revisión abierta${n ? ` (${n === 1 ? '1 pregunta' : `${n} preguntas`})` : ''}. Si reabres este examen se perderá la revisión actual, con todo lo que no hayas convertido a XML. Esta acción no se puede deshacer.`
-        : 'Hay una conversión en curso. Si reabres este examen se cancelará y perderás lo que lleva de avance.',
-      confirmar: enRevision ? 'Reabrir y perder la revisión actual' : 'Reabrir y cancelar la conversión',
-      cancelar: enRevision ? 'Seguir con mi revisión' : 'Esperar la conversión',
+        ? `Tienes una evaluación abierta en el editor${n ? ` (${n === 1 ? '1 pregunta' : `${n} preguntas`})` : ''}. Si reabres otra, se perderá lo que no hayas convertido a XML. Esta acción no se puede deshacer.`
+        : 'Hay una conversión en curso. Si reabres esta evaluación, la conversión se cancelará y perderás lo que lleva de avance.',
+      confirmar: enRevision ? 'Reabrir y perder la actual' : 'Reabrir y cancelar la conversión',
+      cancelar: enRevision ? 'Seguir con la actual' : 'Esperar la conversión',
     });
     if (!ok) return false;
   }
@@ -80,10 +80,10 @@ export async function reopenHistory(id, antesDeAbrir = null) {
       { filename: d.filename, category: d.category, total_points: d.total_points, materia_id: d.materia_id ?? null, actividad: d.actividad ?? null },
       { questions: d.questions, answer_key: d.answer_key, skipped_questions: d.skipped_questions || [] },
     );
-    showToast(`Revisión de «${d.filename}» reabierta`, 'info');
+    showToast(`«${d.filename}» reabierta en el editor`, 'info');
     return true;
   } catch (_) {
-    showToast('No se pudo reabrir esa revisión', 'error');
+    showToast('No se pudo reabrir esa evaluación', 'error');
     return false;
   }
 }
@@ -95,7 +95,7 @@ export async function borrarExamen(id) {
     if (!res.ok && res.status !== 404) throw new Error('delete failed');
     return true;
   } catch (_) {
-    showToast('No se pudo borrar el examen', 'error');
+    showToast('No se pudo borrar la evaluación', 'error');
     return false;
   }
 }

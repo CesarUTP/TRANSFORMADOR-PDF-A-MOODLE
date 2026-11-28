@@ -429,7 +429,7 @@ def _elegir(arriba: Dict[str, Any], abajo: Dict[str, Any]) -> Dict[str, Any]:
 # «el código», «este programa», «dicha imagen»: algo que ya se mostró.
 _YA_MOSTRADO = re.compile(r"\b(?:el|la|los|las|este|esta|estos|ese|esa|dicho|dicha|del|al)\s+" + _OBJETO + r"\b", re.I)
 MOTIVO_OMITIDA = ("La IA no incluyó esta pregunta, que en el documento tiene una imagen. "
-                  "Revísala: si corresponde, agrégala con su imagen (como pregunta de ensayo).")
+                  "Revísala: si corresponde, agrégala con su imagen (como pregunta de desarrollo).")
 _MAX_CADENA = 3       # preguntas seguidas que comparten una imagen
 _CERCA_LINEAS = 8     # sin marca de la IA: la siguiente empieza a ≤ 8 líneas
 

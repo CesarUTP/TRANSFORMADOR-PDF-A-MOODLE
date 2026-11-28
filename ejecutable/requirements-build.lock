@@ -493,6 +493,12 @@ idna==3.20 \
     # via
     #   anyio
     #   requests
+latex2mathml==3.81.1 \
+    --hash=sha256:c337668441b71c819b6733905a8058ba9a9d767bae11a0c5fdacb3aff31361bd \
+    --hash=sha256:c95add0c0fcdecad2d70567e0643050d5ea1149fb2e98a5d5792fb1c8eea2ed5
+    # via
+    #   -r backend/requirements.txt
+    #   ziamath
 lxml==6.1.3 \
     --hash=sha256:032a0a97eed428bd143c75a11118238546424ceb2fa311cca5f073aa44658dc4 \
     --hash=sha256:05f5bce9af14fd1506997594bd81cee6d9c6b58ea80a39c058327aa6371ed9e9 \
@@ -3378,3 +3384,13 @@ websockets==17.1 ; python_full_version >= '3.11' \
     --hash=sha256:fd8f47dbf2e8adb15c847215f83436de3fdb120b51fdae0fbbdf69fd97a3ad80 \
     --hash=sha256:ff3e2ba7a9f0a110b0555452e9b5a03a34e11662544e01beea15f144b48ba7b7
     # via uvicorn
+ziafont==0.11 \
+    --hash=sha256:b2a9991948b232640215236efdf603f372403b0e000598971a84cae35880d50c \
+    --hash=sha256:b62132be3da9667a80d048ab5498f107e49761722b69965788c2c747a38e7373
+    # via
+    #   -r backend/requirements.txt
+    #   ziamath
+ziamath==0.13 \
+    --hash=sha256:4f56e9d0b6489f01bcf19c05d68e6da84ed6601d2e1262a62d3a9a7e7c33a171 \
+    --hash=sha256:67a9b9714101fc90c2d6d0328e578f3ac311fb007644f2bbb9314ba2bc1c1459
+    # via -r backend/requirements.txt

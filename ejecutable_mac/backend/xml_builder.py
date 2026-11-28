@@ -25,7 +25,7 @@ from answer_matching import OPCION_POSICIONAL, RespuestaNoResuelta, find_cloze_b
 from modelo import (
     Clave, Hueco, HuecoClave, Pregunta, PreguntaCloze, PreguntaEssay, PreguntaMatching, PreguntaMultichoice,
     PreguntaNumerical, PreguntaShortanswer, PreguntaTruefalse, huecos_de_cloze,
-    preguntas_desde_dicts, texto_compartido,
+    imagenes_compartidas, preguntas_desde_dicts, texto_compartido,
 )
 
 logger = logging.getLogger(__name__)
@@ -252,14 +252,14 @@ def _cloze_a_moodle(cloze_text: str, q_num: int, raw_key_ans: str,
         if fallos:
             target_ans, motivo = fallos[0]
             raise RespuestaNoResuelta(
-                f"Pregunta {q_num} (cloze): la respuesta '{target_ans[:60]}' del espacio [{letter}] "
+                f"Pregunta {q_num} (completar): la respuesta '{target_ans[:60]}' del espacio [{letter}] "
                 + ("es ambigua: coincide con varias opciones." if motivo == "ambigua"
                    else "no coincide con ninguna de las opciones.")
             )
 
         if not correct_indices:
             raise RespuestaNoResuelta(
-                f"Pregunta {q_num} (cloze): el espacio [{letter}] no tiene una respuesta correcta en la clave."
+                f"Pregunta {q_num} (completar): el espacio [{letter}] no tiene una respuesta correcta en la clave."
             )
 
         def render_option(i: int, opt: str) -> str:
@@ -332,19 +332,24 @@ def _questiontext(html_text: str, p: Pregunta, name: str) -> List[str]:
     src="@@PLUGINFILE@@/nombre"> en el texto y el archivo en base64 dentro
     de <questiontext> (<file ... encoding="base64">). Sus nombres y
     contenido ya vienen validados (validator.py → imagenes.errores_imagenes)."""
+    def etiqueta(im) -> str:
+        return f'<p><img src="@@PLUGINFILE@@/{_campo(im.name, "name")}" alt="{esc("Imagen de " + name)}"></p>'
+
     contexto = texto_compartido(p)
-    if contexto:
-        # El enunciado compartido va DENTRO de cada pregunta del grupo: así se entiende aunque Moodle las mezcle
-        # o elija al azar. La clase permite recuperarlo al volver a importar el XML (importar_xml.py).
-        bloque = texto_html(contexto)
-        if isinstance(p, PreguntaCloze):
-            bloque = bloque.replace("{", "&#123;")     # una «{1:MC:…}» en el texto no es un espacio de completar
-        html_text = f'<div class="{CLASE_CONTEXTO}"><p>{bloque}</p></div>{html_text}'
+    del_enunciado = imagenes_compartidas(p)
+    if contexto or del_enunciado:
+        # El enunciado compartido (texto e imágenes) va DENTRO de cada pregunta del grupo: así se entiende aunque
+        # Moodle las mezcle o elija al azar. La clase permite recuperarlo al volver a importar el XML (importar_xml.py).
+        bloque = ""
+        if contexto:
+            texto = texto_html(contexto)
+            if isinstance(p, PreguntaCloze):
+                texto = texto.replace("{", "&#123;")     # una «{1:MC:…}» en el texto no es un espacio de completar
+            bloque = f"<p>{texto}</p>"
+        bloque += "".join(etiqueta(im) for im in del_enunciado)
+        html_text = f'<div class="{CLASE_CONTEXTO}">{bloque}</div>{html_text}'
     imagenes = p.images or []
-    html_imgs = "".join(
-        f'<p><img src="@@PLUGINFILE@@/{_campo(im.name, "name")}" alt="{esc("Imagen de " + name)}"></p>'
-        for im in imagenes
-    )
+    html_imgs = "".join(etiqueta(im) for im in imagenes if not im.compartida)
     lines = ['    <questiontext format="html">',
              f'      <text>{cdata(html_text + html_imgs)}</text>']
     lines += [f'      <file name="{im.name}" path="/" encoding="base64">{_campo(im.b64, "b64")}</file>'
@@ -391,10 +396,10 @@ def _avisar_reparto_fracciones(stats: QuestionStats, num: int, correctas: int, i
         if cantidad in _REPARTO_EXACTO or cantidad <= 0:
             continue
         if cantidad <= 19:
-            aviso = (f"La pregunta {num} (opción múltiple) tiene {cantidad} opciones {que}: Moodle solo acepta "
+            aviso = (f"La pregunta {num} (selección múltiple) tiene {cantidad} opciones {que}: Moodle solo acepta "
                      f"ciertos porcentajes, así que el 100 % se reparte entre 10 % y 5 % en vez de partes iguales.")
         else:
-            aviso = (f"La pregunta {num} (opción múltiple) tiene {cantidad} opciones {que}: son más de las 20 que Moodle "
+            aviso = (f"La pregunta {num} (selección múltiple) tiene {cantidad} opciones {que}: son más de las 20 que Moodle "
                      f"permite repartir, así que cada una vale 5 %. Considera dividir la pregunta.")
         stats.avisos.append(aviso)
         logger.warning(aviso)
@@ -439,13 +444,13 @@ def _avisar_puntos_no_validos(stats: QuestionStats, questions: List[dict], pregu
         detalle = "; ".join(f"la {n}: {str(v)[:20]!r} → {nota:g}" for n, v, nota in malos[:4])
         stats.avisos.append(
             f"{len(malos)} pregunta(s) traen un puntaje que no sirve (negativo o que no es un número) y recibieron el "
-            f"reparto por tipo en su lugar ({detalle}{'…' if len(malos) > 4 else ''}). El total del examen puede no ser el "
+            f"reparto por tipo en su lugar ({detalle}{'…' if len(malos) > 4 else ''}). El total de la evaluación puede no ser el "
             f"que fijaste: revisa los puntos en el editor.")
     if ausentes:
         detalle = ", ".join(f"{n}" for n, _ in ausentes[:8])
         stats.avisos.append(
             f"{len(ausentes)} pregunta(s) no traían puntaje (la {detalle}{'…' if len(ausentes) > 8 else ''}) y recibieron el "
-            f"reparto por tipo. El total del examen puede no ser el que fijaste: revisa los puntos en el editor.")
+            f"reparto por tipo. El total de la evaluación puede no ser el que fijaste: revisa los puntos en el editor.")
     for a in stats.avisos[antes:]:
         logger.warning(a)
 
@@ -463,7 +468,7 @@ def _avisar_puntos_cloze(stats: QuestionStats, num: int, raw_text: str, grade_va
         return
     aviso = (
         f"La pregunta {num} (Completar) tiene {grade_val:g} punto(s) en el editor, pero Moodle le dará "
-        f"{en_moodle} ({huecos} hueco(s), mínimo 1 punto por hueco): el total del examen en Moodle "
+        f"{en_moodle} ({huecos} espacio(s), mínimo 1 punto por espacio): el total de la evaluación en Moodle "
         f"será distinto al del editor. Ajusta los puntos al importar."
     )
     stats.avisos.append(aviso)
@@ -577,13 +582,13 @@ def build_xml(
             if fallos:
                 target, motivo = fallos[0]
                 raise RespuestaNoResuelta(
-                    f"Pregunta {num} (multichoice): la respuesta '{target[:60]}' "
+                    f"Pregunta {num} (selección múltiple): la respuesta '{target[:60]}' "
                     + ("es ambigua: coincide con varias opciones." if motivo == "ambigua"
                        else "no coincide con ninguna de las opciones.")
                 )
 
             if not correct_letters:
-                raise RespuestaNoResuelta(f"Pregunta {num} (multichoice): no hay respuesta correcta en la clave.")
+                raise RespuestaNoResuelta(f"Pregunta {num} (selección múltiple): no hay respuesta correcta en la clave.")
 
             is_single = len(correct_letters) == 1
 
@@ -644,7 +649,7 @@ def build_xml(
             is_true = p.es_verdadero()
             if is_true is None:
                 raise RespuestaNoResuelta(
-                    f"Pregunta {num} (truefalse): la respuesta '{correct_answer[:40]}' no es Verdadero ni Falso."
+                    f"Pregunta {num} (verdadero o falso): la respuesta '{correct_answer[:40]}' no es Verdadero ni Falso."
                 )
 
             xml_parts.append('  <question type="truefalse">')
@@ -692,13 +697,13 @@ def build_xml(
             # orden secuencial 1-a, 2-b, 3-c…: antes, ante una clave que no
             # resolvía, el XML salía con parejas equivocadas sin avisar.
             if not pairs_map:
-                raise RespuestaNoResuelta(f"Pregunta {num} (matching): no hay una clave de respuestas 'número-letra'.")
+                raise RespuestaNoResuelta(f"Pregunta {num} (emparejamiento): no hay una clave de respuestas 'número-letra'.")
             for a_k in a_keys:
                 letter = p.letra_de(a_k)
                 a_val = col_a[a_k].strip()
                 if letter is None:
                     raise RespuestaNoResuelta(
-                        f"Pregunta {num} (matching): el elemento {a_k} de la Columna A no tiene una "
+                        f"Pregunta {num} (emparejamiento): el elemento {a_k} de la Columna A no tiene una "
                         f"pareja válida en la clave (letra '{pairs_map.get(str(a_k), '')}')."
                     )
                 b_val = col_b[letter].strip()
@@ -828,7 +833,7 @@ def build_xml(
             if valor_numerico is None:
                 sugerido = sin_separador_de_miles(correct_answer)
                 raise RespuestaNoResuelta(
-                    f"Pregunta {num} (numerical): la respuesta '{correct_answer[:40]}' no es un número válido."
+                    f"Pregunta {num} (numérica): la respuesta '{correct_answer[:40]}' no es un número válido."
                     + (f" Parece llevar separador de miles: escríbelo sin él (por ejemplo {sugerido})." if sugerido else "")
                 )
             ambiguo = miles_ambiguo(correct_answer)
@@ -854,7 +859,7 @@ def build_xml(
 
     if sin_mezclar:
         aviso = (
-            f"{len(sin_mezclar)} pregunta(s) de opción múltiple tienen una opción que depende de su posición "
+            f"{len(sin_mezclar)} pregunta(s) de selección múltiple tienen una opción que depende de su posición "
             f"(«todas las anteriores», «A y B»…): en Moodle NO se mezclan sus opciones "
             f"(la {', '.join(map(str, sin_mezclar[:8]))}{'…' if len(sin_mezclar) > 8 else ''}). Si prefieres mezclarlas, "
             f"cambia esa opción por un texto que no dependa de las demás."

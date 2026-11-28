@@ -41,7 +41,7 @@ def subconjunto(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[str,
         raise VersionInvalida("Una versión repite una pregunta.")
     faltan = [n for n in nums if n not in por_num]
     if faltan:
-        raise VersionInvalida("La versión pide preguntas que el examen no tiene: " + ", ".join(str(n) for n in faltan[:5]) + ".")
+        raise VersionInvalida("La versión pide preguntas que la evaluación no tiene: " + ", ".join(str(n) for n in faltan[:5]) + ".")
     if not nums:
         raise VersionInvalida("Una versión no tiene preguntas.")
     puntos = puntos or {}

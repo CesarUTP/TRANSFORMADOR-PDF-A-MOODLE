@@ -63,7 +63,10 @@ export function setPointsToolMode(mode) {
 export function sincronizarPanelPuntos(escritos = {}) {
   setPointsToolMode(_pointsToolMode);
   document.querySelectorAll('.points-type-input').forEach(inp => {
-    if (Object.hasOwn(escritos, inp.dataset.type)) inp.value = escritos[inp.dataset.type];
+    if (Object.hasOwn(escritos, inp.dataset.type)) {
+      inp.value = escritos[inp.dataset.type];
+      inp.dataset.escrito = '1';
+    }
   });
   actualizarVistaPorTipo();
 }
@@ -82,6 +85,8 @@ export function applyPointsDistribution() {
   const porTipo = leerPuntosPorTipo();
 
   syncParseResultFromDOM();
+  // El docente decidió los puntos: a partir de aquí no se reparten solos (exámenes escritos desde cero).
+  if (estado.currentUploadMetadata) estado.currentUploadMetadata.reparto_auto = false;
   const questions = estado.currentParseResult.questions;
   const anteriores = questions.map(q => q.points);
   const totalAntes = _editorTotalPoints();
@@ -89,7 +94,7 @@ export function applyPointsDistribution() {
 
   if (mode === 'equal') {
     if (!totalAntes) {
-      showToast('No hay un total de puntos definido para este examen', 'error');
+      showToast('No hay un puntaje total definido para esta evaluación', 'error');
       return;
     }
     autoDistributePoints(questions, totalAntes, 'equal');
@@ -101,7 +106,7 @@ export function applyPointsDistribution() {
     totalNuevo = aplicarPuntosPorTipo(questions, porTipo);
     if (!(totalNuevo > 0)) {
       questions.forEach((q, i) => { q.points = anteriores[i]; });
-      showToast('El examen no puede valer 0 puntos: escribe al menos un tipo con puntos', 'error');
+      showToast('La evaluación no puede valer 0 puntos: escribe al menos un tipo con puntos', 'error');
       return;
     }
     if (estado.currentUploadMetadata) estado.currentUploadMetadata.total_points = totalNuevo;
@@ -119,7 +124,7 @@ export function applyPointsDistribution() {
   // El aviso dice el resultado concreto y permite volver atrás.
   const texto = mode === 'equal'
     ? `${fmtPoints(totalNuevo)} pts repartidos entre ${questions.length} preguntas`
-    : `El examen ahora vale ${fmtPoints(totalNuevo)} pts${Math.abs(totalNuevo - totalAntes) > 0.009 ? ` (antes ${fmtPoints(totalAntes)})` : ''}`;
+    : `La evaluación ahora vale ${fmtPoints(totalNuevo)} pts${Math.abs(totalNuevo - totalAntes) > 0.009 ? ` (antes ${fmtPoints(totalAntes)})` : ''}`;
   showToast(texto, 'info', {
     accion: { texto: 'Deshacer', alPulsar: () => {
       syncParseResultFromDOM();
@@ -146,7 +151,7 @@ export function updatePointsAssignedLabel() {
   // Si la suma no coincide con el total, el botón lo señala (sin bloquear).
   const off = Math.abs(sum - total) > 0.009;
   label.closest('.toolbar-btn')?.classList.toggle('is-off', off);
-  label.title = off ? 'La suma de los puntos no coincide con el total del examen' : '';
+  label.title = off ? 'La suma de los puntos no coincide con el total de la evaluación' : '';
 }
 
 // Vista previa en vivo de «Según el tipo»: mientras el docente escribe cuánto vale cada
@@ -181,7 +186,7 @@ export function actualizarVistaPorTipo() {
   if (linea) {
     const total = sumaDePuntos(puntos);
     const ahora = _editorTotalPoints();
-    linea.textContent = `Total del examen: ${fmtPoints(total)} pts`
+    linea.textContent = `Total de la evaluación: ${fmtPoints(total)} pts`
       + (ahora && Math.abs(total - ahora) > 0.009 ? ` (ahora ${fmtPoints(ahora)})` : '')
       + (sube.cloze ? '. * Completar vale puntos enteros, al menos uno por espacio.' : '');
   }

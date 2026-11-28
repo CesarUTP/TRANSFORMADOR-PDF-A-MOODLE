@@ -73,7 +73,7 @@ function _ocultarClave() {
 function _abrir(obligatorio) {
   modal.dataset.obligatorio = obligatorio ? 'true' : 'false';
   closeBtn.hidden = obligatorio;
-  titleText.textContent = obligatorio ? 'Te damos la bienvenida a Cátedra' : 'API de Gemini';
+  titleText.textContent = obligatorio ? 'Te damos la bienvenida a Cátedra' : 'Clave de Gemini';
   document.getElementById('apikey-bienvenida').hidden = !obligatorio;
   current.hidden = !_estado.configurada;
   if (_estado.configurada) {
@@ -171,7 +171,7 @@ form.addEventListener('submit', async e => {
     document.dispatchEvent(new CustomEvent('clave-cambiada'));
     modal.dataset.obligatorio = 'false';
     cerrarModal(modal);
-    showToast(eraPrimeraVez ? 'Clave guardada. Ya puedes convertir tus exámenes.' : 'Clave actualizada', 'success');
+    showToast(eraPrimeraVez ? 'Clave guardada. Ya puedes convertir tus evaluaciones.' : 'Clave actualizada', 'success');
     if (eraPrimeraVez) document.getElementById('drop-zone')?.focus();
   } catch (_) {
     _ocupado(false);
@@ -181,8 +181,8 @@ form.addEventListener('submit', async e => {
 
 document.getElementById('btn-apikey-delete').addEventListener('click', async () => {
   const ok = await confirmar({
-    titulo: '¿Quitar la clave de la API de Gemini?',
-    mensaje: 'Se borrará de este equipo. Para volver a convertir exámenes tendrás que pegar una clave otra vez.',
+    titulo: '¿Quitar la clave de Gemini?',
+    mensaje: 'Se borrará de este equipo. Para volver a convertir evaluaciones tendrás que pegar una clave otra vez.',
     confirmar: 'Quitar clave',
     cancelar: 'Cancelar',
   });

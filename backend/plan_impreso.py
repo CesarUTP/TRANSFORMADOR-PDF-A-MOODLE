@@ -33,16 +33,26 @@ from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+import formulas
 import latex_texto
 from config import DEFAULT_MATCHING_STEM
 from modelo import (
     Pregunta, PreguntaCloze, PreguntaEssay, PreguntaMatching, PreguntaMultichoice,
     PreguntaNumerical, PreguntaShortanswer, PreguntaTruefalse, preguntas_desde_dicts,
-    tramos_compartidos,
+    tramos_compartidos, imagenes_compartidas,
 )
 from xml_builder import compute_grades
 
 CONTENIDOS = ("examen_y_clave", "solo_examen", "solo_clave", "folleto_hoja_clave")
+# Los documentos que puede traer cada contenido; se puede pedir uno solo (`DatosExamen.documento`).
+DOCUMENTOS_DE = {"examen_y_clave": ("examen", "clave"), "solo_examen": ("examen",), "solo_clave": ("clave",),
+                 "folleto_hoja_clave": ("examen", "hoja", "clave")}
+# «Modo folleto» (3.2, `plegado`): páginas de media hoja que se imprimen de dos en dos y se doblan por la mitad.
+# Sus márgenes son fijos (arriba, abajo, izquierda, derecha, en cm): los del examen son para la hoja entera. Con la
+# hoja a lo ancho, el final del papel cae en un LADO, y muchas impresoras de casa no imprimen en ese último tramo (una
+# HP DeskJet 2700 deja 1,27 cm; en los otros tres bordes, 0,3 cm): por eso los lados no bajan de 1,3 cm.
+MARGENES_PLEGADO = (1.5, 1.5, 1.3, 1.3)
+LETRA_PLEGADO_MIN, LETRA_PLEGADO_MAX, LETRA_PLEGADO = 7.0, 12.0, 8.5
 PAPELES = {"carta": letter, "legal": legal, "a4": A4}      # legal = 21,59 x 35,56 cm
 # Márgenes como los de Word (en cm): (arriba, abajo, izquierda, derecha).
 MARGENES = {"normal": (2.5, 2.5, 3.0, 3.0), "estrechos": (1.27, 1.27, 1.27, 1.27),
@@ -75,6 +85,7 @@ TAM_MIN, TAM_MAX = 7.0, 20.0
 RENGLONES_MIN, RENGLONES_MAX = 2, 24
 GRIS = "#555555"
 GRIS_CLARO = "#b8b8b8"
+ESCALA_FORMULA = 1.15                      # tamaño de las fórmulas dibujadas respecto a la letra de las preguntas
 PASO_BURBUJAS = 19                      # separación de las burbujas de la hoja de respuestas
 PASO_HUECOS = 24                        # alto de cada línea de «Huecos» de la hoja de respuestas
 PASO_RENGLONES = 22                     # el alto del recuadro de desarrollo se pide en «renglones» de esta medida
@@ -94,7 +105,7 @@ class DatosExamen:
     grupo: str = ""
     fecha: str = ""
     instrucciones: str = ""
-    titulo_respaldo: str = "Examen"          # si no hay actividad ni materia (el nombre del archivo)
+    titulo_respaldo: str = "Evaluación"          # si no hay actividad ni materia (el nombre del archivo)
     version: str = ""                        # «A», «B»…: una de las versiones de un examen (sale en el encabezado y en la clave)
     contenido: str = "examen_y_clave"        # CONTENIDOS
     papel: str = "carta"                     # PAPELES
@@ -118,6 +129,13 @@ class DatosExamen:
     orden_partes: List[str] = field(default_factory=list)       # tipos en el orden pedido; los demás, detrás y como salen
     # {tipo: {"nombre": …, "indicacion": …}}: lo que el docente escribió para una parte ("" = lo automático)
     textos_partes: Dict[str, Dict[str, str]] = field(default_factory=dict)
+    cuadro_puntos: bool = False              # un cuadro en la portada con el valor de cada parte y dónde anotar lo obtenido
+    saltos_partes: List[str] = field(default_factory=list)      # tipos cuya parte empieza en una página nueva
+    tam_imagenes: Dict[str, str] = field(default_factory=dict)  # {"número:posición": "pequena"|"grande"|"completo"}; el resto, mediana
+    alin_imagenes: Dict[str, str] = field(default_factory=dict) # {"número:posición": "centro"|"derecha"}; el resto, a la izquierda
+    documento: str = ""                      # "" = todos los del contenido; "examen", "hoja" o "clave" = solo ese
+    plegado: bool = False                    # modo folleto: páginas de media hoja (el PDF las pone de dos en dos)
+    letra_plegado: float = LETRA_PLEGADO     # tamaño de la letra de las preguntas en modo folleto
 
 
 class PuntosNoEnteros(ValueError):
@@ -280,6 +298,19 @@ class CuadroEstudiante:
 
 
 @dataclass
+class TablaPuntos:
+    """El cuadro para calificar: «PARTE | I | II | TOTAL», lo que vale cada una y un renglón para anotar."""
+    filas: List[list]                 # 3 filas de Parrafo o ""
+    anchos: List[float]
+    altos: List[float]
+
+
+@dataclass
+class SaltoPagina:
+    """Lo que sigue empieza en una página nueva (una parte que el docente quiere en hoja aparte)."""
+
+
+@dataclass
 class FilaDocente:
     """«FACILITADOR: …» y «CALIFICACIÓN: ___/N» en una sola línea, ya ajustadas de tamaño y de largo."""
     izquierda: Optional[Parrafo]
@@ -291,10 +322,7 @@ class FilaDocente:
 
 @dataclass
 class Seccion:
-    id: str                           # "examen", "hoja" o "clave": cada una numera sus páginas
-    izquierda: str                    # encabezado corrido (texto plano)
-    derecha: str
-    primera_sin_encabezado: bool
+    id: str                           # "examen", "hoja" o "clave": cada una numera sus páginas (sin encabezado corrido)
     bloques: list = field(default_factory=list)
 
 
@@ -331,10 +359,14 @@ class Plan:
 
 # ── Texto: de lo que escribió el docente al marcado de un párrafo ───────────
 
+_FORMULA_PAPEL = re.compile(r"\\\(([\s\S]+?)\\\)|\\\[([\s\S]+?)\\\]")
+
 class Texto:
     """Convierte textos del examen en marcado seguro y cuenta lo que no se pudo escribir tal cual (para avisarlo)."""
 
-    def __init__(self, familias: Tuple[str, ...] = (_FAMILIA,)) -> None:
+    def __init__(self, familias: Tuple[str, ...] = (_FAMILIA,), tam_formula: float = 10.0,
+                 ancho_formula: float = 400.0) -> None:
+        self.tam_formula, self.ancho_formula = tam_formula, ancho_formula   # de las fórmulas que se dibujan
         self.formulas_crudas = 0
         self.sin_glifo = 0
         # Lo que NO tienen todas las fuentes elegidas se escribe con DejaVu (que casi lo tiene todo).
@@ -357,13 +389,37 @@ class Texto:
                 self.sin_glifo += 1
         return "".join(out)
 
-    def marcado(self, s: Any) -> str:
+    def _apartar_formulas(self, s: str, ancho: float) -> Tuple[str, Dict[str, str]]:
+        """Saca de `s` las fórmulas que se dibujan, dejando una marca en su lugar. Devuelve el texto y {marca: <img>}."""
+        dibujos: Dict[str, str] = {}
+
+        def dibujar(m: "re.Match") -> str:
+            en_linea = m.group(1) is not None
+            latex = m.group(1) if en_linea else m.group(2)
+            # «\\[ … \\]» (fórmula en bloque) no la escribe latex_texto: se dibuja siempre que se pueda.
+            if en_linea and not formulas.conviene_dibujar(latex, latex_texto.latex_a_texto(latex)):
+                return m.group(0)
+            f = formulas.dibujar(latex, round(self.tam_formula, 2), round(ancho, 2))
+            if f is None:
+                return m.group(0)
+            marca = f"qzF{len(dibujos)}Fzq"
+            dibujos[marca] = f.etiqueta()
+            return marca
+
+        return _FORMULA_PAPEL.sub(dibujar, s), dibujos
+
+    def marcado(self, s: Any, ancho: Optional[float] = None) -> str:
+        """`ancho`: lo que puede medir como mucho una fórmula dibujada (en una columna, menos que en la hoja)."""
+        s, dibujos = self._apartar_formulas(str(s if s is not None else ""), ancho or self.ancho_formula)
         t = self.plano(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         t = re.sub(r" {2,}", lambda m: "\u00a0" * (len(m.group(0)) - 1) + " ", t)
         t = re.sub(r"(?m)^ ", "\u00a0", t)
         if self.cobertura:
             t = re.sub(r"[^\x00-\x7f]+", lambda m: self._respaldo(m.group(0)), t)
-        return t.replace("\n", "<br/>")
+        t = t.replace("\n", "<br/>")
+        for marca, imagen in dibujos.items():
+            t = t.replace(marca, imagen)
+        return t
 
     def _respaldo(self, trozo: str) -> str:
         """Los caracteres que la fuente elegida no tiene van con DejaVu, en el mismo párrafo."""
@@ -476,7 +532,11 @@ class _Armador:
     def __init__(self, preguntas: List[Pregunta], puntos: List[float], datos: DatosExamen):
         self.preguntas, self.puntos, self.datos = preguntas, puntos, datos
         tam = PAPELES.get(datos.papel, letter)
-        arriba, abajo, izquierda, derecha = (x * cm for x in MARGENES.get(datos.margenes, MARGENES["moderados"]))
+        margenes = MARGENES.get(datos.margenes, MARGENES["moderados"])
+        if datos.plegado:
+            # La página es la mitad de la hoja puesta a lo ancho: se compone ya a ese tamaño (no se encoge).
+            tam, margenes = (tam[1] / 2, tam[0]), MARGENES_PLEGADO
+        arriba, abajo, izquierda, derecha = (x * cm for x in margenes)
         self.ancho = tam[0] - izquierda - derecha
         # Hueco del número de pregunta: «100.» no cabe en lo que cabe «10.».
         self.sangria = 18 + 9 * max(0, len(str(len(preguntas))) - 2)
@@ -487,17 +547,28 @@ class _Armador:
         self.fp = FUENTES.get(datos.fuente_preguntas, FUENTES["dejavu"])[0]
         self.H = min(TAM_MAX, max(TAM_MIN, float(datos.tam_titulos))) if datos.tam_titulos == datos.tam_titulos else 11.0
         self.Q = min(TAM_MAX, max(TAM_MIN, float(datos.tam_preguntas))) if datos.tam_preguntas == datos.tam_preguntas else 10.0
+        if datos.plegado:
+            # Letra propia del folleto; los títulos bajan en la misma proporción que las preguntas.
+            letra = datos.letra_plegado if datos.letra_plegado == datos.letra_plegado else LETRA_PLEGADO
+            letra = min(LETRA_PLEGADO_MAX, max(LETRA_PLEGADO_MIN, float(letra)))
+            self.H, self.Q = max(TAM_MIN, self.H * letra / self.Q), letra
         renglones = min(RENGLONES_MAX, max(RENGLONES_MIN, int(datos.renglones_ensayo)))
         self.alto_ensayo = renglones * PASO_RENGLONES
         self.alto_procedimiento = min(RENGLONES_MAX, max(RENGLONES_MIN, int(datos.renglones_procedimiento))) * PASO_RENGLONES
+        if datos.plegado:                     # en media hoja un recuadro enorme no cabría en ninguna página
+            tope = tam[1] - (arriba + abajo) - 6 * self.Q
+            self.alto_ensayo, self.alto_procedimiento = min(self.alto_ensayo, tope), min(self.alto_procedimiento, tope)
         self.est = estilos(self.sangria, self.H, self.Q)
-        self.txt = Texto((self.fe, self.fp))
+        if datos.plegado:                     # el número y la letra de cada opción no quedan más grandes que el texto
+            self.est = {k: replace(v, vineta_tam=min(v.vineta_tam, self.Q)) for k, v in self.est.items()}
+        # La letra de las fórmulas (STIX) se ve más pequeña que la del texto a igual tamaño: va un poco mayor.
+        self.txt = Texto((self.fe, self.fp), tam_formula=self.Q * ESCALA_FORMULA, ancho_formula=self.ancho - self.sangria - 24)
         self.imagenes_fallidas: List[int] = []
         self.logos_fallidos: List[str] = []
         self.compartidos_partidos: List[str] = []   # enunciados compartidos que salieron en más de un bloque
         self.folleto = False                  # True mientras se arma el folleto: preguntas sin espacio para responder
         actividad, materia = _campo(datos.actividad, LIMITE_CAMPO), _campo(datos.materia, LIMITE_CAMPO)
-        self.titulo = " · ".join(x for x in (actividad, materia) if x) or _campo(datos.titulo_respaldo, LIMITE_CAMPO) or "Examen"
+        self.titulo = " · ".join(x for x in (actividad, materia) if x) or _campo(datos.titulo_respaldo, LIMITE_CAMPO) or "Evaluación"
         self.version = _campo(datos.version, LIMITE_VERSION).upper()
 
     # ---- piezas comunes ----
@@ -514,29 +585,58 @@ class _Armador:
             return ""
         return f" <font size='{self.Q * 0.8:.1f}' color='{GRIS}'>({_pts(puntos)})</font>"
 
+    def _imagen_de_pregunta(self, p: Pregunta, posicion: int, im) -> Optional[Imagen]:
+        """La imagen `posicion` de la pregunta `p` al tamaño y en el sitio pedidos: mediana (lo de siempre), pequeña
+        (60 % de la mediana), grande (el ancho del texto de la pregunta, ampliando si hace falta, hasta 13 cm de
+        alto) o completo (de margen a margen, hasta el 80 % del alto de la página); a la izquierda, al centro o a
+        la derecha."""
+        ancho = self.ancho - self.sangria
+        clave = f"{p.num}:{posicion}"
+        pedido = self.datos.tam_imagenes.get(clave, "")
+        alto_hoja = self.geo.papel[1] - self.geo.m_sup - self.geo.m_inf
+        if pedido == "completo":
+            f = imagen_desde_b64(im.b64, im.mime, self.ancho, alto_hoja * 0.8, ampliar=True)
+            return None if f is None else replace(f, alinear="CENTER")     # si manda el alto, queda centrada
+        if pedido == "grande":
+            f = imagen_desde_b64(im.b64, im.mime, ancho, min(13 * cm, alto_hoja * 0.7), ampliar=True)
+        else:
+            f = imagen_desde_b64(im.b64, im.mime, ancho, 7.5 * cm)
+            if f is not None and pedido == "pequena":
+                f = replace(f, ancho=f.ancho * 0.6, alto=f.alto * 0.6)
+        if f is None:
+            return None
+        return replace(f, alinear={"centro": "CENTER", "derecha": "RIGHT"}.get(self.datos.alin_imagenes.get(clave, ""), "LEFT"))
+
+    @staticmethod
+    def _colocar(f: Imagen, sangria: float = 0) -> list:
+        """A la izquierda sigue la sangría del texto que acompaña; centrada o a la derecha se mide sobre la hoja."""
+        bloques = [Espacio(3), f, Espacio(3)]
+        return [Sangrado(bloques, sangria)] if sangria and f.alinear == "LEFT" else bloques
+
     def _imagenes(self, p: Pregunta, n: int, omitir: frozenset = frozenset()) -> list:
         out = []
-        for im in p.images or []:
+        for posicion, im in enumerate(p.images or []):
             if im.b64 in omitir:
                 continue                          # ya salió con el enunciado compartido
-            f = imagen_desde_b64(im.b64, im.mime, self.ancho - self.sangria, 7.5 * cm)
+            f = self._imagen_de_pregunta(p, posicion, im)
             if f is None:
                 self.imagenes_fallidas.append(n)
             else:
-                out += [Espacio(3), f, Espacio(3)]
+                out += self._colocar(f)
         return out
 
     # ---- enunciado compartido ----
     @staticmethod
     def _imagenes_comunes(grupo: List[Pregunta]) -> frozenset:
-        """Las imágenes que llevan TODAS las preguntas de un grupo de dos o más: son del enunciado compartido
-        (el código o la figura de la que se pregunta) y se imprimen una sola vez, con él."""
+        """Las imágenes del enunciado compartido, que se imprimen una sola vez con él: las marcadas como suyas y las
+        que llevan TODAS las preguntas de un grupo de dos o más (el código o la figura de la que se pregunta)."""
+        marcadas = {im.b64 for im in imagenes_compartidas(grupo[0]) if im.b64}
         if len(grupo) < 2:
-            return frozenset()
+            return frozenset(marcadas)
         comunes = {im.b64 for im in grupo[0].images or [] if im.b64}
         for p in grupo[1:]:
             comunes &= {im.b64 for im in p.images or []}
-        return frozenset(comunes)
+        return frozenset(marcadas | comunes)
 
     def _bloque_compartido(self, texto: str, primero: int, ultimo: int, grupo: List[Pregunta], comunes: frozenset) -> list:
         """«Con base en el siguiente enunciado, responda las preguntas 1 a 5», el enunciado y sus imágenes. Los
@@ -545,16 +645,18 @@ class _Armador:
             cuales = f"la pregunta {primero}"
         else:
             cuales = f"las preguntas {primero} {'y' if ultimo == primero + 1 else 'a'} {ultimo}"
-        out: list = [self._p(f"Con base en el siguiente enunciado, responda {cuales}:", "compartido_titulo"),
-                     self._p(self.txt.marcado(_campo_largo(texto, MAX_COMPARTIDO)), "compartido")]
-        if comunes:
-            propias = [im for im in grupo[0].images or [] if im.b64 in comunes]
-            for im in propias:
-                f = imagen_desde_b64(im.b64, im.mime, self.ancho - self.sangria, 7.5 * cm)
+        propias = [(k, im) for k, im in enumerate(grupo[0].images or []) if im.b64 in comunes]
+        base = "el siguiente enunciado" if texto else "la siguiente imagen" if len(propias) == 1 else "las siguientes imágenes"
+        out: list = [self._p(f"Con base en {base}, responda {cuales}:", "compartido_titulo")]
+        if texto:
+            out.append(self._p(self.txt.marcado(_campo_largo(texto, MAX_COMPARTIDO)), "compartido"))
+        if propias:
+            for k, im in propias:
+                f = self._imagen_de_pregunta(grupo[0], k, im)
                 if f is None:
                     self.imagenes_fallidas.append(primero)
                 else:
-                    out.append(Sangrado([Espacio(3), f, Espacio(3)], self.sangria))
+                    out += self._colocar(f, self.sangria)
         return out
 
     # ---- recuadro del procedimiento ----
@@ -609,13 +711,15 @@ class _Armador:
     def _tabla_pareo(self, p: PreguntaMatching, folleto: bool) -> TablaPareo:
         col_a = p.col_a or {}
         a_claves, b_impresas, _de_a = self._pareo(p)
+        columna = (self.ancho - self.sangria) / 2 - 40           # lo que puede medir una fórmula dentro de una columna
+        marcar = lambda s: self.txt.marcado(s, columna)
         filas = [(self._p("<b>Columna A</b>", "celda"), self._p("<b>Columna B</b>", "celda"))]
         for i in range(max(len(a_claves), len(b_impresas))):
             if folleto:
-                izq = f"<b>{self.txt.marcado(a_claves[i])}.</b> {self.txt.marcado(col_a[a_claves[i]])}" if i < len(a_claves) else ""
+                izq = f"<b>{marcar(a_claves[i])}.</b> {marcar(col_a[a_claves[i]])}" if i < len(a_claves) else ""
             else:
-                izq = (f"<b>______ {self.txt.marcado(a_claves[i])}.</b> {self.txt.marcado(col_a[a_claves[i]])}") if i < len(a_claves) else ""
-            der = (f"<b>{self.txt.marcado(b_impresas[i][0])})</b> {self.txt.marcado(b_impresas[i][1])}") if i < len(b_impresas) else ""
+                izq = (f"<b>______ {marcar(a_claves[i])}.</b> {marcar(col_a[a_claves[i]])}") if i < len(a_claves) else ""
+            der = (f"<b>{marcar(b_impresas[i][0])})</b> {marcar(b_impresas[i][1])}") if i < len(b_impresas) else ""
             filas.append((self._p(izq, "celda"), self._p(der, "celda")))
         return TablaPareo(filas)
 
@@ -630,7 +734,7 @@ class _Armador:
             varias = len(letras) > 1
             dentro: list = []
             if ayudas:
-                dentro.append(self._p("Selecciona todas las que correspondan." if varias else "Selecciona una.", "ayuda"))
+                dentro.append(self._p("Seleccione todas las que correspondan." if varias else "Seleccione una.", "ayuda"))
             for letra, texto, _ok in self._opciones_impresas(p):
                 dentro.append(Opcion("cuadrada" if varias else "redonda", f"<b>{self.txt.marcado(letra)})</b> {self.txt.marcado(texto)}"))
             return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n, omitir) + [Sangrado(dentro, self.sangria)])
@@ -640,7 +744,7 @@ class _Armador:
                          + [Sangrado([Opcion("redonda", "Verdadero"), Opcion("redonda", "Falso")], self.sangria)])
 
         if isinstance(p, PreguntaMatching):
-            dentro = ([self._p("Escribe en cada espacio la letra de la Columna B que corresponde.", "ayuda")] if ayudas else [])
+            dentro = ([self._p("Escriba en cada espacio la letra de la Columna B que corresponde.", "ayuda")] if ayudas else [])
             dentro.append(self._tabla_pareo(p, False))
             return Grupo([self._enunciado(n, p.stem or DEFAULT_MATCHING_STEM, puntos)] + self._imagenes(p, n, omitir)
                          + [Sangrado(dentro, self.sangria)])
@@ -665,7 +769,7 @@ class _Armador:
             varias = len(p.resolver_correctas()[0]) > 1
             dentro: list = []
             if ayudas:
-                dentro.append(self._p("Selecciona todas las que correspondan." if varias else "Selecciona una.", "ayuda"))
+                dentro.append(self._p("Seleccione todas las que correspondan." if varias else "Seleccione una.", "ayuda"))
             dentro += [Parrafo(self.est["opcion_folleto"], self.txt.marcado(texto), vineta=f"{self.txt.marcado(letra)})")
                        for letra, texto, _ok in self._opciones_impresas(p)]
             return Grupo([self._enunciado(n, p.stem, puntos)] + self._imagenes(p, n, omitir) + [Sangrado(dentro, self.sangria)])
@@ -719,14 +823,14 @@ class _Armador:
             else:
                 celda = [Parrafo(self.est["opcion_lista"], tx, vineta=f"{le})") for le, tx in opciones]
             if len(correctas) > 1:
-                celda.append(self._p("Elige todas las que correspondan: escribe todas las letras.", "ayuda"))
+                celda.append(self._p("Elija todas las que correspondan: escriba todas las letras.", "ayuda"))
             filas.append((self._p(f"<b>{k_hueco}.</b>", "celda"), celda))
         cuerpo: list = []
         if filas:
             dentro: list = []
             if ayudas:
-                dentro.append(self._p("Escribe en cada espacio la letra de la opción que lo completa." if all(len(h.opciones) >= 2 for h in huecos)
-                                      else "En los espacios con opciones escribe la letra elegida; en los demás, la respuesta.", "ayuda"))
+                dentro.append(self._p("Escriba en cada espacio la letra de la opción que lo completa." if all(len(h.opciones) >= 2 for h in huecos)
+                                      else "En los espacios con opciones escriba la letra elegida; en los demás, la respuesta.", "ayuda"))
             dentro.append(TablaHuecos(filas))
             cuerpo = [Sangrado(dentro, self.sangria)]
         return Grupo([enunciado] + self._imagenes(p, n, omitir) + cuerpo)
@@ -776,7 +880,13 @@ class _Armador:
         """El comienzo del enunciado, para reconocer la pregunta en la clave."""
         s = " ".join((p.stem or p.text or "").split())
         s = re.sub(r"\[[A-Za-z]: ([^\]/]*)[^\]]*\]", "____", s)
-        return s if len(s) <= largo else s[:largo - 1].rstrip() + "…"
+        if len(s) <= largo:
+            return s
+        corte = largo - 1
+        for m in _FORMULA_PAPEL.finditer(s):
+            if m.start() < corte < m.end():                    # una fórmula no se corta: entera o fuera
+                corte = m.end() if m.start() < largo // 3 else m.start()
+        return s if corte >= len(s) else s[:corte].rstrip() + "…"
 
     # ---- hoja de respuestas (y clave llena) ----
     def _valor_cloze(self, p: PreguntaCloze, h) -> str:
@@ -888,17 +998,34 @@ class _Armador:
 
     # ---- partes del examen ----
     def partes(self) -> List[Tuple[Optional[str], List[Tuple[Pregunta, float]]]]:
-        """[(tipo, [(pregunta, puntos)])]. Con `partes` las preguntas se agrupan por tipo, en el orden en que cada
-        tipo aparece por primera vez; sin él, todo va junto y en el orden del editor (tipo None)."""
+        """[(tipo, [(pregunta, puntos)])] en el orden en que se imprimen. Sin `partes`, todo va junto y en el orden
+        del editor (tipo None). Con `partes` las preguntas se agrupan por tipo, en el orden en que cada tipo aparece
+        por primera vez; pero un enunciado compartido con preguntas de VARIOS tipos no se separa: sale entero, con
+        sus propias partes (una por tipo) seguidas, para que el enunciado y sus imágenes salgan una sola vez. Entra
+        antes de la primera parte general que empieza después de él."""
         pares = list(zip(self.preguntas, self.puntos))
         if not self.datos.partes:
             return [(None, pares)]
-        grupos: Dict[str, List[Tuple[Pregunta, float]]] = {}
-        for p, pts in pares:
-            grupos.setdefault(p.tipo or "", []).append((p, pts))
-        orden = [t for t in self.datos.orden_partes]
-        # sorted es estable: los tipos que no están en el orden pedido van detrás, como aparecen en el examen
-        return sorted(grupos.items(), key=lambda g: orden.index(g[0]) if g[0] in orden else len(orden))
+        mixtos = [(a, b) for a, b, _ in tramos_compartidos(self.preguntas) if len({p.tipo for p in self.preguntas[a:b]}) > 1]
+        en_mixto = {i for a, b in mixtos for i in range(a, b)}
+        orden = list(self.datos.orden_partes)
+
+        def por_tipo(indices) -> List[Tuple[str, List[int]]]:
+            grupos: Dict[str, List[int]] = {}
+            for i in indices:
+                grupos.setdefault(self.preguntas[i].tipo or "", []).append(i)
+            # sorted es estable: los tipos que no están en el orden pedido van detrás, como aparecen en el examen
+            return sorted(grupos.items(), key=lambda g: orden.index(g[0]) if g[0] in orden else len(orden))
+
+        salida: List[Tuple[str, List[int]]] = []
+        pendientes = list(mixtos)
+        for tipo, indices in por_tipo(i for i in range(len(pares)) if i not in en_mixto):
+            while pendientes and pendientes[0][0] < indices[0]:
+                salida += por_tipo(range(*pendientes.pop(0)))
+            salida.append((tipo, indices))
+        for tramo in pendientes:
+            salida += por_tipo(range(*tramo))
+        return [(tipo, [pares[i] for i in indices]) for tipo, indices in salida]
 
     def _texto_propio(self, tipo: Optional[str], cual: str) -> str:
         """El nombre o la indicación que el docente escribió para esa parte ("" = lo automático)."""
@@ -909,8 +1036,13 @@ class _Armador:
     def partes_automaticas(self) -> List[Dict[str, str]]:
         """Lo que diría cada parte si el docente no escribiera nada (para sugerírselo en la pantalla)."""
         folleto, self.folleto = self.folleto, self.datos.contenido == "folleto_hoja_clave"
+        # Un tipo puede tener más de una parte (la de un enunciado compartido y la general): se sugiere una vez.
+        por_tipo: Dict[str, List[Tuple[Pregunta, float]]] = {}
+        for t, g in self.partes():
+            if t is not None:
+                por_tipo.setdefault(t, []).extend(g)
         out = [{"tipo": t, "nombre": NOMBRE_PARTE.get(t, "PREGUNTAS"), "indicacion": self._indicacion(t, g)}
-               for t, g in self.partes() if t is not None]
+               for t, g in por_tipo.items()]
         self.folleto = folleto
         return out
 
@@ -1026,7 +1158,8 @@ class _Armador:
     def _logo(self, b64: str, lado: str) -> Optional[Imagen]:
         if not (b64 or "").strip():
             return None
-        f = imagen_desde_b64(b64, "image/png", 2.5 * cm, 2.5 * cm, ampliar=True)
+        lado_max = (1.8 if self.datos.plegado else 2.5) * cm
+        f = imagen_desde_b64(b64, "image/png", lado_max, lado_max, ampliar=True)
         if f is None:
             self.logos_fallidos.append(lado)
         return f
@@ -1051,7 +1184,7 @@ class _Armador:
                 izq.alinear = "LEFT"
             if der is not None:
                 der.alinear = "RIGHT"
-            items.append(LogosCabecera(izq, centro, der, 2.7 * cm))
+            items.append(LogosCabecera(izq, centro, der, (2.0 if d.plegado else 2.7) * cm))
         items.append(Espacio(8))
 
         docente = _campo(d.docente, LIMITE_CAMPO)
@@ -1069,7 +1202,8 @@ class _Armador:
             items += [CuadroEstudiante(filas, [e1, (w - e1 - e2) * 0.56, e2, (w - e1 - e2) * 0.44], max(0.95 * cm, self.H * 2.1)), Espacio(12)]
         # «FACILITADOR: …» y «CALIFICACIÓN: ___/N»: SIEMPRE en una sola línea. La calificación tiene su
         # ancho; el nombre usa el resto y, si es muy largo, se achica la letra (y al final, «…»).
-        if estudiante and not clave:
+        cuadro = self._cuadro_de_puntos(total) if d.cuadro_puntos and not folleto and not clave else None
+        if estudiante and not clave and cuadro is None:
             nota = f"CALIFICACIÓN: ________/{_pts(total).rsplit(' ', 1)[0]}"
         elif not estudiante:
             extra = [f"{rot}: {_campo(v, LIMITE_CAMPO)}" for rot, v in (("Grupo", d.grupo), ("Fecha", d.fecha)) if _campo(v, LIMITE_CAMPO)]
@@ -1094,9 +1228,11 @@ class _Armador:
             items += [FilaDocente(self._una_linea(izquierda, ancho_izq, tam) if izquierda else None,
                                   self._una_linea(nota, ancho_nota, tam, alinear=2) if nota else None,
                                   ancho_izq + hueco if nota else ancho_izq, ancho_nota, hueco), Espacio(10)]
+        if cuadro is not None:
+            items += [cuadro, Espacio(10)]
 
         if folleto:
-            items += [self._p("NO ESCRIBA EN ESTE FOLLETO: SUS RESPUESTAS VAN EN LA HOJA DE RESPUESTAS.", "aviso_folleto"), Espacio(8)]
+            items += [self._p("NO ESCRIBA EN ESTA HOJA DE PREGUNTAS: SUS RESPUESTAS VAN EN LA HOJA DE RESPUESTAS.", "aviso_folleto"), Espacio(8)]
         instr = _campo_largo(d.instrucciones, LIMITE_INSTRUCCIONES)
         if instr and not clave and not hoja:
             items.append(self._p("INDICACIONES GENERALES:", "rotulo"))
@@ -1108,50 +1244,69 @@ class _Armador:
             items.append(Espacio(6))
         return items
 
-    # ---- el documento ----
-    def _encabezado_izq(self) -> str:
-        izquierda = " · ".join(x for x in (_campo(self.datos.materia, 60), _campo(self.datos.actividad, 60)) if x) or self.titulo
-        if self.version:
-            izquierda += f" · VERSIÓN {self.version}"
-        return self.txt.plano(izquierda)
+    def _cuadro_de_puntos(self, total: float) -> Optional[TablaPuntos]:
+        """«PARTE | I | II | TOTAL», el valor de cada una y un renglón en blanco. Sin partes no hay cuadro."""
+        partes = [grupo for tipo, grupo in self.partes() if tipo is not None]
+        if not partes:
+            return None
+        numero = lambda x: _pts(x).rsplit(" ", 1)[0]
+        rotulos = ["PARTE", "VALOR", "OBTENIDO"]
+        ancho_rotulo = max(self._ancho_negrita(x, self.est["etiqueta"].tam) for x in rotulos) + 14
+        columnas = len(partes) + 1
+        ancho = (self.ancho - ancho_rotulo) / columnas        # a todo el ancho, como el cuadro del estudiante
+        titulos = [ROMANOS[min(i, len(ROMANOS) - 1)] for i in range(len(partes))] + ["TOTAL"]
+        valores = [numero(sum(pts for _, pts in grupo)) for grupo in partes] + [numero(total)]
+        centrado = replace(self.est["etiqueta"], alinear=1)
+        normal = replace(self.est["valor"], alinear=1)
+        filas = [[self._p(rotulos[0], "etiqueta")] + [Parrafo(centrado, x) for x in titulos],
+                 [self._p(rotulos[1], "etiqueta")] + [Parrafo(normal, x) for x in valores],
+                 [self._p(rotulos[2], "etiqueta")] + [""] * columnas]
+        alto = max(0.55 * cm, self.H * 1.55)
+        return TablaPuntos(filas, [ancho_rotulo] + [ancho] * columnas, [alto, alto, alto * 1.45])
 
+    # ---- el documento ----
     def secciones(self) -> List[Seccion]:
         d = self.datos
         total = sum(self.puntos)
-        izq = self._encabezado_izq()
-        docente = self.txt.plano(_campo(d.docente, 60))
-        examen = Seccion("examen", izq, docente, True)
-        hoja = Seccion("hoja", izq, "HOJA DE RESPUESTAS", True)
-        clave = Seccion("clave", izq, "CLAVE DE RESPUESTAS · uso del docente", False)
+        examen, hoja, clave = Seccion("examen"), Seccion("hoja"), Seccion("clave")
         c = d.contenido
 
         def partes_del_examen(folleto: bool) -> list:
             salida = []
             n = 0
             self.folleto = folleto
+            orden_impreso = self.partes()
+            # Los enunciados compartidos se miran sobre el orden IMPRESO, de principio a fin: cada uno sale una vez,
+            # delante de su primera pregunta, aunque sus preguntas ocupen varias partes.
+            todas = [p for _, grupo in orden_impreso for p, _ in grupo]
+            parte_de = [i for i, (_, grupo) in enumerate(orden_impreso) for _ in grupo]
+            compartidos: Dict[int, Tuple[list, bool]] = {}     # posición → (su bloque, ¿abarca varias partes?)
+            omitir: Dict[int, frozenset] = {}
+            siguen: set = set()                                # posiciones que continúan un enunciado ya empezado
             vistos: set = set()
-            for i, (tipo, grupo) in enumerate(self.partes()):
+            for a_, b_, texto in tramos_compartidos(todas):
+                comunes = self._imagenes_comunes(todas[a_:b_])
+                compartidos[a_] = (self._bloque_compartido(texto, a_ + 1, b_, todas[a_:b_], comunes),
+                                   parte_de[a_] != parte_de[b_ - 1])
+                for k in range(a_, b_):
+                    omitir[k] = comunes
+                siguen.update(range(a_ + 1, b_))
+                if (texto, comunes if not texto else None) in vistos:
+                    self.compartidos_partidos.append(texto or "de las imágenes")
+                vistos.add((texto, comunes if not texto else None))
+            for i, (tipo, grupo) in enumerate(orden_impreso):
                 mixto = tipo == "multichoice" and len({len(q.resolver_correctas()[0]) > 1 for q, _ in grupo}) > 1
                 titulo = [self._titulo_parte(i, tipo, grupo, True)] if tipo is not None else []
-                # Los grupos con enunciado compartido se miran DENTRO de cada parte: así el título de la parte va
-                # antes, y un grupo con preguntas de varios tipos repite el enunciado en cada parte (y se avisa).
-                solo = [p for p, _ in grupo]
-                compartidos: Dict[int, list] = {}
-                omitir: Dict[int, frozenset] = {}
-                for a_, b_, texto in tramos_compartidos(solo):
-                    comunes = self._imagenes_comunes(solo[a_:b_])
-                    compartidos[a_] = self._bloque_compartido(texto, n + a_ + 1, n + b_, solo[a_:b_], comunes)
-                    for k in range(a_, b_):
-                        omitir[k] = comunes
-                    if texto in vistos:
-                        self.compartidos_partidos.append(texto)
-                    vistos.add(texto)
-                for k, (p, pts) in enumerate(grupo):
-                    n += 1
+                for p, pts in grupo:
+                    k, n = n, n + 1
                     q = self.pregunta(n, p, pts, ayudas=(tipo is None or mixto), omitir=omitir.get(k, frozenset()))
                     # El título de la parte y el enunciado compartido viajan DENTRO del bloque de su primera
-                    # pregunta: nunca quedan solos al final de una hoja.
-                    delante = titulo + compartidos.get(k, [])
+                    # pregunta: nunca quedan solos al final de una hoja. Un enunciado que abarca varias partes va
+                    # delante del título de la primera.
+                    bloque, varias = compartidos.get(k, ([], False))
+                    delante = bloque + titulo if varias else titulo + bloque
+                    if titulo and tipo in d.saltos_partes and k not in siguen:
+                        salida.append(SaltoPagina())      # dentro de un enunciado no se salta: se separaría de él
                     salida.append(Grupo(delante + q.hijos) if delante else q)
                     titulo = []
             self.folleto = False
@@ -1172,23 +1327,26 @@ class _Armador:
                     titulo = []
             return salida
 
-        if c in ("examen_y_clave", "solo_examen"):
+        # Solo se arma lo que se va a imprimir (así los avisos hablan de lo que sale).
+        pedidos = [x for x in DOCUMENTOS_DE[c] if not d.documento or x == d.documento]
+        if c in ("examen_y_clave", "solo_examen") and "examen" in pedidos:
             examen.bloques = self.cabecera(total) + partes_del_examen(False)
-        if c in ("examen_y_clave", "solo_clave"):
+        if c in ("examen_y_clave", "solo_clave") and "clave" in pedidos:
             clave.bloques = clave_compacta()
         if c == "folleto_hoja_clave":
-            examen.bloques = self.cabecera(total, modo="folleto") + partes_del_examen(True)
-            hoja.bloques = (self.cabecera(total, modo="hoja")
-                            + [self._p("HOJA DE RESPUESTAS", "titulo"),
-                               self._p("Escriba aquí sus respuestas; no escriba en el folleto de preguntas.", "datos")]
-                            + self.hoja_respuestas(False))
-            clave.bloques = (self.cabecera(total, clave=True, modo="hoja")
-                             + [self._p("CLAVE DE RESPUESTAS", "titulo"),
-                                self._p(self.txt.marcado("Es la hoja de respuestas llena. Documento para el docente: no se entrega a los estudiantes."), "datos")]
-                             + self.hoja_respuestas(True))
-        orden = {"examen_y_clave": [examen, clave], "solo_examen": [examen], "solo_clave": [clave],
-                 "folleto_hoja_clave": [examen, hoja, clave]}[c]
-        return orden
+            if "examen" in pedidos:
+                examen.bloques = self.cabecera(total, modo="folleto") + partes_del_examen(True)
+            if "hoja" in pedidos:
+                hoja.bloques = (self.cabecera(total, modo="hoja")
+                                + [self._p("HOJA DE RESPUESTAS", "titulo"),
+                                   self._p("Escriba aquí sus respuestas; no escriba en la hoja de preguntas.", "datos")]
+                                + self.hoja_respuestas(False))
+            if "clave" in pedidos:
+                clave.bloques = (self.cabecera(total, clave=True, modo="hoja")
+                                 + [self._p("CLAVE DE RESPUESTAS", "titulo"),
+                                    self._p(self.txt.marcado("Es la hoja de respuestas llena. Documento para el docente: no se entrega a los estudiantes."), "datos")]
+                                 + self.hoja_respuestas(True))
+        return [{"examen": examen, "hoja": hoja, "clave": clave}[x] for x in pedidos]
 
     def avisos(self) -> List[str]:
         avisos: List[str] = []
@@ -1204,7 +1362,7 @@ class _Armador:
             inicio = " ".join(texto.split())
             inicio = inicio if len(inicio) <= 50 else inicio[:49].rstrip() + "…"
             avisos.append(f"El enunciado compartido «{inicio}» sale más de una vez porque sus preguntas no quedan "
-                          "seguidas. Para que salga una sola, déjelas juntas y del mismo tipo, o desactive «Agrupar por tipo».")
+                          "seguidas. Para que salga una sola, déjelas juntas en el editor.")
         if self.logos_fallidos:
             avisos.append("No se pudo usar el logo " + " ni el ".join(sorted(set(self.logos_fallidos))) + ": se omitió.")
         if self.imagenes_fallidas:
@@ -1221,6 +1379,8 @@ def construir_plan(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[s
     registrar_fuentes(datos.fuente_titulos, datos.fuente_preguntas)
     if datos.contenido not in CONTENIDOS:
         raise ValueError("contenido no válido")
+    if datos.documento and datos.documento not in DOCUMENTOS_DE[datos.contenido]:
+        raise ValueError("documento no válido para ese contenido")
     preguntas = [p for p in preguntas_desde_dicts(questions, answer_key) if not p.tiene_error]
     if not preguntas:
         raise ValueError("No hay preguntas que exportar.")

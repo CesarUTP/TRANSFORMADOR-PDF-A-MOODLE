@@ -76,6 +76,16 @@ def _nombre_nfc(nombre: str) -> str:
     return unicodedata.normalize("NFC", nombre or "")
 
 
+_EXTENSIONES_DE_ORIGEN = (".pdf", ".docx", ".doc", ".txt", ".xml")
+
+
+def _nombre_base(filename: str) -> str:
+    """El nombre de un examen sin la extensión de su documento, para nombrar lo que se descarga. Un examen
+    escrito desde cero no tiene extensión: «Parcial 2.1» se queda entero (no es un archivo «.1»)."""
+    ruta = Path(filename or "")
+    return ruta.stem if ruta.suffix.lower() in _EXTENSIONES_DE_ORIGEN else ruta.name
+
+
 def _content_disposition(nombre: str) -> str:
     """
     Cabecera de descarga que acepta cualquier nombre (tildes, ñ, emojis).

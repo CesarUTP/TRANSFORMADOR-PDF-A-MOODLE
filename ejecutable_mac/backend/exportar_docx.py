@@ -18,6 +18,7 @@ miden lo mismo: las líneas se parten en los mismos sitios). DejaVu Sans no vien
 No hay forma de abrir el .docx en Word desde aquí: la prueba lee el archivo de vuelta (dev/test_exportar_docx.py).
 """
 
+import base64
 import html
 import io
 import re
@@ -42,7 +43,8 @@ from reportlab.pdfbase import pdfmetrics
 from plan_impreso import (
     FUENTES, GRIS, GRIS_CLARO, LADO_CASILLA, PASO_BURBUJAS, PASO_HUECOS, Burbujas, CuadroEstudiante, DatosExamen,
     Espacio, Estilo, FilaDocente, Grupo, Huecos, Imagen, LogosCabecera, Opcion, Parrafo, Plan, RejillaBurbujas,
-    Recuadro, Sangrado, Seccion, TablaHuecos, TablaPareo, _DIR_FUENTES, GROSOR_RECUADRO, construir_plan,
+    Recuadro, SaltoPagina, Sangrado, Seccion, TablaHuecos, TablaPareo, TablaPuntos, _DIR_FUENTES, GROSOR_RECUADRO,
+    construir_plan,
 )
 
 # Cómo se llama cada tipo de letra en Word. DejaVu no viene con Word: se incrusta.
@@ -70,8 +72,10 @@ class Trozo:
     fuente: Optional[str] = None      # nombre en ReportLab («DejaVu»…) si el trozo va con otra fuente
     tam: Optional[float] = None
     color: Optional[str] = None
+    imagen: Optional[Tuple[bytes, float, float, float]] = None   # una fórmula dibujada: (PNG, ancho, alto, valign)
 
 
+_FORMULA = "\ufffc"                      # el carácter que representa un objeto dentro del texto
 _ETIQUETA = re.compile(r"<(/?)([a-zA-Z]+)([^>]*)>")
 _ATRIBUTO = re.compile(r"""(\w+)\s*=\s*(?:'([^']*)'|"([^"]*)")""")
 _BLANCOS = re.compile(r"[ \t\r\n\x0b\x0c]+")        # el espacio de no separación ( ) NO se colapsa, como en ReportLab
@@ -95,6 +99,10 @@ def leer_marcado(marcado: str) -> List[Trozo]:
         cierre, nombre, resto = m.group(1) == "/", m.group(2).lower(), m.group(3)
         if nombre == "br":
             crudos.append(Trozo(None))
+        elif nombre == "img":
+            a = {x.group(1).lower(): x.group(2) if x.group(2) is not None else x.group(3) for x in _ATRIBUTO.finditer(resto)}
+            datos = base64.b64decode(a["src"].split(",", 1)[1])
+            crudos.append(Trozo(_FORMULA, imagen=(datos, float(a["width"]), float(a["height"]), float(a["valign"]))))
         elif nombre in ("b", "i", "font"):
             if cierre:
                 if len(pila) > 1:
@@ -247,6 +255,7 @@ class _Docx:
         self.usos: Set[Tuple[str, bool, bool]] = set()          # (fuente, negrita, cursiva) de las incrustables que se usan
         self._estilos: Dict[Estilo, str] = {}
         self._nombres: Set[str] = set()
+        self._salto = False                  # el próximo párrafo del cuerpo empieza en una página nueva
         self.cont = 0.0                                          # sangría que dan los bloques `Sangrado` en curso
         self.prev_despues = 0.0                                  # «espacio después» del párrafo anterior (se funde con el «antes»)
         self._ultimo: Optional[Tuple[str, Any, float]] = None    # ("p", párrafo, su espacio después) o ("t", tabla, 0)
@@ -366,6 +375,14 @@ class _Docx:
         for t in leer_marcado(marcado):
             if t.texto is None:
                 par.add_run().add_break()
+            elif t.imagen:
+                datos, ancho, alto, bajo = t.imagen
+                r = par.add_run()
+                self._foto(r, datos, ancho, alto)
+                r._r.get_or_add_rPr().append(self._posicion(round(bajo * 2)))
+                # Con el interlineado «exacto» Word recortaría la fórmula: aquí la línea puede crecer.
+                par.paragraph_format.line_spacing = Pt(e.leading)
+                par.paragraph_format.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
             else:
                 self._run(par, t.texto, e, t)
 
@@ -389,6 +406,9 @@ class _Docx:
         par = self._nuevo(destino)
         par.style = self.doc.styles[self._estilo(e)]
         en_cuerpo = destino is self.doc
+        if en_cuerpo and self._salto:
+            par.paragraph_format.page_break_before = True
+            self._salto = False
         antes = max(e.antes - self.prev_despues, 0.0) if en_cuerpo else None
         self._formato(par, e, p.vineta is not None, antes, self.cont if en_cuerpo else 0.0)
         if p.vineta is not None:
@@ -431,6 +451,11 @@ class _Docx:
             self.cont -= b.izquierda
         elif isinstance(b, Grupo):
             self._grupo_en_curso(b)
+        elif isinstance(b, SaltoPagina):
+            self._salto = True               # lo lleva el siguiente párrafo (el título de la parte)
+            self.prev_despues = 0.0
+        elif isinstance(b, TablaPuntos):
+            self._tabla_puntos(b)
         elif isinstance(b, Opcion):
             self._opcion(b)
         elif isinstance(b, TablaPareo):
@@ -497,7 +522,7 @@ class _Docx:
         pf = par.paragraph_format
         pf.space_before, pf.space_after = Pt(0), Pt(0)
         pf.line_spacing_rule = WD_LINE_SPACING.SINGLE
-        pf.alignment = WD_ALIGN_PARAGRAPH.RIGHT if im.alinear == "RIGHT" else WD_ALIGN_PARAGRAPH.LEFT
+        pf.alignment = {"RIGHT": WD_ALIGN_PARAGRAPH.RIGHT, "CENTER": WD_ALIGN_PARAGRAPH.CENTER}.get(im.alinear, WD_ALIGN_PARAGRAPH.LEFT)
         if self.cont and destino is self.doc:
             pf.left_indent = Pt(self.cont)
         pf.keep_together = True
@@ -721,6 +746,22 @@ class _Docx:
         self._registrar("t", t)
         self.prev_despues = 0.0
 
+    def _tabla_puntos(self, b: TablaPuntos) -> None:
+        t = self._tabla(b.anchos, len(b.filas), margen=(0, 4, 0, 4))
+        raya = (0.8, "#000000")
+        for i, fila in enumerate(b.filas):
+            t.rows[i].height, t.rows[i].height_rule = Pt(b.altos[i]), WD_ROW_HEIGHT_RULE.EXACTLY
+            for j, c in enumerate(fila):
+                celda = t.rows[i].cells[j]
+                self._vertical(celda, "center")
+                self._borde(celda, top=raya, left=raya, bottom=raya, right=raya)
+                if isinstance(c, Parrafo):
+                    self._parrafo(c, celda)
+                else:
+                    self._vacio(celda)
+        self._registrar("t", t)
+        self.prev_despues = 0.0
+
     def _fila_docente(self, b: FilaDocente) -> None:
         anchos = [b.ancho_izquierda] + ([b.ancho_nota] if b.nota else [])
         t = self._tabla(anchos)
@@ -765,40 +806,13 @@ class _Docx:
         self._run(par, " de ", e)
         self._campo(par, "SECTIONPAGES", e)
 
-    def _encabezado(self, parte, s: Seccion) -> None:
-        e = Estilo("e", 8, 10, color=GRIS, nombre="encabezado corrido")
-        parte.is_linked_to_previous = False
-        par = parte.paragraphs[0]
-        par.style = self.doc.styles[self._estilo(e)]
-        pf = par.paragraph_format
-        pf.tab_stops.add_tab_stop(Pt(self.geo.ancho), WD_TAB_ALIGNMENT.RIGHT)
-        self._run(par, s.izquierda, e)
-        par.add_run("\t")
-        self._run(par, s.derecha, e)
-        ppr = par._p.get_or_add_pPr()
-        bd = OxmlElement("w:pBdr")
-        linea = OxmlElement("w:bottom")
-        for k, v in (("val", "single"), ("sz", "4"), ("space", "4"), ("color", GRIS_CLARO.lstrip("#").upper())):
-            linea.set(qn("w:" + k), v)
-        bd.append(linea)
-        ppr.append(bd)
-        _ordenar(ppr, _ORDEN_PPR)
-
-    def _vacia_primera(self, parte) -> None:
-        parte.is_linked_to_previous = False
-        par = parte.paragraphs[0]
-        self._formato_vacio(par, 1)
-
     def _seccion(self, s: Seccion, primera: bool):
         g = self.geo
         sec = self.doc.sections[0] if primera else self.doc.add_section(WD_SECTION.NEW_PAGE)
         sec.page_width, sec.page_height = Pt(g.papel[0]), Pt(g.papel[1])
         sec.left_margin, sec.right_margin = Pt(g.m_izq), Pt(g.m_der)
         sec.top_margin, sec.bottom_margin = Pt(g.m_sup), Pt(g.m_inf)
-        y_enc = max(0.55 * 28.3465, g.m_sup - 0.8 * 28.3465)
-        sec.header_distance = Pt(max(10.0, y_enc - 7.5))
         sec.footer_distance = Pt(max(8.0, max(0.45 * 28.3465, g.m_inf - 0.8 * 28.3465) - 2))
-        sec.different_first_page_header_footer = s.primera_sin_encabezado
         # Cada sección numera sus páginas desde 1 («Página X de Y» propio).
         pr = sec._sectPr
         for viejo in pr.findall(qn("w:pgNumType")):
@@ -806,11 +820,7 @@ class _Docx:
         num = OxmlElement("w:pgNumType")
         num.set(qn("w:start"), "1")
         pr.find(qn("w:pgMar")).addnext(num)
-        self._encabezado(sec.header, s)
-        self._pie(sec.footer)
-        if s.primera_sin_encabezado:
-            self._vacia_primera(sec.first_page_header)
-            self._pie(sec.first_page_footer)
+        self._pie(sec.footer)                # solo el número de página: las páginas no llevan encabezado
         return sec
 
     def construir(self) -> bytes:
@@ -911,6 +921,8 @@ def _rematar(docx: bytes, usos: Set[Tuple[str, bool, bool]]) -> bytes:
 
 def generar_docx(questions: List[Dict[str, Any]], answer_key: Dict[int, Dict[str, Any]],
                  total_points: float, datos: DatosExamen) -> ResultadoDocx:
-    """El Word del examen (y su clave). Mismas preguntas y mismos argumentos que `exportar_pdf.generar_pdf`."""
-    plan = construir_plan(questions, answer_key, total_points, datos)
+    """El Word del examen (y su clave). Mismas preguntas y mismos argumentos que `exportar_pdf.generar_pdf`.
+    El «modo folleto» (`datos.plegado`) es solo del PDF: Word para Mac no imprimía bien el libro plegado (recortaba
+    la página), así que el Word sale siempre normal."""
+    plan = construir_plan(questions, answer_key, total_points, replace(datos, plegado=False))
     return ResultadoDocx(docx=_Docx(plan).construir(), preguntas=plan.preguntas, avisos=plan.avisos)

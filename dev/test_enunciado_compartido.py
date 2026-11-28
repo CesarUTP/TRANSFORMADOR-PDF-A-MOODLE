@@ -109,9 +109,22 @@ ok(texto.count("Con base en el siguiente enunciado") == 1 and "responda las preg
 ok(texto.index("ACME") < texto.index("PREGUNTA-1"), "va antes de la primera pregunta del grupo")
 ok(not avisos, "sin avisos")
 texto, avisos = pdf(qs, ak, partes=True, contenido="solo_examen")
-ok(texto.count("ACME") == 2 and "responda las preguntas 1 y 2:" in texto and "responda la pregunta 4:" in texto,
-   "con tipos distintos y «Agrupar por tipo», cada parte lo repite con sus números")
-ok(any("sale más de una vez" in a for a in avisos), "…y se avisa")
+ok(texto.count("ACME") == 1 and "responda las preguntas 1 a 3:" in texto and not avisos,
+   "con tipos distintos y «Agrupar por tipo» sale UNA vez, con sus tres preguntas")
+junto = " ".join(texto.split())
+orden = [junto.index(x) for x in ("responda las preguntas 1 a 3:", "I PARTE: SELECCIÓN MÚLTIPLE", "PREGUNTA-1", "PREGUNTA-2",
+                                    "II PARTE: COMPLETAR", "III PARTE: SELECCIÓN MÚLTIPLE", "PREGUNTA-4", "IV PARTE: DESARROLLO")]
+ok(orden == sorted(orden), f"…el enunciado delante, sus partes por tipo seguidas y después las independientes ({orden})")
+al_reves, _ = pdf([qs[3], *qs[:3]], ak, partes=True, contenido="solo_examen")
+junto = " ".join(al_reves.split())
+ok(junto.index("PREGUNTA-4") < junto.index("ACME") < junto.index("PREGUNTA-1") and "responda las preguntas 2 a 4:" in junto,
+   "un enunciado que va después de las independientes sale después")
+hoja_, _ = pdf(qs, ak, partes=True, contenido="folleto_hoja_clave")
+ok(hoja_.count("ACME") == 1, "en la hoja de preguntas también una sola vez")
+partidos = [qs[0], qs[3], qs[1]]
+texto, avisos = pdf(partidos, ak, partes=False, contenido="solo_examen")
+ok(texto.count("ACME") == 2 and any("sale más de una vez" in a and "juntas en el editor" in a for a in avisos),
+   "si en el editor no van seguidas, se repite y se avisa")
 folleto, _ = pdf(qs[:3], ak, partes=False, contenido="folleto_hoja_clave")
 ok(folleto.count("ACME") == 1, "en folleto + hoja + clave sale solo en el folleto")
 clave_sola, _ = pdf(qs[:3], ak, contenido="solo_clave")
@@ -158,6 +171,49 @@ ok([len(q["data"].get("images") or []) for q in grupo] == [0, 1, 1], "una imagen
 texto_ia = ayuda_ia.texto_pregunta(qs[0], ak[1])
 ok("ACME" in texto_ia and "ACME" in ayuda_ia._texto_sugerir(qs[0], ak[1]) and "ACME" in ayuda_ia._texto_sugerir(qs[2], ak[3]),
    "las ayudas con IA reciben el enunciado compartido")
+
+print("5. Imágenes adjuntas al enunciado (3.2)")
+figura = {"name": "pregunta1-1.png", "mime": "image/png", "b64": comun, "compartida": True}
+suya = {"name": "pregunta1-2.png", "mime": "image/png", "b64": propia}
+
+
+def con_figura(preguntas, texto, extra=()):
+    return [{**q, "data": {**q["data"], "contexto": texto, "images": [{**figura, "name": f"pregunta{q['num']}-1.png"}, *extra]}}
+            for q in preguntas]
+
+
+una = con_figura([qs[0]], "Caso con figura", [suya])
+xml, _ = xml_builder.build_xml(una, ak)
+trozo = xml.split('<question type="multichoice">')[1]
+div = trozo.split(f'class="{xml_builder.CLASE_CONTEXTO}">')[1].split("</div>")[0]
+ok("Caso con figura" in div and "pregunta1-1.png" in div and "pregunta1-2.png" not in div,
+   "XML: la imagen del enunciado va dentro de su bloque, antes del enunciado de la pregunta; la propia, fuera")
+ok(trozo.count("pregunta1-2.png") == 2 and trozo.count("pregunta1-1.png") == 2, "cada imagen va una vez en el texto y con su archivo")
+vuelta = importar_xml.importar_xml(xml.encode("utf-8"), "a.xml")["questions"][0]["data"]
+ok(vuelta.get("contexto") == "Caso con figura" and [bool(i.get("compartida")) for i in vuelta["images"]] == [True, False],
+   f"al importar, el grupo de una sola pregunta se conserva y sabe cuál imagen es del enunciado ({vuelta.get('contexto')!r})")
+solo = con_figura(qs[:2], "")
+ok([(a, b, c) for a, b, c in tramos_compartidos(preguntas_desde_dicts(solo, ak))] == [(0, 2, "")], "un enunciado puede ser solo una imagen")
+ok([(a, b) for a, b, _ in tramos_compartidos(preguntas_desde_dicts([solo[0], {**solo[1], "data": {**solo[1]["data"], "images": [{**suya, "compartida": True}]}}], ak))] == [(0, 1), (1, 2)],
+   "el mismo texto con otra imagen es otro enunciado")
+xml_solo, _ = xml_builder.build_xml(solo, ak)
+ok(xml_solo.count(f'class="{xml_builder.CLASE_CONTEXTO}"><p><img') == 2, "XML: sin texto, el bloque lleva solo la imagen")
+vuelta = importar_xml.importar_xml(xml_solo.encode("utf-8"), "a.xml")["questions"]
+ok([(q["data"].get("contexto"), bool(q["data"]["images"][0].get("compartida"))) for q in vuelta] == [("", True), ("", True)],
+   "…y al importar sigue siendo un enunciado de solo imagen")
+ok(n_imagenes(solo) == 1 and n_imagenes(con_figura([qs[0]], "Caso", [suya])) == 2, "PDF: la del enunciado sale una vez, aunque sea de una sola pregunta")
+texto, _ = pdf(solo, ak, partes=False, contenido="solo_examen")
+ok("Con base en la siguiente imagen, responda las preguntas 1 y 2:" in texto, "PDF: sin texto lo dice como imagen")
+texto, _ = pdf(una, ak, partes=False, contenido="solo_examen")
+ok(texto.index("Caso con figura") < texto.index("PREGUNTA-1"), "PDF: el enunciado va antes")
+mezclado = con_figura(qs[:3], "Caso con figura")
+ok(n_imagenes(mezclado) == 1, "sin partes, una sola imagen para las tres")
+r = exportar_pdf.generar_pdf(mezclado, ak, 100, DatosExamen(partes=True, contenido="solo_examen", campos_estudiante=False))
+with pdfplumber.open(io.BytesIO(r.pdf)) as d_:
+    ok(sum(len(p.images) for p in d_.pages) == 1, "con partes y tipos distintos, la imagen sale UNA vez")
+w = exportar_docx.generar_docx(solo, ak, 100, DatosExamen(partes=False, contenido="solo_examen"))
+d = docx.Document(io.BytesIO(w.docx))
+ok(len(d.inline_shapes) >= 1 and "Con base en la siguiente imagen" in "\n".join(p.text for p in d.paragraphs), "Word: igual")
 
 print()
 print("TODO OK" if not fallas else f"{len(fallas)} FALLA(S)")

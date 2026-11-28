@@ -465,7 +465,7 @@ ok(_m == 4.29 and _g == ["5.71", "4.29"], f"5,71 y 4,29 pts: NINGUNA pregunta se
 ok(_c == 6, f"«Completar» con 5,71 pts: Moodle le da el entero más cercano ({_c})")
 _c, _m, _av, _g = _xml_puntos(0.5, 0.5)
 ok(_m == 0.5 and _g == ["0.5", "0.5"], f"0,5 pts: el emparejamiento no cambia ({_g})")
-ok(_c == 3 and len(_av) == 1 and "mínimo 1 punto por hueco" in _av[0], f"0,5 pts con 3 huecos: Moodle da 3 y se AVISA, no se multiplica ({_c}, {_av})")
+ok(_c == 3 and len(_av) == 1 and "mínimo 1 punto por espacio" in _av[0], f"0,5 pts con 3 huecos: Moodle da 3 y se AVISA, no se multiplica ({_c}, {_av})")
 _c, _m, _av, _g = _xml_puntos(15, 85, huecos=3)
 ok(_c == 15 and _m == 85.0 and not _av and sum(float(x) for x in _g) == 100, "100 pts con un «Completar» entero: el XML suma 100")
 from models import QuestionStats  # noqa: E402

@@ -121,7 +121,7 @@ export function detectarProblemas(questions, answerKey = {}, { conImagen = [] } 
       if (dados > 0 && typeof d.text === 'string') {
         const { huecos: nHuecos, enMoodle } = puntosEnMoodle(d.text, dados);
         if (Math.abs(enMoodle - dados) > 1e-9) {
-          avisos[i].push(`En Moodle valdrá ${enMoodle} punto${enMoodle === 1 ? '' : 's'}, no ${dados}: «Completar» solo admite puntos enteros (mínimo 1 por hueco; esta tiene ${nHuecos}) y el total del examen cambiará`);
+          avisos[i].push(`En Moodle valdrá ${enMoodle} punto${enMoodle === 1 ? '' : 's'}, no ${dados}: «Completar» solo admite puntos enteros (mínimo 1 por espacio; esta tiene ${nHuecos}) y el total de la evaluación cambiará`);
         }
       }
       const huecos = ((answerKey || {})[q.num] || {}).huecos;
