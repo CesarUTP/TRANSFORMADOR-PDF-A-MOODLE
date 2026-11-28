@@ -14,7 +14,9 @@ un trazo que esta conversión no sepa dibujar, se devuelve None y la fórmula qu
 import base64
 import io
 import logging
+import os
 import re
+import sys
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import List, Optional
@@ -22,10 +24,15 @@ from xml.etree import ElementTree
 
 import latex2mathml.converter
 import pypdfium2 as pdfium
-import ziamath
-from reportlab.pdfgen import canvas
 
-from pdfium_cerrojo import CERROJO
+if sys.platform == "win32":
+    # ziafont (dentro de ziamath) lee %WINDIR% al importarse: sin esa variable, la aplicación no arrancaba.
+    os.environ.setdefault("WINDIR", os.environ.get("SYSTEMROOT") or r"C:\Windows")
+
+import ziamath  # noqa: E402
+from reportlab.pdfgen import canvas  # noqa: E402
+
+from pdfium_cerrojo import CERROJO  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
